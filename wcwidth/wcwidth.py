@@ -64,6 +64,7 @@ Translated from Markus Kuhn's C code at:
 
 from __future__ import division
 
+
 def _bisearch(ucs, table):
     " auxiliary function for binary search in interval table "
     lbound = 0
@@ -194,7 +195,6 @@ def wcwidth(char):
           (ucs >= 0x20000 and ucs <= 0x2fffd) or
           (ucs >= 0x30000 and ucs <= 0x3fffd)))
     )
-    # jquast: trigrams/hexagrams are 1-cell,
 
 
 def wcswidth(pwcs):
@@ -362,7 +362,7 @@ def wcwidth_cjk(ucs):
     Ambiguous (A) category as defined in Unicode Technical Report #11
     have a column width of 2.
     """
-    if _bisearch(ucs, _AMBIGUOUS):
+    if _bisearch(ord(ucs), _AMBIGUOUS):
         return 2
     else:
         return wcwidth(ucs)
