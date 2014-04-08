@@ -55,7 +55,7 @@ wcwidth.c
 
 This code is derived directly from C code of the same name, whose latest
 version is available at: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-And is authored by Markus Kuhn -- 2003-05-20 (Unicode 4.0).
+And is authored by Markus Kuhn -- 2007-05-26 (Unicode 5.0)
 
 Any subsequent changes were done by directly testing against the various libc
 implementations of POSIX-compliant Operating Systems, such as Mac OSX, Linux,
