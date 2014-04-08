@@ -17,17 +17,20 @@ especially Chinese, Japanese, and Korean -- collectively known as the
 *CJK Unified Ideographs* consume more than 1 terminal cell.
 
 In python, if you ask for the length of the string, ``u'コンニチハ'`` 
-(Japanese: Hello) is determined (correctly) to be a length of ``5``.
+(Japanese: Hello), it is correctly determined to be a length of **5**.
 
 However, if you were to print this to a Terminal Emulator, such as xterm,
-urxvt, Terminal.app, or PuTTY, it would consume ``10`` columns, or *cells*,
+urxvt, Terminal.app, or PuTTY, it would consume **10** columns, or *cells*,
 two for each symbol.
 
 Solution
 --------
 
 This API allows one to determine the printable length of a single cell, such
-that ``wcwidth(u'コ') == 2`` and ``wcswidth(u'コンニチハ') == 10``.
+that::
+
+        wcwidth(u'コ') == 2
+        wcswidth(u'コンニチハ') == 10
 
 Ambiguous-width
 ```````````````
