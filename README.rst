@@ -32,26 +32,26 @@ that::
         wcwidth(u'コ') == 2
         wcswidth(u'コンニチハ') == 10
 
-Ambiguous-width
-```````````````
 
-Additionally, some characters, known as ambiguous-width characters, may be
-determined by your Terminal Emulator to always consume two cells.  In iTerm,
-under *Preferences->Text*, this is checkbox "Treat ambiguous-width characters
-as double-width".
+Installation
+============
 
-For example::
+Simply install from pip::
 
-    |♡| 0x02661 White Heart Suit
+    pip install wcwidth
 
-Is considered ambiguous-width. On the font Andale Mono in OSX, the heart (♡)
-crosses over the pipe (|), and unless this option is enabled, causes terrific
-confusion to terminal emulators. ``wcwidth()`` will still continue to report
-this as a width of ``1``. However, its sibling function, ``wcwidth_cjk()``
-will correctly report this ambiguous-width character as a width of ``2``.
+Use
+===
+
+xxx
+
+References
+==========
+
+http://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt
 
 wcwidth.c
-=========
+---------
 
 This code is derived directly from C code of the same name, whose latest
 version is available at: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
@@ -60,13 +60,6 @@ And is authored by Markus Kuhn -- 2007-05-26 (Unicode 5.0)
 Any subsequent changes were done by directly testing against the various libc
 implementations of POSIX-compliant Operating Systems, such as Mac OSX, Linux,
 and OpenSolaris.
-
-Installation
-============
-
-Simply install from pip::
-
-    pip install wcwidth
 
 License
 =======
