@@ -41,7 +41,7 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
            .lstrip('0'))
     url = "http://codepoints.net/U+{}".format(ucp)
     name = unicodedata.name(ucs)
-    return ("libc={}, ours={}, name={}, url={} "
+    return (u"libc={}, ours={}, name={}, url={} "
             " --oo{}oo--{}".format(
                 wcwidth_libc, wcwidth_local,
                 name, url, ucs, (" :libc failed to identify combining"
