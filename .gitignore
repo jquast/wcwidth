@@ -4,6 +4,7 @@
 *.egg-info
 *.egg
 *.pyc
+*.swp
 build
 dist
 docs/_build
