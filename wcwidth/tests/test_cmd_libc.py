@@ -30,8 +30,7 @@ def is_named(ucs):
         return False
 
 
-def isnt_combining(ucs):
-    return not unicodedata.combining(ucs)
+isnt_combining = lambda ucs: not unicodedata.combining(ucs)
 
 
 def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
@@ -41,11 +40,8 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
            .lstrip('0'))
     url = "http://codepoints.net/U+{}".format(ucp)
     name = unicodedata.name(ucs)
-    return (u"libc={}, ours={}, name={}, url={} "
-            " --oo{}oo--{}".format(
-                wcwidth_libc, wcwidth_local,
-                name, url, ucs, (" :libc failed to identify combining"
-                                 if wcwidth_local == -1 else '')))
+    return (u"libc={}, ours={} --o{}o-- name={} {} {}"
+            " ".format(wcwidth_libc, wcwidth_local, ucs, name, url, ord(ucs)))
 
 # use chr() for py3.x, unichr() for py2.x
 try:
@@ -65,8 +61,7 @@ if sys.maxunicode < 1114111:
 # that are not named, or are combining characters.
 ALL_UCS = [ucs for ucs in
            [unichr(val) for val in range(sys.maxunicode)]
-           if is_named(ucs) and isnt_combining(ucs)
-           ]
+           if is_named(ucs) and isnt_combining(ucs) ]
 
 
 def test_hello_jp():
