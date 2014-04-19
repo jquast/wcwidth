@@ -119,19 +119,23 @@ def _bisearch(ucs, table):
 # This implementation assumes that wchar_t characters are encoded
 # in ISO 10646.
 
-def wcwidth(unichar):
-    """wcwidth(unichar) -> int
+def wcwidth(wc):
+    """wcwidth(wc) -> int
 
-    Return the width in character cells of the Unicode character
-    whose code is c
+    Return the number of column positions required to display the unicode
+    character ``wc`` on an emulating terminal.
+
+    The wcwidth() function returns 0 if the wc argument is a null wide
+    character ('\0'), -1 if wc is not printable; otherwise, the number of
+    column positions the character occupies (1 or 2).
     """
-    ucs = ord(unichar)
+    ucs = ord(wc)
 
-    # null (\x00) is 0.
-    if ucs == u'\x00':
+    # Only null (\x00) is length of 0.
+    if ucs == 0:
         return 0
 
-    # Control characters are -1
+    # Control characters are not printable
     if ucs < 32:
         return -1
 
@@ -139,10 +143,9 @@ def wcwidth(unichar):
     if ucs >= 0x7f and ucs < 0xa0:
         return -1
 
-    # combining characters must be joined with other characters,
-    # their printable width is currently indeterminate
-    # TODO(jquast): it may be possible to calculate,
-    if unicodedata.combining(unichar):
+    # combining characters have indeterminate effects unless
+    # combined with additional characters.
+    if unicodedata.combining(wc):
         return -1
 
     # if we arrive here, ucs is not a combining or C0/C1 control character
