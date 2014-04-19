@@ -84,7 +84,8 @@ class Test_libc_width:
 
     def test_libc_wcwidth_equality(self, step=1000):
         """
-        Compare libc.wcwidth and wcwidth.wcwidth
+        Compare libc.wcwidth and wcwidth.wcwidth in chunks of ``step``,
+        so that py.test generates test "blocks" (we have a lot of failures!)
         """
         locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
 
@@ -98,10 +99,10 @@ class Test_libc_width:
             ucs = ucs_chunk[idx]
             assert self.libc.wcswidth(ucs, len(ucs)) == wcwidth.wcswidth(ucs)
 
-    def test_libc_wcswidth_equality(self, step=1000):
+    def test_libc_wcswidth_equality(self, step=50):
         """
         Compare libc.wcswidth and wcwidth.wcswidth in chunks of ``step``,
-        so that py.test generates test "blocks"; we have a lot of failures!
+        so that py.test generates test "blocks" (we have a lot of failures!)
         """
         locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
 
