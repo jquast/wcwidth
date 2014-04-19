@@ -1,3 +1,25 @@
+.. image:: http://img.shields.io/travis/jquast/wcwidth.svg
+   :target: https://travis-ci.org/jquast/wcwidth
+   :alt: Travis Continous Integration
+
+.. image:: http://img.shields.io/coveralls/jquast/wcwidth/badge.svg
+   :target: http://coveralls.io/r/jquast/wcwidth
+   :alt: Coveralls Code Coveraage
+
+.. image:: http://img.shields.io/pypi/v/wcwidth/badge.svg
+   :target: https://pypi.python.org/pypi/wcwidth/
+   :alt: Latest Version
+
+.. image:: https://pypip.in/license/wcwidth/badge.svg
+   :target: https://pypi.python.org/pypi/wcwidth/
+   :alt: License
+
+.. image:: http://img.shields.io/pypi/dm/wcwidth/badge.svg
+   :target: https://pypi.python.org/pypi/wcwidth/
+   :alt: Downloads
+
+
+============
 Introduction
 ============
 
