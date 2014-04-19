@@ -1,0 +1,11 @@
+.coverage
+.cache
+.tox
+*.egg-info
+*.egg
+*.pyc
+build
+dist
+docs/_build
+htmlcov
+.coveralls.yml
