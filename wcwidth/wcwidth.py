@@ -88,59 +88,70 @@ def _bisearch(ucs, table):
 
     return 0
 
-# The following two functions define the column width of an ISO 10646
-# character as follows:
-#
-#    - The null character (U+0000) has a column width of 0.
-#
-#    - Other C0/C1 control characters and DEL will lead to a return
-#      value of -1.
-#
-#    - Non-spacing and enclosing combining characters (general
-#      category code Mn or Me in the Unicode database) have a
-#      column width of 0.
-#
-#    - SOFT HYPHEN (U+00AD) has a column width of 1.
-#
-#    - Other format characters (general category code Cf in the Unicode
-#      database) and ZERO WIDTH SPACE (U+200B) have a column width of 0.
-#
-#    - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF)
-#      have a column width of 0.
-#
-#    - Spacing characters in the East Asian Wide (W) or East Asian
-#      Full-width (F) category as defined in Unicode Technical
-#      Report #11 have a column width of 2.
-#
-#    - All remaining characters (including all printable
-#      ISO 8859-1 and WGL4 characters, Unicode control characters,
-#      etc.) have a column width of 1.
-#
-# This implementation assumes that wchar_t characters are encoded
-# in ISO 10646.
-
 def wcwidth(wc):
     """wcwidth(wc) -> int
 
-    Return the number of column positions required to display the unicode
-    character ``wc`` on an emulating terminal.
+    The wcwidth() function returns 0 if the wc argument has no printable effect
+    on a terminal (such as '\0'), -1 if wc is not printable.  Otherwise, the
+    number of column positions the character occupies on a graphic terminal
+    (1 or 2).
 
-    The wcwidth() function returns 0 if the wc argument is a null wide
-    character ('\0'), -1 if wc is not printable; otherwise, the number of
-    column positions the character occupies (1 or 2).
+    The following have a column width of 0:
+
+        - NULL (U+0000, 0).
+
+        - COMBINING GRAPHEME JOINER (U+034F, 847).
+
+        - ZERO WIDTH SPACE (U+200B, 8203) through
+          RIGHT-TO-LEFT MARK (U+200F, 8207).
+
+        - LINE SEPERATOR (U+2028, 8283) and
+          PARAGRAPH SEPERATOR (U+2029, 8233).
+
+        - LEFT-TO-RIGHT EMBEDDING (U+202A, 8234) through
+          RIGHT-TO-LEFT OVERRIDE (U+202E, 8238).
+
+        - WORD JOINER (U+2060, 8288) through
+          INVISIBLE SEPARATOR (U+2063, 8291).
+
+    The following have a column width of -1:
+
+        - Any non-zero value returned by ``unicodedata.combining()``
+
+        - Other C0/C1 control characters and DEL will lead to a return
+          value of -1.
+
+        - Non-spacing and enclosing combining characters (general
+          category code Mn or Me in the Unicode database) have a
+          column width of 0.
+
+    The following have a column width of 2:
+
+        - Spacing characters in the East Asian Wide (W) or East Asian
+          Full-width (F) category as defined in Unicode Technical
+          Report #11 have a column width of 2.
+
+    The following have a column width of 1:
+
+        - SOFT HYPHEN (U+00AD) has a column width of 1.
+
+        - All remaining characters (including all printable
+          ISO 8859-1 and WGL4 characters, Unicode control characters,
+          etc.) have a column width of 1.
     """
     ucs = ord(wc)
 
-    # Only null (\x00) is length of 0.
-    if ucs == 0:
+    if ucs == 0 or (
+            ucs == 847) or (
+            8203 <= ucs <= 8207) or (
+            8232 <= ucs <= 8233) or (
+            8234 <= ucs <= 8238) or (
+            8288 <= ucs <= 8291):
         return 0
 
     # Control characters are not printable
-    if ucs < 32:
-        return -1
-
-    # test for 8-bit control characters
-    if ucs >= 0x7f and ucs < 0xa0:
+    # (nor 8-bit control character 0x7f through 0xa0)
+    if ucs < 32 or 0x7f <= ucs < 0xa0:
         return -1
 
     # combining characters have indeterminate effects unless
@@ -354,3 +365,119 @@ def wcswidth_cjk(pwcs):
         else:
             width += wcw
     return width
+
+
+# COMBINING NOT DETECTED BY PYTHON(!)
+#
+#    - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF)
+#      have a column width of 0.
+#
+# This implementation assumes that wchar_t characters are encoded
+# in ISO 10646.
+#
+#        - DEVANAGARI SIGN INVERTED CANDRABINDU (U+900, 2304) through
+#          DEVANAGARI SIGN ANUSVARA (U+902, ).
+#
+#        - DEVANAGARI VOWEL SIGN U (U+941, ) through
+#          DEVANAGARI VOWEL SIGN AI (U+948, ).
+#
+#        - DEVANAGARI VOWEL SIGN PRISHTHAMATRA E (U+94E, ).
+#
+#        - DEVANAGARI VOWEL SIGN CANDRA LONG E (U+955, ).
+#
+#        - DEVANAGARI VOWEL SIGN VOCALIC L (U+962, ) and
+#          DEVANAGARI VOWEL SIGN VOCALIC LL (U+963, ).
+#
+#        - DEVANAGARI LETTER ZHA (U+979, )
+#
+#        - DEVANAGARI LETTER HEAVY YA (U+97A, )
+#
+#        - BENGALI SIGN CANDRABINDU (U+981, )
+#
+#        - BENGALI VOWEL SIGN U (U+9C1, ) through
+#          BENGALI VOWEL SIGN VOCALIC RR (U+9C4, ).
+#
+#        - BENGALI VOWEL SIGN VOCALIC L (U+9E2, ) and
+#          BENGALI VOWEL SIGN VOCALIC LL (U+9E3, ).
+#
+#        - GURMUKHI SIGN ADAK BINDI (U+A01, ) and
+#          GURMUKHI SIGN BINDI (U+A02, ).
+#
+#        - GURMUKHI VOWEL SIGN U (U+A41, ) and
+#          GURMUKHI VOWEL SIGN UU (U+A42, ).
+#
+#        - GURMUKHI VOWEL SIGN EE (U+A47, ) and
+#          GURMUKHI VOWEL SIGN AI (U+A48, ).
+#
+#        - GURMUKHI VOWEL SIGN OO (U+A4B, ) and
+#          URMUKHI VOWEL SIGN AU (U+A4C, ).
+#
+#        - GURMUKHI TIPPI (U+A70, ) and
+#          GURMUKHI ADDAK (U+A71, ).
+#
+#        - GUJARATI SIGN CANDRABINDU (U+A81, ) and
+#          GUJARATI SIGN ANUSVARA (U+A82, ).
+#
+#        - GUJARATI VOWEL SIGN U (U+AC1, ) through
+#          GUJARATI VOWEL SIGN CANDRA E (U+AC5, ).
+#
+#        - GUJARATI VOWEL SIGN E (U+AC7, ) and
+#          GUJARATI VOWEL SIGN AI (U+AC8, ).
+#
+#        - GUJARATI VOWEL SIGN VOCALIC L (U+AE2, ) and
+#          GUJARATI VOWEL SIGN VOCALIC LL (U+AE3, ).
+#
+#        - ORIYA SIGN CANDRABINDU (U+B01, ).
+#
+#        - ORIYA VOWEL SIGN I (U+B3F, ).
+#
+#        - ORIYA VOWEL SIGN U (U+B41, ) through
+#          ORIYA VOWEL SIGN VOCALIC R (U+B43, ).
+#
+#        - ORIYA AI LENGTH MARK (U+B56, ).
+#
+#        - TAMIL SIGN ANUSVARA (U+B82, ).
+#
+#        - TAMIL VOWEL SIGN II (U+BC0, ).
+#
+#        - TELUGU VOWEL SIGN AA (U+C3E, ) and
+#          TELUGU VOWEL SIGN I (U+C3F, ).
+#
+#        - TELUGU VOWEL SIGN II (U+C40, ).
+#
+#        - TELUGU VOWEL SIGN E (U+C46, ) through
+#          TELUGU VOWEL SIGN AI (U+C48, ).
+#
+#        - TELUGU VOWEL SIGN O (U+C4A, ) through
+#          TELUGU VOWEL SIGN AU (U+C4C, ).
+#
+#        - KANNADA VOWEL SIGN VOCALIC L (U+CE2, ) and
+#          KANNADA VOWEL SIGN VOCALIC LL (U+CE3, ).
+#
+#        - MALAYALAM VOWEL SIGN U (U+D41, )
+#          MALAYALAM VOWEL SIGN VOCALIC R (U+D43, ).
+#
+#        - SINHALA VOWEL SIGN KETTI IS-PILLA (U+DD2, )
+#          SINHALA VOWEL SIGN KETTI PAA-PILLA (U+DD4, ).
+#
+#        - SINHALA VOWEL SIGN DIGA PAA-PILLA (U+DD6, )
+#
+#        - THAI CHARACTER MAI HAN-AKAT (U+E31, ).
+#
+#        - THAI CHARACTER SARA I (U+E34, ) through
+#          THAI CHARACTER SARA UEE (U+E37, ).
+#
+#        - THAI CHARACTER MAITAIKHU (U+E47, 3665).
+#
+#        - THAI CHARACTER THANTHAKHAT (U+E4C, 3660) through
+#          THAI CHARACTER YAMAKKAN (U+E4E, 3662).
+#
+#        - LAO VOWEL SIGN MAI KAN (U+EB1, 3761).
+#
+#        - LAO VOWEL SIGN I (U+EB4, 3764) through
+#          LAO VOWEL SIGN YY (U+EB7, 3767).
+#
+#        - LAO VOWEL SIGN MAI KON (U+EBB, 3771) through
+#          LAO NIGGAHITA (U+ECD, 3789).
+#
+
