@@ -22,6 +22,7 @@ import sys
 # local imports
 import wcwidth
 
+
 def is_named(ucs):
     try:
         return bool(unicodedata.name(ucs))
@@ -78,7 +79,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
     """
     ALL_UCS = [ucs for ucs in
                [unichr(val) for val in range(sys.maxunicode)]
-               if is_named(ucs) and isnt_combining(ucs) ]
+               if is_named(ucs) and isnt_combining(ucs)]
 
     libc_name = ctypes.util.find_library('c')
     if not libc_name:

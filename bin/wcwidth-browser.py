@@ -58,6 +58,7 @@ try:
 except ValueError as err:
     assert 'narrow Python build' in err.args[0], err.args
     LIMIT_UCS = 0x10000
+    import warnings
     import time
     warnings.warn('narrow Python build, only a small subset of '
                   'characters may be represented.')
@@ -207,7 +208,7 @@ class Pager(object):
         while _idx <= idx:
             # retrieve new page data
             _idx += 1
-            if not _idx in self._page_data:
+            if _idx not in self._page_data:
                 pgdata = list()
                 for count in xrange(size):
                     try:
@@ -336,7 +337,7 @@ class Pager(object):
 
     def draw_loading(self, writer, idx):
         if self.term.is_a_tty:
-            if not idx in self._page_data:
+            if idx not in self._page_data:
                 writer(u' ' + self.screen.style.loading)
             else:
                 writer(u' +')
@@ -345,7 +346,7 @@ class Pager(object):
     def draw_status(self, writer, idx):
         if self.term.is_a_tty:
             writer(self.term.move(self.term.height - 1))
-            end=u' (END)' if idx == self.last_page else u''
+            end = u' (END)' if idx == self.last_page else u''
             writer('Page {idx}{end}. q to quit, [keys: kjfb12-=]'
                    .format(idx=idx, end=end))
 

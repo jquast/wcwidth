@@ -1,4 +1,4 @@
-# Generated: 2014-05-05T00:41:21.107471+00:00
+# Generated: 2014-05-05T02:09:32.610884+00:00
 # Source: EastAsianWidth-6.3.0.txt
 # Date:  2013-02-05, 20:09:00 GMT [KW, LI]
 WIDE_EASTASIAN = (
@@ -36,5 +36,5 @@ WIDE_EASTASIAN = (
     (0x1f240, 0x1f248,),  # Tortoise Shell Bracketed..Tortoise Shell Bracketed
     (0x1f250, 0x1f251,),  # Circled Ideograph Advant..Circled Ideograph Accept
     (0x20000, 0x2fffd,),  # Cjk Unified Ideograph-20..
-    (0x30000, 0x3fffd,),  #                         ..
+    (0x30000, 0x3fffd,),  # (nil)                   ..
 )

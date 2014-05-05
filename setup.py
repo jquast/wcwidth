@@ -114,7 +114,7 @@ class SetupUpdate(setuptools.Command):
         return version, date, sorted(values)
 
     @staticmethod
-    def _do_combining_parse(fname, exclude_values=(0,) ):
+    def _do_combining_parse(fname, exclude_values=(0,)):
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
@@ -168,7 +168,7 @@ class SetupUpdate(setuptools.Command):
                 fp.write('\n' + (' ' * INDENT))
                 fp.write('({0}, {1},),'.format(hex_start, hex_end))
                 fp.write('  # {0:24s}..{1}'.format(
-                    name_start[:24].rstrip(),
+                    name_start[:24].rstrip() or '(nil)',
                     name_end[:24].rstrip()))
             fp.write('\n)\n')
         print("complete.")
