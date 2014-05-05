@@ -86,8 +86,7 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
 Values
 ------
 
-See the docstring for ``wcwidth()``,
-general overview of return values:
+See the docstring for ``wcwidth()``, general overview of return values:
 
    - ``-1``: indeterminate, such as combining_ characters.
 
@@ -96,6 +95,9 @@ general overview of return values:
    - ``2``: East_Asian_Width property values W and F (Wide and Full-width).
 
    - ``1``: all others.
+
+``wcswidth()`` simply returns the sum of all values along a string, or
+``-1`` if it has occurred for any value returned by ``wcwidth()``.
 
 ==========
 Developing

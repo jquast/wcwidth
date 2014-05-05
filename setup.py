@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import setuptools
 import setuptools.command.develop
+import setuptools.command.test
 
 here = os.path.dirname(__file__)
 
@@ -177,11 +178,15 @@ class SetupDevelop(setuptools.command.develop.develop):
     def run(self):
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         setuptools.command.develop.develop.run(self)
-        self.spwan(('pip', 'install', '-U', 'blessed', 'requests',))
+        self.spawn(('pip', 'install', '-U', 'blessed', 'requests',))
+
+
+class SetupTest(setuptools.command.test.test):
+    def run(self):
+        self.spawn(('tox',))
 
 
 def main():
-
     setuptools.setup(
         name='wcwidth',
         version='0.0.1',
@@ -209,12 +214,12 @@ def main():
             'Topic :: Software Development :: Localization',
             'Topic :: Software Development :: Internationalization',
             'Topic :: Terminals'
-            'Topic :: Text Processing :: General',
             ],
         keywords=['terminal', 'emulator', 'wcwidth', 'wcswidth', 'cjk',
                   'combining', 'xterm', 'console', ],
         cmdclass={'develop': SetupDevelop,
-                  'update': SetupUpdate},
+                  'update': SetupUpdate,
+                  'test': SetupTest},
     )
 
 if __name__ == '__main__':
