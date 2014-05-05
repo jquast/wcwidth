@@ -1,22 +1,22 @@
 .. image:: http://img.shields.io/travis/jquast/wcwidth.svg
-   :target: https://travis-ci.org/jquast/wcwidth
-   :alt: Travis Continous Integration
+    :target: https://travis-ci.org/jquast/wcwidth
+    :alt: Travis Continous Integration
 
 .. image:: http://img.shields.io/coveralls/jquast/wcwidth/badge.svg
-   :target: http://coveralls.io/r/jquast/wcwidth
-   :alt: Coveralls Code Coverage
+    :target: http://coveralls.io/r/jquast/wcwidth
+    :alt: Coveralls Code Coverage
 
 .. image:: http://img.shields.io/pypi/v/wcwidth/badge.svg
-   :target: https://pypi.python.org/pypi/wcwidth/
-   :alt: Latest Version
+    :target: https://pypi.python.org/pypi/wcwidth/
+    :alt: Latest Version
 
 .. image:: https://pypip.in/license/wcwidth/badge.svg
-   :target: https://pypi.python.org/pypi/wcwidth/
-   :alt: License
+    :target: https://pypi.python.org/pypi/wcwidth/
+    :alt: License
 
 .. image:: http://img.shields.io/pypi/dm/wcwidth/badge.svg
-   :target: https://pypi.python.org/pypi/wcwidth/
-   :alt: Downloads
+    :target: https://pypi.python.org/pypi/wcwidth/
+    :alt: Downloads
 
 
 ============
