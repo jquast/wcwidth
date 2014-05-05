@@ -6,7 +6,7 @@
     :target: http://coveralls.io/r/jquast/wcwidth
     :alt: Coveralls Code Coverage
 
-.. image:: http://img.shields.io/pypi/jquast/wcwidth.svg
+.. image:: http://img.shields.io/pypi/v/wcwidth.svg
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: Latest Version
 
@@ -14,7 +14,7 @@
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: License
 
-.. image:: http://img.shields.io/pypi/jquast/wcwidth.svg
+.. image:: http://img.shields.io/pypi/dm/wcwidth.svg
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: Downloads
 
