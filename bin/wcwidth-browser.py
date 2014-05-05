@@ -1,12 +1,18 @@
 #!/usr/bin/env python
+
+# standard imports
 from __future__ import print_function
 from __future__ import division
-from wcwidth import wcwidth, wcwidth_cjk
-from blessed import Terminal
 from functools import partial
 import unicodedata
 import string
 import signal
+
+# local imports
+from wcwidth import wcwidth
+
+# 3rd party imports
+from blessed import Terminal
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
@@ -60,16 +66,14 @@ except ValueError as err:
 
 class WcWideCharacterGenerator(object):
     " generates unicode characters of the presumed terminal width "
-    def __init__(self, width=2, cjk=False):
+    def __init__(self, width=2):
         """
         ``cjk``
           Treat ambiguous-width characters as double-width
         """
         self.characters = (unichr(idx)
                            for idx in xrange(LIMIT_UCS)
-                           if cjk and wcwidth_cjk(unichr(idx)) == width
-                           or not cjk and wcwidth(unichr(idx)) == width
-                           and not unicodedata.combining(unichr(idx))
+                           if wcwidth(unichr(idx)) == width
                            )
 
     def __next__(self):
@@ -105,14 +109,12 @@ class Style(object):
 class Screen(object):
     " represents terminal and data dimensions "
     intro_msg_fmt = (u'Characters {wide} terminal cells wide. '
-                     u'{ambiguity}'
                      u'Delimiters ({delim}) should align.')
 
     def __init__(self, term, style, wide=2, cjk=False):
         self.term = term
         self.style = style
         self.wide = wide
-        self.cjk = cjk
 
     @property
     def header(self):
@@ -143,10 +145,8 @@ class Screen(object):
     def msg_intro(self):
         delim = self.style.hint(self.style.delimiter)
         wide = self.style.heading('{}'.format(self.wide))
-        ambiguity = u'' if not self.cjk else (
-            u'Ambiguous-width characters are double-width. ')
         return self.term.wrap(self.intro_msg_fmt.format(
-            wide=wide, ambiguity=ambiguity, delim=delim))
+            wide=wide, delim=delim))
 
     @property
     def row_ends(self):
@@ -154,7 +154,9 @@ class Screen(object):
 
     @property
     def num_columns(self):
-        return self.term.width // self.hint_width
+        if self.term.is_a_tty:
+            return self.term.width // self.hint_width
+        return 1
 
     @property
     def num_rows(self):
@@ -188,8 +190,7 @@ class Pager(object):
         self.dirty = 2
         self._page_data.clear()
         self.last_page = None
-        self.character_generator = self.character_factory(
-            self.screen.wide, self.screen.cjk)
+        self.character_generator = self.character_factory(self.screen.wide)
 
     def page_data(self, idx, offset):
         size = self.screen.page_size
@@ -232,10 +233,13 @@ class Pager(object):
         page_idx = page_offset = 0
         if not self.term.is_a_tty:
             while True:
-                npage_idx, offset = self.draw(writer, page_idx + 1, page_offset)
+                npage_idx, offset = self.draw(writer,
+                                              page_idx + 1,
+                                              page_offset)
                 if npage_idx == page_idx:
                     break
                 page_idx = npage_idx
+                self.dirty = True
             return
         while True:
             if self.dirty:
@@ -257,11 +261,8 @@ class Pager(object):
         # exit
         if inp.lower() in (u'q', u'Q'):
             return (-1, -1)
-        elif inp in (u'1', u'2', u'a'):
-            if inp == u'a':
-                self.screen.cjk = not self.screen.cjk
-                self.on_resize(None, None)
-            elif int(inp) != self.screen.wide:
+        elif inp in (u'1', u'2'):
+            if int(inp) != self.screen.wide:
                 self.screen.wide = int(inp)
                 self.on_resize(None, None)
         elif inp in (u'_', u'-'):
@@ -324,12 +325,13 @@ class Pager(object):
         return idx, offset
 
     def draw_heading(self, writer):
-        if self.dirty == 2 and self.term.is_a_tty:
+        if self.dirty == 2:  # and self.term.is_a_tty:
             writer(self.term.clear)
             writer(self.term.move(0, 0))
             writer('\n'.join(self.screen.msg_intro))
             writer('\n')
             writer(self.screen.header)
+            writer('\n')
             return True
 
     def draw_loading(self, writer, idx):
@@ -361,7 +363,10 @@ class Pager(object):
             if col == num_cols:
                 col = 0
                 row += 1
-                val = u''.join((val, clear_eol, u'\n'))
+                if self.term.is_a_tty:
+                    val = u''.join((val, clear_eol, u'\n'))
+                else:
+                    val = u''.join((val.rstrip(), u'\n'))
             yield val
         if self.term.is_a_tty:
             yield u''.join((clear_eol, u'\n', clear_eos))
@@ -374,10 +379,10 @@ class Pager(object):
         if style.alignment == 'right':
             fmt = u' '.join(('{name:{name_len}s}',
                              '{delimiter}{ucs}{delimiter}'
-                             '0x{value:05X}'))
+                             '0x{value:x}'))
         else:
             fmt = u' '.join(('{delimiter}{ucs}{delimiter}',
-                             '0x{value:05X}',
+                             '0x{value:x}',
                              '{name:{name_len}s}'))
         delimiter = style.hint(style.delimiter)
         return fmt.format(name_len=style.name_len,
@@ -395,7 +400,11 @@ def main():
     screen = Screen(term, style)
     character_factory = WcWideCharacterGenerator
     pager = Pager(term, screen, character_factory)
-    signal.signal(signal.SIGWINCH, pager.on_resize)
+    if term.is_a_tty:
+        signal.signal(signal.SIGWINCH, pager.on_resize)
+    else:
+        screen.style.name_len = 80 - 15
+        pager.dirty = 2
     with term.location(), term.cbreak(), term.fullscreen():
         pager.run(writer=echo, reader=term.inkey)
 
