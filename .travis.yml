@@ -12,7 +12,7 @@ install:
 
   # for python version =33, cinstall and overage, coveralls.
   # coverage is only measured and published for one version.
-  - if [[ $TOXENV == "py33" ]]; then
+  - if [[ $TOXENV == "py34" ]]; then
         pip install -q coverage coveralls;
     fi
 
@@ -21,7 +21,7 @@ script:
   - tox -e $TOXENV
 
 after_success:
-  - if [[ $TOXENV == "py33" ]]; then
+  - if [[ $TOXENV == "py34" ]]; then
         coveralls;
     fi
 

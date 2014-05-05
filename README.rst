@@ -31,6 +31,10 @@ It is certainly possible to use your Operating System's ``wcwidth()`` and
 on non-POSIX platforms, such as Windows, or for alternative Python
 implementations, such as jython.
 
+Furthermore, testing (`wcwidth-libc-comparator.py`_) has shown that libc
+wcwidth() is particularly out of date on most operating systems, reporting -1
+for a great many characters that are actually a displayable width of 1 or 2.
+
 Problem
 -------
 
@@ -179,6 +183,7 @@ an OSI-approved license that appears most-alike has been chosen, the MIT license
 
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`wcwidth/bin`: https://github.com/jquast/wcwidth/tree/master/bin
+.. _`wcwidth-libc-comparator.py`: https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py
 .. _`wcwidth/table_wide.py`: https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py
 .. _`wcwidth/table_comb.py`: https://github.com/jquast/wcwidth/tree/master/wcwidth/table_comb.py
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
