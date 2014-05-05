@@ -4,7 +4,7 @@
 
 .. image:: http://img.shields.io/coveralls/jquast/wcwidth/badge.svg
    :target: http://coveralls.io/r/jquast/wcwidth
-   :alt: Coveralls Code Coveraage
+   :alt: Coveralls Code Coverage
 
 .. image:: http://img.shields.io/pypi/v/wcwidth/badge.svg
    :target: https://pypi.python.org/pypi/wcwidth/
