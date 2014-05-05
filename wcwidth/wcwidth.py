@@ -1,12 +1,13 @@
 """
-Translated from Markus Kuhn's C code at:
+This is an implementation of wcwidth() and wcswidth() (defined in
+IEEE Std 1002.1-2001) for Unicode.
 
-     http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-
-Maintained in python form at:
-
-     https://github.com/jquast/wcwidth
+https://github.com/jquast/wcwidth
 """
+# from Markus Kuhn's C code at:
+#
+#     http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+#
 # This is an implementation of wcwidth() and wcswidth() (defined in
 # IEEE Std 1002.1-2001) for Unicode.
 #
@@ -67,7 +68,8 @@ Maintained in python form at:
 # Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 
 from __future__ import division
-import unicodedata
+from .table_wide import WIDE_EASTASIAN
+from .table_comb import NONZERO_COMBINING
 
 
 def _bisearch(ucs, table):
@@ -88,48 +90,43 @@ def _bisearch(ucs, table):
 
     return 0
 
+
 def wcwidth(wc):
     """wcwidth(wc) -> int
 
     The wcwidth() function returns 0 if the wc argument has no printable effect
-    on a terminal (such as '\0'), -1 if wc is not printable.  Otherwise, the
-    number of column positions the character occupies on a graphic terminal
+    on a terminal (such as NUL '\0'), -1 if wc is not printable, or has an
+    indeterminate effect on the terminal (control or combining).  Otherwise,
+    the number of column positions the character occupies on a graphic terminal
     (1 or 2).
+
+    The following have a column width of -1:
+
+        - Non-spacing and enclosing combining characters (general
+          category code Mn or Me in the Unicode database). Generally,
+          having a non-zero value returned by ``unicodedata.combining()``.
+
+        - C0 control characters (U+001 through U+01F).
+
+        - C1 control characters and DEL (U+07F through U+0A0).
 
     The following have a column width of 0:
 
         - NULL (U+0000, 0).
 
-        - COMBINING GRAPHEME JOINER (U+034F, 847).
+        - COMBINING GRAPHEME JOINER (U+034F).
 
-        - ZERO WIDTH SPACE (U+200B, 8203) through
-          RIGHT-TO-LEFT MARK (U+200F, 8207).
+        - ZERO WIDTH SPACE (U+200B) through
+          RIGHT-TO-LEFT MARK (U+200F).
 
-        - LINE SEPERATOR (U+2028, 8283) and
-          PARAGRAPH SEPERATOR (U+2029, 8233).
+        - LINE SEPERATOR (U+2028) and
+          PARAGRAPH SEPERATOR (U+2029).
 
-        - LEFT-TO-RIGHT EMBEDDING (U+202A, 8234) through
-          RIGHT-TO-LEFT OVERRIDE (U+202E, 8238).
+        - LEFT-TO-RIGHT EMBEDDING (U+202A) through
+          RIGHT-TO-LEFT OVERRIDE (U+202E).
 
-        - WORD JOINER (U+2060, 8288) through
-          INVISIBLE SEPARATOR (U+2063, 8291).
-
-    The following have a column width of -1:
-
-        - Any non-zero value returned by ``unicodedata.combining()``
-
-        - Other C0/C1 control characters and DEL will lead to a return
-          value of -1.
-
-        - Non-spacing and enclosing combining characters (general
-          category code Mn or Me in the Unicode database) have a
-          column width of 0.
-
-    The following have a column width of 2:
-
-        - Spacing characters in the East Asian Wide (W) or East Asian
-          Full-width (F) category as defined in Unicode Technical
-          Report #11 have a column width of 2.
+        - WORD JOINER (U+2060) through
+          INVISIBLE SEPARATOR (U+2063).
 
     The following have a column width of 1:
 
@@ -138,45 +135,37 @@ def wcwidth(wc):
         - All remaining characters (including all printable
           ISO 8859-1 and WGL4 characters, Unicode control characters,
           etc.) have a column width of 1.
+
+    The following have a column width of 2:
+
+        - Spacing characters in the East Asian Wide (W) or East Asian
+          Full-width (F) category as defined in Unicode Technical
+          Report #11 have a column width of 2.
     """
     ucs = ord(wc)
 
-    if ucs == 0 or (
-            ucs == 847) or (
-            8203 <= ucs <= 8207) or (
-            8232 <= ucs <= 8233) or (
-            8234 <= ucs <= 8238) or (
-            8288 <= ucs <= 8291):
+    # NOTE: created by hand, there isn't anything identifiable other than
+    # general Cf category code to identify these, and some characters in Cf
+    # category code are of non-zero width.
+    if (0 == ucs or
+            0x034F == ucs or
+            0x200B <= ucs <= 0x200F or
+            0x2028 == ucs or
+            0x2029 == ucs or
+            0x202A <= ucs <= 0x202E or
+            0x2060 <= ucs <= 0x2063):
         return 0
 
-    # Control characters are not printable
-    # (nor 8-bit control character 0x7f through 0xa0)
-    if ucs < 32 or 0x7f <= ucs < 0xa0:
+    # C0/C1 control characters
+    if ucs < 32 or 0x07F <= ucs < 0x0A0:
         return -1
 
     # combining characters have indeterminate effects unless
     # combined with additional characters.
-    if unicodedata.combining(wc):
+    if _bisearch(ucs, NONZERO_COMBINING):
         return -1
 
-    # if we arrive here, ucs is not a combining or C0/C1 control character
-    # basically, given EastAsianWidth.txt, any column ';W' returns 1 + 1,
-    return 1 + (
-        (ucs >= 0x1100 and
-         (ucs <= 0x115f or                       # Hangul Jamo init. Consonants
-          ucs == 0x2329 or ucs == 0x232a or
-          (ucs >= 0x2e80 and ucs <= 0xa4cf and   # CJK ... Yi
-           ucs != 0x303f and not                 # except for: half-fill space,
-           (ucs >= 0x4dc0 and ucs <= 0x4dff)) or # ... and the 64 hexagrams
-          (ucs >= 0xac00 and ucs <= 0xd7a3) or   # Hangul Syllables
-          (ucs >= 0xf900 and ucs <= 0xfaff) or   # CJK Compatibility Ideographs
-          (ucs >= 0xfe10 and ucs <= 0xfe19) or   # Vertical forms
-          (ucs >= 0xfe30 and ucs <= 0xfe6f) or   # CJK Compatibility Forms
-          (ucs >= 0xff00 and ucs <= 0xff60) or   # Fullwidth Forms
-          (ucs >= 0xffe0 and ucs <= 0xffe6) or
-          (ucs >= 0x20000 and ucs <= 0x2fffd) or
-          (ucs >= 0x30000 and ucs <= 0x3fffd)))
-    )
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN)
 
 
 def wcswidth(pwcs, n=None):
@@ -197,287 +186,3 @@ def wcswidth(pwcs, n=None):
         else:
             width += wcw
     return width
-
-#
-# sorted list of non-overlapping intervals of East Asian Ambiguous
-# characters, generated by "uniset +WIDTH-A -cat=Me -cat=Mn -cat=Cf c"
-_AMBIGUOUS = [
-    (0x00A1, 0x00A1), (0x00A4, 0x00A4), (0x00A7, 0x00A8),
-    (0x00AA, 0x00AA), (0x00AE, 0x00AE), (0x00B0, 0x00B4),
-    (0x00B6, 0x00BA), (0x00BC, 0x00BF), (0x00C6, 0x00C6),
-    (0x00D0, 0x00D0), (0x00D7, 0x00D8), (0x00DE, 0x00E1),
-    (0x00E6, 0x00E6), (0x00E8, 0x00EA), (0x00EC, 0x00ED),
-    (0x00F0, 0x00F0), (0x00F2, 0x00F3), (0x00F7, 0x00FA),
-    (0x00FC, 0x00FC), (0x00FE, 0x00FE), (0x0101, 0x0101),
-    (0x0111, 0x0111), (0x0113, 0x0113), (0x011B, 0x011B),
-    (0x0126, 0x0127), (0x012B, 0x012B), (0x0131, 0x0133),
-    (0x0138, 0x0138), (0x013F, 0x0142), (0x0144, 0x0144),
-    (0x0148, 0x014B), (0x014D, 0x014D), (0x0152, 0x0153),
-    (0x0166, 0x0167), (0x016B, 0x016B), (0x01CE, 0x01CE),
-    (0x01D0, 0x01D0), (0x01D2, 0x01D2), (0x01D4, 0x01D4),
-    (0x01D6, 0x01D6), (0x01D8, 0x01D8), (0x01DA, 0x01DA),
-    (0x01DC, 0x01DC), (0x0251, 0x0251), (0x0261, 0x0261),
-    (0x02C4, 0x02C4), (0x02C7, 0x02C7), (0x02C9, 0x02CB),
-    (0x02CD, 0x02CD), (0x02D0, 0x02D0), (0x02D8, 0x02DB),
-    (0x02DD, 0x02DD), (0x02DF, 0x02DF), (0x0391, 0x03A1),
-    (0x03A3, 0x03A9), (0x03B1, 0x03C1), (0x03C3, 0x03C9),
-    (0x0401, 0x0401), (0x0410, 0x044F), (0x0451, 0x0451),
-    (0x2010, 0x2010), (0x2013, 0x2016), (0x2018, 0x2019),
-    (0x201C, 0x201D), (0x2020, 0x2022), (0x2024, 0x2027),
-    (0x2030, 0x2030), (0x2032, 0x2033), (0x2035, 0x2035),
-    (0x203B, 0x203B), (0x203E, 0x203E), (0x2074, 0x2074),
-    (0x207F, 0x207F), (0x2081, 0x2084), (0x20AC, 0x20AC),
-    (0x2103, 0x2103), (0x2105, 0x2105), (0x2109, 0x2109),
-    (0x2113, 0x2113), (0x2116, 0x2116), (0x2121, 0x2122),
-    (0x2126, 0x2126), (0x212B, 0x212B), (0x2153, 0x2154),
-    (0x215B, 0x215E), (0x2160, 0x216B), (0x2170, 0x2179),
-    (0x2190, 0x2199), (0x21B8, 0x21B9), (0x21D2, 0x21D2),
-    (0x21D4, 0x21D4), (0x21E7, 0x21E7), (0x2200, 0x2200),
-    (0x2202, 0x2203), (0x2207, 0x2208), (0x220B, 0x220B),
-    (0x220F, 0x220F), (0x2211, 0x2211), (0x2215, 0x2215),
-    (0x221A, 0x221A), (0x221D, 0x2220), (0x2223, 0x2223),
-    (0x2225, 0x2225), (0x2227, 0x222C), (0x222E, 0x222E),
-    (0x2234, 0x2237), (0x223C, 0x223D), (0x2248, 0x2248),
-    (0x224C, 0x224C), (0x2252, 0x2252), (0x2260, 0x2261),
-    (0x2264, 0x2267), (0x226A, 0x226B), (0x226E, 0x226F),
-    (0x2282, 0x2283), (0x2286, 0x2287), (0x2295, 0x2295),
-    (0x2299, 0x2299), (0x22A5, 0x22A5), (0x22BF, 0x22BF),
-    (0x2312, 0x2312), (0x2460, 0x24E9), (0x24EB, 0x254B),
-    (0x2550, 0x2573), (0x2580, 0x258F), (0x2592, 0x2595),
-    (0x25A0, 0x25A1), (0x25A3, 0x25A9), (0x25B2, 0x25B3),
-    (0x25B6, 0x25B7), (0x25BC, 0x25BD), (0x25C0, 0x25C1),
-    (0x25C6, 0x25C8), (0x25CB, 0x25CB), (0x25CE, 0x25D1),
-    (0x25E2, 0x25E5), (0x25EF, 0x25EF), (0x2605, 0x2606),
-    (0x2609, 0x2609), (0x260E, 0x260F), (0x2614, 0x2615),
-    (0x261C, 0x261C), (0x261E, 0x261E), (0x2640, 0x2640),
-    (0x2642, 0x2642), (0x2660, 0x2661), (0x2663, 0x2665),
-    (0x2667, 0x266A), (0x266C, 0x266D), (0x266F, 0x266F),
-    (0x273D, 0x273D), (0x2776, 0x277F), (0xE000, 0xF8FF),
-    (0xFFFD, 0xFFFD), (0xF0000, 0xFFFFD), (0x100000, 0x10FFFD)
-]
-
-
-# jquast: UNICODE_DIR=unicode_dir ./uniset eaw:A - cat:Me,Mn,Cf
-_AMBIGUOUS_TESTING_NEW = [
-    (0x00A1, 0x00A1), (0x00A4, 0x00A4), (0x00A7, 0x00A8),
-    (0x00AA, 0x00AA), (0x00AE, 0x00AE), (0x00B0, 0x00B4),
-    (0x00B6, 0x00BA), (0x00BC, 0x00BF), (0x00C6, 0x00C6),
-    (0x00D0, 0x00D0), (0x00D7, 0x00D8), (0x00DE, 0x00E1),
-    (0x00E6, 0x00E6), (0x00E8, 0x00EA), (0x00EC, 0x00ED),
-    (0x00F0, 0x00F0), (0x00F2, 0x00F3), (0x00F7, 0x00FA),
-    (0x00FC, 0x00FC), (0x00FE, 0x00FE), (0x0101, 0x0101),
-    (0x0111, 0x0111), (0x0113, 0x0113), (0x011B, 0x011B),
-    (0x0126, 0x0127), (0x012B, 0x012B), (0x0131, 0x0133),
-    (0x0138, 0x0138), (0x013F, 0x0142), (0x0144, 0x0144),
-    (0x0148, 0x014B), (0x014D, 0x014D), (0x0152, 0x0153),
-    (0x0166, 0x0167), (0x016B, 0x016B), (0x01CE, 0x01CE),
-    (0x01D0, 0x01D0), (0x01D2, 0x01D2), (0x01D4, 0x01D4),
-    (0x01D6, 0x01D6), (0x01D8, 0x01D8), (0x01DA, 0x01DA),
-    (0x01DC, 0x01DC), (0x0251, 0x0251), (0x0261, 0x0261),
-    (0x02C4, 0x02C4), (0x02C7, 0x02C7), (0x02C9, 0x02CB),
-    (0x02CD, 0x02CD), (0x02D0, 0x02D0), (0x02D8, 0x02DB),
-    (0x02DD, 0x02DD), (0x02DF, 0x02DF), (0x0391, 0x03A1),
-    (0x03A3, 0x03A9), (0x03B1, 0x03C1), (0x03C3, 0x03C9),
-    (0x0401, 0x0401), (0x0410, 0x044F), (0x0451, 0x0451),
-    (0x2010, 0x2010), (0x2013, 0x2016), (0x2018, 0x2019),
-    (0x201C, 0x201D), (0x2020, 0x2022), (0x2024, 0x2027),
-    (0x2030, 0x2030), (0x2032, 0x2033), (0x2035, 0x2035),
-    (0x203B, 0x203B), (0x203E, 0x203E), (0x2074, 0x2074),
-    (0x207F, 0x207F), (0x2081, 0x2084), (0x20AC, 0x20AC),
-    (0x2103, 0x2103), (0x2105, 0x2105), (0x2109, 0x2109),
-    (0x2113, 0x2113), (0x2116, 0x2116), (0x2121, 0x2122),
-    (0x2126, 0x2126), (0x212B, 0x212B), (0x2153, 0x2154),
-    (0x215B, 0x215E), (0x2160, 0x216B), (0x2170, 0x2179),
-    # jquast: new
-    (0x2189, 0x2189),
-    # jquast: end new
-    (0x2190, 0x2199), (0x21B8, 0x21B9), (0x21D2, 0x21D2),
-    (0x21D4, 0x21D4), (0x21E7, 0x21E7), (0x2200, 0x2200),
-    (0x2202, 0x2203), (0x2207, 0x2208), (0x220B, 0x220B),
-    (0x220F, 0x220F), (0x2211, 0x2211), (0x2215, 0x2215),
-    (0x221A, 0x221A), (0x221D, 0x2220), (0x2223, 0x2223),
-    (0x2225, 0x2225), (0x2227, 0x222C), (0x222E, 0x222E),
-    (0x2234, 0x2237), (0x223C, 0x223D), (0x2248, 0x2248),
-    (0x224C, 0x224C), (0x2252, 0x2252), (0x2260, 0x2261),
-    (0x2264, 0x2267), (0x226A, 0x226B), (0x226E, 0x226F),
-    (0x2282, 0x2283), (0x2286, 0x2287), (0x2295, 0x2295),
-    (0x2299, 0x2299), (0x22A5, 0x22A5), (0x22BF, 0x22BF),
-    (0x2312, 0x2312), (0x2460, 0x24E9), (0x24EB, 0x254B),
-    (0x2550, 0x2573), (0x2580, 0x258F), (0x2592, 0x2595),
-    (0x25A0, 0x25A1), (0x25A3, 0x25A9), (0x25B2, 0x25B3),
-    (0x25B6, 0x25B7), (0x25BC, 0x25BD), (0x25C0, 0x25C1),
-    (0x25C6, 0x25C8), (0x25CB, 0x25CB), (0x25CE, 0x25D1),
-    (0x25E2, 0x25E5), (0x25EF, 0x25EF), (0x2605, 0x2606),
-    (0x2609, 0x2609), (0x260E, 0x260F), (0x2614, 0x2615),
-    (0x261C, 0x261C), (0x261E, 0x261E), (0x2640, 0x2640),
-    (0x2642, 0x2642), (0x2660, 0x2661), (0x2663, 0x2665),
-    (0x2667, 0x266A), (0x266C, 0x266D), (0x266F, 0x266F),
-    (0x269E, 0x269F), (0x26BE, 0x26BF), (0x26C4, 0x26CD),
-    (0x26CF, 0x26E1), (0x26E3, 0x26E3), (0x26E8, 0x26FF),
-    (0x273D, 0x273D),
-    # jquast: new
-    (0x2757, 0x2757),
-    # jquast: end new
-                      (0x2776, 0x277F),
-    # jquast: new
-    (0x2B55, 0x2B59), (0x3248, 0x324F),
-    # jquast: end new
-                                        (0xE000, 0xF8FF),
-    (0xFFFD, 0xFFFD),
-    # jquast: new
-    (0x1F100, 0x1F10A),
-    (0x1F110, 0x1F12D),
-    (0x1F130, 0x1F169),
-    (0x1F170, 0x1F19A),
-    # end new
-    (0xF0000, 0xFFFFD), (0x100000, 0x10FFFD),
-]
-
-
-# The following functions are the same as mk_wcwidth() and
-# mk_wcwidth_cjk(), except that spacing characters in the East Asian
-# Ambiguous (A) category as defined in Unicode Technical Report #11
-# have a column width of 2. This variant might be useful for users of
-# CJK legacy encodings who want to migrate to UCS without changing
-# the traditional terminal character-width behavior. It is not
-# otherwise recommended for general use.
-
-def wcwidth_cjk(ucs):
-    """ As wcwidth above, but spacing characters in the East Asian
-    Ambiguous (A) category as defined in Unicode Technical Report #11
-    have a column width of 2.
-    """
-    if _bisearch(ord(ucs), _AMBIGUOUS):
-        return 2
-    return wcwidth(ucs)
-
-
-def wcswidth_cjk(pwcs):
-    """ As wcswidth above, but spacing characters in the East Asian
-    Ambiguous (A) category as defined in Unicode Technical Report #11
-    have a column width of 2.
-    """
-    width = 0
-    for char in pwcs:
-        wcw = wcwidth_cjk(char)
-        if wcw < 0:
-            return -1
-        else:
-            width += wcw
-    return width
-
-
-# COMBINING NOT DETECTED BY PYTHON(!)
-#
-#    - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF)
-#      have a column width of 0.
-#
-# This implementation assumes that wchar_t characters are encoded
-# in ISO 10646.
-#
-#        - DEVANAGARI SIGN INVERTED CANDRABINDU (U+900, 2304) through
-#          DEVANAGARI SIGN ANUSVARA (U+902, ).
-#
-#        - DEVANAGARI VOWEL SIGN U (U+941, ) through
-#          DEVANAGARI VOWEL SIGN AI (U+948, ).
-#
-#        - DEVANAGARI VOWEL SIGN PRISHTHAMATRA E (U+94E, ).
-#
-#        - DEVANAGARI VOWEL SIGN CANDRA LONG E (U+955, ).
-#
-#        - DEVANAGARI VOWEL SIGN VOCALIC L (U+962, ) and
-#          DEVANAGARI VOWEL SIGN VOCALIC LL (U+963, ).
-#
-#        - DEVANAGARI LETTER ZHA (U+979, )
-#
-#        - DEVANAGARI LETTER HEAVY YA (U+97A, )
-#
-#        - BENGALI SIGN CANDRABINDU (U+981, )
-#
-#        - BENGALI VOWEL SIGN U (U+9C1, ) through
-#          BENGALI VOWEL SIGN VOCALIC RR (U+9C4, ).
-#
-#        - BENGALI VOWEL SIGN VOCALIC L (U+9E2, ) and
-#          BENGALI VOWEL SIGN VOCALIC LL (U+9E3, ).
-#
-#        - GURMUKHI SIGN ADAK BINDI (U+A01, ) and
-#          GURMUKHI SIGN BINDI (U+A02, ).
-#
-#        - GURMUKHI VOWEL SIGN U (U+A41, ) and
-#          GURMUKHI VOWEL SIGN UU (U+A42, ).
-#
-#        - GURMUKHI VOWEL SIGN EE (U+A47, ) and
-#          GURMUKHI VOWEL SIGN AI (U+A48, ).
-#
-#        - GURMUKHI VOWEL SIGN OO (U+A4B, ) and
-#          URMUKHI VOWEL SIGN AU (U+A4C, ).
-#
-#        - GURMUKHI TIPPI (U+A70, ) and
-#          GURMUKHI ADDAK (U+A71, ).
-#
-#        - GUJARATI SIGN CANDRABINDU (U+A81, ) and
-#          GUJARATI SIGN ANUSVARA (U+A82, ).
-#
-#        - GUJARATI VOWEL SIGN U (U+AC1, ) through
-#          GUJARATI VOWEL SIGN CANDRA E (U+AC5, ).
-#
-#        - GUJARATI VOWEL SIGN E (U+AC7, ) and
-#          GUJARATI VOWEL SIGN AI (U+AC8, ).
-#
-#        - GUJARATI VOWEL SIGN VOCALIC L (U+AE2, ) and
-#          GUJARATI VOWEL SIGN VOCALIC LL (U+AE3, ).
-#
-#        - ORIYA SIGN CANDRABINDU (U+B01, ).
-#
-#        - ORIYA VOWEL SIGN I (U+B3F, ).
-#
-#        - ORIYA VOWEL SIGN U (U+B41, ) through
-#          ORIYA VOWEL SIGN VOCALIC R (U+B43, ).
-#
-#        - ORIYA AI LENGTH MARK (U+B56, ).
-#
-#        - TAMIL SIGN ANUSVARA (U+B82, ).
-#
-#        - TAMIL VOWEL SIGN II (U+BC0, ).
-#
-#        - TELUGU VOWEL SIGN AA (U+C3E, ) and
-#          TELUGU VOWEL SIGN I (U+C3F, ).
-#
-#        - TELUGU VOWEL SIGN II (U+C40, ).
-#
-#        - TELUGU VOWEL SIGN E (U+C46, ) through
-#          TELUGU VOWEL SIGN AI (U+C48, ).
-#
-#        - TELUGU VOWEL SIGN O (U+C4A, ) through
-#          TELUGU VOWEL SIGN AU (U+C4C, ).
-#
-#        - KANNADA VOWEL SIGN VOCALIC L (U+CE2, ) and
-#          KANNADA VOWEL SIGN VOCALIC LL (U+CE3, ).
-#
-#        - MALAYALAM VOWEL SIGN U (U+D41, )
-#          MALAYALAM VOWEL SIGN VOCALIC R (U+D43, ).
-#
-#        - SINHALA VOWEL SIGN KETTI IS-PILLA (U+DD2, )
-#          SINHALA VOWEL SIGN KETTI PAA-PILLA (U+DD4, ).
-#
-#        - SINHALA VOWEL SIGN DIGA PAA-PILLA (U+DD6, )
-#
-#        - THAI CHARACTER MAI HAN-AKAT (U+E31, ).
-#
-#        - THAI CHARACTER SARA I (U+E34, ) through
-#          THAI CHARACTER SARA UEE (U+E37, ).
-#
-#        - THAI CHARACTER MAITAIKHU (U+E47, 3665).
-#
-#        - THAI CHARACTER THANTHAKHAT (U+E4C, 3660) through
-#          THAI CHARACTER YAMAKKAN (U+E4E, 3662).
-#
-#        - LAO VOWEL SIGN MAI KAN (U+EB1, 3761).
-#
-#        - LAO VOWEL SIGN I (U+EB4, 3764) through
-#          LAO VOWEL SIGN YY (U+EB7, 3767).
-#
-#        - LAO VOWEL SIGN MAI KON (U+EBB, 3771) through
-#          LAO NIGGAHITA (U+ECD, 3789).
-#
-
