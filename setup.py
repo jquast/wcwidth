@@ -189,7 +189,7 @@ class SetupTest(setuptools.command.test.test):
 def main():
     setuptools.setup(
         name='wcwidth',
-        version='0.0.1',
+        version='0.1.0',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=open(os.path.join(here, 'README.rst')).read(),
