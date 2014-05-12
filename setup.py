@@ -76,11 +76,12 @@ class SetupUpdate(setuptools.Command):
         try:
             import requests
         except ImportError:
-            print("Execute '{} develop' first.")
+            print("Execute '{} develop' first.".format(__file__))
             exit(1)
-        if not os.path.exists(os.path.dirname(fname)):
-            print("{}/ created.")
-            os.makedirs(os.path.dirname(fname))
+        folder = os.path.dirname(fname)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+            print("{}/ created.".format(folder))
         if not os.path.exists(fname):
             with open(fname, 'wb') as fp:
                 req = requests.get(url)
