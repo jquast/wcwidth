@@ -188,12 +188,14 @@ class SetupTest(setuptools.command.test.test):
 
 
 def main():
+    import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.0',
+        version='0.1.1',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
-        long_description=open(os.path.join(here, 'README.rst')).read(),
+        long_description=codecs.open(
+            os.path.join(here, 'README.rst'), 'r', 'utf8').read(),
         author='Jeff Quast',
         author_email='contact@jeffquast.com',
         license='MIT',
