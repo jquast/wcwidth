@@ -127,8 +127,10 @@ Examples
 --------
 
 This library is used in:
+
 - `jquast/blessed`_, a simplified wrapper around curses.
-- `python-prompt-toolkit`_, a Library for building powerful interactive command lines in Python.
+
+- `jonathanslenders/python-prompt-toolkit`_, a Library for building powerful interactive command lines in Python.
 
 Additional tools for displaying and testing wcwidth is found in the ``bin/``
 folder of this project (github link: `wcwidth/bin`_). They are not distributed
@@ -177,6 +179,7 @@ an OSI-approved license that appears most-alike has been chosen, the MIT license
     THE SOFTWARE.
 
 .. _`jquast/blessed`: https://github.com/jquast/blessed
+.. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
 .. _`wcwidth/bin`: https://github.com/jquast/wcwidth/tree/master/bin
 .. _`wcwidth-libc-comparator.py`: https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py
 .. _`wcwidth/table_wide.py`: https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py
