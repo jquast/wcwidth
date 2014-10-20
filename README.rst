@@ -126,13 +126,13 @@ and OpenSolaris.
 Examples
 --------
 
-This library is used in `jquast/blessed`_ so that strings containing both
-terminal sequences and CJK characters may be word-wrapped or right-adjusted
-on a terminal.
+This library is used in:
+- `jquast/blessed`_, a simplified wrapper around curses.
+- `python-prompt-toolkit`_, a Library for building powerful interactive command lines in Python.
 
 Additional tools for displaying and testing wcwidth is found in the ``bin/``
-folder of this project (github link: `wcwidth/bin`_). They are not
-distributed as a script or part of the module.
+folder of this project (github link: `wcwidth/bin`_). They are not distributed
+as a script or part of the module.
 
 Todo
 ----
