@@ -1,6 +1,6 @@
-# Generated: 2014-05-05T02:09:32.625406+00:00
-# Source: DerivedCombiningClass-6.3.0.txt
-# Date:  2013-07-05, 14:08:44 GMT [MD]
+# Generated: 2014-10-27T18:04:00.257237+00:00
+# Source: DerivedCombiningClass-7.0.0.txt
+# Date:  2014-02-07, 18:42:08 GMT [MD]
 NONZERO_COMBINING = (
     (0x0300, 0x034e,),  # Combining Grave Accent  ..Combining Upwards Arrow
     (0x0350, 0x036f,),  # Combining Right Arrowhea..Combining Latin Small Le
@@ -25,7 +25,7 @@ NONZERO_COMBINING = (
     (0x0825, 0x0827,),  # Samaritan Vowel Sign Sho..Samaritan Vowel Sign U
     (0x0829, 0x082d,),  # Samaritan Vowel Sign Lon..Samaritan Mark Nequdaa
     (0x0859, 0x085b,),  # Mandaic Affrication Mark..Mandaic Gemination Mark
-    (0x08e4, 0x08fe,),  # Arabic Curly Fatha      ..Arabic Damma With Dot
+    (0x08e4, 0x08ff,),  # Arabic Curly Fatha      ..
     (0x093c, 0x093c,),  # Devanagari Sign Nukta   ..Devanagari Sign Nukta
     (0x094d, 0x094d,),  # Devanagari Sign Virama  ..Devanagari Sign Virama
     (0x0951, 0x0954,),  # Devanagari Stress Sign U..Devanagari Acute Accent
@@ -73,6 +73,7 @@ NONZERO_COMBINING = (
     (0x1a60, 0x1a60,),  # Tai Tham Sign Sakot     ..Tai Tham Sign Sakot
     (0x1a75, 0x1a7c,),  # Tai Tham Sign Tone-1    ..Tai Tham Sign Khuen-lue
     (0x1a7f, 0x1a7f,),  # Tai Tham Combining Crypt..Tai Tham Combining Crypt
+    (0x1ab0, 0x1abd,),  # (nil)                   ..
     (0x1b34, 0x1b34,),  # Balinese Sign Rerekan   ..Balinese Sign Rerekan
     (0x1b44, 0x1b44,),  # Balinese Adeg Adeg      ..Balinese Adeg Adeg
     (0x1b6b, 0x1b73,),  # Balinese Musical Symbol ..Balinese Musical Symbol
@@ -85,7 +86,8 @@ NONZERO_COMBINING = (
     (0x1ce2, 0x1ce8,),  # Vedic Sign Visarga Svari..Vedic Sign Visarga Anuda
     (0x1ced, 0x1ced,),  # Vedic Sign Tiryak       ..Vedic Sign Tiryak
     (0x1cf4, 0x1cf4,),  # Vedic Tone Candra Above ..Vedic Tone Candra Above
-    (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
+    (0x1cf8, 0x1cf9,),  # (nil)                   ..
+    (0x1dc0, 0x1df5,),  # Combining Dotted Grave A..
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
     (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
     (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
@@ -114,22 +116,40 @@ NONZERO_COMBINING = (
     (0xaaf6, 0xaaf6,),  # Meetei Mayek Virama     ..Meetei Mayek Virama
     (0xabed, 0xabed,),  # Meetei Mayek Apun Iyek  ..Meetei Mayek Apun Iyek
     (0xfb1e, 0xfb1e,),  # Hebrew Point Judeo-spani..Hebrew Point Judeo-spani
-    (0xfe20, 0xfe26,),  # Combining Ligature Left ..Combining Conjoining Mac
+    (0xfe20, 0xfe2d,),  # Combining Ligature Left ..
     (0x101fd, 0x101fd,),  # Phaistos Disc Sign Combi..Phaistos Disc Sign Combi
+    (0x102e0, 0x102e0,),  # (nil)                   ..
+    (0x10376, 0x1037a,),  # (nil)                   ..
     (0x10a0d, 0x10a0d,),  # Kharoshthi Sign Double R..Kharoshthi Sign Double R
     (0x10a0f, 0x10a0f,),  # Kharoshthi Sign Visarga ..Kharoshthi Sign Visarga
     (0x10a38, 0x10a3a,),  # Kharoshthi Sign Bar Abov..Kharoshthi Sign Dot Belo
     (0x10a3f, 0x10a3f,),  # Kharoshthi Virama       ..Kharoshthi Virama
+    (0x10ae5, 0x10ae6,),  # (nil)                   ..
     (0x11046, 0x11046,),  # Brahmi Virama           ..Brahmi Virama
+    (0x1107f, 0x1107f,),  # (nil)                   ..
     (0x110b9, 0x110ba,),  # Kaithi Sign Virama      ..Kaithi Sign Nukta
     (0x11100, 0x11102,),  # Chakma Sign Candrabindu ..Chakma Sign Visarga
     (0x11133, 0x11134,),  # Chakma Virama           ..Chakma Maayyaa
+    (0x11173, 0x11173,),  # (nil)                   ..
     (0x111c0, 0x111c0,),  # Sharada Sign Virama     ..Sharada Sign Virama
+    (0x11235, 0x11236,),  # (nil)                   ..
+    (0x112e9, 0x112ea,),  # (nil)                   ..
+    (0x1133c, 0x1133c,),  # (nil)                   ..
+    (0x1134d, 0x1134d,),  # (nil)                   ..
+    (0x11366, 0x1136c,),  # (nil)                   ..
+    (0x11370, 0x11374,),  # (nil)                   ..
+    (0x114c2, 0x114c3,),  # (nil)                   ..
+    (0x115bf, 0x115c0,),  # (nil)                   ..
+    (0x1163f, 0x1163f,),  # (nil)                   ..
     (0x116b6, 0x116b7,),  # Takri Sign Virama       ..Takri Sign Nukta
+    (0x16af0, 0x16af4,),  # (nil)                   ..
+    (0x16b30, 0x16b36,),  # (nil)                   ..
+    (0x1bc9e, 0x1bc9e,),  # (nil)                   ..
     (0x1d165, 0x1d169,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d16d, 0x1d172,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d17b, 0x1d182,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d185, 0x1d18b,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
+    (0x1e8d0, 0x1e8d6,),  # (nil)                   ..
 )

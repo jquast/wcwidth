@@ -1,6 +1,6 @@
-# Generated: 2014-05-05T02:09:32.610884+00:00
-# Source: EastAsianWidth-6.3.0.txt
-# Date:  2013-02-05, 20:09:00 GMT [KW, LI]
+# Generated: 2014-10-27T18:03:59.841812+00:00
+# Source: EastAsianWidth-7.0.0.txt
+# Date:  2014-02-28, 23:15:00 GMT [KW, LI]
 WIDE_EASTASIAN = (
     (0x1100, 0x115f,),  # Hangul Choseong Kiyeok  ..Hangul Choseong Filler
     (0x2329, 0x232a,),  # Left-pointing Angle Brac..Right-pointing Angle Bra
