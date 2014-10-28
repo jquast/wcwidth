@@ -30,6 +30,9 @@ Furthermore, testing (`wcwidth-libc-comparator.py`_) has shown that libc
 wcwidth() is particularly out of date on most operating systems, reporting -1
 for a great many characters that are actually a displayable width of 1 or 2.
 
+The most current release of this API is based from Unicode Standard release
+_7.0.0_, dated 2014-02-28, 23:15:00 GMT [KW, LI]
+
 Problem
 -------
 
@@ -186,3 +189,12 @@ an OSI-approved license that appears most-alike has been chosen, the MIT license
 .. _`wcwidth/table_comb.py`: https://github.com/jquast/wcwidth/tree/master/wcwidth/table_comb.py
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
 .. _`wcwidth.c`: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+
+Changes
+-------
+
+0.1.2
+  * Updated tables to Unicode Specification 7.0.0 (PR #3)
+
+0.1.1
+  * Initial release to pypi, Based on Unicode Specification 6.3.0
