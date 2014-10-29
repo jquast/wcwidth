@@ -195,11 +195,11 @@ Changes
 
 0.1.3
   * *Bugfix*: 2nd parameter of wcswidth was not honored.
-    (@`thomasballinger`_ PR #4).
+    (`thomasballinger`_ PR #4).
 
 0.1.2
   * Updated tables to Unicode Specification 7.0.0
-    (@`thomasballinger`_ PR #3).
+    (`thomasballinger`_ PR #3).
 
 0.1.1
   * Initial release to pypi, Based on Unicode Specification 6.3.0
