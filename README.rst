@@ -203,3 +203,5 @@ Changes
 
 0.1.1
   * Initial release to pypi, Based on Unicode Specification 6.3.0
+
+.. _`@thomasballinger`: https://github.com/thomasballinger
