@@ -18,10 +18,30 @@ def test_hello_jp():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase = wcwidth.wcswidth(phrase)
 
     # verify,
     assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
+def test_wcswidth_substr():
+    """
+    Test wcswidth() optional 2nd parameter, ``n``.
+
+    ``n`` determines at which position of the string
+    to stop counting length.
+    """
+    # given,
+    phrase = u'コンニチハ, セカイ!'
+    end = 7
+    expect_length_each = (2, 2, 2, 2, 2, 1, 1,)
+    expect_length_phrase = sum(expect_length_each)
+
+    # exercise,
+    length_phrase = wcwidth.wcswidth(phrase, end)
+
+    # verify,
     assert length_phrase == expect_length_phrase
 
 
