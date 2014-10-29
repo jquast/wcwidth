@@ -176,7 +176,7 @@ def wcswidth(pwcs, n=None):
     (default), return the length of the entire string.
     """
 
-    end = len(pwcs) if n is not None else n
+    end = len(pwcs) if n is None else n
     idx = slice(0, end)
     width = 0
     for char in pwcs[idx]:

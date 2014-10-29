@@ -179,7 +179,7 @@ class SetupDevelop(setuptools.command.develop.develop):
     def run(self):
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         setuptools.command.develop.develop.run(self)
-        self.spawn(('pip', 'install', '-U', 'blessed', 'requests',))
+        self.spawn(('pip', 'install', '-U', 'blessed', 'requests', 'tox',))
 
 
 class SetupTest(setuptools.command.test.test):
@@ -191,7 +191,7 @@ def main():
     import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.2',
+        version='0.1.3',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=codecs.open(
