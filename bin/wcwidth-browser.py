@@ -389,17 +389,16 @@ class Pager(object):
         return fmt.format(name_len=style.name_len,
                           delimiter=delimiter,
                           name=name, ucs=ucs,
-                          value=ord(ucs))
+                          value=ord(ucs if len(ucs) == 1 else ucs[1]))
 
 
-def main():
+def main(character_factory):
     term = Terminal()
     style = Style(heading=term.magenta,
                   hint=term.bright_cyan,
                   delimiter=u'|',
                   ) if term.number_of_colors else Style()
     screen = Screen(term, style)
-    character_factory = WcWideCharacterGenerator
     pager = Pager(term, screen, character_factory)
     if term.is_a_tty:
         signal.signal(signal.SIGWINCH, pager.on_resize)
@@ -410,4 +409,4 @@ def main():
         pager.run(writer=echo, reader=term.inkey)
 
 if __name__ == '__main__':
-    main()
+    main(WcWideCharacterGenerator)
