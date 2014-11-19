@@ -182,6 +182,9 @@ def wcswidth(pwcs, n=None):
     for char in pwcs[idx]:
         wcw = wcwidth(char)
         if wcw < 0:
+            ucs = ord(char)
+            if _bisearch(ucs, NONZERO_COMBINING):
+                continue
             return -1
         else:
             width += wcw
