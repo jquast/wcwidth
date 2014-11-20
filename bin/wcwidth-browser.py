@@ -5,6 +5,18 @@ A terminal browser, similar to less(1) for testing printable width of unicode.
 This displays the full range of unicode points for 1 or 2-character wide
 ideograms, with pipes ('|') that should always align for any terminal that
 supports utf-8.
+
+Usage:
+  ./bin/wcwidth-browser.py [--wide=<n>]
+                           [--alignment=<str>]
+                           [--combining]
+                           [--help]
+
+Options:
+  --wide=<int>        Browser 1 or 2 character-wide cells.
+  --alignment=<str>   Chose left or right alignment. [default: left]
+  --combining         Use combining character generator. [default: 2]
+  --help              Display usage
 """
 # pylint: disable=C0103
 #         Invalid module name "wcwidth-browser"
@@ -18,10 +30,11 @@ import string
 import signal
 
 # local imports
-from wcwidth import wcwidth
+from wcwidth import wcwidth, table_comb
 
 # 3rd party imports
 from blessed import Terminal
+from docopt import docopt
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
@@ -118,6 +131,49 @@ class WcWideCharacterGenerator(object):
             ucs = next(self.characters)
             try:
                 name = string.capwords(unicodedata.name(ucs))
+            except ValueError:
+                continue
+            return (ucs, name)
+
+    # python 2.6 - 3.3 compatibility
+    next = __next__
+
+
+class WcCombinedCharacterGenerator(object):
+
+    """ Generator yields unicode characters with combining. """
+
+    # pylint: disable=R0903
+    #         Too few public methods (0/2)
+
+    def __init__(self, width=1):
+        """
+        Class constructor.
+
+        :param width: generate characters of given width.
+        :type width: int
+        """
+        self.characters = []
+        letters_o = (u'o' * width)
+        for boundaries in table_comb.NONZERO_COMBINING:
+            for val in [_val for _val in
+                        range(boundaries[0], boundaries[1] + 1)
+                        if _val <= LIMIT_UCS]:
+                self.characters.append(letters_o[:1] + unichr(val) + letters_o[1:])
+        self.characters.reverse()
+
+    def __iter__(self):
+        """ Special method called by iter(). """
+        return self
+
+    def __next__(self):
+        """ Special method called by next(). """
+        while True:
+            if not self.characters:
+                raise StopIteration
+            ucs = self.characters.pop()
+            try:
+                name = string.capwords(unicodedata.name(ucs[1]))
             except ValueError:
                 continue
             return (ucs, name)
@@ -258,9 +314,7 @@ class Pager(object):
         self.character_generator = self.character_factory(self.screen.wide)
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
-
-        self._page_data = self.initialize_page_data()
-        self._set_lastpage()
+        self._page_data = list()
 
     def on_resize(self, *args):
         """ Signal handler callback for SIGWINCH. """
@@ -387,6 +441,8 @@ class Pager(object):
                        instance of blessed.keyboard.Keystroke.
         :type reader: callable
         """
+        self._page_data = self.initialize_page_data()
+        self._set_lastpage()
         if not self.term.is_a_tty:
             self._run_notty(writer)
         else:
@@ -614,15 +670,36 @@ class Pager(object):
                              '0x{value:0>{ucs_len}x}',
                              '{name:<{name_len}s}'))
         delimiter = style.attr_minor(style.delimiter)
+        if len(ucs) == 1:
+            ucs = style.attr_major(ucs)
+        else:
+            ucs = style.attr_minor(ucs[0]) + style.attr_major(ucs[1:])
         return fmt.format(name_len=style.name_len,
                           ucs_len=UCS_PRINTLEN,
                           delimiter=delimiter,
                           name=name,
-                          ucs=style.attr_major(ucs),
-                          value=ord(ucs))
+                          ucs=ucs,
+                          value=ord(ucs[-1]))
 
 
-def main():
+def validate_args(opts):
+    """ Validate and return options provided by docopt parsing. """
+    if opts['--wide'] is None:
+        opts['--wide'] = 2
+    else:
+        assert opts['--wide'] in ("1", "2"), opts['--wide']
+    if opts['--alignment'] is None:
+        opts['--alignment'] = 'left'
+    else:
+        assert opts['--alignment'] in ('left', 'right'), opts['--alignment']
+    opts['--wide'] = int(opts['--wide'])
+    opts['character_factory'] = WcWideCharacterGenerator
+    if opts['--combining']:
+        opts['character_factory'] = WcCombinedCharacterGenerator
+    return opts
+
+
+def main(opts):
     """ Program entry point. """
     term = Terminal()
     style = Style()
@@ -630,17 +707,19 @@ def main():
     # if the terminal supports colors, use a Style instance with some
     # standout colors (magenta, cyan).
     if term.number_of_colors:
-        style = Style(attr_major=term.magenta, attr_minor=term.bright_cyan)
+        style = Style(attr_major=term.magenta,
+                      attr_minor=term.bright_cyan,
+                      alignment=opts['--alignment'])
     if not term.is_a_tty:
         # use a fixed 1-column length of ~80 characters
         style.name_len = 80 - 15
 
-    screen = Screen(term, style)
-    character_factory = WcWideCharacterGenerator
-    pager = Pager(term, screen, character_factory)
+    screen = Screen(term, style, wide=opts['--wide'])
+    pager = Pager(term, screen, opts['character_factory'])
 
-    with term.location(), term.cbreak(), term.fullscreen():
+    with term.location(), term.cbreak(), term.fullscreen(), term.hidden_cursor():
         pager.run(writer=echo, reader=term.inkey)
+    return 0
 
 if __name__ == '__main__':
-    main()
+    exit(main(validate_args(docopt(__doc__))))
