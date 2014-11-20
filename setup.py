@@ -227,7 +227,7 @@ class SetupDevelop(setuptools.command.develop.develop):
                                     ('dodgy', 'frosted', 'mccabe', 'pep257',
                                      'pep8', 'pylint', 'pyroma', 'vulture',)])
         self.spawn(('pip', 'install', '-U',
-                    'blessed', 'requests', 'tox',
+                    'blessed', 'requests', 'tox', 'docopt',
                     'prospector[{0}]'.format(with_prospector)))
 
 
