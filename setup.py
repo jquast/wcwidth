@@ -247,7 +247,7 @@ def main():
     import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.3',
+        version='0.1.4',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=codecs.open(

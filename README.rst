@@ -193,6 +193,9 @@ an OSI-approved license that appears most-alike has been chosen, the MIT license
 Changes
 -------
 
+0.1.4
+  * added static analysis (prospector_) to testing framework.
+
 0.1.3
   * *Bugfix*: 2nd parameter of wcswidth was not honored.
     (`thomasballinger`_ PR #4).
@@ -205,3 +208,4 @@ Changes
   * Initial release to pypi, Based on Unicode Specification 6.3.0
 
 .. _`thomasballinger`: https://github.com/thomasballinger
+.. _`prospector`: https://github.com/landscapeio/prospector
