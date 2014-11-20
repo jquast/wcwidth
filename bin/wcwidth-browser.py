@@ -5,6 +5,18 @@ A terminal browser, similar to less(1) for testing printable width of unicode.
 This displays the full range of unicode points for 1 or 2-character wide
 ideograms, with pipes ('|') that should always align for any terminal that
 supports utf-8.
+
+Usage:
+  ./bin/wcwidth-browser.py [--wide=<n>]
+                           [--alignment=<str>]
+                           [--combining]
+                           [--help]
+
+Options:
+  --wide=<int>        Browser 1 or 2 character-wide cells.
+  --alignment=<str>   Chose left or right alignment. [default: left]
+  --combining         Use combining character generator. [default: 2]
+  --help              Display usage
 """
 # pylint: disable=C0103
 #         Invalid module name "wcwidth-browser"
@@ -18,10 +30,11 @@ import string
 import signal
 
 # local imports
-from wcwidth import wcwidth
+from wcwidth import wcwidth, table_comb
 
 # 3rd party imports
 from blessed import Terminal
+from docopt import docopt
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
@@ -126,6 +139,51 @@ class WcWideCharacterGenerator(object):
     next = __next__
 
 
+class WcCombinedCharacterGenerator(object):
+
+    """ Generator yields unicode characters with combining. """
+
+    # pylint: disable=R0903
+    #         Too few public methods (0/2)
+
+    def __init__(self, width=1):
+        """
+        Class constructor.
+
+        :param width: generate characters of given width.
+        :type width: int
+        """
+        self.characters = []
+        letters_o = (u'o' * width)
+        for boundaries in table_comb.NONZERO_COMBINING:
+            for val in [_val for _val in
+                        range(boundaries[0], boundaries[1] + 1)
+                        if _val <= LIMIT_UCS]:
+                self.characters.append(letters_o[:1] +
+                                       unichr(val) +
+                                       letters_o[1:])
+        self.characters.reverse()
+
+    def __iter__(self):
+        """ Special method called by iter(). """
+        return self
+
+    def __next__(self):
+        """ Special method called by next(). """
+        while True:
+            if not self.characters:
+                raise StopIteration
+            ucs = self.characters.pop()
+            try:
+                name = string.capwords(unicodedata.name(ucs[1]))
+            except ValueError:
+                continue
+            return (ucs, name)
+
+    # python 2.6 - 3.3 compatibility
+    next = __next__
+
+
 class Style(object):
 
     """ Styling decorator class instance for terminal output. """
@@ -138,10 +196,8 @@ class Style(object):
     continuation = u' $'
     header_hint = u'-'
     header_fill = u'='
-    name_len = 0
+    name_len = 10
     alignment = 'right'
-    msg_loading = '[please wait]'
-    msg_fill = '[drawing ...]'
 
     def __init__(self, **kwargs):
         """
@@ -158,8 +214,7 @@ class Screen(object):
 
     """ Represents terminal style, data dimensions, and drawables. """
 
-    intro_msg_fmt = (u'Characters {wide} terminal cells wide. '
-                     u'Delimiters ({delim}) should align.')
+    intro_msg_fmt = u'Delimiters ({delim}) should align.'
 
     def __init__(self, term, style, wide=2):
         """ Class constructor. """
@@ -202,9 +257,8 @@ class Screen(object):
     def msg_intro(self):
         """ Introductory message disabled above heading. """
         delim = self.style.attr_minor(self.style.delimiter)
-        wide = self.style.attr_major('{}'.format(self.wide))
-        return self.term.wrap(self.intro_msg_fmt.format(
-            wide=wide, delim=delim))
+        txt = self.intro_msg_fmt.format(delim=delim).rstrip()
+        return self.term.center(txt)
 
     @property
     def row_ends(self):
@@ -226,7 +280,7 @@ class Screen(object):
     @property
     def row_begins(self):
         """ Top row displayed for content. """
-        return len(self.msg_intro) + 1
+        return 2
 
     @property
     def page_size(self):
@@ -258,14 +312,14 @@ class Pager(object):
         self.character_generator = self.character_factory(self.screen.wide)
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
-
-        self._page_data = self.initialize_page_data()
-        self._set_lastpage()
+        self._page_data = list()
 
     def on_resize(self, *args):
         """ Signal handler callback for SIGWINCH. """
         # pylint: disable=W0613
         #         Unused argument 'args'
+        self.screen.style.name_len = min(self.screen.style.name_len,
+                                         self.term.width - 15)
         assert self.term.width >= self.screen.hint_width, (
             'Screen to small {}, must be at least {}'.format(
                 self.term.width, self.screen.hint_width))
@@ -387,6 +441,8 @@ class Pager(object):
                        instance of blessed.keyboard.Keystroke.
         :type reader: callable
         """
+        self._page_data = self.initialize_page_data()
+        self._set_lastpage()
         if not self.term.is_a_tty:
             self._run_notty(writer)
         else:
@@ -483,13 +539,12 @@ class Pager(object):
         # our self.dirty flag can become re-toggled; because we are
         # not re-flowing our pagination, we must begin over again.
         while self.dirty:
-            if not self.draw_heading(writer):
-                self.draw_loading(writer, idx)
+            self.draw_heading(writer)
             self.dirty = self.STATE_CLEAN
             (idx, offset), data = self.page_data(idx, offset)
             for txt in self.page_view(data):
                 writer(txt)
-        self.draw_status(writer, idx, offset)
+        self.draw_status(writer, idx)
         flushout()
         return idx, offset
 
@@ -506,54 +561,33 @@ class Pager(object):
         if self.dirty == self.STATE_REFRESH:
             writer(u''.join(
                 (self.term.home, self.term.clear,
-                 '\n'.join(self.screen.msg_intro),
-                 '\n', self.screen.header, '\n',)))
+                 self.screen.msg_intro, '\n',
+                 self.screen.header, '\n',)))
             return True
 
-    def draw_loading(self, writer, idx):
-        """
-        Conditionally draw 'loading' status when output terminal is a tty.
-
-        :param writer: callable writes to output stream, receiving unicode.
-        :type writer: callable
-        :param idx: current page position index.
-        :type idx: int
-        """
-        if self.term.is_a_tty:
-            writer(self.term.show_cursor())
-            style = self.screen.style
-            if idx not in self._page_data:
-                txt = style.attr_major(self.screen.style.msg_loading)
-            else:
-                txt = style.attr_minor(self.screen.style.msg_fill)
-            writer(u' {0}'.format(txt))
-            flushout()
-
-    def draw_status(self, writer, idx, offset):
+    def draw_status(self, writer, idx):
         """
         Conditionally draw status bar when output terminal is a tty.
 
         :param writer: callable writes to output stream, receiving unicode.
         :param idx: current page position index.
         :type idx: int
-        :param offset: scrolling region offset of current page.
-        :type offset: int
         """
         if self.term.is_a_tty:
             writer(self.term.hide_cursor())
             style = self.screen.style
             writer(self.term.move(self.term.height - 1))
             if idx == self.last_page:
-                last_end = u' (END)'
+                last_end = u'(END)'
             else:
                 last_end = u'/{0}'.format(self.last_page)
-            writer(u'Page {idx}(:{offset}){last_end}). '
+            txt = (u'Page {idx}{last_end} - '
                    u'{q} to quit, [keys: {keyset}]'
                    .format(idx=style.attr_minor(u'{0}'.format(idx)),
-                           offset=style.attr_minor(u'{0}'.format(offset)),
                            last_end=style.attr_major(last_end),
                            keyset=style.attr_major('kjfb12-='),
                            q=style.attr_minor(u'q')))
+            writer(self.term.center(txt).rstrip())
 
     def page_view(self, data):
         """
@@ -605,24 +639,56 @@ class Pager(object):
             idx = max(0, style.name_len - len(style.continuation))
             name = u''.join((name[:idx], style.continuation if idx else u''))
         if style.alignment == 'right':
-            fmt = u' '.join(('0x{value:0>{ucs_len}x}',
+            fmt = u' '.join(('0x{val:0>{ucs_printlen}x}',
                              '{name:<{name_len}s}',
                              '{delimiter}{ucs}{delimiter}'
                              ))
         else:
             fmt = u' '.join(('{delimiter}{ucs}{delimiter}',
-                             '0x{value:0>{ucs_len}x}',
+                             '0x{val:0>{ucs_printlen}x}',
                              '{name:<{name_len}s}'))
         delimiter = style.attr_minor(style.delimiter)
+        if len(ucs) != 1:
+            # determine display of combining characters
+            val = ord(next((_ucs for _ucs in ucs
+                            if wcwidth(_ucs) == -1)))
+            # a combining character displayed of any fg color
+            # will reset the foreground character of the cell
+            # combined with (iTerm2, OSX).
+            disp_ucs = style.attr_major(ucs[0:2])
+            if len(ucs) > 2:
+                disp_ucs += ucs[2]
+        else:
+            # non-combining
+            val = ord(ucs)
+            disp_ucs = style.attr_major(ucs)
+
         return fmt.format(name_len=style.name_len,
-                          ucs_len=UCS_PRINTLEN,
+                          ucs_printlen=UCS_PRINTLEN,
                           delimiter=delimiter,
                           name=name,
-                          ucs=style.attr_major(ucs),
-                          value=ord(ucs))
+                          ucs=disp_ucs,
+                          val=val)
 
 
-def main():
+def validate_args(opts):
+    """ Validate and return options provided by docopt parsing. """
+    if opts['--wide'] is None:
+        opts['--wide'] = 2
+    else:
+        assert opts['--wide'] in ("1", "2"), opts['--wide']
+    if opts['--alignment'] is None:
+        opts['--alignment'] = 'left'
+    else:
+        assert opts['--alignment'] in ('left', 'right'), opts['--alignment']
+    opts['--wide'] = int(opts['--wide'])
+    opts['character_factory'] = WcWideCharacterGenerator
+    if opts['--combining']:
+        opts['character_factory'] = WcCombinedCharacterGenerator
+    return opts
+
+
+def main(opts):
     """ Program entry point. """
     term = Terminal()
     style = Style()
@@ -630,17 +696,18 @@ def main():
     # if the terminal supports colors, use a Style instance with some
     # standout colors (magenta, cyan).
     if term.number_of_colors:
-        style = Style(attr_major=term.magenta, attr_minor=term.bright_cyan)
-    if not term.is_a_tty:
-        # use a fixed 1-column length of ~80 characters
-        style.name_len = 80 - 15
+        style = Style(attr_major=term.magenta,
+                      attr_minor=term.bright_cyan,
+                      alignment=opts['--alignment'])
+    style.name_len = term.width - 15
 
-    screen = Screen(term, style)
-    character_factory = WcWideCharacterGenerator
-    pager = Pager(term, screen, character_factory)
+    screen = Screen(term, style, wide=opts['--wide'])
+    pager = Pager(term, screen, opts['character_factory'])
 
-    with term.location(), term.cbreak(), term.fullscreen():
+    with term.location(), term.cbreak(), \
+            term.fullscreen(), term.hidden_cursor():
         pager.run(writer=echo, reader=term.inkey)
+    return 0
 
 if __name__ == '__main__':
-    main()
+    exit(main(validate_args(docopt(__doc__))))
