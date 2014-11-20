@@ -159,7 +159,9 @@ class WcCombinedCharacterGenerator(object):
             for val in [_val for _val in
                         range(boundaries[0], boundaries[1] + 1)
                         if _val <= LIMIT_UCS]:
-                self.characters.append(letters_o[:1] + unichr(val) + letters_o[1:])
+                self.characters.append(letters_o[:1] +
+                                       unichr(val) +
+                                       letters_o[1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -255,7 +257,8 @@ class Screen(object):
     def msg_intro(self):
         """ Introductory message disabled above heading. """
         delim = self.style.attr_minor(self.style.delimiter)
-        return self.term.center(self.intro_msg_fmt.format(delim=delim).rstrip())
+        txt = self.intro_msg_fmt.format(delim=delim).rstrip()
+        return self.term.center(txt)
 
     @property
     def row_ends(self):
@@ -562,7 +565,6 @@ class Pager(object):
                  self.screen.header, '\n',)))
             return True
 
-
     def draw_status(self, writer, idx):
         """
         Conditionally draw status bar when output terminal is a tty.
@@ -702,7 +704,8 @@ def main(opts):
     screen = Screen(term, style, wide=opts['--wide'])
     pager = Pager(term, screen, opts['character_factory'])
 
-    with term.location(), term.cbreak(), term.fullscreen(), term.hidden_cursor():
+    with term.location(), term.cbreak(), \
+            term.fullscreen(), term.hidden_cursor():
         pager.run(writer=echo, reader=term.inkey)
     return 0
 
