@@ -83,12 +83,12 @@ def test_control_c0_width_negative_1():
 
 def test_combining_width_negative_1():
     """
-    Simple test combining reports width -1.
+    Simple test combining reports total width of 4.
     """
     # given,
     phrase = u'--\u05bf--'
     expect_length_each = (1, 1, -1, 1, 1)
-    expect_length_phrase = -1
+    expect_length_phrase = 4
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
