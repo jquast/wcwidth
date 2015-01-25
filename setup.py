@@ -223,12 +223,9 @@ class SetupDevelop(setuptools.command.develop.develop):
         # Instance of 'SetupDevelop' has no 'spawn' member (col 8)
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         setuptools.command.develop.develop.run(self)
-        with_prospector = ','.join(['with_{0}'.format(tool) for tool in
-                                    ('dodgy', 'frosted', 'mccabe', 'pep257',
-                                     'pep8', 'pylint', 'pyroma', 'vulture',)])
         self.spawn(('pip', 'install', '-U',
                     'blessed', 'requests', 'tox', 'docopt',
-                    'prospector[{0}]'.format(with_prospector)))
+                    'prospector[with_everything]'))
 
 
 class SetupTest(setuptools.command.test.test):
