@@ -89,13 +89,10 @@ Values
 
 A general overview of return values:
 
-   - ``-1``: indeterminate (see Todo_).
-
-   - ``0``: do not advance the cursor, such as NULL.
-
-   - ``2``: East_Asian_Width property values W and F (Wide and Full-width).
-
-   - ``1``: all others.
+- ``-1``: indeterminate (see Todo_).
+- ``0``: do not advance the cursor, such as NULL.
+- ``2``: East_Asian_Width property values W and F (Wide and Full-width).
+- ``1``: all others.
 
 ``wcswidth()`` simply returns the sum of all values along a string, or
 ``-1`` if it has occurred for any value returned by ``wcwidth()``.  A more
@@ -134,8 +131,8 @@ Updating Tables
 
 The command ``python setup.py update`` will fetch the following resources:
 
-    - http://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt
-    - http://www.unicode.org/Public/UNIDATA/extracted/DerivedCombiningClass.txt
+- http://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt
+- http://www.unicode.org/Public/UNIDATA/extracted/DerivedCombiningClass.txt
 
 And generate the table files `wcwidth/table_wide.py`_ and `wcwidth/table_comb.py`_.
 
