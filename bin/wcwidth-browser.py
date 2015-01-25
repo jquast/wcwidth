@@ -18,10 +18,17 @@ Options:
   --combining         Use combining character generator. [default: 2]
   --help              Display usage
 """
-# pylint: disable=C0103
+# pylint: disable=C0103,W0622
+#         Invalid constant name "echo"
+#         Invalid constant name "flushout" (col 4)
+#         Invalid constant name "unichr" (col 8)
+#         Invalid constant name "xrange" (col 8)
 #         Invalid module name "wcwidth-browser"
-
-# standard imports
+#
+#         Redefining built-in 'unichr' (col 8)
+#         Redefining built-in 'xrange' (col 8)
+#
+# std imports
 from __future__ import print_function
 from __future__ import division
 from functools import partial
@@ -29,24 +36,14 @@ import unicodedata
 import string
 import signal
 
-# local imports
+# local
 from wcwidth import wcwidth, table_comb
 
-# 3rd party imports
+# 3rd-party
 from blessed import Terminal
 from docopt import docopt
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
-
-# pylint: disable=C0103
-#         Invalid constant name "echo"
-#         Invalid constant name "flushout" (col 4)
-#         Invalid constant name "unichr" (col 8)
-#         Invalid constant name "xrange" (col 8)
-# pylint: disable=W0622
-#         Redefining built-in 'unichr' (col 8)
-#         Redefining built-in 'xrange' (col 8)
-
 
 #: print function alias, does not end with line terminator.
 echo = partial(print, end='')
@@ -280,6 +277,8 @@ class Screen(object):
     @property
     def row_begins(self):
         """ Top row displayed for content. """
+        # pylint: disable=R0201
+        # Method could be a function (col 4)
         return 2
 
     @property
