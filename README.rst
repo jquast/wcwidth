@@ -14,6 +14,9 @@
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: License
 
+.. image:: https://pypip.in/wheel/wcwidth/badge.svg
+    :alt: Wheel Status
+
 .. image:: https://img.shields.io/pypi/dm/wcwidth.svg
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: Downloads
