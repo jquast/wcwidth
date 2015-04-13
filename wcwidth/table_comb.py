@@ -1,4 +1,4 @@
-""" Nonzero_Combining table. Created by setup.py. """
+"""Nonzero_Combining table. Created by setup.py."""
 # Generated: 2014-11-20T06:55:26.612062
 # Source: DerivedCombiningClass-7.0.0.txt
 # Date:  2014-02-07, 18:42:08 GMT [MD]

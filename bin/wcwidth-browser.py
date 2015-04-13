@@ -58,7 +58,7 @@ except TypeError as err:
     assert "'flush' is an invalid keyword argument" in err.args[0]
 
     def flushout():
-        """ flush any buffered output on standard out when called. """
+        """flush any buffered output on standard out when called."""
         import sys
         # pylint: disable=E0602
         #         Undefined variable 'BrokenPipeError' (col 15)
@@ -101,7 +101,7 @@ UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
 
 class WcWideCharacterGenerator(object):
 
-    """ Generator yields unicode characters of the given ``width``. """
+    """Generator yields unicode characters of the given ``width``."""
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
@@ -119,11 +119,11 @@ class WcWideCharacterGenerator(object):
                            )
 
     def __iter__(self):
-        """ Special method called by iter(). """
+        """Special method called by iter()."""
         return self
 
     def __next__(self):
-        """ Special method called by next(). """
+        """Special method called by next()."""
         while True:
             ucs = next(self.characters)
             try:
@@ -138,7 +138,7 @@ class WcWideCharacterGenerator(object):
 
 class WcCombinedCharacterGenerator(object):
 
-    """ Generator yields unicode characters with combining. """
+    """Generator yields unicode characters with combining."""
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
@@ -162,11 +162,11 @@ class WcCombinedCharacterGenerator(object):
         self.characters.reverse()
 
     def __iter__(self):
-        """ Special method called by iter(). """
+        """Special method called by iter()."""
         return self
 
     def __next__(self):
-        """ Special method called by next(). """
+        """Special method called by next()."""
         while True:
             if not self.characters:
                 raise StopIteration
@@ -183,7 +183,7 @@ class WcCombinedCharacterGenerator(object):
 
 class Style(object):
 
-    """ Styling decorator class instance for terminal output. """
+    """Styling decorator class instance for terminal output."""
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
@@ -209,24 +209,24 @@ class Style(object):
 
 class Screen(object):
 
-    """ Represents terminal style, data dimensions, and drawables. """
+    """Represents terminal style, data dimensions, and drawables."""
 
     intro_msg_fmt = u'Delimiters ({delim}) should align.'
 
     def __init__(self, term, style, wide=2):
-        """ Class constructor. """
+        """Class constructor."""
         self.term = term
         self.style = style
         self.wide = wide
 
     @property
     def header(self):
-        """ Text of joined segments producing full heading. """
+        """Text of joined segments producing full heading."""
         return self.head_item * self.num_columns
 
     @property
     def hint_width(self):
-        """ Width of a column segment. """
+        """Width of a column segment."""
         return sum((len(self.style.delimiter),
                     self.wide,
                     len(self.style.delimiter),
@@ -237,13 +237,11 @@ class Screen(object):
 
     @property
     def head_item(self):
-        """ Text of a single column heading. """
+        """Text of a single column heading."""
         delimiter = self.style.attr_minor(self.style.delimiter)
         hint = self.style.header_hint * self.wide
         heading = (u'{delimiter}{hint}{delimiter}'
                    .format(delimiter=delimiter, hint=hint))
-        # pylint: disable=W0142
-        #         Used * or ** magic (col 12)
         alignment = lambda *args: (
             self.term.rjust(*args) if self.style.alignment == 'right' else
             self.term.ljust(*args))
@@ -252,44 +250,44 @@ class Screen(object):
 
     @property
     def msg_intro(self):
-        """ Introductory message disabled above heading. """
+        """Introductory message disabled above heading."""
         delim = self.style.attr_minor(self.style.delimiter)
         txt = self.intro_msg_fmt.format(delim=delim).rstrip()
         return self.term.center(txt)
 
     @property
     def row_ends(self):
-        """ Bottom of page. """
+        """Bottom of page."""
         return self.term.height - 1
 
     @property
     def num_columns(self):
-        """ Number of columns displayed. """
+        """Number of columns displayed."""
         if self.term.is_a_tty:
             return self.term.width // self.hint_width
         return 1
 
     @property
     def num_rows(self):
-        """ Number of rows displayed. """
+        """Number of rows displayed."""
         return self.row_ends - self.row_begins - 1
 
     @property
     def row_begins(self):
-        """ Top row displayed for content. """
+        """Top row displayed for content."""
         # pylint: disable=R0201
         # Method could be a function (col 4)
         return 2
 
     @property
     def page_size(self):
-        """ Number of unicode text displayed per page. """
+        """Number of unicode text displayed per page."""
         return self.num_rows * self.num_columns
 
 
 class Pager(object):
 
-    """ A less(1)-like browser for browsing unicode characters. """
+    """A less(1)-like browser for browsing unicode characters."""
 
     #: screen state for next draw method(s).
     STATE_CLEAN, STATE_DIRTY, STATE_REFRESH = 0, 1, 2
@@ -314,7 +312,7 @@ class Pager(object):
         self._page_data = list()
 
     def on_resize(self, *args):
-        """ Signal handler callback for SIGWINCH. """
+        """Signal handler callback for SIGWINCH."""
         # pylint: disable=W0613
         #         Unused argument 'args'
         self.screen.style.name_len = min(self.screen.style.name_len,
@@ -326,11 +324,11 @@ class Pager(object):
         self.dirty = self.STATE_REFRESH
 
     def _set_lastpage(self):
-        """ Calculate value of class attribute ``last_page``. """
+        """Calculate value of class attribute ``last_page``."""
         self.last_page = (len(self._page_data) - 1) // self.screen.page_size
 
     def display_initialize(self):
-        """ Display 'please wait' message, and narrow build warning. """
+        """Display 'please wait' message, and narrow build warning."""
         echo(self.term.home + self.term.clear)
         echo(self.term.move_y(self.term.height // 2))
         echo(self.term.center('Initializing page data ...').rstrip())
@@ -345,7 +343,7 @@ class Pager(object):
             flushout()
 
     def initialize_page_data(self):
-        """ Initialize the page data for the given screen. """
+        """Initialize the page data for the given screen."""
         if self.term.is_a_tty:
             self.display_initialize()
         self.character_generator = self.character_factory(self.screen.wide)
@@ -392,7 +390,7 @@ class Pager(object):
         return (idx, offset), self._page_data[start:end]
 
     def _run_notty(self, writer):
-        """ Pager run method for terminals that are not a tty. """
+        """Pager run method for terminals that are not a tty."""
         page_idx = page_offset = 0
         while True:
             npage_idx, _ = self.draw(writer, page_idx + 1, page_offset)
@@ -404,7 +402,7 @@ class Pager(object):
         return
 
     def _run_tty(self, writer, reader):
-        """ Pager run method for terminals that are a tty. """
+        """Pager run method for terminals that are a tty."""
         # allow window-change signal to reflow screen
         signal.signal(signal.SIGWINCH, self.on_resize)
 
@@ -468,7 +466,7 @@ class Pager(object):
         return idx, offset
 
     def _process_keystroke_commands(self, inp):
-        """ Process keystrokes that issue commands (side effects). """
+        """Process keystrokes that issue commands (side effects)."""
         if inp in (u'1', u'2'):
             # chose 1 or 2-character wide
             if int(inp) != self.screen.wide:
@@ -492,7 +490,7 @@ class Pager(object):
             self.on_resize(None, None)
 
     def _process_keystroke_movement(self, inp, idx, offset):
-        """ Process keystrokes that adjust index and offset. """
+        """Process keystrokes that adjust index and offset."""
         term = self.term
         if inp in (u'y', u'k') or inp.code in (term.KEY_UP,):
             # scroll backward 1 line
@@ -671,7 +669,7 @@ class Pager(object):
 
 
 def validate_args(opts):
-    """ Validate and return options provided by docopt parsing. """
+    """Validate and return options provided by docopt parsing."""
     if opts['--wide'] is None:
         opts['--wide'] = 2
     else:
@@ -688,7 +686,7 @@ def validate_args(opts):
 
 
 def main(opts):
-    """ Program entry point. """
+    """Program entry point."""
     term = Terminal()
     style = Style()
 

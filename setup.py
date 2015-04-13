@@ -52,28 +52,28 @@ class SetupUpdate(setuptools.Command):
     CMB_OUT = os.path.join(HERE, 'wcwidth', 'table_comb.py')
 
     def initialize_options(self):
-        """ Pverride builtin method: no options are available. """
+        """Override builtin method: no options are available."""
         pass
 
     def finalize_options(self):
-        """ Override builtin method: no options are available. """
+        """Override builtin method: no options are available."""
         pass
 
     def run(self):
-        """ Execute command: update east-asian and combining tables. """
+        """Execute command: update east-asian and combining tables."""
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         self.do_east_asian_width()
         self.do_combining()
 
     def do_east_asian_width(self):
-        """ Fetch and update east-asian tables. """
+        """Fetch and update east-asian tables."""
         self._do_retrieve(self.EAW_URL, self.EAW_IN)
         (version, date, values) = self._do_east_asian_width_parse(self.EAW_IN)
         table = self._make_table(values)
         self._do_write(self.EAW_OUT, 'WIDE_EASTASIAN', version, date, table)
 
     def do_combining(self):
-        """ Fetch and update combining tables. """
+        """Fetch and update combining tables."""
         self._do_retrieve(self.UCD_URL, self.UCD_IN)
         (version, date, values) = self._do_combining_parse(self.UCD_IN)
         table = self._make_table(values)
@@ -81,7 +81,7 @@ class SetupUpdate(setuptools.Command):
 
     @staticmethod
     def _make_table(values):
-        """ Return a tuple of lookup tables for given values. """
+        """Return a tuple of lookup tables for given values."""
         import collections
         table = collections.deque()
         start, end = values[0], values[0]
@@ -99,7 +99,7 @@ class SetupUpdate(setuptools.Command):
 
     @staticmethod
     def _do_retrieve(url, fname):
-        """ Retrieve given url to target filepath fname. """
+        """Retrieve given url to target filepath fname."""
         try:
             import requests
         except ImportError:
@@ -120,7 +120,7 @@ class SetupUpdate(setuptools.Command):
     @staticmethod
     def _do_east_asian_width_parse(fname,
                                    east_asian_width_properties=(u'W', u'F',)):
-        """ Parse unicode east-asian width tables. """
+        """Parse unicode east-asian width tables."""
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
@@ -144,7 +144,7 @@ class SetupUpdate(setuptools.Command):
 
     @staticmethod
     def _do_combining_parse(fname, exclude_values=(0,)):
-        """ Parse unicode combining tables. """
+        """Parse unicode combining tables."""
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
@@ -169,7 +169,7 @@ class SetupUpdate(setuptools.Command):
 
     @staticmethod
     def _do_write(fname, variable, version, date, table):
-        """ Write combining tables to filesystem as python code. """
+        """Write combining tables to filesystem as python code."""
         # pylint: disable=R0914
         #         Too many local variables (19/15) (col 4)
         print("writing {} ..".format(fname))
@@ -180,7 +180,7 @@ class SetupUpdate(setuptools.Command):
         indent = 4
         with open(fname, 'w') as fout:
             fout.write(
-                '""" {variable_proper} table. Created by setup.py. """\n'
+                '"""{variable_proper} table. Created by setup.py."""\n'
                 "# Generated: {iso_utc}\n"
                 "# Source: {version}\n"
                 "# Date: {date}\n"
@@ -212,25 +212,24 @@ class SetupUpdate(setuptools.Command):
 
 class SetupDevelop(setuptools.command.develop.develop):
 
-    """ 'setup.py develop' is augmented to install development tools. """
+    """'setup.py develop' is augmented to install development tools."""
 
     # pylint: disable=R0904
     #         Too many public methods (43/20)
 
     def run(self):
-        """ Execute command pip for development requirements. """
+        """Execute command pip for development requirements."""
         # pylint: disable=E1101
         # Instance of 'SetupDevelop' has no 'spawn' member (col 8)
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         setuptools.command.develop.develop.run(self)
         self.spawn(('pip', 'install', '-U',
-                    'blessed', 'requests', 'tox', 'docopt',
-                    'prospector[with_everything]'))
+                    'blessed', 'requests', 'tox', 'docopt',))
 
 
 class SetupTest(setuptools.command.test.test):
 
-    """ 'setup.py test' is an alias to execute tox. """
+    """'setup.py test' is an alias to execute tox."""
 
     def run(self):
         """ Execute command: tox. """
@@ -240,7 +239,7 @@ class SetupTest(setuptools.command.test.test):
 
 
 def main():
-    """ Setup.py entry point. """
+    """Setup.py entry point."""
     import codecs
     setuptools.setup(
         name='wcwidth',
