@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""Core tests module for wcwidth."""
 import wcwidth
 
 
 def test_hello_jp():
-    """
+    u"""
     Width of Japanese phrase: コンニチハ, セカイ!
 
     Given a phrase of 5 and 3 Katakana ideographs, joined with
@@ -46,9 +47,7 @@ def test_wcswidth_substr():
 
 
 def test_null_width_0():
-    """
-    NULL (0) reports width 0.
-    """
+    """NULL (0) reports width 0."""
     # given,
     phrase = u'abc\x00def'
     expect_length_each = (1, 1, 1, 0, 1, 1, 1)
@@ -64,9 +63,7 @@ def test_null_width_0():
 
 
 def test_control_c0_width_negative_1():
-    """
-    CSI (Control sequence initiate) reports width -1.
-    """
+    """CSI (Control sequence initiate) reports width -1."""
     # given,
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
@@ -82,12 +79,25 @@ def test_control_c0_width_negative_1():
 
 
 def test_combining_width_negative_1():
-    """
-    Simple test combining reports total width of 4.
-    """
+    """Simple test combining reports total width of 4."""
     # given,
     phrase = u'--\u05bf--'
     expect_length_each = (1, 1, -1, 1, 1)
+    expect_length_phrase = 4
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+
+    # verify,
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
+def test_combining_cafe():
+    u"""cafe + COMBINING ACUTE ACCENT is café of length 4."""
+    phrase = u"cafe\u0301"
+    expect_length_each = (1, 1, 1, 1, -1)
     expect_length_phrase = 4
 
     # exercise,
