@@ -202,7 +202,7 @@ class SetupUpdate(setuptools.Command):
                 except ValueError:
                     name_end = u''
                 fout.write('\n' + (' ' * indent))
-                fout.write('({0}, {1},),'.format(hex_start, hex_end))
+                fout.write('{0}, {1},'.format(hex_start, hex_end))
                 fout.write('  # {0:24s}..{1}'.format(
                     name_start[:24].rstrip() or '(nil)',
                     name_end[:24].rstrip()))

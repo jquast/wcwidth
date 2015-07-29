@@ -72,34 +72,7 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 from __future__ import division
 from .table_wide import WIDE_EASTASIAN
 from .table_comb import NONZERO_COMBINING
-
-
-def _bisearch(ucs, table):
-    """
-    Auxiliary function for binary search in interval table.
-
-    :param ucs: a single unicode character's ordinal value.
-    :type ucs: int
-    :param table: a lookup table of tuples in form of ``[(start, end), ...]``.
-    :type table: list
-    :rtype int
-    :returns: 1 if ordinal value ucs is found within lookup table, else 0.
-    """
-    lbound = 0
-    ubound = len(table) - 1
-
-    if ucs < table[0][0] or ucs > table[ubound][1]:
-        return 0
-    while ubound >= lbound:
-        mid = (lbound + ubound) // 2
-        if ucs > table[mid][1]:
-            lbound = mid + 1
-        elif ucs < table[mid][0]:
-            ubound = mid - 1
-        else:
-            return 1
-
-    return 0
+from bisect import bisect
 
 
 def wcwidth(wc):
@@ -154,35 +127,10 @@ def wcwidth(wc):
           Full-width (F) category as defined in Unicode Technical
           Report #11 have a column width of 2.
     """
-    # pylint: disable=C0103
-    #         Invalid argument name "wc"
-    ucs = ord(wc)
-
-    # NOTE: created by hand, there isn't anything identifiable other than
-    # general Cf category code to identify these, and some characters in Cf
-    # category code are of non-zero width.
-    if (0 == ucs or
-            0x034F == ucs or
-            0x200B <= ucs <= 0x200F or
-            0x2028 == ucs or
-            0x2029 == ucs or
-            0x202A <= ucs <= 0x202E or
-            0x2060 <= ucs <= 0x2063):
-        return 0
-
-    # C0/C1 control characters
-    if ucs < 32 or 0x07F <= ucs < 0x0A0:
-        return -1
-
-    # combining characters have indeterminate effects unless
-    # combined with additional characters.
-    if _bisearch(ucs, NONZERO_COMBINING):
-        return -1
-
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN)
+    return wcswidth(wc, negative_returnval=True)
 
 
-def wcswidth(pwcs, n=None):
+def wcswidth(pwcs, n=None, negative_returnval=False):
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -190,19 +138,36 @@ def wcswidth(pwcs, n=None):
     or -1 if a non-printable character is encountered. When ``n`` is None
     (default), return the length of the entire string.
     """
-    # pylint: disable=C0103
-    #         Invalid argument name "n"
-
-    end = len(pwcs) if n is None else n
-    idx = slice(0, end)
     width = 0
-    for char in pwcs[idx]:
-        wcw = wcwidth(char)
-        if wcw < 0:
-            ucs = ord(char)
-            if _bisearch(ucs, NONZERO_COMBINING):
-                continue
-            return -1
-        else:
-            width += wcw
+    cache = {}
+    for i in range(n if n is not None else len(pwcs)):
+        ucs = ord(pwcs[i:i + 1])
+
+        w = cache.get(ucs)
+
+        if w is None:
+            w = 0
+            # NOTE: created by hand, there isn't anything identifiable other than
+            # general Cf category code to identify these, and some characters in Cf
+            # category code are of non-zero width.
+            if not (0 == ucs or
+                    0x034F == ucs or
+                    0x200B <= ucs <= 0x200F or
+                    0x2028 == ucs or
+                    0x2029 == ucs or
+                    0x202A <= ucs <= 0x202E or
+                    0x2060 <= ucs <= 0x2063):
+                # C0/C1 control characters
+                if not (ucs < 32 or 0x07F <= ucs < 0x0A0):
+                    # combining characters have indeterminate effects unless
+                    # combined with additional characters.
+                    if not bisect(NONZERO_COMBINING, ucs) & 1:
+                        w = 1 + (bisect(WIDE_EASTASIAN, ucs) & 1)
+                    elif negative_returnval:
+                        return -1
+                elif negative_returnval:
+                    return -1
+            cache[ucs] = w
+        width += w
     return width
+
