@@ -1,7 +1,7 @@
 """Wide_Eastasian table. Created by setup.py."""
-# Generated: 2014-11-20T06:55:26.602851
-# Source: EastAsianWidth-7.0.0.txt
-# Date:  2014-02-28, 23:15:00 GMT [KW, LI]
+# Generated: 2015-09-02T01:27:58.907716
+# Source: EastAsianWidth-8.0.0.txt
+# Date:  2015-02-10, 21:00:00 GMT [KW, LI]
 WIDE_EASTASIAN = (
     (0x1100, 0x115f,),  # Hangul Choseong Kiyeok  ..Hangul Choseong Filler
     (0x2329, 0x232a,),  # Left-pointing Angle Brac..Right-pointing Angle Bra

@@ -107,3 +107,31 @@ def test_combining_cafe():
     # verify,
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
+def test_combining_enclosing():
+    u"""CYRILLIC CAPITAL LETTER A + COMBINING CYRILLIC HUNDRED THOUSANDS SIGN is А҈ of length 1."""
+    phrase = u"\u0410\u0488"
+    expect_length_each = (1, 0)
+    expect_length_phrase = 1
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+
+    # verify,
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+def test_combining_spacing():
+    u"""Balinese kapal (ship) is ᬓᬨᬮ᭄ of length 4."""
+    phrase = u"\u1B13\u1B28\u1B2E\u1B44"
+    expect_length_each = (1, 1, 1, 1)
+    expect_length_phrase = 4
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+
+    # verify,
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase

@@ -47,9 +47,10 @@ class SetupUpdate(setuptools.Command):
     EAW_OUT = os.path.join(HERE, 'wcwidth', 'table_wide.py')
 
     UCD_URL = ('http://www.unicode.org/Public/UNIDATA/extracted/'
-               'DerivedCombiningClass.txt')
-    UCD_IN = os.path.join(HERE, 'data', 'DerivedCombiningClass.txt')
+               'DerivedGeneralCategory.txt')
+    UCD_IN = os.path.join(HERE, 'data', 'DerivedGeneralCategory.txt')
     CMB_OUT = os.path.join(HERE, 'wcwidth', 'table_comb.py')
+    ZERO_OUT = os.path.join(HERE, 'wcwidth', 'table_zero.py')
 
     def initialize_options(self):
         """Override builtin method: no options are available."""
@@ -60,10 +61,11 @@ class SetupUpdate(setuptools.Command):
         pass
 
     def run(self):
-        """Execute command: update east-asian and combining tables."""
+        """Execute command: update east-asian, combining and zero width tables."""
         assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
         self.do_east_asian_width()
         self.do_combining()
+        self.do_zero_width()
 
     def do_east_asian_width(self):
         """Fetch and update east-asian tables."""
@@ -75,9 +77,16 @@ class SetupUpdate(setuptools.Command):
     def do_combining(self):
         """Fetch and update combining tables."""
         self._do_retrieve(self.UCD_URL, self.UCD_IN)
-        (version, date, values) = self._do_combining_parse(self.UCD_IN)
+        (version, date, values) = self._do_category_parse(self.UCD_IN, ('Mc', 'Me', 'Mn',))
         table = self._make_table(values)
-        self._do_write(self.CMB_OUT, 'NONZERO_COMBINING', version, date, table)
+        self._do_write(self.CMB_OUT, 'COMBINING', version, date, table)
+
+    def do_zero_width(self):
+        """Fetch and update zero width tables."""
+        self._do_retrieve(self.UCD_URL, self.UCD_IN)
+        (version, date, values) = self._do_category_parse(self.UCD_IN, ('Me', 'Mn',))
+        table = self._make_table(values)
+        self._do_write(self.ZERO_OUT, 'ZERO_WIDTH', version, date, table)
 
     @staticmethod
     def _make_table(values):
@@ -143,8 +152,8 @@ class SetupUpdate(setuptools.Command):
         return version, date, sorted(values)
 
     @staticmethod
-    def _do_combining_parse(fname, exclude_values=(0,)):
-        """Parse unicode combining tables."""
+    def _do_category_parse(fname, categories):
+        """Parse unicode category tables."""
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
@@ -159,8 +168,8 @@ class SetupUpdate(setuptools.Command):
                 continue
             addrs, details = uline.split(';', 1)
             addrs, details = addrs.rstrip(), details.lstrip()
-            if not any(details.startswith('{} #'.format(value))
-                       for value in exclude_values):
+            if any(details.startswith('{} #'.format(value))
+                       for value in categories):
                 start, stop = addrs, addrs
                 if '..' in addrs:
                     start, stop = addrs.split('..')

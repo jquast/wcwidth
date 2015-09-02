@@ -18,7 +18,7 @@ import locale
 import sys
 
 # local imports
-from wcwidth.wcwidth import _bisearch, NONZERO_COMBINING
+from wcwidth.wcwidth import _bisearch, COMBINING
 
 
 def report_comb_msg(ucs, comb_py, comb_wc):
@@ -66,8 +66,8 @@ if sys.maxunicode < 1114111:
 
 
 def _is_equal_combining(ucs):
-    comb_py = bool(unicodedata.combining(ucs))
-    comb_wc = bool(_bisearch(ord(ucs), NONZERO_COMBINING))
+    comb_py = bool(unicodedata.category(ucs) in ['Mc', 'Me', 'Mn'])
+    comb_wc = bool(_bisearch(ord(ucs), COMBINING))
     assert comb_py == comb_wc, report_comb_msg(ucs, comb_py, comb_wc)
 
 

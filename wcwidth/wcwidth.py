@@ -71,7 +71,8 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 
 from __future__ import division
 from .table_wide import WIDE_EASTASIAN
-from .table_comb import NONZERO_COMBINING
+from .table_comb import COMBINING
+from .table_zero import ZERO_WIDTH
 
 
 def _bisearch(ucs, table):
@@ -121,8 +122,7 @@ def wcwidth(wc):
     The following have a column width of 0:
 
         - Non-spacing and enclosing combining characters (general
-          category code Mn or Me in the Unicode database). Generally,
-          having a non-zero value returned by ``unicodedata.combining()``.
+          category code Mn or Me in the Unicode database).
 
         - NULL (U+0000, 0).
 
@@ -174,8 +174,8 @@ def wcwidth(wc):
     if ucs < 32 or 0x07F <= ucs < 0x0A0:
         return -1
 
-    # combining characters have zero width
-    if _bisearch(ucs, NONZERO_COMBINING):
+    # combining characters with zero width
+    if _bisearch(ucs, ZERO_WIDTH):
         return 0
 
     return 1 + _bisearch(ucs, WIDE_EASTASIAN)
