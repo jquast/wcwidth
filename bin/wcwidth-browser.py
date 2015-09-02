@@ -158,7 +158,7 @@ class WcCombinedCharacterGenerator(object):
                         if _val <= LIMIT_UCS]:
                 self.characters.append(letters_o[:1] +
                                        unichr(val) +
-                                       letters_o[1:])
+                                       letters_o[wcwidth(unichr(val))+1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -647,8 +647,7 @@ class Pager(object):
         delimiter = style.attr_minor(style.delimiter)
         if len(ucs) != 1:
             # determine display of combining characters
-            val = ord(next((_ucs for _ucs in ucs
-                            if wcwidth(_ucs) == -1)))
+            val = ord(ucs[1])
             # a combining character displayed of any fg color
             # will reset the foreground character of the cell
             # combined with (iTerm2, OSX).

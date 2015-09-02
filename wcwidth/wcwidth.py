@@ -114,15 +114,15 @@ def wcwidth(wc):
 
     The following have a column width of -1:
 
-        - Non-spacing and enclosing combining characters (general
-          category code Mn or Me in the Unicode database). Generally,
-          having a non-zero value returned by ``unicodedata.combining()``.
-
         - C0 control characters (U+001 through U+01F).
 
         - C1 control characters and DEL (U+07F through U+0A0).
 
     The following have a column width of 0:
+
+        - Non-spacing and enclosing combining characters (general
+          category code Mn or Me in the Unicode database). Generally,
+          having a non-zero value returned by ``unicodedata.combining()``.
 
         - NULL (U+0000, 0).
 
@@ -174,10 +174,9 @@ def wcwidth(wc):
     if ucs < 32 or 0x07F <= ucs < 0x0A0:
         return -1
 
-    # combining characters have indeterminate effects unless
-    # combined with additional characters.
+    # combining characters have zero width
     if _bisearch(ucs, NONZERO_COMBINING):
-        return -1
+        return 0
 
     return 1 + _bisearch(ucs, WIDE_EASTASIAN)
 
@@ -199,9 +198,6 @@ def wcswidth(pwcs, n=None):
     for char in pwcs[idx]:
         wcw = wcwidth(char)
         if wcw < 0:
-            ucs = ord(char)
-            if _bisearch(ucs, NONZERO_COMBINING):
-                continue
             return -1
         else:
             width += wcw

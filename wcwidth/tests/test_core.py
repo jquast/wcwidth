@@ -82,7 +82,7 @@ def test_combining_width_negative_1():
     """Simple test combining reports total width of 4."""
     # given,
     phrase = u'--\u05bf--'
-    expect_length_each = (1, 1, -1, 1, 1)
+    expect_length_each = (1, 1, 0, 1, 1)
     expect_length_phrase = 4
 
     # exercise,
@@ -97,7 +97,7 @@ def test_combining_width_negative_1():
 def test_combining_cafe():
     u"""cafe + COMBINING ACUTE ACCENT is café of length 4."""
     phrase = u"cafe\u0301"
-    expect_length_each = (1, 1, 1, 1, -1)
+    expect_length_each = (1, 1, 1, 1, 0)
     expect_length_phrase = 4
 
     # exercise,
