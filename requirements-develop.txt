@@ -1,3 +1,5 @@
 requests
 blessed
 docopt
+prospector[with_frosted,with_pyroma]
+restructuredtext_lint
