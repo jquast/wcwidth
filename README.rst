@@ -160,6 +160,9 @@ Changes
     Resolution of "combining character width", most especially
     those that previously returned -1 now often (correctly) return 0.
     resolved by `Philip Craig`_ via `PR #11`_.
+  * **Deprecated**:
+    The module path ``wcwidth.table_comb`` is no longer available,
+    it has been superseded by module path ``wcwidth.table_zero``.
 
 0.1.4 *2014-11-20 Pre-Alpha*
   * **Feature**: ``wcswidth()`` now determines printable length
