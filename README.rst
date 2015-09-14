@@ -170,7 +170,8 @@ Changes
     `bin/wcwidth-browser.py`_ is improved to display combining_
     characters when provided the ``--combining`` option
     (`Thomas Ballinger`_ and `Leta Montopoli`_ `PR #5`_).
-  * added static analysis (prospector_) to testing framework.
+  * **Feature**: added static analysis (prospector_) to testing
+    framework.
 
 0.1.3 *2014-10-29 Pre-Alpha*
   * **Bugfix**: 2nd parameter of wcswidth was not honored.
