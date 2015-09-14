@@ -226,7 +226,7 @@ def main():
     import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.4',
+        version='0.1.5',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=codecs.open(
@@ -242,13 +242,13 @@ def main():
         classifiers=[
             'Intended Audience :: Developers',
             'Natural Language :: English',
-            'Development Status :: 2 - Pre-Alpha',
+            'Development Status :: 3 - Alpha',
             'Environment :: Console',
             'License :: OSI Approved :: MIT License',
             'Operating System :: POSIX',
             'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.3',
             'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python :: 3.5',
             'Topic :: Software Development :: Libraries',
             'Topic :: Software Development :: Localization',
             'Topic :: Software Development :: Internationalization',
