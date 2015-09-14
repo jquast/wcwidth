@@ -71,7 +71,6 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 
 from __future__ import division
 from .table_wide import WIDE_EASTASIAN
-from .table_comb import COMBINING
 from .table_zero import ZERO_WIDTH
 
 
