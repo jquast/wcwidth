@@ -6,7 +6,6 @@ https://github.com/jquast/wcwidth
 
 You may execute setup.py with special arguments:
 
-- ``develop``: Ensures virtualenv and installs development tools.
 - ``update``: Updates unicode reference files of the project to latest.
 - ``test``: Executes test runner (tox)
 """
@@ -14,7 +13,6 @@ You may execute setup.py with special arguments:
 from __future__ import print_function
 import os
 import setuptools
-import setuptools.command.develop
 import setuptools.command.test
 
 HERE = os.path.dirname(__file__)
