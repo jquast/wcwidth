@@ -78,11 +78,10 @@ def _bisearch(ucs, table):
     """
     Auxiliary function for binary search in interval table.
 
-    :param ucs: a single unicode character's ordinal value.
-    :type ucs: int
-    :param table: a lookup table of tuples in form of ``[(start, end), ...]``.
-    :type table: list
-    :rtype int
+    :arg int ucs: Ordinal value of unicode character.
+    :arg list table: List of starting and ending ranges of ordinal values,
+        in form of ``[(start, end), ...]``.
+    :rtype: int
     :returns: 1 if ordinal value ucs is found within lookup table, else 0.
     """
     lbound = 0
