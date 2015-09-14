@@ -258,9 +258,9 @@ def main():
             ],
         keywords=['terminal', 'emulator', 'wcwidth', 'wcswidth', 'cjk',
                   'combining', 'xterm', 'console', ],
-        cmdclass={'develop': SetupDevelop,
-                  'update': SetupUpdate,
-                  'test': SetupTest},
+        cmdclass={
+            'update': SetupUpdate,
+            'test': SetupTest},
     )
 
 if __name__ == '__main__':
