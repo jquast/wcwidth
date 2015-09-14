@@ -21,7 +21,7 @@ install:
 script:
   - tox -e $TOXENV
   - if [[ $TOXENV == "py34" ]]; then
-        tox -esa
+        tox -esa;
     fi
 
 after_success:
