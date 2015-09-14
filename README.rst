@@ -10,11 +10,11 @@
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: Latest Version
 
-.. image:: https://pypip.in/license/wcwidth/badge.svg
+.. image:: https://img.shields.io/github/license/jquast/wcwidth.svg
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: License
 
-.. image:: https://pypip.in/wheel/wcwidth/badge.svg
+.. image:: https://img.shields.io/pypi/wheel/wcwidth.svg
     :alt: Wheel Status
 
 .. image:: https://img.shields.io/pypi/dm/wcwidth.svg
@@ -52,10 +52,8 @@ The stable version of this package is maintained on pypi, install using pip::
 
     pip install wcwidth
 
-wcwidth, wcswidth
------------------
-Use ``wcwidth`` to determine the length of a *single character*,
-and ``wcswidth`` to determine the length of a *string of characters*.
+Example
+-------
 
 To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
 
@@ -63,8 +61,17 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
     >>> text = u'コンニチハ'
     >>> print(u' ' * (80 - wcswidth(text)) + text)
 
-Return Values
--------------
+wcwidth, wcswidth
+-----------------
+Use function ``wcwidth()`` to determine the length of a *single character*,
+and ``wcswidth()`` to determine the length of a *string of characters*.
+
+Function ``wcswidth()`` simply returns the sum of all values along a string,
+individually mapped over function ``wcwidth()``, or, ``-1`` in total
+if any part of the string's return value from ``wcwidth()`` results in
+a value of ``-1``.
+
+Return values of wcwidth are:
 
 ``-1``
   Indeterminate (not printable).
@@ -79,29 +86,22 @@ Return Values
 ``1``
   All others.
 
-``wcswidth()`` simply returns the sum of all values along a string, or
-``-1`` in total if any part of the string results in -1.  A more exact
-list of conditions and return values may be found in the docstring::
+A more exact list of conditions of these return values may be found in the
+module docstring::
 
     $ pydoc wcwidth
 
-
-Discrepancies
--------------
+=======
+Caveats
+=======
 
 This library does its best to return the most appropriate return value for a
 very particular terminal user interface where a monospaced fixed-cell
-rendering is expected.  As the POSIX Terminal programming interfaces do not
-provide any means to determine the unicode support level, we can only do our
-best to return the *correct* result for the given codepoint, and not what any
-terminal emulator particular does.
-
-Python's determination of non-zero combining_ characters may also be based on
-an older specification.
-
-You may determine an exacting list of these discrepancies using the project
-files `wcwidth-libc-comparator.py <https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_ and `wcwidth-combining-comparator.py <https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-combining-comparator.py>`_.
-
+rendering is expected.  As the POSIX Terminal programming interface does not
+provide any means to determine the unicode support level of a connecting
+terminal, we can only do our best to return what we **assume** to be correct
+for the given codepoint, and not the result of any terminal emulator
+particular.
 
 ==========
 Developing
@@ -112,6 +112,9 @@ for running tests (``python setup.py test``), updating tables (
 ``python setup.py update``) or using any of the scripts in the ``bin/``
 sub-folder.  These files are only made available in the source repository.
 
+You may determine an exacting list of these discrepancies using the project
+file `wcwidth-libc-comparator.py
+<https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_.
 
 Updating Tables
 ---------------
@@ -134,8 +137,8 @@ whose latest version is available at
 http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c And is authored by Markus Kuhn,
 2007-05-26 (Unicode 5.0).
 
-Examples
---------
+Uses
+----
 
 This library is used in:
 
@@ -152,8 +155,9 @@ distributed as a script or part of the module.
 .. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
 
 
-Changes
--------
+=======
+History
+=======
 
 0.1.5 *2015-09-13 Alpha*
   * **Bugfix**:
