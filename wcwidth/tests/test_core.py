@@ -108,6 +108,7 @@ def test_combining_cafe():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
+
 def test_combining_enclosing():
     u"""CYRILLIC CAPITAL LETTER A + COMBINING CYRILLIC HUNDRED THOUSANDS SIGN is А҈ of length 1."""
     phrase = u"\u0410\u0488"
@@ -121,6 +122,7 @@ def test_combining_enclosing():
     # verify,
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
 
 def test_combining_spacing():
     u"""Balinese kapal (ship) is ᬓᬨᬮ᭄ of length 4."""
