@@ -42,14 +42,15 @@ class SetupUpdate(setuptools.Command):
     description = "Fetch and update unicode code tables"
     user_options = []
 
-    EAW_URL = 'http://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt'
-    EAW_IN = os.path.join(HERE, 'data', 'EastAsianWidth.txt')
-    EAW_OUT = os.path.join(HERE, 'wcwidth', 'table_wide.py')
-
+    EAW_URL = ('http://www.unicode.org/Public/UNIDATA/'
+               'EastAsianWidth.txt')
     UCD_URL = ('http://www.unicode.org/Public/UNIDATA/extracted/'
                'DerivedGeneralCategory.txt')
+
+    EAW_IN = os.path.join(HERE, 'data', 'EastAsianWidth.txt')
     UCD_IN = os.path.join(HERE, 'data', 'DerivedGeneralCategory.txt')
-    CMB_OUT = os.path.join(HERE, 'wcwidth', 'table_comb.py')
+
+    EAW_OUT = os.path.join(HERE, 'wcwidth', 'table_wide.py')
     ZERO_OUT = os.path.join(HERE, 'wcwidth', 'table_zero.py')
 
     def initialize_options(self):
@@ -61,30 +62,27 @@ class SetupUpdate(setuptools.Command):
         pass
 
     def run(self):
-        """Execute command: update east-asian, combining and zero width tables."""
-        assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
-        self.do_east_asian_width()
-        self.do_combining()
+        """Update east-asian, combining and zero width tables."""
+        self.do_east_asian()
         self.do_zero_width()
 
-    def do_east_asian_width(self):
+    def do_east_asian(self):
         """Fetch and update east-asian tables."""
         self._do_retrieve(self.EAW_URL, self.EAW_IN)
-        (version, date, values) = self._do_east_asian_width_parse(self.EAW_IN)
+        (version, date, values) = self._parse_east_asian(
+            fname=self.EAW_IN,
+            properties=(u'W', u'F',)
+        )
         table = self._make_table(values)
         self._do_write(self.EAW_OUT, 'WIDE_EASTASIAN', version, date, table)
-
-    def do_combining(self):
-        """Fetch and update combining tables."""
-        self._do_retrieve(self.UCD_URL, self.UCD_IN)
-        (version, date, values) = self._do_category_parse(self.UCD_IN, ('Mc', 'Me', 'Mn',))
-        table = self._make_table(values)
-        self._do_write(self.CMB_OUT, 'COMBINING', version, date, table)
 
     def do_zero_width(self):
         """Fetch and update zero width tables."""
         self._do_retrieve(self.UCD_URL, self.UCD_IN)
-        (version, date, values) = self._do_category_parse(self.UCD_IN, ('Me', 'Mn',))
+        (version, date, values) = self._parse_category(
+            fname=self.UCD_IN,
+            categories=('Me', 'Mn',)
+        )
         table = self._make_table(values)
         self._do_write(self.ZERO_OUT, 'ZERO_WIDTH', version, date, table)
 
@@ -109,11 +107,7 @@ class SetupUpdate(setuptools.Command):
     @staticmethod
     def _do_retrieve(url, fname):
         """Retrieve given url to target filepath fname."""
-        try:
-            import requests
-        except ImportError:
-            print("Execute '{} develop' first.".format(__file__))
-            exit(1)
+        import requests
         folder = os.path.dirname(fname)
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -127,8 +121,7 @@ class SetupUpdate(setuptools.Command):
         return fname
 
     @staticmethod
-    def _do_east_asian_width_parse(fname,
-                                   east_asian_width_properties=(u'W', u'F',)):
+    def _parse_east_asian(fname, properties=(u'W', u'F',)):
         """Parse unicode east-asian width tables."""
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
@@ -144,7 +137,7 @@ class SetupUpdate(setuptools.Command):
                 continue
             addrs, details = uline.split(';', 1)
             if any(details.startswith(property)
-                   for property in east_asian_width_properties):
+                   for property in properties):
                 start, stop = addrs, addrs
                 if '..' in addrs:
                     start, stop = addrs.split('..')
@@ -152,7 +145,7 @@ class SetupUpdate(setuptools.Command):
         return version, date, sorted(values)
 
     @staticmethod
-    def _do_category_parse(fname, categories):
+    def _parse_category(fname, categories):
         """Parse unicode category tables."""
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
@@ -169,7 +162,7 @@ class SetupUpdate(setuptools.Command):
             addrs, details = uline.split(';', 1)
             addrs, details = addrs.rstrip(), details.lstrip()
             if any(details.startswith('{} #'.format(value))
-                       for value in categories):
+                   for value in categories):
                 start, stop = addrs, addrs
                 if '..' in addrs:
                     start, stop = addrs.split('..')
@@ -217,23 +210,6 @@ class SetupUpdate(setuptools.Command):
                     name_end[:24].rstrip()))
             fout.write('\n)\n')
         print("complete.")
-
-
-class SetupDevelop(setuptools.command.develop.develop):
-
-    """'setup.py develop' is augmented to install development tools."""
-
-    # pylint: disable=R0904
-    #         Too many public methods (43/20)
-
-    def run(self):
-        """Execute command pip for development requirements."""
-        # pylint: disable=E1101
-        # Instance of 'SetupDevelop' has no 'spawn' member (col 8)
-        assert os.getenv('VIRTUAL_ENV'), 'You should be in a virtualenv'
-        setuptools.command.develop.develop.run(self)
-        self.spawn(('pip', 'install', '-U',
-                    'blessed', 'requests', 'tox', 'docopt',))
 
 
 class SetupTest(setuptools.command.test.test):
