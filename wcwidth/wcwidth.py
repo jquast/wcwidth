@@ -108,9 +108,9 @@ def wcwidth(wc):
 
     The wcwidth() function returns 0 if the wc argument has no printable effect
     on a terminal (such as NUL '\0'), -1 if wc is not printable, or has an
-    indeterminate effect on the terminal (control or combining).  Otherwise,
-    the number of column positions the character occupies on a graphic terminal
-    (1 or 2).
+    indeterminate effect on the terminal, such as a control character.
+    Otherwise, the number of column positions the character occupies on a
+    graphic terminal (1 or 2) is returned.
 
     The following have a column width of -1:
 
@@ -184,9 +184,11 @@ def wcswidth(pwcs, n=None):
     """
     Given a unicode string, return its printable length on a terminal.
 
-    Return the width in character cells of the first ``n`` unicode string pwcs,
-    or -1 if a non-printable character is encountered. When ``n`` is None
-    (default), return the length of the entire string.
+    Return the width, in cells, necessary to display the first ``n``
+    characters of the unicode string ``pwcs``.  When ``n`` is None (default),
+    return the length of the entire string.
+
+    Returns ``-1`` if a non-printable character is encountered.
     """
     # pylint: disable=C0103
     #         Invalid argument name "n"
