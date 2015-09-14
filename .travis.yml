@@ -1,4 +1,5 @@
 language: python
+sudo: false
 
 env:
   - TOXENV=py26
@@ -19,6 +20,9 @@ install:
 
 script:
   - tox -e $TOXENV
+  - if [[ $TOXENV == "py34" ]]; then
+        tox -esa;
+    fi
 
 after_success:
   - if [[ $TOXENV == "py34" ]]; then

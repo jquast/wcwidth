@@ -37,7 +37,7 @@ import string
 import signal
 
 # local
-from wcwidth import wcwidth, table_comb
+from wcwidth.wcwidth import _bisearch, wcwidth, COMBINING
 
 # 3rd-party
 from blessed import Terminal
@@ -116,6 +116,7 @@ class WcWideCharacterGenerator(object):
         self.characters = (unichr(idx)
                            for idx in xrange(LIMIT_UCS)
                            if wcwidth(unichr(idx)) == width
+                           and not _bisearch(idx, COMBINING)
                            )
 
     def __iter__(self):
@@ -152,13 +153,13 @@ class WcCombinedCharacterGenerator(object):
         """
         self.characters = []
         letters_o = (u'o' * width)
-        for boundaries in table_comb.NONZERO_COMBINING:
+        for boundaries in COMBINING:
             for val in [_val for _val in
                         range(boundaries[0], boundaries[1] + 1)
                         if _val <= LIMIT_UCS]:
                 self.characters.append(letters_o[:1] +
                                        unichr(val) +
-                                       letters_o[1:])
+                                       letters_o[wcwidth(unichr(val))+1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -647,8 +648,7 @@ class Pager(object):
         delimiter = style.attr_minor(style.delimiter)
         if len(ucs) != 1:
             # determine display of combining characters
-            val = ord(next((_ucs for _ucs in ucs
-                            if wcwidth(_ucs) == -1)))
+            val = ord(ucs[1])
             # a combining character displayed of any fg color
             # will reset the foreground character of the cell
             # combined with (iTerm2, OSX).

@@ -71,18 +71,17 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 
 from __future__ import division
 from .table_wide import WIDE_EASTASIAN
-from .table_comb import NONZERO_COMBINING
+from .table_zero import ZERO_WIDTH
 
 
 def _bisearch(ucs, table):
     """
     Auxiliary function for binary search in interval table.
 
-    :param ucs: a single unicode character's ordinal value.
-    :type ucs: int
-    :param table: a lookup table of tuples in form of ``[(start, end), ...]``.
-    :type table: list
-    :rtype int
+    :arg int ucs: Ordinal value of unicode character.
+    :arg list table: List of starting and ending ranges of ordinal values,
+        in form of ``[(start, end), ...]``.
+    :rtype: int
     :returns: 1 if ordinal value ucs is found within lookup table, else 0.
     """
     lbound = 0
@@ -108,21 +107,20 @@ def wcwidth(wc):
 
     The wcwidth() function returns 0 if the wc argument has no printable effect
     on a terminal (such as NUL '\0'), -1 if wc is not printable, or has an
-    indeterminate effect on the terminal (control or combining).  Otherwise,
-    the number of column positions the character occupies on a graphic terminal
-    (1 or 2).
+    indeterminate effect on the terminal, such as a control character.
+    Otherwise, the number of column positions the character occupies on a
+    graphic terminal (1 or 2) is returned.
 
     The following have a column width of -1:
-
-        - Non-spacing and enclosing combining characters (general
-          category code Mn or Me in the Unicode database). Generally,
-          having a non-zero value returned by ``unicodedata.combining()``.
 
         - C0 control characters (U+001 through U+01F).
 
         - C1 control characters and DEL (U+07F through U+0A0).
 
     The following have a column width of 0:
+
+        - Non-spacing and enclosing combining characters (general
+          category code Mn or Me in the Unicode database).
 
         - NULL (U+0000, 0).
 
@@ -174,10 +172,9 @@ def wcwidth(wc):
     if ucs < 32 or 0x07F <= ucs < 0x0A0:
         return -1
 
-    # combining characters have indeterminate effects unless
-    # combined with additional characters.
-    if _bisearch(ucs, NONZERO_COMBINING):
-        return -1
+    # combining characters with zero width
+    if _bisearch(ucs, ZERO_WIDTH):
+        return 0
 
     return 1 + _bisearch(ucs, WIDE_EASTASIAN)
 
@@ -186,9 +183,11 @@ def wcswidth(pwcs, n=None):
     """
     Given a unicode string, return its printable length on a terminal.
 
-    Return the width in character cells of the first ``n`` unicode string pwcs,
-    or -1 if a non-printable character is encountered. When ``n`` is None
-    (default), return the length of the entire string.
+    Return the width, in cells, necessary to display the first ``n``
+    characters of the unicode string ``pwcs``.  When ``n`` is None (default),
+    return the length of the entire string.
+
+    Returns ``-1`` if a non-printable character is encountered.
     """
     # pylint: disable=C0103
     #         Invalid argument name "n"
@@ -199,9 +198,6 @@ def wcswidth(pwcs, n=None):
     for char in pwcs[idx]:
         wcw = wcwidth(char)
         if wcw < 0:
-            ucs = ord(char)
-            if _bisearch(ucs, NONZERO_COMBINING):
-                continue
             return -1
         else:
             width += wcw
