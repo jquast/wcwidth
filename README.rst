@@ -130,9 +130,9 @@ wcwidth.c
 ---------
 
 This code was originally derived directly from C code of the same name,
-whose latest version is available at: `wcwidth.c
-<http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c>`_ And is authored by Markus
-Kuhn -- 2007-05-26 (Unicode 5.0)
+whose latest version is available at
+http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c And is authored by Markus Kuhn,
+2007-05-26 (Unicode 5.0).
 
 Examples
 --------
