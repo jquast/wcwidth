@@ -157,7 +157,7 @@ Changes
 
 0.1.5 *2015-09-13 Alpha*
   * **Bugfix**:
-    Resolution of "combining character width", most especially
+    Resolution of "combining_ character width" issue, most especially
     those that previously returned -1 now often (correctly) return 0.
     resolved by `Philip Craig`_ via `PR #11`_.
   * **Deprecated**:
@@ -166,7 +166,7 @@ Changes
 
 0.1.4 *2014-11-20 Pre-Alpha*
   * **Feature**: ``wcswidth()`` now determines printable length
-    for (most) combining characters.  The developer's tool
+    for (most) combining_ characters.  The developer's tool
     `bin/wcwidth-browser.py`_ is improved to display combining_
     characters when provided the ``--combining`` option
     (`Thomas Ballinger`_ and `Leta Montopoli`_ `PR #5`_).
