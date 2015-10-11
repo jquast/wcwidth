@@ -37,7 +37,7 @@ import string
 import signal
 
 # local
-from wcwidth.wcwidth import _bisearch, wcwidth, COMBINING
+from wcwidth.wcwidth import wcwidth, ZERO_WIDTH
 
 # 3rd-party
 from blessed import Terminal
@@ -115,9 +115,7 @@ class WcWideCharacterGenerator(object):
         """
         self.characters = (unichr(idx)
                            for idx in xrange(LIMIT_UCS)
-                           if wcwidth(unichr(idx)) == width
-                           and not _bisearch(idx, COMBINING)
-                           )
+                           if wcwidth(unichr(idx)) == width)
 
     def __iter__(self):
         """Special method called by iter()."""
@@ -153,7 +151,7 @@ class WcCombinedCharacterGenerator(object):
         """
         self.characters = []
         letters_o = (u'o' * width)
-        for boundaries in COMBINING:
+        for boundaries in ZERO_WIDTH:
             for val in [_val for _val in
                         range(boundaries[0], boundaries[1] + 1)
                         if _val <= LIMIT_UCS]:
