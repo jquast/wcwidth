@@ -21,23 +21,26 @@
     :target: https://pypi.python.org/pypi/wcwidth/
     :alt: Downloads
 
-
 ============
 Introduction
 ============
 
-This API is mainly for Terminal Emulator implementors, or those writing
-programs that expect to interpreted by a terminal emulator and wish to
-determine the printable width of a string on a Terminal.
+This Library is mainly for those implementing a Terminal Emulator, or programs
+that carefully produce output to be interpreted by one.
 
-Usually, the length of the string is equivalent to the number of cells
-it occupies except that there are are also some categories of characters
-which occupy 2 or even 0 cells.  POSIX-conforming systems provide
-``wcwidth(3)`` and ``wcswidth(3)`` of which this module's interface mirrors
-precisely.
+**Problem Statement**: When printed to the screen, the length of the string is
+usually equal to the number of cells it occupies.  However, there are
+categories of characters that occupy 2 cells (full-wide), and others that
+occupy 0.
+
+
+**Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
+`wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
+functions precisely copy.  *These functions return the number of cells a
+unicode string is expected to occupy.*
 
 This library aims to be forward-looking, portable, and most correct.  The most
-current release of this API is based from Unicode Standard release files:
+current release of this API is based on the Unicode Standard release files:
 
 ``EastAsianWidth-8.0.0.txt``
   *2015-02-10, 21:00:00 GMT [KW, LI]*
@@ -59,19 +62,16 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
 
     >>> from wcwidth import wcswidth
     >>> text = u'コンニチハ'
-    >>> print(u' ' * (80 - wcswidth(text)) + text)
+    >>> text_len = wcswidth(text)
+    >>> print(u' ' * (80 - text_len) + text)
 
 wcwidth, wcswidth
 -----------------
-Use function ``wcwidth()`` to determine the length of a *single character*,
-and ``wcswidth()`` to determine the length of a *string of characters*.
+Use function ``wcwidth()`` to determine the length of a *single unicode
+character*, and ``wcswidth()`` to determine the length of a several, or a
+*string of unicode characters*.
 
-Function ``wcswidth()`` simply returns the sum of all values along a string,
-individually mapped over function ``wcwidth()``, or, ``-1`` in total
-if any part of the string's return value from ``wcwidth()`` results in
-a value of ``-1``.
-
-Return values of wcwidth are:
+Briefly, return values of function ``wcwidth()`` are:
 
 ``-1``
   Indeterminate (not printable).
@@ -86,8 +86,10 @@ Return values of wcwidth are:
 ``1``
   All others.
 
-A more exact list of conditions of these return values may be found in the
-module docstring::
+Function ``wcswidth()`` simply returns the sum of all values for each character
+along a string, or ``-1`` when it occurs anywhere along a string.
+
+More documentation is available using pydoc::
 
     $ pydoc wcwidth
 
@@ -95,26 +97,37 @@ module docstring::
 Caveats
 =======
 
-This library does its best to return the most appropriate return value for a
-very particular terminal user interface where a monospaced fixed-cell
-rendering is expected.  As the POSIX Terminal programming interface does not
-provide any means to determine the unicode support level of a connecting
-terminal, we can only do our best to return what we **assume** to be correct
-for the given codepoint, and not the result of any terminal emulator
-particular.
+This library attempts to determine the printable width by an unknown targeted
+terminal emulator.  It does not provide any ability to discern what the target
+emulator software, version, of level of support is.  Results may vary!
+
+A `crude method
+<http://blessed.readthedocs.org/en/latest/examples.html#detect-multibyte-py>`_
+of determining the level of unicode support by the target emulator may be
+performed using the VT100 Query Cursor Position sequence.
+
+The libc version of `wcwidth(3)`_ is often several unicode releases behind,
+and therefor several levels of support lower than this python library.  You
+may determine an exacting list of these discrepancies using the project
+file `wcwidth-libc-comparator.py
+<https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_.
+
 
 ==========
 Developing
 ==========
 
-Execute the command ``python setup.py develop`` to prepare an environment
-for running tests (``python setup.py test``), updating tables (
-``python setup.py update``) or using any of the scripts in the ``bin/``
-sub-folder.  These files are only made available in the source repository.
+Install wcwidth in editable mode::
 
-You may determine an exacting list of these discrepancies using the project
-file `wcwidth-libc-comparator.py
-<https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_.
+   pip install -e.
+
+Install developer requirements::
+
+   pip install -r requirements-develop.txt
+
+Execute unit tests using tox::
+
+   tox
 
 Updating Tables
 ---------------
@@ -129,14 +142,6 @@ And generates the table files:
 - `wcwidth/table_wide.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py>`_
 - `wcwidth/table_zero.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_zero.py>`_
 
-wcwidth.c
----------
-
-This code was originally derived directly from C code of the same name,
-whose latest version is available at
-http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c And is authored by Markus Kuhn,
-2007-05-26 (Unicode 5.0).
-
 Uses
 ----
 
@@ -148,16 +153,15 @@ This library is used in:
   interactive command lines in Python.
 
 Additional tools for displaying and testing wcwidth are found in the `bin/
-<https://in.linkedin.com/in/chiragjog>`_ folder of this project. They are not
-distributed as a script or part of the module.
-
-.. _`jquast/blessed`: https://github.com/jquast/blessed
-.. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
-
+<https://github.com/jquast/wcwidth/tree/master/bin>`_ folder of this project's
+source code.  They are not distributed.
 
 =======
 History
 =======
+
+0.1.6 *2016-01-08 Production/Stable*
+  * ``LICENSE`` file now included with distribution.
 
 0.1.5 *2015-09-13 Alpha*
   * **Bugfix**:
@@ -188,6 +192,16 @@ History
 0.1.1 *2014-05-14 Pre-Alpha*
   * Initial release to pypi, Based on Unicode Specification 6.3.0
 
+This code was originally derived directly from C code of the same name,
+whose latest version is available at
+http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
+
+ * Markus Kuhn -- 2007-05-26 (Unicode 5.0)
+ *
+ * Permission to use, copy, modify, and distribute this software
+ * for any purpose and without fee is hereby granted. The author
+ * disclaims all warranties with regard to this software.
+
 .. _`prospector`: https://github.com/landscapeio/prospector
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
 .. _`bin/wcwidth-browser.py`: https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-browser.py
@@ -198,3 +212,7 @@ History
 .. _`PR #4`: https://github.com/jquast/wcwidth/pull/4
 .. _`PR #5`: https://github.com/jquast/wcwidth/pull/5
 .. _`PR #11`: https://github.com/jquast/wcwidth/pull/11
+.. _`jquast/blessed`: https://github.com/jquast/blessed
+.. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
+.. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
+.. _`wcswidth(3)`: http://man7.org/linux/man-pages/man3/wcswidth.3.html

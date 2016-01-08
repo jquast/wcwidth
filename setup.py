@@ -210,23 +210,12 @@ class SetupUpdate(setuptools.Command):
         print("complete.")
 
 
-class SetupTest(setuptools.command.test.test):
-
-    """'setup.py test' is an alias to execute tox."""
-
-    def run(self):
-        """ Execute command: tox. """
-        # pylint: disable=E1101
-        # Instance of 'SetupTest' has no 'spawn' member (col 8)
-        self.spawn(('tox',))
-
-
 def main():
     """Setup.py entry point."""
     import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.5',
+        version='0.1.6',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=codecs.open(
@@ -256,9 +245,7 @@ def main():
             ],
         keywords=['terminal', 'emulator', 'wcwidth', 'wcswidth', 'cjk',
                   'combining', 'xterm', 'console', ],
-        cmdclass={
-            'update': SetupUpdate,
-            'test': SetupTest},
+        cmdclass={'update': SetupUpdate},
     )
 
 if __name__ == '__main__':
