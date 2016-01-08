@@ -210,17 +210,6 @@ class SetupUpdate(setuptools.Command):
         print("complete.")
 
 
-class SetupTest(setuptools.command.test.test):
-
-    """'setup.py test' is an alias to execute tox."""
-
-    def run(self):
-        """ Execute command: tox. """
-        # pylint: disable=E1101
-        # Instance of 'SetupTest' has no 'spawn' member (col 8)
-        self.spawn(('tox',))
-
-
 def main():
     """Setup.py entry point."""
     import codecs
@@ -256,9 +245,7 @@ def main():
             ],
         keywords=['terminal', 'emulator', 'wcwidth', 'wcswidth', 'cjk',
                   'combining', 'xterm', 'console', ],
-        cmdclass={
-            'update': SetupUpdate,
-            'test': SetupTest},
+        cmdclass={'update': SetupUpdate},
     )
 
 if __name__ == '__main__':
