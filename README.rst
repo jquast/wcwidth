@@ -67,8 +67,9 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
 
 wcwidth, wcswidth
 -----------------
-Use function ``wcwidth()`` to determine the length of a *single unicode point*,
-and ``wcswidth()`` to determine the length of a *string of unicode points*.
+Use function ``wcwidth()`` to determine the length of a *single unicode
+character*, and ``wcswidth()`` to determine the length of a several, or a
+*string of unicode characters*.
 
 Briefly, return values of function ``wcwidth()`` are:
 
