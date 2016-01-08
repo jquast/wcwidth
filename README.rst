@@ -31,7 +31,7 @@ that carefully produce output to be interpreted by one.
 **Problem Statement**: When printed to the screen, the length of the string is
 usually equal to the number of cells it occupies.  However, there are
 categories of characters that occupy 2 cells (full-wide), and others that
-occupy 0 (invisible).
+occupy 0.
 
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
