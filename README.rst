@@ -42,11 +42,14 @@ unicode string is expected to occupy.*
 This library aims to be forward-looking, portable, and most correct.  The most
 current release of this API is based on the Unicode Standard release files:
 
-``EastAsianWidth-8.0.0.txt``
-  *2015-02-10, 21:00:00 GMT [KW, LI]*
+``DerivedGeneralCategory-9.0.0.txt``
+  *Date: 2016-06-01, 10:34:26 GMT*
+  © 2016 Unicode®, Inc.
 
-``DerivedGeneralCategory-8.0.0.txt``
-  *2015-02-13, 13:47:11 GMT [MD]*
+``EastAsianWidth-9.0.0.txt``
+  *Date: 2016-05-27, 17:00:00 GMT [KW, LI]*
+  © 2016 Unicode®, Inc.
+
 
 Installation
 ------------
@@ -159,6 +162,9 @@ source code.  They are not distributed.
 =======
 History
 =======
+
+0.1.7 *2016-07-01*
+  * **Updated** tables to Unicode Specification 9.0.0.
 
 0.1.6 *2016-01-08 Production/Stable*
   * ``LICENSE`` file now included with distribution.
