@@ -57,6 +57,10 @@ class SetupUpdate(setuptools.Command):
     EAW_OUT = os.path.join(HERE, 'wcwidth', 'table_wide.py')
     ZERO_OUT = os.path.join(HERE, 'wcwidth', 'table_zero.py')
 
+    README_RST = os.path.join(HERE, 'README.RST')
+    README_PATCH_FROM = "the Unicode Standard release files:"
+    README_PATCH_TO = "Installation"
+
     def initialize_options(self):
         """Override builtin method: no options are available."""
         pass
@@ -67,10 +71,48 @@ class SetupUpdate(setuptools.Command):
 
     def run(self):
         """Update east-asian, combining and zero width tables."""
-        self.do_east_asian()
-        self.do_zero_width()
+        self._do_east_asian()
+        self._do_zero_width()
+        self._do_readme_update()
 
-    def do_east_asian(self):
+    def _do_readme_update(self):
+        """Patch README.rst to reflect the data files used in release."""
+        import codecs
+        import glob
+
+        # read in,
+        data_in = codecs.open(
+            os.path.join(HERE, 'README.rst'), 'r', 'utf8').read()
+
+        # search for beginning and end positions,
+        pos_begin = data_in.find(self.README_PATCH_FROM)
+        assert pos_begin != -1, (pos_begin, self.README_PATCH_FROM)
+        pos_begin += len(self.README_PATCH_FROM)
+
+        pos_end = data_in.find(self.README_PATCH_TO)
+        assert pos_end != -1, (pos_end, self.README_PATCH_TO)
+
+        glob_pattern = os.path.join(HERE, 'data', '*.txt')
+        file_descriptions = [
+            self._describe_file_header(fpath)
+            for fpath in glob.glob(glob_pattern)]
+
+
+        # patch,
+        data_out = (
+            data_in[:pos_begin] +
+            '\n\n' +
+            '\n'.join(file_descriptions) +
+            '\n\n' +
+            data_in[pos_end:]
+        )
+
+        # write.
+        print("patching {} ..".format(self.README_RST))
+        codecs.open(
+            self.README_RST, 'w', 'utf8').write(data_out)
+
+    def _do_east_asian(self):
         """Fetch and update east-asian tables."""
         self._do_retrieve(self.EAW_URL, self.EAW_IN)
         (version, date, values) = self._parse_east_asian(
@@ -80,7 +122,7 @@ class SetupUpdate(setuptools.Command):
         table = self._make_table(values)
         self._do_write(self.EAW_OUT, 'WIDE_EASTASIAN', version, date, table)
 
-    def do_zero_width(self):
+    def _do_zero_width(self):
         """Fetch and update zero width tables."""
         self._do_retrieve(self.UCD_URL, self.UCD_IN)
         (version, date, values) = self._parse_category(
@@ -124,6 +166,16 @@ class SetupUpdate(setuptools.Command):
         else:
             print("re-using artifact {}".format(fname))
         return fname
+
+    @staticmethod
+    def _describe_file_header(fpath):
+        import codecs
+        header_3 = [line.lstrip('# ').rstrip() for line in
+                    codecs.open(fpath, 'r', 'utf8').readlines()[:3]]
+        return ('``{0}``\n'   # ``EastAsianWidth-8.0.0.txt``
+                '  *{1}*\n'   #   *2015-02-10, 21:00:00 GMT [KW, LI]*
+                '  {2}\n'       #   (c) 2016 Unicode(R), Inc.
+                .format(*header_3))
 
     @staticmethod
     def _parse_east_asian(fname, properties=(u'W', u'F',)):
@@ -222,7 +274,7 @@ def main():
     import codecs
     setuptools.setup(
         name='wcwidth',
-        version='0.1.6',
+        version='0.1.7',
         description=("Measures number of Terminal column cells "
                      "of wide-character codes"),
         long_description=codecs.open(
