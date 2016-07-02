@@ -1,4 +1,5 @@
 language: python
+
 sudo: false
 
 env:
@@ -6,7 +7,6 @@ env:
   - TOXENV=py27
   - TOXENV=py33
   - TOXENV=py34
-  - TOXENV=pypy
 
 install:
   - pip install -q tox 
@@ -21,7 +21,7 @@ install:
 script:
   - tox -e $TOXENV
   - if [[ $TOXENV == "py34" ]]; then
-        tox -esa;
+        tox -echeck;
     fi
 
 after_success:
