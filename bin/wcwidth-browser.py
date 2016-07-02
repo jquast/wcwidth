@@ -36,12 +36,12 @@ import unicodedata
 import string
 import signal
 
-# local
-from wcwidth.wcwidth import wcwidth, ZERO_WIDTH
-
 # 3rd-party
 from blessed import Terminal
 from docopt import docopt
+
+# local
+from wcwidth.wcwidth import wcwidth, ZERO_WIDTH
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
@@ -52,13 +52,10 @@ try:
     flushout = partial(print, end='', flush=True)
     flushout('')
 except TypeError as err:
-    # pylint: disable=W0704
-    #         Except doesn't do anything (col 15)
-
     assert "'flush' is an invalid keyword argument" in err.args[0]
 
     def flushout():
-        """flush any buffered output on standard out when called."""
+        """Flush any buffered output on standard out when called."""
         import sys
         # pylint: disable=E0602
         #         Undefined variable 'BrokenPipeError' (col 15)
@@ -100,7 +97,6 @@ UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
 
 
 class WcWideCharacterGenerator(object):
-
     """Generator yields unicode characters of the given ``width``."""
 
     # pylint: disable=R0903
@@ -136,7 +132,6 @@ class WcWideCharacterGenerator(object):
 
 
 class WcCombinedCharacterGenerator(object):
-
     """Generator yields unicode characters with combining."""
 
     # pylint: disable=R0903
@@ -181,7 +176,6 @@ class WcCombinedCharacterGenerator(object):
 
 
 class Style(object):
-
     """Styling decorator class instance for terminal output."""
 
     # pylint: disable=R0903
@@ -207,7 +201,6 @@ class Style(object):
 
 
 class Screen(object):
-
     """Represents terminal style, data dimensions, and drawables."""
 
     intro_msg_fmt = u'Delimiters ({delim}) should align.'
@@ -285,7 +278,6 @@ class Screen(object):
 
 
 class Pager(object):
-
     """A less(1)-like browser for browsing unicode characters."""
 
     #: screen state for next draw method(s).
