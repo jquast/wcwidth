@@ -14,6 +14,12 @@ from __future__ import print_function
 import os
 import setuptools
 import setuptools.command.test
+try:
+    # py2
+    from urllib2 import urlopen
+except ImportError:
+    # py3
+    from urllib.request import urlopen
 
 HERE = os.path.dirname(__file__)
 
@@ -105,17 +111,18 @@ class SetupUpdate(setuptools.Command):
     @staticmethod
     def _do_retrieve(url, fname):
         """Retrieve given url to target filepath fname."""
-        import requests
         folder = os.path.dirname(fname)
         if not os.path.exists(folder):
             os.makedirs(folder)
             print("{}/ created.".format(folder))
         if not os.path.exists(fname):
             with open(fname, 'wb') as fout:
-                req = requests.get(url)
                 print("retrieving {}.".format(url))
-                fout.write(req.content)
+                resp = urlopen(url)
+                fout.write(resp.read())
             print("{} saved.".format(fname))
+        else:
+            print("re-using artifact {}".format(fname))
         return fname
 
     @staticmethod
@@ -124,7 +131,7 @@ class SetupUpdate(setuptools.Command):
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
-            uline = line.decode('ascii')
+            uline = line.decode('utf-8')
             if version is None:
                 version = uline.split(None, 1)[1].rstrip()
                 continue
@@ -148,7 +155,7 @@ class SetupUpdate(setuptools.Command):
         version, date, values = None, None, []
         print("parsing {} ..".format(fname))
         for line in open(fname, 'rb'):
-            uline = line.decode('ascii')
+            uline = line.decode('utf-8')
             if version is None:
                 version = uline.split(None, 1)[1].rstrip()
                 continue
