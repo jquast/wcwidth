@@ -7,26 +7,25 @@ env:
   - TOXENV=py27
   - TOXENV=py33
   - TOXENV=py34
-  - TOXENV=py35
 
 install:
   - pip install -q tox 
 
   # for python version =33, cinstall and overage, coveralls.
   # coverage is only measured and published for one version.
-  - if [[ $TOXENV == "py35" ]]; then
+  - if [[ $TOXENV == "py34" ]]; then
         pip install -q coverage coveralls;
     fi
 
 
 script:
   - tox -e $TOXENV
-  - if [[ $TOXENV == "py35" ]]; then
+  - if [[ $TOXENV == "py34" ]]; then
         tox -echeck;
     fi
 
 after_success:
-  - if [[ $TOXENV == "py35" ]]; then
+  - if [[ $TOXENV == "py34" ]]; then
         coveralls;
     fi
 
