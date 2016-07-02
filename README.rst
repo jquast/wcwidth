@@ -164,7 +164,7 @@ History
 =======
 
 0.1.7 *2016-07-01*
-  * **Updated** tables to Unicode Specification 9.0.0.
+  * **Updated** tables to Unicode Specification 9.0.0. (`PR #18`_).
 
 0.1.6 *2016-01-08 Production/Stable*
   * ``LICENSE`` file now included with distribution.
