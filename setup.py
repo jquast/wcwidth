@@ -97,7 +97,6 @@ class SetupUpdate(setuptools.Command):
             self._describe_file_header(fpath)
             for fpath in glob.glob(glob_pattern)]
 
-
         # patch,
         data_out = (
             data_in[:pos_begin] +
