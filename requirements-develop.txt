@@ -9,7 +9,7 @@ restructuredtext-lint==0.12.2
 astroid==1.3.8
 docutils==0.12
 dodgy==0.1.7
-enum34==1.0.4
+enum34==1.1.6
 frosted==1.4.1
 ipaddress==1.0.14
 logilab-common==1.0.2
