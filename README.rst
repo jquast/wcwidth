@@ -42,9 +42,73 @@ unicode string is expected to occupy.*
 This library aims to be forward-looking, portable, and most correct.  The most
 current release of this API is based on the Unicode Standard release files:
 
+``DerivedGeneralCategory-4.1.0.txt``
+  *Date: 2005-02-26, 02:35:50 GMT [MD]*
+
+``DerivedGeneralCategory-5.0.0.txt``
+  *Date: 2006-02-27, 23:41:27 GMT [MD]*
+
+``DerivedGeneralCategory-5.1.0.txt``
+  *Date: 2008-03-20, 17:54:57 GMT [MD]*
+
+``DerivedGeneralCategory-5.2.0.txt``
+  *Date: 2009-08-22, 04:58:21 GMT [MD]*
+
+``DerivedGeneralCategory-6.0.0.txt``
+  *Date: 2010-08-19, 00:48:09 GMT [MD]*
+
+``DerivedGeneralCategory-6.1.0.txt``
+  *Date: 2011-11-27, 05:10:22 GMT [MD]*
+
+``DerivedGeneralCategory-6.2.0.txt``
+  *Date: 2012-05-20, 00:42:34 GMT [MD]*
+
+``DerivedGeneralCategory-6.3.0.txt``
+  *Date: 2013-07-05, 14:08:45 GMT [MD]*
+
+``DerivedGeneralCategory-7.0.0.txt``
+  *Date: 2014-02-07, 18:42:12 GMT [MD]*
+
+``DerivedGeneralCategory-8.0.0.txt``
+  *Date: 2015-02-13, 13:47:11 GMT [MD]*
+
 ``DerivedGeneralCategory-9.0.0.txt``
   *Date: 2016-06-01, 10:34:26 GMT*
   © 2016 Unicode®, Inc.
+
+``DerivedGeneralCategory-9.0.0.txt``
+  *Date: 2016-06-01, 10:34:26 GMT*
+  © 2016 Unicode®, Inc.
+
+``EastAsianWidth-4.1.0.txt``
+  *Date: 2005-03-17, 15:21:00 PST [KW]*
+
+``EastAsianWidth-5.0.0.txt``
+  *Date: 2006-02-15, 14:39:00 PST [KW]*
+
+``EastAsianWidth-5.1.0.txt``
+  *Date: 2008-03-20, 17:42:00 PDT [KW]*
+
+``EastAsianWidth-5.2.0.txt``
+  *Date: 2009-06-09, 17:47:00 PDT [KW]*
+
+``EastAsianWidth-6.0.0.txt``
+  *Date: 2010-08-17, 12:17:00 PDT [KW]*
+
+``EastAsianWidth-6.1.0.txt``
+  *Date: 2011-09-19, 18:46:00 GMT [KW]*
+
+``EastAsianWidth-6.2.0.txt``
+  *Date: 2012-05-15, 18:30:00 GMT [KW]*
+
+``EastAsianWidth-6.3.0.txt``
+  *Date: 2013-02-05, 20:09:00 GMT [KW, LI]*
+
+``EastAsianWidth-7.0.0.txt``
+  *Date: 2014-02-28, 23:15:00 GMT [KW, LI]*
+
+``EastAsianWidth-8.0.0.txt``
+  *Date: 2015-02-10, 21:00:00 GMT [KW, LI]*
 
 ``EastAsianWidth-9.0.0.txt``
   *Date: 2016-05-27, 17:00:00 GMT [KW, LI]*
@@ -96,25 +160,14 @@ More documentation is available using pydoc::
 
     $ pydoc wcwidth
 
-=======
-Caveats
-=======
+=========================
+Detecting Unicode Version
+=========================
 
-This library attempts to determine the printable width by an unknown targeted
-terminal emulator.  It does not provide any ability to discern what the target
-emulator software, version, of level of support is.  Results may vary!
-
-A `crude method
-<http://blessed.readthedocs.org/en/latest/examples.html#detect-multibyte-py>`_
-of determining the level of unicode support by the target emulator may be
-performed using the VT100 Query Cursor Position sequence.
-
-The libc version of `wcwidth(3)`_ is often several unicode releases behind,
-and therefor several levels of support lower than this python library.  You
-may determine an exacting list of these discrepancies using the project
-file `wcwidth-libc-comparator.py
-<https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_.
-
+The unicode level of support of a terminal may be discovered by eliciting
+a *cursor position response* by printing special sequence, *cursor position
+report* (``\x1b[6n``) while carefully displaying unicode characters of unique
+width for each level of support.
 
 ==========
 Developing
@@ -124,44 +177,51 @@ Install wcwidth in editable mode::
 
    pip install -e.
 
-Install developer requirements::
-
-   pip install -r requirements-develop.txt
-
-Execute unit tests using tox::
+Execute unit tests using tox_::
 
    tox
 
 Updating Tables
 ---------------
 
-The command ``python setup.py update`` will fetch the following resources:
+The command ``tox -eupdate`` will fetch the latest Unicode Specification data
+files and generate two python code table files:
 
-- http://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt
-- http://www.unicode.org/Public/UNIDATA/extracted/DerivedGeneralCategory.txt
+`wcwidth/table_wide.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py>`_
+  *Date: 2016-06-01, 10:34:26 GMT*
+  © 2016 Unicode®, Inc.
 
-And generates the table files:
+  
 
-- `wcwidth/table_wide.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py>`_
-- `wcwidth/table_zero.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_zero.py>`_
+`wcwidth/table_zero.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_zero.py>`_
+  
 
 Uses
 ----
 
 This library is used in:
 
-- `jquast/blessed`_, a simplified wrapper around curses.
+- `jquast/blessed`_, a thin, practical wrapper around terminal capabilities in
+  Python.
 
 - `jonathanslenders/python-prompt-toolkit`_, a Library for building powerful
   interactive command lines in Python.
 
-Additional tools for displaying and testing wcwidth are found in the `bin/
-<https://github.com/jquast/wcwidth/tree/master/bin>`_ folder of this project's
-source code.  They are not distributed.
+- `dbcli/pgcli`_, Postgres CLI with autocompletion and syntax highlighting.
+  
+- `thomasballinger/curtsies`_, a Curses-like terminal wrapper with a display
+  based on compositing 2d arrays of text.
+
+- `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
 
 =======
 History
 =======
+
+0.2.0 *2016-08-01*
+  * **Enhancement** Unicode Specification version may be specified by
+    new optional keyword string argument, ``ucv``.
+  * **Enhancement** API Documentation is published.
 
 0.1.7 *2016-07-01*
   * **Updated** tables to Unicode Specification 9.0.0. (`PR #18`_).
@@ -208,6 +268,7 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
+.. _`tox`: https://testrun.org/tox/latest/install.html
 .. _`prospector`: https://github.com/landscapeio/prospector
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
 .. _`bin/wcwidth-browser.py`: https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-browser.py

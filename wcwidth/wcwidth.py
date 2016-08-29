@@ -68,11 +68,16 @@ disclaims all warranties with regard to this software.
 
 Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 """
-
+# std imports
 from __future__ import division
+import pkg_resources
+import json
+
+# local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 
+_UNICODE_VERSIONS = None
 
 def _bisearch(ucs, table):
     """
@@ -101,15 +106,16 @@ def _bisearch(ucs, table):
     return 0
 
 
-def wcwidth(wc):
+def wcwidth(wc, unicode_version='latest'):
     r"""
     Given one unicode character, return its printable length on a terminal.
 
-    The wcwidth() function returns 0 if the wc argument has no printable effect
-    on a terminal (such as NUL '\0'), -1 if wc is not printable, or has an
-    indeterminate effect on the terminal, such as a control character.
-    Otherwise, the number of column positions the character occupies on a
-    graphic terminal (1 or 2) is returned.
+    :returns: The width, in cells, necessary to display the character of
+        unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
+        not printable, or has an indeterminate effect on the terminal, such as
+        a control character.  Otherwise, the number of column positions the
+        character occupies on a graphic terminal (1 or 2) is returned.
 
     The following have a column width of -1:
 
@@ -119,47 +125,52 @@ def wcwidth(wc):
 
     The following have a column width of 0:
 
-        - Non-spacing and enclosing combining characters (general
-          category code Mn or Me in the Unicode database).
+    - Non-spacing and enclosing combining characters (general
+      category code Mn or Me in the Unicode database).
 
-        - NULL (U+0000, 0).
+    - NULL (``U+0000``).
 
-        - COMBINING GRAPHEME JOINER (U+034F).
+    - COMBINING GRAPHEME JOINER (``U+034F``).
 
-        - ZERO WIDTH SPACE (U+200B) through
-          RIGHT-TO-LEFT MARK (U+200F).
+    - ZERO WIDTH SPACE (``U+200B``) through
+      RIGHT-TO-LEFT MARK (``U+200F``).
 
-        - LINE SEPERATOR (U+2028) and
-          PARAGRAPH SEPERATOR (U+2029).
+    - LINE SEPARATOR (``U+2028``) and
+      PARAGRAPH SEPARATOR (``U+2029``).
 
-        - LEFT-TO-RIGHT EMBEDDING (U+202A) through
-          RIGHT-TO-LEFT OVERRIDE (U+202E).
+    - LEFT-TO-RIGHT EMBEDDING (``U+202A``) through
+      RIGHT-TO-LEFT OVERRIDE (``U+202E``).
 
-        - WORD JOINER (U+2060) through
-          INVISIBLE SEPARATOR (U+2063).
+    - WORD JOINER (``U+2060``) through
+      INVISIBLE SEPARATOR (``U+2063``).
 
     The following have a column width of 1:
 
-        - SOFT HYPHEN (U+00AD) has a column width of 1.
+    - SOFT HYPHEN (``U+00AD``).
 
-        - All remaining characters (including all printable
-          ISO 8859-1 and WGL4 characters, Unicode control characters,
-          etc.) have a column width of 1.
+    - All remaining characters, including all printable ISO 8859-1
+      and WGL4 characters, Unicode control characters, etc.
 
     The following have a column width of 2:
 
-        - Spacing characters in the East Asian Wide (W) or East Asian
-          Full-width (F) category as defined in Unicode Technical
-          Report #11 have a column width of 2.
+    - Spacing characters in the East Asian Wide (W) or East Asian
+      Full-width (F) category as defined in Unicode Technical
+      Report #11 have a column width of 2.
+
+    - Some kinds of emjoi or symbols, depending on ``unicode_version``
+      specified.
     """
     # pylint: disable=C0103
     #         Invalid argument name "wc"
     ucs = ord(wc)
 
+    _unicode_version = match_version(unicode_version)
+
     # NOTE: created by hand, there isn't anything identifiable other than
     # general Cf category code to identify these, and some characters in Cf
     # category code are of non-zero width.
-
+    #
+    # NOTE(jquast):
     # pylint: disable=too-many-boolean-expressions
     #          Too many boolean expressions in if statement (7/5)
     if (ucs == 0 or
@@ -176,21 +187,22 @@ def wcwidth(wc):
         return -1
 
     # combining characters with zero width
-    if _bisearch(ucs, ZERO_WIDTH):
+    if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
         return 0
 
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN)
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
-def wcswidth(pwcs, n=None):
+def wcswidth(pwcs, n=None, unicode_version='latest'):
     """
     Given a unicode string, return its printable length on a terminal.
 
-    Return the width, in cells, necessary to display the first ``n``
-    characters of the unicode string ``pwcs``.  When ``n`` is None (default),
-    return the length of the entire string.
-
-    Returns ``-1`` if a non-printable character is encountered.
+    :param str pwcs: Measure width of given unicode string.
+    :param int n: When ``n`` is None (default), return the length of the
+        entire string, otherwise width the first ``n`` characters specified.
+    :returns: The width, in cells, necessary to display the first ``n``
+        characters of the unicode string ``pwcs``.  Returns ``-1`` if
+        a non-printable character is encountered.
     """
     # pylint: disable=C0103
     #         Invalid argument name "n"
@@ -199,9 +211,63 @@ def wcswidth(pwcs, n=None):
     idx = slice(0, end)
     width = 0
     for char in pwcs[idx]:
-        wcw = wcwidth(char)
+        wcw = wcwidth(char, unicode_version=unicode_version)
         if wcw < 0:
             return -1
         else:
             width += wcw
     return width
+
+
+def get_version():
+    """
+    Return package version of this 'wcwidth' module.
+
+    :returns: SEMVER-formatted package version.
+    :rtype: str
+    """
+    return pkg_resources.get_distribution('wcwidth').version
+
+
+def get_supported_unicode_versions():
+    """
+    Return unicode version levels supported by this module release.
+
+    Any of the version strings returned may be used as keyword argument
+    ``unicode_version`` to the ``wcwidth()`` family of functions.
+
+    :returns: list of string versions.
+    :rtype: list[str]
+    """
+    global _UNICODE_VERSIONS
+    if _UNICODE_VERSIONS is None:
+        _UNICODE_VERSIONS = json.loads(
+            pkg_resources.resource_string('wcwidth', "version.json").decode('utf8')
+        )['tables']
+    return _UNICODE_VERSIONS
+
+def match_version(version):
+    """
+    Return nearest matching supported Unicode version level for given version.
+
+    :param str version: XXX
+    :rtype: str
+    
+    For example,
+
+    >>> match_version('4.3.2')
+    '4.1.0'
+    """
+    # XXX Not finished !
+    unicode_versions = get_supported_unicode_versions()
+    if match_version not in unicode_versions:
+        given_version = distutils.version.LooseVersion(version)
+        sorted_versions = sorted(
+            [distutils.version.LooseVersion(ver)
+             for ver in wcwidth.get_supported_unicode_versions()],
+            reverse=True)
+        for idx, match_version in sorted_versions:
+            if given_version < match_version:
+                if idx:
+                    return sorted_versions[idx - 1]
+                return sorted_versions[0]
