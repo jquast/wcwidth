@@ -33,14 +33,17 @@ usually equal to the number of cells it occupies.  However, there are
 categories of characters that occupy 2 cells (full-wide), and others that
 occupy 0.
 
-
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
 functions precisely copy.  *These functions return the number of cells a
 unicode string is expected to occupy.*
 
-This library aims to be forward-looking, portable, and most correct.  The most
-current release of this API is based on the Unicode Standard release files:
+Version details
+---------------
+
+This library aims to be forward-looking, portable, and most correct.
+The most current release of this API is based on the Unicode Standard
+release files:
 
 ``DerivedGeneralCategory-4.1.0.txt``
   *Date: 2005-02-26, 02:35:50 GMT [MD]*
@@ -74,11 +77,9 @@ current release of this API is based on the Unicode Standard release files:
 
 ``DerivedGeneralCategory-9.0.0.txt``
   *Date: 2016-06-01, 10:34:26 GMT*
-  © 2016 Unicode®, Inc.
 
 ``DerivedGeneralCategory-9.0.0.txt``
   *Date: 2016-06-01, 10:34:26 GMT*
-  © 2016 Unicode®, Inc.
 
 ``EastAsianWidth-4.1.0.txt``
   *Date: 2005-03-17, 15:21:00 PST [KW]*
@@ -112,8 +113,6 @@ current release of this API is based on the Unicode Standard release files:
 
 ``EastAsianWidth-9.0.0.txt``
   *Date: 2016-05-27, 17:00:00 GMT [KW, LI]*
-  © 2016 Unicode®, Inc.
-
 
 Installation
 ------------
@@ -135,8 +134,8 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
 wcwidth, wcswidth
 -----------------
 Use function ``wcwidth()`` to determine the length of a *single unicode
-character*, and ``wcswidth()`` to determine the length of a several, or a
-*string of unicode characters*.
+character*, and ``wcswidth()`` to determine the length of many, a *string
+of unicode characters*.
 
 Briefly, return values of function ``wcwidth()`` are:
 
@@ -156,18 +155,7 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
-More documentation is available using pydoc::
-
-    $ pydoc wcwidth
-
-=========================
-Detecting Unicode Version
-=========================
-
-The unicode level of support of a terminal may be discovered by eliciting
-a *cursor position response* by printing special sequence, *cursor position
-report* (``\x1b[6n``) while carefully displaying unicode characters of unique
-width for each level of support.
+Further API Documentation at http://wcwidth.readthedocs.org
 
 ==========
 Developing
@@ -181,20 +169,12 @@ Execute unit tests using tox_::
 
    tox
 
-Updating Tables
----------------
+Regenerate python code tables from latest Unicode Specification data files::
 
-The command ``tox -eupdate`` will fetch the latest Unicode Specification data
-files and generate two python code table files:
+   tox -eupdate
 
-`wcwidth/table_wide.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py>`_
-  *Date: 2016-06-01, 10:34:26 GMT*
-  © 2016 Unicode®, Inc.
-
-  
-
-`wcwidth/table_zero.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_zero.py>`_
-  
+Supplementary tools for browsing and testing terminals for wide unicode
+characters are found in the `bin/ folder`_ of this project's source code.
 
 Uses
 ----
@@ -208,17 +188,19 @@ This library is used in:
   interactive command lines in Python.
 
 - `dbcli/pgcli`_, Postgres CLI with autocompletion and syntax highlighting.
-  
+
 - `thomasballinger/curtsies`_, a Curses-like terminal wrapper with a display
   based on compositing 2d arrays of text.
 
 - `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
 
+A similar implementation in javascript, XXXX
+
 =======
 History
 =======
 
-0.2.0 *2016-08-01*
+0.2.0 2017-.....
   * **Enhancement** Unicode Specification version may be specified by
     new optional keyword string argument, ``ucv``.
   * **Enhancement** API Documentation is published.

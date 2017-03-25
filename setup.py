@@ -1,38 +1,53 @@
 #!/usr/bin/env python
 """
-Setup module for wcwidth.
-
-https://github.com/jquast/wcwidth
+Setup file for wcwidth. https://github.com/jquast/wcwidth
 """
-# TODO: backward-compatible 'python setup.py update'?
-#
+import codecs
 import os
 import setuptools
 
 def _get_here(fname):
     return os.path.join(os.path.dirname(__file__), fname)
 
-
 def _get_version(fname, key='package'):
     import json
     return json.load(open(fname, 'r'))[key]
 
+class _SetupUpdate(setuptools.Command):
+    # This is a compatibility, some downstream distributions might
+    # still call "setup.py update".  New form is tox, 'tox -eupdate'.
+    description = "Fetch and update unicode code tables"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import sys, subprocess
+        retcode = subprocess.Popen([
+            sys.executable,
+            _get_here(os.path.join('bin', 'update-tables.py'))]).wait()
+        assert retcode == 0, ('non-zero exit code', retcode)
 
 def main():
     """Setup.py entry point."""
-    import codecs
     setuptools.setup(
         name='wcwidth',
-        version=_get_version(fname=_get_here(os.path.join('wcwidth', 'version.json'))),
-        description=("Measures number of Terminal column cells "
-                     "of wide-character codes"),
-        long_description=codecs.open(_get_here('README.rst'), 'rb', 'utf8').read(),
+        version=_get_version(
+            _get_here(os.path.join('wcwidth', 'version.json'))),
+        description=(
+            "Python library that measure the width of unicode "
+            "strings rendered to a terminal"),
+        long_description=codecs.open(
+            _get_here('README.rst'), 'rb', 'utf8').read(),
         author='Jeff Quast',
         author_email='contact@jeffquast.com',
         license='MIT',
         packages=['wcwidth', 'wcwidth.tests'],
         url='https://github.com/jquast/wcwidth',
-        #include_package_data=True,
         package_data={
             'wcwidth': ['*.json'],
             '': ['LICENSE.txt', '*.rst'],
@@ -54,10 +69,18 @@ def main():
             'Topic :: Software Development :: Internationalization',
             'Topic :: Terminals'
             ],
-        keywords=['terminal', 'emulator', 'wcwidth', 'wcswidth', 'cjk',
-                  'combining', 'xterm', 'console', ],
-        # TODO
-        # cmdclass={'update': SetupUpdate},
+        keywords=[
+            'cjk',
+            'combining',
+            'console',
+            'emoji'
+            'emulator',
+            'wcswidth',
+            'wcwidth',
+            'xterm',
+            'terminal',
+        ],
+        cmdclass={'update': _SetupUpdate},
     )
 
 if __name__ == '__main__':
