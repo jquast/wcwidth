@@ -224,27 +224,6 @@ def wcswidth(pwcs, n=None, unicode_version='latest'):
     return width
 
 
-def _validate_unicode_versions(unicode_versions):
-    """
-    Validate given unicode_versions array is ascending sorted order.
-    """
-    # On first table load, perform validation
-    for cur_version in _UNICODE_VERSIONS[1:]:
-        prev_idx = _UNICODE_VERSIONS.index(cur_version) - 1
-        if prev_idx >= 0:
-            prev_version = _UNICODE_VERSIONS[prev_idx]
-            cmp_current = distutils.version.LooseVersion(cur_version)
-            cmp_previous = distutils.version.LooseVersion(prev_version)
-            assert cmp_current < cmp_previous, (
-                "The unicode version strings specified in project file "
-                "'version.json', key 'unicode' must be in ascending "
-                "sorted order, failed validation at index {prev_idx}: "
-                "{prev_version} < {cur_version}".format(
-                    prev_idx=prev_idx,
-                    prev_version=prev_version,
-                    cur_version=cur_version))
-
-
 def _get_package_version():
     """
     Package version of wcwidth (for use with __version__ variable).
@@ -273,9 +252,7 @@ def get_supported_unicode_versions():
         _UNICODE_VERSIONS = json.loads(
             pkg_resources.resource_string(
                 'wcwidth', "version.json"
-            ).decode('utf8'))['unicode']
-
-        _validate_unicode_versions(_UNICODE_VERSIONS)
+            ).decode('utf8'))['tables']
     return _UNICODE_VERSIONS
 
 
