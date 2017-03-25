@@ -41,9 +41,6 @@ except NameError as err:
     else:
         raise
 
-README_RST = os.path.join(PATH_UP, 'README.RST')
-README_PATCH_FROM = "the Unicode Standard release files:"
-README_PATCH_TO = "Installation"
 
 # note: when a unicode point was released: may be determined from
 # http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
@@ -70,9 +67,8 @@ TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
 def main():
     """Update east-asian, combining and zero width tables."""
     versions = get_unicode_versions()
-    for ver in versions:
-        do_east_asian(ver)
-        do_zero_width(ver)
+    do_east_asian(versions)
+    do_zero_width(versions)
     do_readme_update()
     do_version_json(versions)
 
@@ -104,13 +100,14 @@ def do_readme_update():
     assert pos_begin != -1, (pos_begin, README_PATCH_FROM)
     pos_begin += len(README_PATCH_FROM)
 
-    pos_end = data_in.find(README_PATCH_TO)
+    pos_end = data_in[pos_begin:].find(README_PATCH_TO)
     assert pos_end != -1, (pos_end, README_PATCH_TO)
+    pos_end += pos_begin
 
     glob_pattern = os.path.join(PATH_UP, 'data', '*.txt')
     file_descriptions = [
         describe_file_header(fpath)
-        for fpath in glob.glob(glob_pattern)]
+        for fpath in sorted(glob.glob(glob_pattern))]
 
     # patch,
     data_out = (
@@ -200,11 +197,8 @@ def describe_file_header(fpath):
     # ``EastAsianWidth-8.0.0.txt``
     #   *2015-02-10, 21:00:00 GMT [KW, LI]*
     fmt = '``{0}``\n  *{1}*\n'
-    return (fmt.format(*header_3))
     assert len(header_2) == 2, (fpath, header_2)
-    return ('``{0}``\n'   # ``EastAsianWidth-8.0.0.txt``
-            '  *{1}*\n'   #   *2015-02-10, 21:00:00 GMT [KW, LI]*
-            .format(*header_3))
+    return (fmt.format(*header_2))
 
 def parse_east_asian(fname, properties=(u'W', u'F',)):
     """Parse unicode east-asian width tables."""
@@ -272,7 +266,7 @@ def do_write_table(fname, variable, table):
                 variable_proper=variable.title(),
                 variable=variable))
 
-        for version_key, version_table in table.items():
+        for version_key, version_table in sorted(table.items()):
             fout.write(
                 "  '{version_key}': (\n"
                 "    # Source: {version_table.version}\n"

@@ -245,6 +245,17 @@ def _validate_unicode_versions(unicode_versions):
                     cur_version=cur_version))
 
 
+def _get_package_version():
+    """
+    Package version of wcwidth (for use with __version__ variable).
+
+    :rtype: str
+    """
+    return json.loads(
+        pkg_resources.resource_string(
+            'wcwidth', "version.json"
+        ).decode('utf8'))['package']
+
 def get_supported_unicode_versions():
     """
     Return Unicode version levels supported by this module release.
@@ -255,7 +266,6 @@ def get_supported_unicode_versions():
     :returns: Supported Unicode version numbers in ascending sorted order.
     :rtype: list[str]
     """
-    # global cache to avoid excessive disk i/o
     global _UNICODE_VERSIONS
     if _UNICODE_VERSIONS is None:
         # load from 'version.json', use setuptools to access
