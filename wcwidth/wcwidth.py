@@ -224,19 +224,9 @@ def wcswidth(pwcs, n=None, unicode_version='latest'):
     return width
 
 
-def get_version():
-    """
-    Return package version of this 'wcwidth' module.
-
-    :returns: SEMVER-formatted package version.
-    :rtype: str
-    """
-    return pkg_resources.get_distribution('wcwidth').version
-
-
 def _validate_unicode_versions(unicode_versions):
     """
-    Validate given unicode_versions are in ascending sorted order.
+    Validate given unicode_versions array is ascending sorted order.
     """
     # On first table load, perform validation
     for cur_version in _UNICODE_VERSIONS[1:]:
@@ -265,13 +255,19 @@ def get_supported_unicode_versions():
     :returns: Supported Unicode version numbers in ascending sorted order.
     :rtype: list[str]
     """
+    # global cache to avoid excessive disk i/o
     global _UNICODE_VERSIONS
     if _UNICODE_VERSIONS is None:
+        # load from 'version.json', use setuptools to access
+        # resource string so that the package is zip/wheel-compatible.
         _UNICODE_VERSIONS = json.loads(
-            pkg_resources.resource_string('wcwidth', "version.json").decode('utf8')
-        )['unicode']
+            pkg_resources.resource_string(
+                'wcwidth', "version.json"
+            ).decode('utf8'))['unicode']
+
         _validate_unicode_versions(_UNICODE_VERSIONS)
     return _UNICODE_VERSIONS
+
 
 def match_version(given_version):
     """

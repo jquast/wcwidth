@@ -5,10 +5,16 @@ Update the python Unicode tables for wcwidth.
 https://github.com/jquast/wcwidth
 """
 
+# TODO: when a unicode point was released: may be determined from
+# http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
+
 from __future__ import print_function
-import os
+import setuptools.command.test
 import collections
-import distutils.version
+import setuptools
+import json
+import os
+
 try:
     # py2
     from urllib2 import urlopen
@@ -19,7 +25,8 @@ except ImportError:
 # local imports
 import wcwidth
 
-PATH_UP = os.path.join(os.path.dirname(__file__), os.path.pardir)
+PATH_UP = os.path.relpath(
+    os.path.join(os.path.dirname(__file__), os.path.pardir))
 
 # use chr() for py3.x,
 # unichr() for py2.x
@@ -34,23 +41,54 @@ except NameError as err:
     else:
         raise
 
-
 README_RST = os.path.join(PATH_UP, 'README.RST')
 README_PATCH_FROM = "the Unicode Standard release files:"
 README_PATCH_TO = "Installation"
+
+# note: when a unicode point was released: may be determined from
+# http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
+
+EAW_URL = ('http://www.unicode.org/Public/{version}/'
+           'ucd/EastAsianWidth.txt')
+EAW_IN = os.path.join(PATH_UP, 'data',
+                      'EastAsianWidth-{version}.txt')
+EAW_OUT = os.path.join(PATH_UP, 'wcwidth', 'table_wide.py')
+
+UCD_URL = ('http://www.unicode.org/Public/{version}/ucd/extracted/'
+           'DerivedGeneralCategory.txt')
+UCD_IN = os.path.join(PATH_UP, 'data',
+                      'DerivedGeneralCategory-{version}.txt')
+ZERO_OUT = os.path.join(PATH_UP, 'wcwidth', 'table_zero.py')
+
+README_RST = os.path.join(PATH_UP, 'README.RST')
+README_PATCH_FROM = "release files:"
+README_PATCH_TO = "======="
+
 
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
 
 def main():
     """Update east-asian, combining and zero width tables."""
-
-    versions = [sorted_v.vstring
-                for sorted_v in
-                sorted([distutils.version.LooseVersion(ver)
-                        for ver in wcwidth.get_supported_unicode_versions()])]
-    do_east_asian(versions=versions)
-    do_zero_width(versions=versions)
+    versions = get_unicode_versions()
+    for ver in versions:
+        do_east_asian(ver)
+        do_zero_width(ver)
     do_readme_update()
+    do_version_json(versions)
+
+def get_unicode_versions():
+    # TODO: Dynamically try for the future somehows..
+    return ['4.1.0',
+            '5.0.0',
+            '5.1.0',
+            '5.2.0',
+            '6.0.0',
+            '6.1.0',
+            '6.2.0',
+            '6.3.0',
+            '7.0.0',
+            '8.0.0',
+            '9.0.0']
 
 def do_readme_update():
     """Patch README.rst to reflect the data files used in release."""
@@ -155,17 +193,18 @@ def do_retrieve(url, fname):
 
 def describe_file_header(fpath):
     import codecs
-    header_3 = [line.lstrip('# ').rstrip() for line in
-                codecs.open(fpath, 'r', 'utf8').readlines()[:3]]
+    header_2 = [line.lstrip('# ').rstrip() for line in
+                codecs.open(fpath, 'r', 'utf8').readlines()[:2]]
     # fmt:
     #
     # ``EastAsianWidth-8.0.0.txt``
     #   *2015-02-10, 21:00:00 GMT [KW, LI]*
-    #   (c) 2016 Unicode(R), Inc.
     fmt = '``{0}``\n  *{1}*\n'
-    if header_3[2]:
-        fmt += '  {2}\n'
     return (fmt.format(*header_3))
+    assert len(header_2) == 2, (fpath, header_2)
+    return ('``{0}``\n'   # ``EastAsianWidth-8.0.0.txt``
+            '  *{1}*\n'   #   *2015-02-10, 21:00:00 GMT [KW, LI]*
+            .format(*header_3))
 
 def parse_east_asian(fname, properties=(u'W', u'F',)):
     """Parse unicode east-asian width tables."""
@@ -263,9 +302,18 @@ def do_write_table(fname, variable, table):
         fout.write('}\n')
     print("complete.")
 
+def do_version_json(versions):
+    fname = os.path.join(PATH_UP, 'wcwidth', 'version.json')
+    print("writing {}".format(fname))
+
+    with open(fname, 'r') as fp:
+        version_data = json.load(fp)
+
+    version_data['tables'] = versions
+
+    with open(fname, 'w') as fp:
+        version_data = json.dump(version_data, fp)
+
 if __name__ == '__main__':
     main()
 
-
-# TODO: when a unicode point was released: may be determined from
-# http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
