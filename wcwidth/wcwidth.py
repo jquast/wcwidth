@@ -108,10 +108,17 @@ def _bisearch(ucs, table):
 
 def wcwidth(wc, unicode_version='latest'):
     r"""
-    Given one unicode character, return its printable length on a terminal.
+    Given one Unicode character, return its printable length on a terminal.
 
+    :param str wc: A single Unicode character.
+    :param str unicode_version: A Unicode version number, such as
+        ``'6.0.0'``, the list of available version levels may be
+        listed by pairing function :func:`get_supported_unicode_versions`.
+        Any version string may be specified without error -- the nearest
+        matching version is selected.  When ``latest`` (default), the
+        highest Unicode version level is used.
     :returns: The width, in cells, necessary to display the character of
-        unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
         not printable, or has an indeterminate effect on the terminal, such as
         a control character.  Otherwise, the number of column positions the
@@ -132,16 +139,16 @@ def wcwidth(wc, unicode_version='latest'):
 
     - COMBINING GRAPHEME JOINER (``U+034F``).
 
-    - ZERO WIDTH SPACE (``U+200B``) through
+    - ZERO WIDTH SPACE (``U+200B``) *through*
       RIGHT-TO-LEFT MARK (``U+200F``).
 
-    - LINE SEPARATOR (``U+2028``) and
+    - LINE SEPARATOR (``U+2028``) *and*
       PARAGRAPH SEPARATOR (``U+2029``).
 
-    - LEFT-TO-RIGHT EMBEDDING (``U+202A``) through
+    - LEFT-TO-RIGHT EMBEDDING (``U+202A``) *through*
       RIGHT-TO-LEFT OVERRIDE (``U+202E``).
 
-    - WORD JOINER (``U+2060``) through
+    - WORD JOINER (``U+2060``) *through*
       INVISIBLE SEPARATOR (``U+2063``).
 
     The following have a column width of 1:
@@ -157,8 +164,7 @@ def wcwidth(wc, unicode_version='latest'):
       Full-width (F) category as defined in Unicode Technical
       Report #11 have a column width of 2.
 
-    - Some kinds of emjoi or symbols, depending on ``unicode_version``
-      specified.
+    - Some kinds of emjoi or symbols.
     """
     # pylint: disable=C0103
     #         Invalid argument name "wc"
@@ -170,7 +176,6 @@ def wcwidth(wc, unicode_version='latest'):
     # general Cf category code to identify these, and some characters in Cf
     # category code are of non-zero width.
     #
-    # NOTE(jquast):
     # pylint: disable=too-many-boolean-expressions
     #          Too many boolean expressions in if statement (7/5)
     if (ucs == 0 or
@@ -229,45 +234,84 @@ def get_version():
     return pkg_resources.get_distribution('wcwidth').version
 
 
+def _validate_unicode_versions(unicode_versions):
+    """
+    Validate given unicode_versions are in ascending sorted order.
+    """
+    # On first table load, perform validation
+    for cur_version in _UNICODE_VERSIONS[1:]:
+        prev_idx = _UNICODE_VERSIONS.index(cur_version) - 1
+        if prev_idx >= 0:
+            prev_version = _UNICODE_VERSIONS[prev_idx]
+            cmp_current = distutils.version.LooseVersion(cur_version)
+            cmp_previous = distutils.version.LooseVersion(prev_version)
+            assert cmp_current < cmp_previous, (
+                "The unicode version strings specified in project file "
+                "'version.json', key 'unicode' must be in ascending "
+                "sorted order, failed validation at index {prev_idx}: "
+                "{prev_version} < {cur_version}".format(
+                    prev_idx=prev_idx,
+                    prev_version=prev_version,
+                    cur_version=cur_version))
+
+
 def get_supported_unicode_versions():
     """
-    Return unicode version levels supported by this module release.
+    Return Unicode version levels supported by this module release.
 
     Any of the version strings returned may be used as keyword argument
     ``unicode_version`` to the ``wcwidth()`` family of functions.
 
-    :returns: list of string versions.
+    :returns: Supported Unicode version numbers in ascending sorted order.
     :rtype: list[str]
     """
     global _UNICODE_VERSIONS
     if _UNICODE_VERSIONS is None:
         _UNICODE_VERSIONS = json.loads(
             pkg_resources.resource_string('wcwidth', "version.json").decode('utf8')
-        )['tables']
+        )['unicode']
+        _validate_unicode_versions(_UNICODE_VERSIONS)
     return _UNICODE_VERSIONS
 
-def match_version(version):
+def match_version(given_version):
     """
     Return nearest matching supported Unicode version level for given version.
 
+    If an exact match is not determined, the nearest version lowest version
+    level is returned.  For example, given supported levels '4.1.0' and
+    '5.0.0':
+
+    >>> match_version('4.9.9')
+    '4.1.0'
+
     :param str version: XXX
     :rtype: str
-    
-    For example,
-
-    >>> match_version('4.3.2')
-    '4.1.0'
     """
-    # XXX Not finished !
     unicode_versions = get_supported_unicode_versions()
-    if match_version not in unicode_versions:
-        given_version = distutils.version.LooseVersion(version)
-        sorted_versions = sorted(
-            [distutils.version.LooseVersion(ver)
-             for ver in wcwidth.get_supported_unicode_versions()],
-            reverse=True)
-        for idx, match_version in sorted_versions:
-            if given_version < match_version:
-                if idx:
-                    return sorted_versions[idx - 1]
-                return sorted_versions[0]
+    if given_version == 'latest':
+        return unicode_versions[-1]
+    if given_version in unicode_versions:
+        return given_version
+    for match_version in unicode_versions:
+        prev_version = unicode_versions.index(match_version) - 1
+#        if prev_version >= 0:
+
+#    for idx, match_version in enumerate(unicode_versions):
+#
+#        prev_idx = _UNICODE_VERSIONS.index(cur_version) - 1
+#        if prev_idx >= 0:
+#            prev_version = _UNICODE_VERSIONS[prev_idx]
+#            cmp_current = distutils.version.LooseVersion(cur_version)
+#            cmp_previous = distutils.version.LooseVersion(prev_version)
+   
+#   if match_version not in unicode_versions:
+#       given_version = distutils.version.LooseVersion(version)
+#       sorted_versions = sorted(
+#           [distutils.version.LooseVersion(ver)
+#            for ver in wcwidth.get_supported_unicode_versions()],
+#           reverse=True)
+#       for idx, match_version in sorted_versions:
+#           if given_version < match_version:
+#               if idx:
+#                   return sorted_versions[idx - 1]
+#               return sorted_versions[0]
