@@ -1,5 +1,5 @@
 """Zero_Width table. Created by setup.py."""
-# Generated: 2017-03-25T01:42:33.804933
+# Generated: 2017-03-26T21:04:42.949363
 ZERO_WIDTH = {
   '4.1.0': (
     # Source: DerivedGeneralCategory-4.1.0.txt
@@ -7,6 +7,7 @@ ZERO_WIDTH = {
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
     (0x0483, 0x0486,),  # Combining Cyrillic Titlo..Combining Cyrillic Psili
+    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
     (0x0591, 0x05b9,),  # Hebrew Accent Etnahta   ..Hebrew Point Holam
     (0x05bb, 0x05bd,),  # Hebrew Point Qubuts     ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
@@ -17,7 +18,7 @@ ZERO_WIDTH = {
     (0x064b, 0x065e,),  # Arabic Fathatan         ..Arabic Fatha With Two Do
     (0x0670, 0x0670,),  # Arabic Letter Superscrip..Arabic Letter Superscrip
     (0x06d6, 0x06dc,),  # Arabic Small High Ligatu..Arabic Small High Seen
-    (0x06df, 0x06e4,),  # Arabic Small High Rounde..Arabic Small High Madda
+    (0x06de, 0x06e4,),  # Arabic Start Of Rub El H..Arabic Small High Madda
     (0x06e7, 0x06e8,),  # Arabic Small High Yeh   ..Arabic Small High Noon
     (0x06ea, 0x06ed,),  # Arabic Empty Centre Low ..Arabic Small Low Meem
     (0x0711, 0x0711,),  # Syriac Letter Superscrip..Syriac Letter Superscrip
@@ -107,9 +108,7 @@ ZERO_WIDTH = {
     (0x1939, 0x193b,),  # Limbu Sign Mukphreng    ..Limbu Sign Sa-i
     (0x1a17, 0x1a18,),  # Buginese Vowel Sign I   ..Buginese Vowel Sign U
     (0x1dc0, 0x1dc3,),  # Combining Dotted Grave A..Combining Suspension Mar
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20eb,),  # Combining Reverse Solidu..Combining Long Double So
+    (0x20d0, 0x20eb,),  # Combining Left Harpoon A..Combining Long Double So
     (0x302a, 0x302f,),  # Ideographic Level Tone M..Hangul Double Dot Tone M
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
     (0xa806, 0xa806,),  # Syloti Nagri Sign Hasant..Syloti Nagri Sign Hasant
@@ -129,10 +128,6 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x06de, 0x06de,),  # Arabic Start Of Rub El H..Arabic Start Of Rub El H
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
   ),
   '5.0.0': (
     # Source: DerivedGeneralCategory-5.0.0.txt
@@ -140,6 +135,7 @@ ZERO_WIDTH = {
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
     (0x0483, 0x0486,),  # Combining Cyrillic Titlo..Combining Cyrillic Psili
+    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -149,7 +145,7 @@ ZERO_WIDTH = {
     (0x064b, 0x065e,),  # Arabic Fathatan         ..Arabic Fatha With Two Do
     (0x0670, 0x0670,),  # Arabic Letter Superscrip..Arabic Letter Superscrip
     (0x06d6, 0x06dc,),  # Arabic Small High Ligatu..Arabic Small High Seen
-    (0x06df, 0x06e4,),  # Arabic Small High Rounde..Arabic Small High Madda
+    (0x06de, 0x06e4,),  # Arabic Start Of Rub El H..Arabic Small High Madda
     (0x06e7, 0x06e8,),  # Arabic Small High Yeh   ..Arabic Small High Noon
     (0x06ea, 0x06ed,),  # Arabic Empty Centre Low ..Arabic Small Low Meem
     (0x0711, 0x0711,),  # Syriac Letter Superscrip..Syriac Letter Superscrip
@@ -248,9 +244,7 @@ ZERO_WIDTH = {
     (0x1b6b, 0x1b73,),  # Balinese Musical Symbol ..Balinese Musical Symbol
     (0x1dc0, 0x1dca,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfe, 0x1dff,),  # Combining Left Arrowhead..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20ef,),  # Combining Reverse Solidu..Combining Right Arrow Be
+    (0x20d0, 0x20ef,),  # Combining Left Harpoon A..Combining Right Arrow Be
     (0x302a, 0x302f,),  # Ideographic Level Tone M..Hangul Double Dot Tone M
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
     (0xa806, 0xa806,),  # Syloti Nagri Sign Hasant..Syloti Nagri Sign Hasant
@@ -270,17 +264,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x06de, 0x06de,),  # Arabic Start Of Rub El H..Arabic Start Of Rub El H
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
   ),
   '5.1.0': (
     # Source: DerivedGeneralCategory-5.1.0.txt
     # Date:  2008-03-20, 17:54:57 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -290,7 +280,7 @@ ZERO_WIDTH = {
     (0x064b, 0x065e,),  # Arabic Fathatan         ..Arabic Fatha With Two Do
     (0x0670, 0x0670,),  # Arabic Letter Superscrip..Arabic Letter Superscrip
     (0x06d6, 0x06dc,),  # Arabic Small High Ligatu..Arabic Small High Seen
-    (0x06df, 0x06e4,),  # Arabic Small High Rounde..Arabic Small High Madda
+    (0x06de, 0x06e4,),  # Arabic Start Of Rub El H..Arabic Small High Madda
     (0x06e7, 0x06e8,),  # Arabic Small High Yeh   ..Arabic Small High Noon
     (0x06ea, 0x06ed,),  # Arabic Empty Centre Low ..Arabic Small Low Meem
     (0x0711, 0x0711,),  # Syriac Letter Superscrip..Syriac Letter Superscrip
@@ -404,13 +394,11 @@ ZERO_WIDTH = {
     (0x1c36, 0x1c37,),  # Lepcha Sign Ran         ..Lepcha Sign Nukta
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfe, 0x1dff,),  # Combining Left Arrowhead..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302f,),  # Ideographic Level Tone M..Hangul Double Dot Tone M
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa67c, 0xa67d,),  # Combining Cyrillic Kavyk..Combining Cyrillic Payer
     (0xa802, 0xa802,),  # Syloti Nagri Sign Dvisva..Syloti Nagri Sign Dvisva
     (0xa806, 0xa806,),  # Syloti Nagri Sign Hasant..Syloti Nagri Sign Hasant
@@ -439,18 +427,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x06de, 0x06de,),  # Arabic Start Of Rub El H..Arabic Start Of Rub El H
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '5.2.0': (
     # Source: DerivedGeneralCategory-5.2.0.txt
     # Date:  2009-08-22, 04:58:21 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -460,7 +443,7 @@ ZERO_WIDTH = {
     (0x064b, 0x065e,),  # Arabic Fathatan         ..Arabic Fatha With Two Do
     (0x0670, 0x0670,),  # Arabic Letter Superscrip..Arabic Letter Superscrip
     (0x06d6, 0x06dc,),  # Arabic Small High Ligatu..Arabic Small High Seen
-    (0x06df, 0x06e4,),  # Arabic Small High Rounde..Arabic Small High Madda
+    (0x06de, 0x06e4,),  # Arabic Start Of Rub El H..Arabic Small High Madda
     (0x06e7, 0x06e8,),  # Arabic Small High Yeh   ..Arabic Small High Noon
     (0x06ea, 0x06ed,),  # Arabic Empty Centre Low ..Arabic Small Low Meem
     (0x0711, 0x0711,),  # Syriac Letter Superscrip..Syriac Letter Superscrip
@@ -590,14 +573,12 @@ ZERO_WIDTH = {
     (0x1ced, 0x1ced,),  # Vedic Sign Tiryak       ..Vedic Sign Tiryak
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfd, 0x1dff,),  # Combining Almost Equal T..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302f,),  # Ideographic Level Tone M..Hangul Double Dot Tone M
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa67c, 0xa67d,),  # Combining Cyrillic Kavyk..Combining Cyrillic Payer
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
     (0xa802, 0xa802,),  # Syloti Nagri Sign Dvisva..Syloti Nagri Sign Dvisva
@@ -643,18 +624,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x06de, 0x06de,),  # Arabic Start Of Rub El H..Arabic Start Of Rub El H
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '6.0.0': (
     # Source: DerivedGeneralCategory-6.0.0.txt
     # Date:  2010-08-19, 00:48:09 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -800,15 +776,13 @@ ZERO_WIDTH = {
     (0x1ced, 0x1ced,),  # Vedic Sign Tiryak       ..Vedic Sign Tiryak
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302f,),  # Ideographic Level Tone M..Hangul Double Dot Tone M
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa67c, 0xa67d,),  # Combining Cyrillic Kavyk..Combining Cyrillic Payer
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
     (0xa802, 0xa802,),  # Syloti Nagri Sign Dvisva..Syloti Nagri Sign Dvisva
@@ -856,17 +830,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '6.1.0': (
     # Source: DerivedGeneralCategory-6.1.0.txt
     # Date:  2011-11-27, 05:10:22 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -1016,15 +986,13 @@ ZERO_WIDTH = {
     (0x1cf4, 0x1cf4,),  # Vedic Tone Candra Above ..Vedic Tone Candra Above
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69f, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -1085,17 +1053,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '6.2.0': (
     # Source: DerivedGeneralCategory-6.2.0.txt
     # Date:  2012-05-20, 00:42:34 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -1245,15 +1209,13 @@ ZERO_WIDTH = {
     (0x1cf4, 0x1cf4,),  # Vedic Tone Candra Above ..Vedic Tone Candra Above
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69f, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -1314,17 +1276,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '6.3.0': (
     # Source: DerivedGeneralCategory-6.3.0.txt
     # Date:  2013-07-05, 14:08:45 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -1475,15 +1433,13 @@ ZERO_WIDTH = {
     (0x1cf4, 0x1cf4,),  # Vedic Tone Candra Above ..Vedic Tone Candra Above
     (0x1dc0, 0x1de6,),  # Combining Dotted Grave A..Combining Latin Small Le
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69f, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -1544,17 +1500,13 @@ ZERO_WIDTH = {
     (0x1d1aa, 0x1d1ad,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '7.0.0': (
     # Source: DerivedGeneralCategory-7.0.0.txt
     # Date:  2014-02-07, 18:42:12 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -1684,7 +1636,7 @@ ZERO_WIDTH = {
     (0x1a65, 0x1a6c,),  # Tai Tham Vowel Sign I   ..Tai Tham Vowel Sign Oa B
     (0x1a73, 0x1a7c,),  # Tai Tham Vowel Sign Oa A..Tai Tham Sign Khuen-lue
     (0x1a7f, 0x1a7f,),  # Tai Tham Combining Crypt..Tai Tham Combining Crypt
-    (0x1ab0, 0x1abd,),  # Combining Doubled Circum..Combining Parentheses Be
+    (0x1ab0, 0x1abe,),  # Combining Doubled Circum..Combining Parentheses Ov
     (0x1b00, 0x1b03,),  # Balinese Sign Ulu Ricem ..Balinese Sign Surang
     (0x1b34, 0x1b34,),  # Balinese Sign Rerekan   ..Balinese Sign Rerekan
     (0x1b36, 0x1b3a,),  # Balinese Vowel Sign Ulu ..Balinese Vowel Sign Ra R
@@ -1709,15 +1661,13 @@ ZERO_WIDTH = {
     (0x1cf8, 0x1cf9,),  # Vedic Tone Ring Above   ..Vedic Tone Double Ring A
     (0x1dc0, 0x1df5,),  # Combining Dotted Grave A..Combining Up Tack Above
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69f, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -1808,18 +1758,13 @@ ZERO_WIDTH = {
     (0x1d242, 0x1d244,),  # Combining Greek Musical ..Combining Greek Musical
     (0x1e8d0, 0x1e8d6,),  # Mende Kikakui Combining ..Mende Kikakui Combining
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x1abe, 0x1abe,),  # Combining Parentheses Ov..Combining Parentheses Ov
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '8.0.0': (
     # Source: DerivedGeneralCategory-8.0.0.txt
     # Date:  2015-02-13, 13:47:11 GMT [MD]
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -1949,7 +1894,7 @@ ZERO_WIDTH = {
     (0x1a65, 0x1a6c,),  # Tai Tham Vowel Sign I   ..Tai Tham Vowel Sign Oa B
     (0x1a73, 0x1a7c,),  # Tai Tham Vowel Sign Oa A..Tai Tham Sign Khuen-lue
     (0x1a7f, 0x1a7f,),  # Tai Tham Combining Crypt..Tai Tham Combining Crypt
-    (0x1ab0, 0x1abd,),  # Combining Doubled Circum..Combining Parentheses Be
+    (0x1ab0, 0x1abe,),  # Combining Doubled Circum..Combining Parentheses Ov
     (0x1b00, 0x1b03,),  # Balinese Sign Ulu Ricem ..Balinese Sign Surang
     (0x1b34, 0x1b34,),  # Balinese Sign Rerekan   ..Balinese Sign Rerekan
     (0x1b36, 0x1b3a,),  # Balinese Vowel Sign Ulu ..Balinese Vowel Sign Ra R
@@ -1974,15 +1919,13 @@ ZERO_WIDTH = {
     (0x1cf8, 0x1cf9,),  # Vedic Tone Ring Above   ..Vedic Tone Double Ring A
     (0x1dc0, 0x1df5,),  # Combining Dotted Grave A..Combining Up Tack Above
     (0x1dfc, 0x1dff,),  # Combining Double Inverte..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69e, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -2084,18 +2027,13 @@ ZERO_WIDTH = {
     (0x1daa1, 0x1daaf,),  # Signwriting Rotation Mod..Signwriting Rotation Mod
     (0x1e8d0, 0x1e8d6,),  # Mende Kikakui Combining ..Mende Kikakui Combining
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x1abe, 0x1abe,),  # Combining Parentheses Ov..Combining Parentheses Ov
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
   '9.0.0': (
     # Source: DerivedGeneralCategory-9.0.0.txt
     # Date:  2016-06-01, 10:34:26 GMT
     #
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
-    (0x0483, 0x0487,),  # Combining Cyrillic Titlo..Combining Cyrillic Pokry
+    (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
     (0x0591, 0x05bd,),  # Hebrew Accent Etnahta   ..Hebrew Point Meteg
     (0x05bf, 0x05bf,),  # Hebrew Point Rafe       ..Hebrew Point Rafe
     (0x05c1, 0x05c2,),  # Hebrew Point Shin Dot   ..Hebrew Point Sin Dot
@@ -2227,7 +2165,7 @@ ZERO_WIDTH = {
     (0x1a65, 0x1a6c,),  # Tai Tham Vowel Sign I   ..Tai Tham Vowel Sign Oa B
     (0x1a73, 0x1a7c,),  # Tai Tham Vowel Sign Oa A..Tai Tham Sign Khuen-lue
     (0x1a7f, 0x1a7f,),  # Tai Tham Combining Crypt..Tai Tham Combining Crypt
-    (0x1ab0, 0x1abd,),  # Combining Doubled Circum..Combining Parentheses Be
+    (0x1ab0, 0x1abe,),  # Combining Doubled Circum..Combining Parentheses Ov
     (0x1b00, 0x1b03,),  # Balinese Sign Ulu Ricem ..Balinese Sign Surang
     (0x1b34, 0x1b34,),  # Balinese Sign Rerekan   ..Balinese Sign Rerekan
     (0x1b36, 0x1b3a,),  # Balinese Vowel Sign Ulu ..Balinese Vowel Sign Ra R
@@ -2252,15 +2190,13 @@ ZERO_WIDTH = {
     (0x1cf8, 0x1cf9,),  # Vedic Tone Ring Above   ..Vedic Tone Double Ring A
     (0x1dc0, 0x1df5,),  # Combining Dotted Grave A..Combining Up Tack Above
     (0x1dfb, 0x1dff,),  # Combining Deletion Mark ..Combining Right Arrowhea
-    (0x20d0, 0x20dc,),  # Combining Left Harpoon A..Combining Four Dots Abov
-    (0x20e1, 0x20e1,),  # Combining Left Right Arr..Combining Left Right Arr
-    (0x20e5, 0x20f0,),  # Combining Reverse Solidu..Combining Asterisk Above
+    (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
     (0x2de0, 0x2dff,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0x302a, 0x302d,),  # Ideographic Level Tone M..Ideographic Entering Ton
     (0x3099, 0x309a,),  # Combining Katakana-hirag..Combining Katakana-hirag
-    (0xa66f, 0xa66f,),  # Combining Cyrillic Vzmet..Combining Cyrillic Vzmet
+    (0xa66f, 0xa672,),  # Combining Cyrillic Vzmet..Combining Cyrillic Thous
     (0xa674, 0xa67d,),  # Combining Cyrillic Lette..Combining Cyrillic Payer
     (0xa69e, 0xa69f,),  # Combining Cyrillic Lette..Combining Cyrillic Lette
     (0xa6f0, 0xa6f1,),  # Bamum Combining Mark Koq..Bamum Combining Mark Tuk
@@ -2379,10 +2315,5 @@ ZERO_WIDTH = {
     (0x1e8d0, 0x1e8d6,),  # Mende Kikakui Combining ..Mende Kikakui Combining
     (0x1e944, 0x1e94a,),  # Adlam Alif Lengthener   ..Adlam Nukta
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
-    (0x0488, 0x0489,),  # Combining Cyrillic Hundr..Combining Cyrillic Milli
-    (0x1abe, 0x1abe,),  # Combining Parentheses Ov..Combining Parentheses Ov
-    (0x20dd, 0x20e0,),  # Combining Enclosing Circ..Combining Enclosing Circ
-    (0x20e2, 0x20e4,),  # Combining Enclosing Scre..Combining Enclosing Upwa
-    (0xa670, 0xa672,),  # Combining Cyrillic Ten M..Combining Cyrillic Thous
   ),
 }

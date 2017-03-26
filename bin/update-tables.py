@@ -245,7 +245,7 @@ def parse_category(fname, categories):
             if '..' in addrs:
                 start, stop = addrs.split('..')
             values.extend(range(int(start, 16), int(stop, 16) + 1))
-    return TableDef(version, date, values)
+    return TableDef(version, date, sorted(values))
 
 def do_write_table(fname, variable, table):
     """Write combining tables to filesystem as python code."""
