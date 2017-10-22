@@ -6,8 +6,8 @@ prospector==0.12
 restructuredtext-lint==0.14.3
 
 # transient dependencies
+docutils==0.14
 astroid==1.4.6
-docutils==0.12
 dodgy==0.1.9
 enum34==1.1.6
 frosted==1.4.1

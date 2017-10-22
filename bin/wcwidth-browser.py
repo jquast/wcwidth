@@ -41,7 +41,12 @@ from blessed import Terminal
 from docopt import docopt
 
 # local
-from wcwidth.wcwidth import wcwidth, ZERO_WIDTH
+from wcwidth.wcwidth import (
+    ZERO_WIDTH,
+    _wcmatch_version,
+    list_versions,
+    wcwidth,
+)
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
@@ -92,8 +97,30 @@ except ValueError as err:
     assert 'narrow Python build' in err.args[0], err.args
     LIMIT_UCS = 0x10000
 
-#: printable length of highest unicode character
+#: printable length of highest unicode character description
 UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
+
+
+def readline(term, width):
+    """A rudimentary readline implementation."""
+    text = u''
+    while True:
+        inp = term.inkey()
+        if inp.code == term.KEY_ENTER:
+            break
+        elif inp.code == term.KEY_ESCAPE or inp == chr(3):
+            text = None
+            break
+        elif not inp.is_sequence and len(text) < width:
+            text += inp
+            echo(inp)
+            flushout()
+        elif inp.code in (term.KEY_BACKSPACE, term.KEY_DELETE):
+            if len(text):
+                text = text[:-1]
+                echo(u'\b \b')
+            flushout()
+    return text
 
 
 class WcWideCharacterGenerator(object):
@@ -102,16 +129,16 @@ class WcWideCharacterGenerator(object):
     # pylint: disable=R0903
     #         Too few public methods (0/2)
 
-    def __init__(self, width=2):
+    def __init__(self, width=2, unicode_version='latest'):
         """
         Class constructor.
 
         :param width: generate characters of given width.
         :type width: int
         """
-        self.characters = (unichr(idx)
-                           for idx in xrange(LIMIT_UCS)
-                           if wcwidth(unichr(idx)) == width)
+        self.characters = (
+            unichr(idx) for idx in xrange(LIMIT_UCS)
+            if wcwidth(unichr(idx), unicode_version=unicode_version) == width)
 
     def __iter__(self):
         """Special method called by iter()."""
@@ -137,7 +164,7 @@ class WcCombinedCharacterGenerator(object):
     # pylint: disable=R0903
     #         Too few public methods (0/2)
 
-    def __init__(self, width=1):
+    def __init__(self, width=1, unicode_version='latest'):
         """
         Class constructor.
 
@@ -146,13 +173,15 @@ class WcCombinedCharacterGenerator(object):
         """
         self.characters = []
         letters_o = (u'o' * width)
-        for boundaries in ZERO_WIDTH:
-            for val in [_val for _val in
-                        range(boundaries[0], boundaries[1] + 1)
-                        if _val <= LIMIT_UCS]:
-                self.characters.append(letters_o[:1] +
-                                       unichr(val) +
-                                       letters_o[wcwidth(unichr(val))+1:])
+        for version, boundaries in ZERO_WIDTH.items():
+            for (begin, end) in boundaries:
+                if version == _wcmatch_version(unicode_version):
+                    for val in [_val for _val in
+                                range(begin, end + 1)
+                                if _val <= LIMIT_UCS]:
+                        self.characters.append(letters_o[:1] +
+                                               unichr(val) +
+                                               letters_o[wcwidth(unichr(val))+1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -203,7 +232,8 @@ class Style(object):
 class Screen(object):
     """Represents terminal style, data dimensions, and drawables."""
 
-    intro_msg_fmt = u'Delimiters ({delim}) should align.'
+    intro_msg_fmt = (u'Delimiters ({delim}) should align, '
+                     u'unicode version is {version}.')
 
     def __init__(self, term, style, wide=2):
         """Class constructor."""
@@ -240,12 +270,11 @@ class Screen(object):
         txt = alignment(heading, self.hint_width, self.style.header_fill)
         return self.style.attr_major(txt)
 
-    @property
-    def msg_intro(self):
+    def msg_intro(self, version):
         """Introductory message disabled above heading."""
-        delim = self.style.attr_minor(self.style.delimiter)
-        txt = self.intro_msg_fmt.format(delim=delim).rstrip()
-        return self.term.center(txt)
+        return self.term.center(self.intro_msg_fmt.format(
+            delim=self.style.attr_minor(self.style.delimiter),
+            version=self.style.attr_minor(version))).rstrip()
 
     @property
     def row_ends(self):
@@ -297,7 +326,7 @@ class Pager(object):
         self.term = term
         self.screen = screen
         self.character_factory = character_factory
-        self.character_generator = self.character_factory(self.screen.wide)
+        self.unicode_version = 'latest'
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
         self._page_data = list()
@@ -306,8 +335,6 @@ class Pager(object):
         """Signal handler callback for SIGWINCH."""
         # pylint: disable=W0613
         #         Unused argument 'args'
-        self.screen.style.name_len = min(self.screen.style.name_len,
-                                         self.term.width - 15)
         assert self.term.width >= self.screen.hint_width, (
             'Screen to small {}, must be at least {}'.format(
                 self.term.width, self.screen.hint_width))
@@ -337,18 +364,19 @@ class Pager(object):
         """Initialize the page data for the given screen."""
         if self.term.is_a_tty:
             self.display_initialize()
-        self.character_generator = self.character_factory(self.screen.wide)
-        page_data = list()
+        self.character_generator = self.character_factory(
+            self.screen.wide, self.unicode_version)
+        self._page_data = list()
         while True:
             try:
-                page_data.append(next(self.character_generator))
+                self._page_data.append(next(self.character_generator))
             except StopIteration:
                 break
         if LIMIT_UCS == 0x10000:
             echo(self.term.center('press any key.').rstrip())
             flushout()
             self.term.inkey(timeout=None)
-        return page_data
+        self._set_lastpage()
 
     def page_data(self, idx, offset):
         """
@@ -429,8 +457,7 @@ class Pager(object):
                        instance of blessed.keyboard.Keystroke.
         :type reader: callable
         """
-        self._page_data = self.initialize_page_data()
-        self._set_lastpage()
+        self.initialize_page_data()
         if not self.term.is_a_tty:
             self._run_notty(writer)
         else:
@@ -458,11 +485,19 @@ class Pager(object):
 
     def _process_keystroke_commands(self, inp):
         """Process keystrokes that issue commands (side effects)."""
-        if inp in (u'1', u'2'):
-            # chose 1 or 2-character wide
-            if int(inp) != self.screen.wide:
-                self.screen.wide = int(inp)
-                self.on_resize(None, None)
+        if inp in (u'1', u'2') and self.screen.wide != int(inp):
+            # change between 1 or 2-character wide mode.
+            self.screen.wide = int(inp)
+            self.initialize_page_data()
+            self.on_resize(None, None)
+        elif inp == u'c':
+            # switch on/off combining characters
+            self.character_factory = (
+                WcWideCharacterGenerator
+                if self.character_factory != WcWideCharacterGenerator
+                else WcCombinedCharacterGenerator)
+            self.initialize_page_data()
+            self.on_resize(None, None)
         elif inp in (u'_', u'-'):
             # adjust name length -2
             nlen = max(1, self.screen.style.name_len - 2)
@@ -475,14 +510,31 @@ class Pager(object):
             if nlen != self.screen.style.name_len:
                 self.screen.style.name_len = nlen
                 self.on_resize(None, None)
-        elif inp == u'2' and self.screen.wide != 2:
-            # change 2 or 1-cell wide view
-            self.screen.wide = 2
-            self.on_resize(None, None)
+        elif inp == u'v':
+            with self.term.location(x=0, y=self.term.height - 2):
+                print(self.term.clear_eos())
+                input_selection_msg = (
+                    "--> Enter unicode version [{versions}] ("
+                    "current: {self.unicode_version}):".format(
+                        versions=', '.join(list_versions()),
+                        self=self))
+                echo('\n'.join(self.term.wrap(input_selection_msg,
+                                               subsequent_indent='    ')))
+                echo(' ')
+                flushout()
+                inp = readline(self.term, width=max(map(len, list_versions())))
+                if inp.strip() and inp != self.unicode_version:
+                    # set new unicode version -- page data must be
+                    # re-initialized. Any version is legal, underlying
+                    # library performs best-match (with warnings)
+                    self.unicode_version = _wcmatch_version(inp)
+                    self.initialize_page_data()
+                    self.on_resize(None, None)
 
     def _process_keystroke_movement(self, inp, idx, offset):
         """Process keystrokes that adjust index and offset."""
         term = self.term
+        # a little vi-inspired.
         if inp in (u'y', u'k') or inp.code in (term.KEY_UP,):
             # scroll backward 1 line
             idx, offset = (idx, offset - self.screen.num_columns)
@@ -496,16 +548,16 @@ class Pager(object):
         elif inp == u'b' or inp.code in (term.KEY_PGUP,):
             # scroll backward 1 page
             idx, offset = (max(0, idx - 1), offset)
-        elif inp.code in (term.KEY_SDOWN,):
+        elif inp == u'F' or inp.code in (term.KEY_SDOWN,):
             # scroll forward 10 pages
             idx, offset = (max(0, idx + 10), offset)
-        elif inp.code in (term.KEY_SUP,):
+        elif inp == u'B' or inp.code in (term.KEY_SUP,):
             # scroll forward 10 pages
             idx, offset = (max(0, idx - 10), offset)
         elif inp.code == term.KEY_HOME:
             # top
             idx, offset = (0, 0)
-        elif inp.code == term.KEY_END:
+        elif inp == u'G' or inp.code == term.KEY_END:
             # bottom
             idx, offset = (self.last_page, 0)
         return idx, offset
@@ -549,7 +601,7 @@ class Pager(object):
         if self.dirty == self.STATE_REFRESH:
             writer(u''.join(
                 (self.term.home, self.term.clear,
-                 self.screen.msg_intro, '\n',
+                 self.screen.msg_intro(version=self.unicode_version), '\n',
                  self.screen.header, '\n',)))
             return True
 
@@ -573,7 +625,7 @@ class Pager(object):
                    u'{q} to quit, [keys: {keyset}]'
                    .format(idx=style.attr_minor(u'{0}'.format(idx)),
                            last_end=style.attr_major(last_end),
-                           keyset=style.attr_major('kjfb12-='),
+                           keyset=style.attr_major('kjfbvc12-='),
                            q=style.attr_minor(u'q')))
             writer(self.term.center(txt).rstrip())
 
@@ -686,7 +738,7 @@ def main(opts):
         style = Style(attr_major=term.magenta,
                       attr_minor=term.bright_cyan,
                       alignment=opts['--alignment'])
-    style.name_len = term.width - 15
+    style.name_len = 10
 
     screen = Screen(term, style, wide=opts['--wide'])
     pager = Pager(term, screen, opts['character_factory'])

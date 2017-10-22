@@ -10,6 +10,9 @@ values. Although wcwidth(3) is POSIX, its actual implementation may differ,
 so these tests are not guaranteed to be successful on all platforms, especially
 where wcwidth(3)/wcswidth(3) is out of date. This is especially true for many
 platforms -- usually conforming only to unicode specification 1.0 or 2.0.
+
+This program accepts one optional command-line argument, the unicode version
+level for our library to use when comparing to libc.
 """
 # pylint: disable=C0103
 #         Invalid module name "wcwidth-libc-comparator"
@@ -80,9 +83,9 @@ if sys.maxunicode < 1114111:
                   'characters may be tested.')
 
 
-def _is_equal_wcwidth(libc, ucs):
+def _is_equal_wcwidth(libc, ucs, unicode_version):
     w_libc = libc.wcwidth(ucs)
-    w_local = wcwidth.wcwidth(ucs)
+    w_local = wcwidth.wcwidth(ucs, unicode_version)
     assert w_libc == w_local, report_ucs_msg(ucs, w_libc, w_local)
 
 
@@ -115,10 +118,13 @@ def main(using_locale=('en_US', 'UTF-8',)):
     assert getattr(libc, 'wcswidth', None) is not None
 
     locale.setlocale(locale.LC_ALL, using_locale)
+    unicode_version = 'latest'
+    if len(sys.argv) > 1:
+        unicode_version = sys.argv[1]
 
     for ucs in all_ucs:
         try:
-            _is_equal_wcwidth(libc, ucs)
+            _is_equal_wcwidth(libc, ucs, unicode_version)
         except AssertionError as err:
             print(err)
 

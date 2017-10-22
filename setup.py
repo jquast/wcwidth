@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Setup file for wcwidth. https://github.com/jquast/wcwidth
+Setup.py distribution file for wcwidth.
+
+https://github.com/jquast/wcwidth
 """
 import codecs
 import os

@@ -57,9 +57,9 @@ UCD_IN = os.path.join(PATH_UP, 'data',
                       'DerivedGeneralCategory-{version}.txt')
 ZERO_OUT = os.path.join(PATH_UP, 'wcwidth', 'table_zero.py')
 
-README_RST = os.path.join(PATH_UP, 'README.RST')
-README_PATCH_FROM = "release files:"
-README_PATCH_TO = "======="
+FILE_RST = os.path.join(PATH_UP, 'docs/unicode_version.rst')
+FILE_PATCH_FROM = "release files:"
+FILE_PATCH_TO = "======="
 
 
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
@@ -69,7 +69,7 @@ def main():
     versions = get_unicode_versions()
     do_east_asian(versions)
     do_zero_width(versions)
-    do_readme_update()
+    do_rst_file_update()
     do_version_json(versions)
 
 def get_unicode_versions():
@@ -86,23 +86,18 @@ def get_unicode_versions():
             '8.0.0',
             '9.0.0']
 
-def do_readme_update():
-    """Patch README.rst to reflect the data files used in release."""
+def do_rst_file_update():
+    """Patch unicode_versions.rst to reflect the data files used in release."""
     import codecs
     import glob
 
     # read in,
-    data_in = codecs.open(
-        os.path.join(PATH_UP, 'README.rst'), 'r', 'utf8').read()
+    data_in = codecs.open(FILE_RST, 'r', 'utf8').read()
 
     # search for beginning and end positions,
-    pos_begin = data_in.find(README_PATCH_FROM)
-    assert pos_begin != -1, (pos_begin, README_PATCH_FROM)
-    pos_begin += len(README_PATCH_FROM)
-
-    pos_end = data_in[pos_begin:].find(README_PATCH_TO)
-    assert pos_end != -1, (pos_end, README_PATCH_TO)
-    pos_end += pos_begin
+    pos_begin = data_in.find(FILE_PATCH_FROM)
+    assert pos_begin != -1, (pos_begin, FILE_PATCH_FROM)
+    pos_begin += len(FILE_PATCH_FROM)
 
     glob_pattern = os.path.join(PATH_UP, 'data', '*.txt')
     file_descriptions = [
@@ -114,14 +109,13 @@ def do_readme_update():
         data_in[:pos_begin] +
         '\n\n' +
         '\n'.join(file_descriptions) +
-        '\n\n' +
-        data_in[pos_end:]
+        '\n'
     )
 
     # write.
-    print("patching {} ..".format(README_RST))
+    print("patching {} ..".format(FILE_RST))
     codecs.open(
-        README_RST, 'w', 'utf8').write(data_out)
+        FILE_RST, 'w', 'utf8').write(data_out)
 
 def do_east_asian(versions):
     """Fetch and update east-asian tables."""

@@ -71,13 +71,18 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 # std imports
 from __future__ import division
 import pkg_resources
+import warnings
 import json
+import sys
 
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 
+# global cache
 _UNICODE_VERSIONS = None
+_UNICODE_CMPTABLE = None
+_PY3 = (sys.version_info[0] >= 3)
 
 def _bisearch(ucs, table):
     """
@@ -113,7 +118,8 @@ def wcwidth(wc, unicode_version='latest'):
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as
         ``'6.0.0'``, the list of available version levels may be
-        listed by pairing function :func:`get_supported_unicode_versions`.
+        listed by pairing function :func:`list_versions`.
+
         Any version string may be specified without error -- the nearest
         matching version is selected.  When ``latest`` (default), the
         highest Unicode version level is used.
@@ -170,8 +176,6 @@ def wcwidth(wc, unicode_version='latest'):
     #         Invalid argument name "wc"
     ucs = ord(wc)
 
-    _unicode_version = match_version(unicode_version)
-
     # NOTE: created by hand, there isn't anything identifiable other than
     # general Cf category code to identify these, and some characters in Cf
     # category code are of non-zero width.
@@ -191,10 +195,13 @@ def wcwidth(wc, unicode_version='latest'):
     if ucs < 32 or 0x07F <= ucs < 0x0A0:
         return -1
 
+    _unicode_version = _wcmatch_version(unicode_version)
+
     # combining characters with zero width
     if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
         return 0
 
+    # wide east asian
     return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
@@ -205,6 +212,7 @@ def wcswidth(pwcs, n=None, unicode_version='latest'):
     :param str pwcs: Measure width of given unicode string.
     :param int n: When ``n`` is None (default), return the length of the
         entire string, otherwise width the first ``n`` characters specified.
+    :rtype: int
     :returns: The width, in cells, necessary to display the first ``n``
         characters of the unicode string ``pwcs``.  Returns ``-1`` if
         a non-printable character is encountered.
@@ -224,18 +232,7 @@ def wcswidth(pwcs, n=None, unicode_version='latest'):
     return width
 
 
-def _get_package_version():
-    """
-    Package version of wcwidth (for use with __version__ variable).
-
-    :rtype: str
-    """
-    return json.loads(
-        pkg_resources.resource_string(
-            'wcwidth', "version.json"
-        ).decode('utf8'))['package']
-
-def get_supported_unicode_versions():
+def list_versions():
     """
     Return Unicode version levels supported by this module release.
 
@@ -245,56 +242,138 @@ def get_supported_unicode_versions():
     :returns: Supported Unicode version numbers in ascending sorted order.
     :rtype: list[str]
     """
+    # memoize global cache as _UNICODE_VERSIONS
     global _UNICODE_VERSIONS
     if _UNICODE_VERSIONS is None:
         # load from 'version.json', use setuptools to access
         # resource string so that the package is zip/wheel-compatible.
-        _UNICODE_VERSIONS = json.loads(
+        version_tables = json.loads(
             pkg_resources.resource_string(
                 'wcwidth', "version.json"
             ).decode('utf8'))['tables']
+        _UNICODE_VERSIONS = version_tables
     return _UNICODE_VERSIONS
 
 
-def match_version(given_version):
+def _wcversion_value(ver_string):
+    """
+    Integer-mapped value of given dotted version string.
+
+    :param str ver_string: Unicode version string, of form ``n.n.n``.
+    :rtype: tuple(int)
+    :returns: tuple of digit tuples, ``tuple(int, [...])``.
+    """
+    retval = tuple(map(int, (ver_string.split('.'))))
+    return retval
+
+
+def _wcmatch_version(given_version):
     """
     Return nearest matching supported Unicode version level for given version.
 
-    If an exact match is not determined, the nearest version lowest version
-    level is returned.  For example, given supported levels '4.1.0' and
-    '5.0.0':
+    If an exact match is not determined, the nearest lowest version level is
+    returned after a warning is emitted.  For example, given supported levels
+    ``4.1.0`` and ``5.0.0``, and a version string of ``4.9.9``, then ``4.1.0``
+    is selected and returned:
 
-    >>> match_version('4.9.9')
+    >>> _wcmatch_version('4.9.9')
+    '4.1.0'
+    >>> _wcmatch_version('8.0')
+    '8.0.0'
+    >>> _wcmatch_version('1')
     '4.1.0'
 
-    :param str version: XXX
+    :param str version: given version for compare.
+    :rtype: str
+    :returns: unicode string, or non-unicode ``str`` type for python 2
+        when given ``version`` is also type ``str``.
+    """
+    # Design note: the choice to return the same type given certainly
+    # complicates it for python 2 str-type, but allows us to define an api that
+    # all code use 'string-type' for unicode version level definitions, so all
+    # of our example code works with all versions of python. That, along with
+    # the string-to-numeric and comparisons of earliest, latest, matching, or
+    # nearest, greatly complicates this function.
+    _return_str = not _PY3 and isinstance(given_version, str)
+
+    if _return_str:
+        unicode_versions = [ucs.encode() for ucs in list_versions()]
+    else:
+        unicode_versions = list_versions()
+    latest_version = unicode_versions[-1]
+
+    if given_version in (u'latest', 'latest'):
+        # default match, when given as 'latest', use the most latest unicode
+        # version specification level supported.
+        return latest_version if not _return_str else latest_version.encode()
+
+    elif given_version in unicode_versions:
+        # exact match, downstream has specified an explicit matching version
+        # matching any value of list_versions().
+        return given_version if not _return_str else given_version.encode()
+
+    # The user's version is not supported by ours. We return the newest unicode
+    # version level that we support below their given value.
+    try:
+        cmp_given = _wcversion_value(given_version)
+
+    except ValueError:
+        # submitted value raises ValueError in int(), warn and use latest.
+        warnings.warn("Unicode version value, {given_version!r}, is invalid. "
+                      "Value should be in form of `integer[.[...]]', latest "
+                      "supported unicode version {latest_version!r} is "
+                      "inferred.".format(given_version=given_version,
+                                         latest_version=latest_version))
+        return latest_version if not _return_str else latest_version.encode()
+
+    # given version is less than any available version, return earliest
+    # version.
+    earliest_version = unicode_versions[0]
+    cmp_earliest_version = _wcversion_value(earliest_version)
+
+    if cmp_given <= cmp_earliest_version:
+        warnings.warn("Unicode version value, {given_version!r}, is lower "
+                      "than any available unicode version. Returning lowest "
+                      "version level, {earliest_version!r}".format(
+                          given_version=given_version,
+                          earliest_version=earliest_version))
+        return earliest_version
+
+    # create list of versions which are less than our equal to given version,
+    # and return the tail value, which is the highest level we may support,
+    # or the latest value we support, when completely unmatched or higher
+    # than any supported version.
+    #
+    # function will never complete, always returns.
+    for idx, unicode_version in enumerate(unicode_versions):
+        # look ahead to next value
+        try:
+            cmp_next_version = _wcversion_value(unicode_versions[idx + 1])
+        except IndexError:
+            # at end of list, return latest version
+            return latest_version
+
+        # Maybe our given version has less parts, as in tuple(8, 0), than the
+        # next compare version tuple(8, 0, 0). Test for an exact match by
+        # comparison of only the leading dotted piece(s): (8, 0) == (8, 0).
+        if cmp_given == cmp_next_version[:len(cmp_given)]:
+            return unicode_versions[idx + 1]
+
+        # Or, if any next value is greater than our given support level
+        # version, return the current value in index.  Even though it must
+        # be less than the given value, its our closest possible match. That
+        # is, 4.1 is returned for given 4.9.9, where 4.1 and 5.0 are available.
+        if cmp_next_version > cmp_given:
+            return unicode_version
+    assert False, unicode_versions
+
+def _get_package_version():
+    """
+    Version of wcwidth (produces module-level ``__version__`` val).
+
     :rtype: str
     """
-    unicode_versions = get_supported_unicode_versions()
-    if given_version == 'latest':
-        return unicode_versions[-1]
-    if given_version in unicode_versions:
-        return given_version
-    for match_version in unicode_versions:
-        prev_version = unicode_versions.index(match_version) - 1
-#        if prev_version >= 0:
-
-#    for idx, match_version in enumerate(unicode_versions):
-#
-#        prev_idx = _UNICODE_VERSIONS.index(cur_version) - 1
-#        if prev_idx >= 0:
-#            prev_version = _UNICODE_VERSIONS[prev_idx]
-#            cmp_current = distutils.version.LooseVersion(cur_version)
-#            cmp_previous = distutils.version.LooseVersion(prev_version)
-   
-#   if match_version not in unicode_versions:
-#       given_version = distutils.version.LooseVersion(version)
-#       sorted_versions = sorted(
-#           [distutils.version.LooseVersion(ver)
-#            for ver in wcwidth.get_supported_unicode_versions()],
-#           reverse=True)
-#       for idx, match_version in sorted_versions:
-#           if given_version < match_version:
-#               if idx:
-#                   return sorted_versions[idx - 1]
-#               return sorted_versions[0]
+    return json.loads(
+        pkg_resources.resource_string(
+            'wcwidth', "version.json"
+        ).decode('utf8'))['package']

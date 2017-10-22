@@ -1,5 +1,5 @@
 """Wide_Eastasian table. Created by setup.py."""
-# Generated: 2017-03-26T21:04:41.956627
+# Generated: 2017-10-22T16:15:25.429254
 WIDE_EASTASIAN = {
   '4.1.0': (
     # Source: EastAsianWidth-4.1.0.txt

@@ -1,11 +1,22 @@
 # coding: utf-8
-"""Core tests module for wcwidth."""
+"""Core tests for wcwidth module."""
 # std imports
 import pkg_resources
-import json
 
 # local imports
 import wcwidth
+
+
+def test_package_version():
+    """wcwidth.__version__ is expected value."""
+    # given,
+    expected = pkg_resources.get_distribution('wcwidth').version
+
+    # exercise,
+    result = wcwidth.__version__
+
+    # verify.
+    assert result == expected
 
 
 def test_hello_jp():
@@ -67,7 +78,7 @@ def test_null_width_0():
 
 
 def test_control_c0_width_negative_1():
-    """CSI (Control sequence initiate) reports width -1."""
+    """CSI (Control sequence initiate) reports width -1 for ESC."""
     # given,
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
@@ -82,7 +93,7 @@ def test_control_c0_width_negative_1():
     assert length_phrase == expect_length_phrase
 
 
-def test_combining_width_negative_1():
+def test_combining_width():
     """Simple test combining reports total width of 4."""
     # given,
     phrase = u'--\u05bf--'
@@ -142,28 +153,3 @@ def test_combining_spacing():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
-
-def test_package_version():
-    """Test that wcwidth.__version__ is expected value."""
-    # given,
-    expected = pkg_resources.get_distribution('wcwidth').version
-
-    # exercise,
-    result = wcwidth.__version__
-
-    # verify.
-    assert result == expected
-
-
-def test_unicode_version():
-    """Test that wcwidth.__version__ is expected value."""
-    # given,
-    expected = json.loads(
-        pkg_resources.resource_string('wcwidth', "version.json").decode('utf8')
-    )['tables']
-
-    # exercise,
-    result = wcwidth.get_supported_unicode_versions()
-
-    # verify.
-    assert result == expected
