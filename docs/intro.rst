@@ -120,7 +120,8 @@ This library is used in:
 
 - `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
 
-A similar implementation in javascript, XXXX
+- `timoxley/wcwidth`_, A similar implementation in javascript.
+
 
 History
 -------
@@ -196,5 +197,6 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
 .. _`dbcli/pgcli`: https://github.com/dbcli/pgcli
 .. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
+.. _`timoxley/wcwidth`: https://github.com/timoxley/wcwidth
 .. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
 .. _`wcswidth(3)`: http://man7.org/linux/man-pages/man3/wcswidth.3.html

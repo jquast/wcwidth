@@ -13,6 +13,8 @@ versions.
 
 .. autofunction:: wcwidth.list_versions
 
+.. _SEMVER: https://semver.org
+
 ===========
 Private API
 ===========
