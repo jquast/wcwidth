@@ -1,5 +1,5 @@
 # direct dependencies
-requests==2.10.0
+requests>=2,<3
 blessed==1.14.1
 docopt==0.6.2
 prospector==0.12
