@@ -26,7 +26,7 @@ pylint-common==0.2.2
 pylint-django==0.7.2
 pylint-plugin-utils==0.2.3
 pyroma==2.0.2
-PyYAML==3.11
+PyYAML==5.1
 requirements-detector==0.5.1
 setoptconf==0.2.0
 six==1.10.0
