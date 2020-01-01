@@ -3,29 +3,25 @@ language: python
 sudo: false
 
 env:
-  - TOXENV=py26
   - TOXENV=py27
-  - TOXENV=py33
-  - TOXENV=py34
+  - TOXENV=py35
+  - TOXENV=py36
+  - TOXENV=py37
 
 install:
   - pip install -q tox 
 
-  # for python version =33, cinstall and overage, coveralls.
-  # coverage is only measured and published for one version.
-  - if [[ $TOXENV == "py34" ]]; then
+  # coverage is only measured and published for py37
+  - if [[ $TOXENV == "py37" ]]; then
         pip install -q coverage coveralls;
     fi
 
 
 script:
   - tox -e $TOXENV
-  - if [[ $TOXENV == "py34" ]]; then
-        tox -echeck;
-    fi
 
 after_success:
-  - if [[ $TOXENV == "py34" ]]; then
+  - if [[ $TOXENV == "py37" ]]; then
         coveralls;
     fi
 

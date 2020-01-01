@@ -163,6 +163,9 @@ source code.  They are not distributed.
 History
 =======
 
+0.1.8 *2020-01-01*
+  * **Updated** tables to Unicode Specification 12.0.0. (`PR #30`_).
+
 0.1.7 *2016-07-01*
   * **Updated** tables to Unicode Specification 9.0.0. (`PR #18`_).
 
