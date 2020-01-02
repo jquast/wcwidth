@@ -6,13 +6,12 @@ env:
   - TOXENV=py27
   - TOXENV=py35
   - TOXENV=py36
-  - TOXENV=py37
 
 install:
   - pip install -q tox 
 
-  # coverage is only measured and published for py37
-  - if [[ $TOXENV == "py37" ]]; then
+  # coverage is only measured and published for py36
+  - if [[ $TOXENV == "py36" ]]; then
         pip install -q coverage coveralls;
     fi
 
@@ -21,7 +20,7 @@ script:
   - tox -e $TOXENV
 
 after_success:
-  - if [[ $TOXENV == "py37" ]]; then
+  - if [[ $TOXENV == "py36" ]]; then
         coveralls;
     fi
 
