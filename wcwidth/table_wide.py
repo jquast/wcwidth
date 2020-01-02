@@ -1,7 +1,7 @@
 """Wide_Eastasian table. Created by setup.py."""
-# Generated: 2016-07-02T04:20:28.048222
-# Source: EastAsianWidth-9.0.0.txt
-# Date:  2016-05-27, 17:00:00 GMT [KW, LI]
+# Generated: 2020-01-01T22:59:30.491382
+# Source: EastAsianWidth-12.1.0.txt
+# Date:  2019-03-31, 22:01:58 GMT [KW, LI]
 WIDE_EASTASIAN = (
     (0x1100, 0x115f,),  # Hangul Choseong Kiyeok  ..Hangul Choseong Filler
     (0x231a, 0x231b,),  # Watch                   ..Hourglass
@@ -45,14 +45,13 @@ WIDE_EASTASIAN = (
     (0x3000, 0x303e,),  # Ideographic Space       ..Ideographic Variation In
     (0x3041, 0x3096,),  # Hiragana Letter Small A ..Hiragana Letter Small Ke
     (0x3099, 0x30ff,),  # Combining Katakana-hirag..Katakana Digraph Koto
-    (0x3105, 0x312d,),  # Bopomofo Letter B       ..Bopomofo Letter Ih
+    (0x3105, 0x312f,),  # Bopomofo Letter B       ..
     (0x3131, 0x318e,),  # Hangul Letter Kiyeok    ..Hangul Letter Araeae
     (0x3190, 0x31ba,),  # Ideographic Annotation L..Bopomofo Letter Zy
     (0x31c0, 0x31e3,),  # Cjk Stroke T            ..Cjk Stroke Q
     (0x31f0, 0x321e,),  # Katakana Letter Small Ku..Parenthesized Korean Cha
     (0x3220, 0x3247,),  # Parenthesized Ideograph ..Circled Ideograph Koto
-    (0x3250, 0x32fe,),  # Partnership Sign        ..Circled Katakana Wo
-    (0x3300, 0x4dbf,),  # Square Apaato           ..
+    (0x3250, 0x4dbf,),  # Partnership Sign        ..
     (0x4e00, 0xa48c,),  # Cjk Unified Ideograph-4e..Yi Syllable Yyr
     (0xa490, 0xa4c6,),  # Yi Radical Qot          ..Yi Radical Ke
     (0xa960, 0xa97c,),  # Hangul Choseong Tikeut-m..Hangul Choseong Ssangyeo
@@ -64,10 +63,13 @@ WIDE_EASTASIAN = (
     (0xfe68, 0xfe6b,),  # Small Reverse Solidus   ..Small Commercial At
     (0xff01, 0xff60,),  # Fullwidth Exclamation Ma..Fullwidth Right White Pa
     (0xffe0, 0xffe6,),  # Fullwidth Cent Sign     ..Fullwidth Won Sign
-    (0x16fe0, 0x16fe0,),  # (nil)                   ..
-    (0x17000, 0x187ec,),  # (nil)                   ..
+    (0x16fe0, 0x16fe3,),  # (nil)                   ..
+    (0x17000, 0x187f7,),  # (nil)                   ..
     (0x18800, 0x18af2,),  # (nil)                   ..
-    (0x1b000, 0x1b001,),  # Katakana Letter Archaic ..Hiragana Letter Archaic
+    (0x1b000, 0x1b11e,),  # Katakana Letter Archaic ..
+    (0x1b150, 0x1b152,),  # (nil)                   ..
+    (0x1b164, 0x1b167,),  # (nil)                   ..
+    (0x1b170, 0x1b2fb,),  # (nil)                   ..
     (0x1f004, 0x1f004,),  # Mahjong Tile Red Dragon ..Mahjong Tile Red Dragon
     (0x1f0cf, 0x1f0cf,),  # Playing Card Black Joker..Playing Card Black Joker
     (0x1f18e, 0x1f18e,),  # Negative Squared Ab     ..Negative Squared Ab
@@ -76,6 +78,7 @@ WIDE_EASTASIAN = (
     (0x1f210, 0x1f23b,),  # Squared Cjk Unified Ideo..
     (0x1f240, 0x1f248,),  # Tortoise Shell Bracketed..Tortoise Shell Bracketed
     (0x1f250, 0x1f251,),  # Circled Ideograph Advant..Circled Ideograph Accept
+    (0x1f260, 0x1f265,),  # (nil)                   ..
     (0x1f300, 0x1f320,),  # Cyclone                 ..Shooting Star
     (0x1f32d, 0x1f335,),  # Hot Dog                 ..Cactus
     (0x1f337, 0x1f37c,),  # Tulip                   ..Baby Bottle
@@ -97,16 +100,20 @@ WIDE_EASTASIAN = (
     (0x1f680, 0x1f6c5,),  # Rocket                  ..Left Luggage
     (0x1f6cc, 0x1f6cc,),  # Sleeping Accommodation  ..Sleeping Accommodation
     (0x1f6d0, 0x1f6d2,),  # Place Of Worship        ..
+    (0x1f6d5, 0x1f6d5,),  # (nil)                   ..
     (0x1f6eb, 0x1f6ec,),  # Airplane Departure      ..Airplane Arriving
-    (0x1f6f4, 0x1f6f6,),  # (nil)                   ..
-    (0x1f910, 0x1f91e,),  # Zipper-mouth Face       ..
-    (0x1f920, 0x1f927,),  # (nil)                   ..
-    (0x1f930, 0x1f930,),  # (nil)                   ..
-    (0x1f933, 0x1f93e,),  # (nil)                   ..
-    (0x1f940, 0x1f94b,),  # (nil)                   ..
-    (0x1f950, 0x1f95e,),  # (nil)                   ..
-    (0x1f980, 0x1f991,),  # Crab                    ..
-    (0x1f9c0, 0x1f9c0,),  # Cheese Wedge            ..Cheese Wedge
+    (0x1f6f4, 0x1f6fa,),  # (nil)                   ..
+    (0x1f7e0, 0x1f7eb,),  # (nil)                   ..
+    (0x1f90d, 0x1f971,),  # (nil)                   ..
+    (0x1f973, 0x1f976,),  # (nil)                   ..
+    (0x1f97a, 0x1f9a2,),  # (nil)                   ..
+    (0x1f9a5, 0x1f9aa,),  # (nil)                   ..
+    (0x1f9ae, 0x1f9ca,),  # (nil)                   ..
+    (0x1f9cd, 0x1f9ff,),  # (nil)                   ..
+    (0x1fa70, 0x1fa73,),  # (nil)                   ..
+    (0x1fa78, 0x1fa7a,),  # (nil)                   ..
+    (0x1fa80, 0x1fa82,),  # (nil)                   ..
+    (0x1fa90, 0x1fa95,),  # (nil)                   ..
     (0x20000, 0x2fffd,),  # Cjk Unified Ideograph-20..
     (0x30000, 0x3fffd,),  # (nil)                   ..
 )
