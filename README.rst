@@ -59,8 +59,8 @@ output length is wrong::
     >>> print(len('コンニチハ'))
     5
 
-    >>> print('コンニチハ'.rjust(20, '_'))
-    _____コンニチハ
+    >>> print('コンニチハ'.rjust(11, '_'))
+    ______コンニチハ
 
 By defining our own "rjust" function that uses wcwidth, we can correct this::
 
@@ -75,8 +75,8 @@ Our **Solution** uses wcswidth to determine the string length correctly::
    >>> print(wcswidth('コンニチハ'))
    10
 
-   >>> print(wc_rjust('コンニチハ', 20, '_'))
-   __________コンニチハ
+   >>> print(wc_rjust('コンニチハ', 11, '_'))
+   _コンニチハ
 
 Uses
 ----
