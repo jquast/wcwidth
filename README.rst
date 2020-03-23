@@ -84,11 +84,11 @@ Uses
 This library is used in:
 
 - asciimatics_: Package to help people create full-screen text UIs.
-- blessed_, a simplified wrapper around curses.
+- blessed_: a simplified wrapper around curses.
 - curtsies_: Curses wrapper with a display based on compositing 2d arrays of text.
 - ftfy_: Fixes mojibake and other glitches in Unicode text, after the fact.
-- pyte_, a Simple VTXXX-compatible linux terminal emulator.
-- python-prompt-toolkit_, a Powerful interactive command line building library.
+- pyte_: a Simple VTXXX-compatible linux terminal emulator.
+- python-prompt-toolkit_: a Powerful interactive command line building library.
 - termtosvg_: Terminal recorder that renders sessions as SVG animations.
 
 
