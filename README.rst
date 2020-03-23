@@ -228,6 +228,7 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #5`: https://github.com/jquast/wcwidth/pull/5
 .. _`PR #11`: https://github.com/jquast/wcwidth/pull/11
 .. _`PR #18`: https://github.com/jquast/wcwidth/pull/18
+.. _`PR #30`: https://github.com/jquast/wcwidth/pull/30
 .. _`PR #35`: https://github.com/jquast/wcwidth/pull/35
 .. _blessed: https://github.com/jquast/blessed
 .. _python-prompt-toolkit: https://github.com/prompt-toolkit/python-prompt-toolkit
