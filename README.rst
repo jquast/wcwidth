@@ -26,47 +26,71 @@ Introduction
 ============
 
 This Library is mainly for those implementing a Terminal Emulator, or programs
-that carefully produce output to be interpreted by one.
+that carefully produce output to mimick or to be interpreted by an emulator.
 
-**Problem Statement**: When printed to the screen, the length of the string is
-usually equal to the number of cells it occupies.  However, there are
-categories of characters that occupy 2 cells (full-wide), and others that
-occupy 0.
-
+**Problem Statement**: The printible length of *most* strings are equal to the
+number of cells they occupy on the screen.  However, there are categories of
+characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
+(zero-width).
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
 functions precisely copy.  *These functions return the number of cells a
 unicode string is expected to occupy.*
 
-This library aims to be forward-looking, portable, and most correct.  The most
-current release of this API is based on the Unicode Standard release files:
-
-``DerivedGeneralCategory-9.0.0.txt``
-  *Date: 2016-06-01, 10:34:26 GMT*
-  © 2016 Unicode®, Inc.
-
-``EastAsianWidth-9.0.0.txt``
-  *Date: 2016-05-27, 17:00:00 GMT [KW, LI]*
-  © 2016 Unicode®, Inc.
-
-
 Installation
 ------------
 
-The stable version of this package is maintained on pypi, install using pip::
+The stable version of this package is maintained on pypi, install or upgrade using pip::
 
-    pip install wcwidth
+    pip install --upgrade wcwidth
 
 Example
 -------
 
-To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
+**Problem**: given the following phrase (Japanese),
 
-    >>> from wcwidth import wcswidth
     >>> text = u'コンニチハ'
-    >>> text_len = wcswidth(text)
-    >>> print(u' ' * (80 - text_len) + text)
+
+Python **incorrectly** uses the *string length* of 5 codepoints rather than the
+*printible length* of 10 cells, so that when using the `rjust` function, the
+output length is wrong::
+
+    >>> print(len('コンニチハ'))
+    5
+
+    >>> print('コンニチハ'.rjust(20, '_'))
+    _____コンニチハ
+
+By defining our own "rjust" function that uses wcwidth, we can correct this::
+
+   >>> def wc_rjust(text, length, padding=' '):
+   ...    from wcwidth import wcswidth
+   ...    return padding * max(0, (length - wcswidth(text))) + text
+   ...
+
+Our **Solution** uses wcswidth to determine the string length correctly::
+
+   >>> from wcwidth import wcswidth
+   >>> print(wcswidth('コンニチハ'))
+   10
+
+   >>> print(wc_rjust('コンニチハ', 20, '_'))
+   __________コンニチハ
+
+Uses
+----
+
+This library is used in:
+
+- asciimatics_: Package to help people create full-screen text UIs.
+- blessed_, a simplified wrapper around curses.
+- curtsies_: Curses wrapper with a display based on compositing 2d arrays of text.
+- ftfy_: Fixes mojibake and other glitches in Unicode text, after the fact.
+- pyte_, a Simple VTXXX-compatible linux terminal emulator.
+- python-prompt-toolkit_, a Powerful interactive command line building library.
+- termtosvg_: Terminal recorder that renders sessions as SVG animations.
+
 
 wcwidth, wcswidth
 -----------------
@@ -100,9 +124,11 @@ More documentation is available using pydoc::
 Caveats
 =======
 
-This library attempts to determine the printable width by an unknown targeted
-terminal emulator.  It does not provide any ability to discern what the target
-emulator software, version, of level of support is.  Results may vary!
+This library attempts to determine the printable width by a fictional terminal,
+using the very latest Unicode specification, though some work is in progress for
+the ability to select a version, there is no standards conforming ability to
+discern what the target emulator software, version, of level of support is.
+Results may vary!
 
 A `crude method
 <http://blessed.readthedocs.org/en/latest/examples.html#detect-multibyte-py>`_
@@ -110,11 +136,7 @@ of determining the level of unicode support by the target emulator may be
 performed using the VT100 Query Cursor Position sequence.
 
 The libc version of `wcwidth(3)`_ is often several unicode releases behind,
-and therefor several levels of support lower than this python library.  You
-may determine an exacting list of these discrepancies using the project
-file `wcwidth-libc-comparator.py
-<https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-libc-comparator.py>`_.
-
+and therefor several levels of support lower than this python library.
 
 ==========
 Developing
@@ -132,6 +154,22 @@ Execute unit tests using tox::
 
    tox
 
+Use the interactive browser::
+
+  python bin/wcwidth-browser.py
+
+This library aims to be forward-looking, portable, and most correct.  The most
+current release of this API is based on the Unicode Standard release files:
+
+``DerivedGeneralCategory-13.0.0.txt``
+  *Date:  2019-10-21, 14:30:32 GMT*
+  © 2019 Unicode®, Inc.
+
+``EastAsianWidth-13.0.0.txt``
+  *Date:  2020-01-21, 18:14:00 GMT [KW, LI]*
+  © 2020 Unicode®, Inc.
+
+
 Updating Tables
 ---------------
 
@@ -144,20 +182,6 @@ And generates the table files:
 
 - `wcwidth/table_wide.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_wide.py>`_
 - `wcwidth/table_zero.py <https://github.com/jquast/wcwidth/tree/master/wcwidth/table_zero.py>`_
-
-Uses
-----
-
-This library is used in:
-
-- `jquast/blessed`_, a simplified wrapper around curses.
-
-- `jonathanslenders/python-prompt-toolkit`_, a Library for building powerful
-  interactive command lines in Python.
-
-Additional tools for displaying and testing wcwidth are found in the `bin/
-<https://github.com/jquast/wcwidth/tree/master/bin>`_ folder of this project's
-source code.  They are not distributed.
 
 =======
 History
@@ -221,14 +245,20 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Thomas Ballinger`: https://github.com/thomasballinger
 .. _`Leta Montopoli`: https://github.com/lmontopo
 .. _`Philip Craig`: https://github.com/philipc
+.. _`Avram Lubkin`: https://github.com/avylove
 .. _`PR #3`: https://github.com/jquast/wcwidth/pull/3
 .. _`PR #4`: https://github.com/jquast/wcwidth/pull/4
 .. _`PR #5`: https://github.com/jquast/wcwidth/pull/5
 .. _`PR #11`: https://github.com/jquast/wcwidth/pull/11
 .. _`PR #18`: https://github.com/jquast/wcwidth/pull/18
 .. _`PR #35`: https://github.com/jquast/wcwidth/pull/35
-.. _`Avram Lubkin`: https://github.com/avylove
-.. _`jquast/blessed`: https://github.com/jquast/blessed
-.. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
+.. _blessed: https://github.com/jquast/blessed
+.. _python-prompt-toolkit: https://github.com/prompt-toolkit/python-prompt-toolkit
+.. _pyte: https://github.com/selectel/pyte
+.. _asciimatics: https://github.com/peterbrittain/asciimatics
+.. _ftfy: https://github.com/LuminosoInsight/python-ftfy
+.. _curtsies: https://github.com/bpython/curtsies
+.. _bpython: https://github.com/bpython/bpython
+.. _termtosvg: https://github.com/nbedos/termtosvg
 .. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
 .. _`wcswidth(3)`: http://man7.org/linux/man-pages/man3/wcswidth.3.html
