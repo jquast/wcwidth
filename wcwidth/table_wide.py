@@ -1,7 +1,7 @@
 """Wide_Eastasian table. Created by setup.py."""
-# Generated: 2020-01-01T22:59:30.491382
-# Source: EastAsianWidth-12.1.0.txt
-# Date:  2019-03-31, 22:01:58 GMT [KW, LI]
+# Generated: 2020-03-23T04:40:34.676535
+# Source: EastAsianWidth-13.0.0.txt
+# Date:  2029-01-21, 18:14:00 GMT [KW, LI]
 WIDE_EASTASIAN = (
     (0x1100, 0x115f,),  # Hangul Choseong Kiyeok  ..Hangul Choseong Filler
     (0x231a, 0x231b,),  # Watch                   ..Hourglass
@@ -45,10 +45,9 @@ WIDE_EASTASIAN = (
     (0x3000, 0x303e,),  # Ideographic Space       ..Ideographic Variation In
     (0x3041, 0x3096,),  # Hiragana Letter Small A ..Hiragana Letter Small Ke
     (0x3099, 0x30ff,),  # Combining Katakana-hirag..Katakana Digraph Koto
-    (0x3105, 0x312f,),  # Bopomofo Letter B       ..
+    (0x3105, 0x312f,),  # Bopomofo Letter B       ..Bopomofo Letter Nn
     (0x3131, 0x318e,),  # Hangul Letter Kiyeok    ..Hangul Letter Araeae
-    (0x3190, 0x31ba,),  # Ideographic Annotation L..Bopomofo Letter Zy
-    (0x31c0, 0x31e3,),  # Cjk Stroke T            ..Cjk Stroke Q
+    (0x3190, 0x31e3,),  # Ideographic Annotation L..Cjk Stroke Q
     (0x31f0, 0x321e,),  # Katakana Letter Small Ku..Parenthesized Korean Cha
     (0x3220, 0x3247,),  # Parenthesized Ideograph ..Circled Ideograph Koto
     (0x3250, 0x4dbf,),  # Partnership Sign        ..
@@ -63,22 +62,24 @@ WIDE_EASTASIAN = (
     (0xfe68, 0xfe6b,),  # Small Reverse Solidus   ..Small Commercial At
     (0xff01, 0xff60,),  # Fullwidth Exclamation Ma..Fullwidth Right White Pa
     (0xffe0, 0xffe6,),  # Fullwidth Cent Sign     ..Fullwidth Won Sign
-    (0x16fe0, 0x16fe3,),  # (nil)                   ..
+    (0x16fe0, 0x16fe4,),  # Tangut Iteration Mark   ..
+    (0x16ff0, 0x16ff1,),  # (nil)                   ..
     (0x17000, 0x187f7,),  # (nil)                   ..
-    (0x18800, 0x18af2,),  # (nil)                   ..
-    (0x1b000, 0x1b11e,),  # Katakana Letter Archaic ..
+    (0x18800, 0x18cd5,),  # Tangut Component-001    ..
+    (0x18d00, 0x18d08,),  # (nil)                   ..
+    (0x1b000, 0x1b11e,),  # Katakana Letter Archaic ..Hentaigana Letter N-mu-m
     (0x1b150, 0x1b152,),  # (nil)                   ..
     (0x1b164, 0x1b167,),  # (nil)                   ..
-    (0x1b170, 0x1b2fb,),  # (nil)                   ..
+    (0x1b170, 0x1b2fb,),  # Nushu Character-1b170   ..Nushu Character-1b2fb
     (0x1f004, 0x1f004,),  # Mahjong Tile Red Dragon ..Mahjong Tile Red Dragon
     (0x1f0cf, 0x1f0cf,),  # Playing Card Black Joker..Playing Card Black Joker
     (0x1f18e, 0x1f18e,),  # Negative Squared Ab     ..Negative Squared Ab
     (0x1f191, 0x1f19a,),  # Squared Cl              ..Squared Vs
     (0x1f200, 0x1f202,),  # Square Hiragana Hoka    ..Squared Katakana Sa
-    (0x1f210, 0x1f23b,),  # Squared Cjk Unified Ideo..
+    (0x1f210, 0x1f23b,),  # Squared Cjk Unified Ideo..Squared Cjk Unified Ideo
     (0x1f240, 0x1f248,),  # Tortoise Shell Bracketed..Tortoise Shell Bracketed
     (0x1f250, 0x1f251,),  # Circled Ideograph Advant..Circled Ideograph Accept
-    (0x1f260, 0x1f265,),  # (nil)                   ..
+    (0x1f260, 0x1f265,),  # Rounded Symbol For Fu   ..Rounded Symbol For Cai
     (0x1f300, 0x1f320,),  # Cyclone                 ..Shooting Star
     (0x1f32d, 0x1f335,),  # Hot Dog                 ..Cactus
     (0x1f337, 0x1f37c,),  # Tulip                   ..Baby Bottle
@@ -93,27 +94,29 @@ WIDE_EASTASIAN = (
     (0x1f4ff, 0x1f53d,),  # Prayer Beads            ..Down-pointing Small Red
     (0x1f54b, 0x1f54e,),  # Kaaba                   ..Menorah With Nine Branch
     (0x1f550, 0x1f567,),  # Clock Face One Oclock   ..Clock Face Twelve-thirty
-    (0x1f57a, 0x1f57a,),  # (nil)                   ..
+    (0x1f57a, 0x1f57a,),  # Man Dancing             ..Man Dancing
     (0x1f595, 0x1f596,),  # Reversed Hand With Middl..Raised Hand With Part Be
-    (0x1f5a4, 0x1f5a4,),  # (nil)                   ..
+    (0x1f5a4, 0x1f5a4,),  # Black Heart             ..Black Heart
     (0x1f5fb, 0x1f64f,),  # Mount Fuji              ..Person With Folded Hands
     (0x1f680, 0x1f6c5,),  # Rocket                  ..Left Luggage
     (0x1f6cc, 0x1f6cc,),  # Sleeping Accommodation  ..Sleeping Accommodation
-    (0x1f6d0, 0x1f6d2,),  # Place Of Worship        ..
-    (0x1f6d5, 0x1f6d5,),  # (nil)                   ..
+    (0x1f6d0, 0x1f6d2,),  # Place Of Worship        ..Shopping Trolley
+    (0x1f6d5, 0x1f6d7,),  # (nil)                   ..
     (0x1f6eb, 0x1f6ec,),  # Airplane Departure      ..Airplane Arriving
-    (0x1f6f4, 0x1f6fa,),  # (nil)                   ..
+    (0x1f6f4, 0x1f6fc,),  # Scooter                 ..
     (0x1f7e0, 0x1f7eb,),  # (nil)                   ..
-    (0x1f90d, 0x1f971,),  # (nil)                   ..
-    (0x1f973, 0x1f976,),  # (nil)                   ..
-    (0x1f97a, 0x1f9a2,),  # (nil)                   ..
-    (0x1f9a5, 0x1f9aa,),  # (nil)                   ..
-    (0x1f9ae, 0x1f9ca,),  # (nil)                   ..
-    (0x1f9cd, 0x1f9ff,),  # (nil)                   ..
-    (0x1fa70, 0x1fa73,),  # (nil)                   ..
+    (0x1f90c, 0x1f93a,),  # (nil)                   ..Fencer
+    (0x1f93c, 0x1f945,),  # Wrestlers               ..Goal Net
+    (0x1f947, 0x1f978,),  # First Place Medal       ..
+    (0x1f97a, 0x1f9cb,),  # Face With Pleading Eyes ..
+    (0x1f9cd, 0x1f9ff,),  # (nil)                   ..Nazar Amulet
+    (0x1fa70, 0x1fa74,),  # (nil)                   ..
     (0x1fa78, 0x1fa7a,),  # (nil)                   ..
-    (0x1fa80, 0x1fa82,),  # (nil)                   ..
-    (0x1fa90, 0x1fa95,),  # (nil)                   ..
+    (0x1fa80, 0x1fa86,),  # (nil)                   ..
+    (0x1fa90, 0x1faa8,),  # (nil)                   ..
+    (0x1fab0, 0x1fab6,),  # (nil)                   ..
+    (0x1fac0, 0x1fac2,),  # (nil)                   ..
+    (0x1fad0, 0x1fad6,),  # (nil)                   ..
     (0x20000, 0x2fffd,),  # Cjk Unified Ideograph-20..
     (0x30000, 0x3fffd,),  # (nil)                   ..
 )

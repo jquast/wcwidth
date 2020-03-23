@@ -1,7 +1,7 @@
 """Zero_Width table. Created by setup.py."""
-# Generated: 2020-01-01T22:59:30.515579
-# Source: DerivedGeneralCategory-9.0.0.txt
-# Date:  2016-06-01, 10:34:26 GMT
+# Generated: 2020-03-23T04:40:34.685051
+# Source: DerivedGeneralCategory-13.0.0.txt
+# Date:  2019-10-21, 14:30:32 GMT
 ZERO_WIDTH = (
     (0x0300, 0x036f,),  # Combining Grave Accent  ..Combining Latin Small Le
     (0x0483, 0x0489,),  # Combining Cyrillic Titlo..Combining Cyrillic Milli
@@ -21,12 +21,13 @@ ZERO_WIDTH = (
     (0x0730, 0x074a,),  # Syriac Pthaha Above     ..Syriac Barrekh
     (0x07a6, 0x07b0,),  # Thaana Abafili          ..Thaana Sukun
     (0x07eb, 0x07f3,),  # Nko Combining Short High..Nko Combining Double Dot
+    (0x07fd, 0x07fd,),  # Nko Dantayalan          ..Nko Dantayalan
     (0x0816, 0x0819,),  # Samaritan Mark In       ..Samaritan Mark Dagesh
     (0x081b, 0x0823,),  # Samaritan Mark Epentheti..Samaritan Vowel Sign A
     (0x0825, 0x0827,),  # Samaritan Vowel Sign Sho..Samaritan Vowel Sign U
     (0x0829, 0x082d,),  # Samaritan Vowel Sign Lon..Samaritan Mark Nequdaa
     (0x0859, 0x085b,),  # Mandaic Affrication Mark..Mandaic Gemination Mark
-    (0x08d4, 0x08e1,),  # (nil)                   ..
+    (0x08d3, 0x08e1,),  # Arabic Small Low Waw    ..Arabic Small High Sign S
     (0x08e3, 0x0902,),  # Arabic Turned Damma Belo..Devanagari Sign Anusvara
     (0x093a, 0x093a,),  # Devanagari Vowel Sign Oe..Devanagari Vowel Sign Oe
     (0x093c, 0x093c,),  # Devanagari Sign Nukta   ..Devanagari Sign Nukta
@@ -39,6 +40,7 @@ ZERO_WIDTH = (
     (0x09c1, 0x09c4,),  # Bengali Vowel Sign U    ..Bengali Vowel Sign Vocal
     (0x09cd, 0x09cd,),  # Bengali Sign Virama     ..Bengali Sign Virama
     (0x09e2, 0x09e3,),  # Bengali Vowel Sign Vocal..Bengali Vowel Sign Vocal
+    (0x09fe, 0x09fe,),  # Bengali Sandhi Mark     ..Bengali Sandhi Mark
     (0x0a01, 0x0a02,),  # Gurmukhi Sign Adak Bindi..Gurmukhi Sign Bindi
     (0x0a3c, 0x0a3c,),  # Gurmukhi Sign Nukta     ..Gurmukhi Sign Nukta
     (0x0a41, 0x0a42,),  # Gurmukhi Vowel Sign U   ..Gurmukhi Vowel Sign Uu
@@ -53,17 +55,19 @@ ZERO_WIDTH = (
     (0x0ac7, 0x0ac8,),  # Gujarati Vowel Sign E   ..Gujarati Vowel Sign Ai
     (0x0acd, 0x0acd,),  # Gujarati Sign Virama    ..Gujarati Sign Virama
     (0x0ae2, 0x0ae3,),  # Gujarati Vowel Sign Voca..Gujarati Vowel Sign Voca
+    (0x0afa, 0x0aff,),  # Gujarati Sign Sukun     ..Gujarati Sign Two-circle
     (0x0b01, 0x0b01,),  # Oriya Sign Candrabindu  ..Oriya Sign Candrabindu
     (0x0b3c, 0x0b3c,),  # Oriya Sign Nukta        ..Oriya Sign Nukta
     (0x0b3f, 0x0b3f,),  # Oriya Vowel Sign I      ..Oriya Vowel Sign I
     (0x0b41, 0x0b44,),  # Oriya Vowel Sign U      ..Oriya Vowel Sign Vocalic
     (0x0b4d, 0x0b4d,),  # Oriya Sign Virama       ..Oriya Sign Virama
-    (0x0b56, 0x0b56,),  # Oriya Ai Length Mark    ..Oriya Ai Length Mark
+    (0x0b55, 0x0b56,),  # (nil)                   ..Oriya Ai Length Mark
     (0x0b62, 0x0b63,),  # Oriya Vowel Sign Vocalic..Oriya Vowel Sign Vocalic
     (0x0b82, 0x0b82,),  # Tamil Sign Anusvara     ..Tamil Sign Anusvara
     (0x0bc0, 0x0bc0,),  # Tamil Vowel Sign Ii     ..Tamil Vowel Sign Ii
     (0x0bcd, 0x0bcd,),  # Tamil Sign Virama       ..Tamil Sign Virama
     (0x0c00, 0x0c00,),  # Telugu Sign Combining Ca..Telugu Sign Combining Ca
+    (0x0c04, 0x0c04,),  # Telugu Sign Combining An..Telugu Sign Combining An
     (0x0c3e, 0x0c40,),  # Telugu Vowel Sign Aa    ..Telugu Vowel Sign Ii
     (0x0c46, 0x0c48,),  # Telugu Vowel Sign E     ..Telugu Vowel Sign Ai
     (0x0c4a, 0x0c4d,),  # Telugu Vowel Sign O     ..Telugu Sign Virama
@@ -75,10 +79,12 @@ ZERO_WIDTH = (
     (0x0cc6, 0x0cc6,),  # Kannada Vowel Sign E    ..Kannada Vowel Sign E
     (0x0ccc, 0x0ccd,),  # Kannada Vowel Sign Au   ..Kannada Sign Virama
     (0x0ce2, 0x0ce3,),  # Kannada Vowel Sign Vocal..Kannada Vowel Sign Vocal
-    (0x0d01, 0x0d01,),  # Malayalam Sign Candrabin..Malayalam Sign Candrabin
+    (0x0d00, 0x0d01,),  # Malayalam Sign Combining..Malayalam Sign Candrabin
+    (0x0d3b, 0x0d3c,),  # Malayalam Sign Vertical ..Malayalam Sign Circular
     (0x0d41, 0x0d44,),  # Malayalam Vowel Sign U  ..Malayalam Vowel Sign Voc
     (0x0d4d, 0x0d4d,),  # Malayalam Sign Virama   ..Malayalam Sign Virama
     (0x0d62, 0x0d63,),  # Malayalam Vowel Sign Voc..Malayalam Vowel Sign Voc
+    (0x0d81, 0x0d81,),  # (nil)                   ..
     (0x0dca, 0x0dca,),  # Sinhala Sign Al-lakuna  ..Sinhala Sign Al-lakuna
     (0x0dd2, 0x0dd4,),  # Sinhala Vowel Sign Ketti..Sinhala Vowel Sign Ketti
     (0x0dd6, 0x0dd6,),  # Sinhala Vowel Sign Diga ..Sinhala Vowel Sign Diga
@@ -86,8 +92,7 @@ ZERO_WIDTH = (
     (0x0e34, 0x0e3a,),  # Thai Character Sara I   ..Thai Character Phinthu
     (0x0e47, 0x0e4e,),  # Thai Character Maitaikhu..Thai Character Yamakkan
     (0x0eb1, 0x0eb1,),  # Lao Vowel Sign Mai Kan  ..Lao Vowel Sign Mai Kan
-    (0x0eb4, 0x0eb9,),  # Lao Vowel Sign I        ..Lao Vowel Sign Uu
-    (0x0ebb, 0x0ebc,),  # Lao Vowel Sign Mai Kon  ..Lao Semivowel Sign Lo
+    (0x0eb4, 0x0ebc,),  # Lao Vowel Sign I        ..Lao Semivowel Sign Lo
     (0x0ec8, 0x0ecd,),  # Lao Tone Mai Ek         ..Lao Niggahita
     (0x0f18, 0x0f19,),  # Tibetan Astrological Sig..Tibetan Astrological Sig
     (0x0f35, 0x0f35,),  # Tibetan Mark Ngas Bzung ..Tibetan Mark Ngas Bzung
@@ -136,7 +141,7 @@ ZERO_WIDTH = (
     (0x1a65, 0x1a6c,),  # Tai Tham Vowel Sign I   ..Tai Tham Vowel Sign Oa B
     (0x1a73, 0x1a7c,),  # Tai Tham Vowel Sign Oa A..Tai Tham Sign Khuen-lue
     (0x1a7f, 0x1a7f,),  # Tai Tham Combining Crypt..Tai Tham Combining Crypt
-    (0x1ab0, 0x1abe,),  # Combining Doubled Circum..Combining Parentheses Ov
+    (0x1ab0, 0x1ac0,),  # Combining Doubled Circum..
     (0x1b00, 0x1b03,),  # Balinese Sign Ulu Ricem ..Balinese Sign Surang
     (0x1b34, 0x1b34,),  # Balinese Sign Rerekan   ..Balinese Sign Rerekan
     (0x1b36, 0x1b3a,),  # Balinese Vowel Sign Ulu ..Balinese Vowel Sign Ra R
@@ -159,8 +164,8 @@ ZERO_WIDTH = (
     (0x1ced, 0x1ced,),  # Vedic Sign Tiryak       ..Vedic Sign Tiryak
     (0x1cf4, 0x1cf4,),  # Vedic Tone Candra Above ..Vedic Tone Candra Above
     (0x1cf8, 0x1cf9,),  # Vedic Tone Ring Above   ..Vedic Tone Double Ring A
-    (0x1dc0, 0x1df5,),  # Combining Dotted Grave A..Combining Up Tack Above
-    (0x1dfb, 0x1dff,),  # (nil)                   ..Combining Right Arrowhea
+    (0x1dc0, 0x1df9,),  # Combining Dotted Grave A..Combining Wide Inverted
+    (0x1dfb, 0x1dff,),  # Combining Deletion Mark ..Combining Right Arrowhea
     (0x20d0, 0x20f0,),  # Combining Left Harpoon A..Combining Asterisk Above
     (0x2cef, 0x2cf1,),  # Coptic Combining Ni Abov..Coptic Combining Spiritu
     (0x2d7f, 0x2d7f,),  # Tifinagh Consonant Joine..Tifinagh Consonant Joine
@@ -175,14 +180,16 @@ ZERO_WIDTH = (
     (0xa806, 0xa806,),  # Syloti Nagri Sign Hasant..Syloti Nagri Sign Hasant
     (0xa80b, 0xa80b,),  # Syloti Nagri Sign Anusva..Syloti Nagri Sign Anusva
     (0xa825, 0xa826,),  # Syloti Nagri Vowel Sign ..Syloti Nagri Vowel Sign
-    (0xa8c4, 0xa8c5,),  # Saurashtra Sign Virama  ..
+    (0xa82c, 0xa82c,),  # (nil)                   ..
+    (0xa8c4, 0xa8c5,),  # Saurashtra Sign Virama  ..Saurashtra Sign Candrabi
     (0xa8e0, 0xa8f1,),  # Combining Devanagari Dig..Combining Devanagari Sig
+    (0xa8ff, 0xa8ff,),  # Devanagari Vowel Sign Ay..Devanagari Vowel Sign Ay
     (0xa926, 0xa92d,),  # Kayah Li Vowel Ue       ..Kayah Li Tone Calya Plop
     (0xa947, 0xa951,),  # Rejang Vowel Sign I     ..Rejang Consonant Sign R
     (0xa980, 0xa982,),  # Javanese Sign Panyangga ..Javanese Sign Layar
     (0xa9b3, 0xa9b3,),  # Javanese Sign Cecak Telu..Javanese Sign Cecak Telu
     (0xa9b6, 0xa9b9,),  # Javanese Vowel Sign Wulu..Javanese Vowel Sign Suku
-    (0xa9bc, 0xa9bc,),  # Javanese Vowel Sign Pepe..Javanese Vowel Sign Pepe
+    (0xa9bc, 0xa9bd,),  # Javanese Vowel Sign Pepe..Javanese Consonant Sign
     (0xa9e5, 0xa9e5,),  # Myanmar Sign Shan Saw   ..Myanmar Sign Shan Saw
     (0xaa29, 0xaa2e,),  # Cham Vowel Sign Aa      ..Cham Vowel Sign Oe
     (0xaa31, 0xaa32,),  # Cham Vowel Sign Au      ..Cham Vowel Sign Ue
@@ -212,6 +219,9 @@ ZERO_WIDTH = (
     (0x10a38, 0x10a3a,),  # Kharoshthi Sign Bar Abov..Kharoshthi Sign Dot Belo
     (0x10a3f, 0x10a3f,),  # Kharoshthi Virama       ..Kharoshthi Virama
     (0x10ae5, 0x10ae6,),  # Manichaean Abbreviation ..Manichaean Abbreviation
+    (0x10d24, 0x10d27,),  # Hanifi Rohingya Sign Har..Hanifi Rohingya Sign Tas
+    (0x10eab, 0x10eac,),  # (nil)                   ..
+    (0x10f46, 0x10f50,),  # Sogdian Combining Dot Be..Sogdian Combining Stroke
     (0x11001, 0x11001,),  # Brahmi Sign Anusvara    ..Brahmi Sign Anusvara
     (0x11038, 0x11046,),  # Brahmi Vowel Sign Aa    ..Brahmi Virama
     (0x1107f, 0x11081,),  # Brahmi Number Joiner    ..Kaithi Sign Anusvara
@@ -223,21 +233,23 @@ ZERO_WIDTH = (
     (0x11173, 0x11173,),  # Mahajani Sign Nukta     ..Mahajani Sign Nukta
     (0x11180, 0x11181,),  # Sharada Sign Candrabindu..Sharada Sign Anusvara
     (0x111b6, 0x111be,),  # Sharada Vowel Sign U    ..Sharada Vowel Sign O
-    (0x111ca, 0x111cc,),  # Sharada Sign Nukta      ..Sharada Extra Short Vowe
+    (0x111c9, 0x111cc,),  # Sharada Sandhi Mark     ..Sharada Extra Short Vowe
+    (0x111cf, 0x111cf,),  # (nil)                   ..
     (0x1122f, 0x11231,),  # Khojki Vowel Sign U     ..Khojki Vowel Sign Ai
     (0x11234, 0x11234,),  # Khojki Sign Anusvara    ..Khojki Sign Anusvara
     (0x11236, 0x11237,),  # Khojki Sign Nukta       ..Khojki Sign Shadda
-    (0x1123e, 0x1123e,),  # (nil)                   ..
+    (0x1123e, 0x1123e,),  # Khojki Sign Sukun       ..Khojki Sign Sukun
     (0x112df, 0x112df,),  # Khudawadi Sign Anusvara ..Khudawadi Sign Anusvara
     (0x112e3, 0x112ea,),  # Khudawadi Vowel Sign U  ..Khudawadi Sign Virama
     (0x11300, 0x11301,),  # Grantha Sign Combining A..Grantha Sign Candrabindu
-    (0x1133c, 0x1133c,),  # Grantha Sign Nukta      ..Grantha Sign Nukta
+    (0x1133b, 0x1133c,),  # Combining Bindu Below   ..Grantha Sign Nukta
     (0x11340, 0x11340,),  # Grantha Vowel Sign Ii   ..Grantha Vowel Sign Ii
     (0x11366, 0x1136c,),  # Combining Grantha Digit ..Combining Grantha Digit
     (0x11370, 0x11374,),  # Combining Grantha Letter..Combining Grantha Letter
-    (0x11438, 0x1143f,),  # (nil)                   ..
-    (0x11442, 0x11444,),  # (nil)                   ..
-    (0x11446, 0x11446,),  # (nil)                   ..
+    (0x11438, 0x1143f,),  # Newa Vowel Sign U       ..Newa Vowel Sign Ai
+    (0x11442, 0x11444,),  # Newa Sign Virama        ..Newa Sign Anusvara
+    (0x11446, 0x11446,),  # Newa Sign Nukta         ..Newa Sign Nukta
+    (0x1145e, 0x1145e,),  # Newa Sandhi Mark        ..Newa Sandhi Mark
     (0x114b3, 0x114b8,),  # Tirhuta Vowel Sign U    ..Tirhuta Vowel Sign Vocal
     (0x114ba, 0x114ba,),  # Tirhuta Vowel Sign Short..Tirhuta Vowel Sign Short
     (0x114bf, 0x114c0,),  # Tirhuta Sign Candrabindu..Tirhuta Sign Anusvara
@@ -256,16 +268,43 @@ ZERO_WIDTH = (
     (0x1171d, 0x1171f,),  # Ahom Consonant Sign Medi..Ahom Consonant Sign Medi
     (0x11722, 0x11725,),  # Ahom Vowel Sign I       ..Ahom Vowel Sign Uu
     (0x11727, 0x1172b,),  # Ahom Vowel Sign Aw      ..Ahom Sign Killer
-    (0x11c30, 0x11c36,),  # (nil)                   ..
-    (0x11c38, 0x11c3d,),  # (nil)                   ..
-    (0x11c3f, 0x11c3f,),  # (nil)                   ..
-    (0x11c92, 0x11ca7,),  # (nil)                   ..
-    (0x11caa, 0x11cb0,),  # (nil)                   ..
-    (0x11cb2, 0x11cb3,),  # (nil)                   ..
-    (0x11cb5, 0x11cb6,),  # (nil)                   ..
+    (0x1182f, 0x11837,),  # Dogra Vowel Sign U      ..Dogra Sign Anusvara
+    (0x11839, 0x1183a,),  # Dogra Sign Virama       ..Dogra Sign Nukta
+    (0x1193b, 0x1193c,),  # (nil)                   ..
+    (0x1193e, 0x1193e,),  # (nil)                   ..
+    (0x11943, 0x11943,),  # (nil)                   ..
+    (0x119d4, 0x119d7,),  # (nil)                   ..
+    (0x119da, 0x119db,),  # (nil)                   ..
+    (0x119e0, 0x119e0,),  # (nil)                   ..
+    (0x11a01, 0x11a0a,),  # Zanabazar Square Vowel S..Zanabazar Square Vowel L
+    (0x11a33, 0x11a38,),  # Zanabazar Square Final C..Zanabazar Square Sign An
+    (0x11a3b, 0x11a3e,),  # Zanabazar Square Cluster..Zanabazar Square Cluster
+    (0x11a47, 0x11a47,),  # Zanabazar Square Subjoin..Zanabazar Square Subjoin
+    (0x11a51, 0x11a56,),  # Soyombo Vowel Sign I    ..Soyombo Vowel Sign Oe
+    (0x11a59, 0x11a5b,),  # Soyombo Vowel Sign Vocal..Soyombo Vowel Length Mar
+    (0x11a8a, 0x11a96,),  # Soyombo Final Consonant ..Soyombo Sign Anusvara
+    (0x11a98, 0x11a99,),  # Soyombo Gemination Mark ..Soyombo Subjoiner
+    (0x11c30, 0x11c36,),  # Bhaiksuki Vowel Sign I  ..Bhaiksuki Vowel Sign Voc
+    (0x11c38, 0x11c3d,),  # Bhaiksuki Vowel Sign E  ..Bhaiksuki Sign Anusvara
+    (0x11c3f, 0x11c3f,),  # Bhaiksuki Sign Virama   ..Bhaiksuki Sign Virama
+    (0x11c92, 0x11ca7,),  # Marchen Subjoined Letter..Marchen Subjoined Letter
+    (0x11caa, 0x11cb0,),  # Marchen Subjoined Letter..Marchen Vowel Sign Aa
+    (0x11cb2, 0x11cb3,),  # Marchen Vowel Sign U    ..Marchen Vowel Sign E
+    (0x11cb5, 0x11cb6,),  # Marchen Sign Anusvara   ..Marchen Sign Candrabindu
+    (0x11d31, 0x11d36,),  # Masaram Gondi Vowel Sign..Masaram Gondi Vowel Sign
+    (0x11d3a, 0x11d3a,),  # Masaram Gondi Vowel Sign..Masaram Gondi Vowel Sign
+    (0x11d3c, 0x11d3d,),  # Masaram Gondi Vowel Sign..Masaram Gondi Vowel Sign
+    (0x11d3f, 0x11d45,),  # Masaram Gondi Vowel Sign..Masaram Gondi Virama
+    (0x11d47, 0x11d47,),  # Masaram Gondi Ra-kara   ..Masaram Gondi Ra-kara
+    (0x11d90, 0x11d91,),  # Gunjala Gondi Vowel Sign..Gunjala Gondi Vowel Sign
+    (0x11d95, 0x11d95,),  # Gunjala Gondi Sign Anusv..Gunjala Gondi Sign Anusv
+    (0x11d97, 0x11d97,),  # Gunjala Gondi Virama    ..Gunjala Gondi Virama
+    (0x11ef3, 0x11ef4,),  # Makasar Vowel Sign I    ..Makasar Vowel Sign U
     (0x16af0, 0x16af4,),  # Bassa Vah Combining High..Bassa Vah Combining High
     (0x16b30, 0x16b36,),  # Pahawh Hmong Mark Cim Tu..Pahawh Hmong Mark Cim Ta
+    (0x16f4f, 0x16f4f,),  # (nil)                   ..
     (0x16f8f, 0x16f92,),  # Miao Tone Right         ..Miao Tone Below
+    (0x16fe4, 0x16fe4,),  # (nil)                   ..
     (0x1bc9d, 0x1bc9e,),  # Duployan Thick Letter Se..Duployan Double Mark
     (0x1d167, 0x1d169,),  # Musical Symbol Combining..Musical Symbol Combining
     (0x1d17b, 0x1d182,),  # Musical Symbol Combining..Musical Symbol Combining
@@ -278,12 +317,14 @@ ZERO_WIDTH = (
     (0x1da84, 0x1da84,),  # Signwriting Location Hea..Signwriting Location Hea
     (0x1da9b, 0x1da9f,),  # Signwriting Fill Modifie..Signwriting Fill Modifie
     (0x1daa1, 0x1daaf,),  # Signwriting Rotation Mod..Signwriting Rotation Mod
-    (0x1e000, 0x1e006,),  # (nil)                   ..
-    (0x1e008, 0x1e018,),  # (nil)                   ..
-    (0x1e01b, 0x1e021,),  # (nil)                   ..
-    (0x1e023, 0x1e024,),  # (nil)                   ..
-    (0x1e026, 0x1e02a,),  # (nil)                   ..
+    (0x1e000, 0x1e006,),  # Combining Glagolitic Let..Combining Glagolitic Let
+    (0x1e008, 0x1e018,),  # Combining Glagolitic Let..Combining Glagolitic Let
+    (0x1e01b, 0x1e021,),  # Combining Glagolitic Let..Combining Glagolitic Let
+    (0x1e023, 0x1e024,),  # Combining Glagolitic Let..Combining Glagolitic Let
+    (0x1e026, 0x1e02a,),  # Combining Glagolitic Let..Combining Glagolitic Let
+    (0x1e130, 0x1e136,),  # (nil)                   ..
+    (0x1e2ec, 0x1e2ef,),  # (nil)                   ..
     (0x1e8d0, 0x1e8d6,),  # Mende Kikakui Combining ..Mende Kikakui Combining
-    (0x1e944, 0x1e94a,),  # (nil)                   ..
+    (0x1e944, 0x1e94a,),  # Adlam Alif Lengthener   ..Adlam Nukta
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
 )

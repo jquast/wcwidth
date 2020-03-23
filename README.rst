@@ -163,6 +163,10 @@ source code.  They are not distributed.
 History
 =======
 
+0.1.9 *2020-03-22*
+  * **Performance** optimization by `Avram Lubkin`_, `PR #35`_.
+  * **Updated** tables to Unicode Specification 13.0.0.
+
 0.1.8 *2020-01-01*
   * **Updated** tables to Unicode Specification 12.0.0. (`PR #30`_).
 
@@ -222,6 +226,8 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #5`: https://github.com/jquast/wcwidth/pull/5
 .. _`PR #11`: https://github.com/jquast/wcwidth/pull/11
 .. _`PR #18`: https://github.com/jquast/wcwidth/pull/18
+.. _`PR #35`: https://github.com/jquast/wcwidth/pull/35
+.. _`Avram Lubkin`: https://github.com/avylove
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
 .. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
