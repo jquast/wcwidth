@@ -181,7 +181,7 @@ class WcCombinedCharacterGenerator(object):
                                 if _val <= LIMIT_UCS]:
                         self.characters.append(letters_o[:1] +
                                                unichr(val) +
-                                               letters_o[wcwidth(unichr(val))+1:])
+                                               letters_o[wcwidth(unichr(val)) + 1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -209,8 +209,11 @@ class Style(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-    attr_major = lambda self, text: text
-    attr_minor = lambda self, text: text
+    def attr_major(self, text):
+        return text
+
+    def attr_minor(self, text):
+        return text
     delimiter = u'|'
     continuation = u' $'
     header_hint = u'-'
@@ -519,7 +522,7 @@ class Pager(object):
                         versions=', '.join(list_versions()),
                         self=self))
                 echo('\n'.join(self.term.wrap(input_selection_msg,
-                                               subsequent_indent='    ')))
+                                              subsequent_indent='    ')))
                 echo(' ')
                 flushout()
                 inp = readline(self.term, width=max(map(len, list_versions())))
@@ -747,6 +750,7 @@ def main(opts):
             term.fullscreen(), term.hidden_cursor():
         pager.run(writer=echo, reader=term.inkey)
     return 0
+
 
 if __name__ == '__main__':
     exit(main(validate_args(docopt(__doc__))))

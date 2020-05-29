@@ -39,7 +39,7 @@ def test_latest():
 
 
 def test_exact_410_str():
-    """wcwidth._wcmatch_version('4.1.0') returns equal value."""
+    """wcwidth._wcmatch_version('4.1.0') returns equal value (str)."""
     # given,
     given = expected = '4.1.0'
 
@@ -51,7 +51,7 @@ def test_exact_410_str():
 
 
 def test_exact_410_unicode():
-    """wcwidth._wcmatch_version(u'4.1.0') returns equal value."""
+    """wcwidth._wcmatch_version(u'4.1.0') returns equal value (unicode)."""
     # given,
     given = expected = u'4.1.0'
 
@@ -63,7 +63,7 @@ def test_exact_410_unicode():
 
 
 def test_nearest_505_str():
-    """wcwidth._wcmatch_version('5.0.5') returns nearest '5.0.0'."""
+    """wcwidth._wcmatch_version('5.0.5') returns nearest '5.0.0'. (str)"""
     # given
     given, expected = '5.0.5', '5.0.0'
 
@@ -75,7 +75,7 @@ def test_nearest_505_str():
 
 
 def test_nearest_505_unicode():
-    """wcwidth._wcmatch_version(u'5.0.5') returns nearest u'5.0.0'."""
+    """wcwidth._wcmatch_version(u'5.0.5') returns nearest u'5.0.0'. (unicode)"""
     # given
     given, expected = u'5.0.5', u'5.0.0'
 
@@ -86,10 +86,12 @@ def test_nearest_505_unicode():
     assert result == expected
 
 
-def test_nearest_400_str():
+def test_nearest_lowint40_str():
     """wcwidth._wcmatch_version('4.0') returns nearest '4.1.0'."""
     # given
     given, expected = '4.0', '4.1.0'
+    warnings.resetwarnings()
+    wcwidth._wcmatch_version.cache_clear()
 
     # exercise
     with pytest.warns(UserWarning):
@@ -100,10 +102,12 @@ def test_nearest_400_str():
     assert result == expected
 
 
-def test_nearest_400_unicode():
+def test_nearest_lowint40_unicode():
     """wcwidth._wcmatch_version(u'4.0') returns nearest u'4.1.0'."""
     # given
     given, expected = u'4.0', u'4.1.0'
+    warnings.resetwarnings()
+    wcwidth._wcmatch_version.cache_clear()
 
     # exercise
     with pytest.warns(UserWarning):
@@ -138,7 +142,6 @@ def test_nearest_800_unicode():
     assert result == expected
 
 
-
 def test_nearest_999_str():
     """wcwidth._wcmatch_version('999.0') returns nearest (latest)."""
     # given
@@ -164,9 +167,11 @@ def test_nearest_999_unicode():
 
 
 def test_nonint_unicode():
-    """wcwidth._wcmatch_version(u'x.y.z') returns latest."""
+    """wcwidth._wcmatch_version(u'x.y.z') returns latest (unicode)."""
     # given
     given, expected = u'x.y.z', wcwidth.list_versions()[-1]
+    warnings.resetwarnings()
+    wcwidth._wcmatch_version.cache_clear()
 
     # exercise
     with pytest.warns(UserWarning):
@@ -177,10 +182,12 @@ def test_nonint_unicode():
     assert result == expected
 
 
-def test_nonint_unicode():
-    """wcwidth._wcmatch_version(u'x.y.z') returns latest."""
+def test_nonint_str():
+    """wcwidth._wcmatch_version(u'x.y.z') returns latest (str)."""
     # given
     given, expected = 'x.y.z', wcwidth.list_versions()[-1]
+    warnings.resetwarnings()
+    wcwidth._wcmatch_version.cache_clear()
 
     # exercise
     with pytest.warns(UserWarning):

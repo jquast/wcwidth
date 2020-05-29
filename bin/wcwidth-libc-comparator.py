@@ -41,7 +41,8 @@ def is_named(ucs):
         return False
 
 
-isnt_combining = lambda ucs: not unicodedata.combining(ucs)
+def is_not_combining(ucs):
+    return not unicodedata.combining(ucs)
 
 
 def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
@@ -64,6 +65,7 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
     name = unicodedata.name(ucs)
     return (u"libc,ours={},{} [--o{}o--] name={} val={} {}"
             " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
+
 
 # use chr() for py3.x,
 # unichr() for py2.x
@@ -104,7 +106,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
     """
     all_ucs = (ucs for ucs in
                [unichr(val) for val in range(sys.maxunicode)]
-               if is_named(ucs) and isnt_combining(ucs))
+               if is_named(ucs) and is_not_combining(ucs))
 
     libc_name = ctypes.util.find_library('c')
     if not libc_name:
@@ -127,6 +129,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
             _is_equal_wcwidth(libc, ucs, unicode_version)
         except AssertionError as err:
             print(err)
+
 
 if __name__ == '__main__':
     main()

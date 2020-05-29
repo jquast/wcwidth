@@ -152,4 +152,3 @@ def test_combining_spacing():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
-
