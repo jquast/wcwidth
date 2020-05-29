@@ -1,1 +1,2 @@
-blessed==1.14.1
+blessed>=1.14.1,<2
+docopt==0.6.2

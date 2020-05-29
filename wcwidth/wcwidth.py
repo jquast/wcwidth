@@ -74,7 +74,36 @@ from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 
 
-def _bisearch(ucs, table):
+# NOTE: created by hand, there isn't anything identifiable other than
+# general Cf category code to identify these, and some characters in Cf
+# category code are of non-zero width.
+# Also includes some Cc, Mn, Zl, and Zp characters
+ZERO_WIDTH_CF = set([
+    0,       # Null (Cc)
+    0x034F,  # Combining grapheme joiner (Mn)
+    0x200B,  # Zero width space
+    0x200C,  # Zero width non-joiner
+    0x200D,  # Zero width joiner
+    0x200E,  # Left-to-right mark
+    0x200F,  # Right-to-left mark
+    0x2028,  # Line separator (Zl)
+    0x2029,  # Paragraph separator (Zp)
+    0x202A,  # Left-to-right embedding
+    0x202B,  # Right-to-left embedding
+    0x202C,  # Pop directional formatting
+    0x202D,  # Left-to-right override
+    0x202E,  # Right-to-left override
+    0x2060,  # Word joiner
+    0x2061,  # Function application
+    0x2062,  # Invisible times
+    0x2063,  # Invisible separator
+])
+
+UBOUND_ZERO_WIDTH = len(ZERO_WIDTH) - 1
+UBOUND_WIDE_EASTASIAN = len(WIDE_EASTASIAN) - 1
+
+
+def _bisearch(ucs, table, ubound):
     """
     Auxiliary function for binary search in interval table.
 
@@ -85,7 +114,6 @@ def _bisearch(ucs, table):
     :returns: 1 if ordinal value ucs is found within lookup table, else 0.
     """
     lbound = 0
-    ubound = len(table) - 1
 
     if ucs < table[0][0] or ucs > table[ubound][1]:
         return 0
@@ -101,7 +129,7 @@ def _bisearch(ucs, table):
     return 0
 
 
-def wcwidth(wc):
+def wcwidth(wc):  # pylint: disable=invalid-name
     r"""
     Given one unicode character, return its printable length on a terminal.
 
@@ -152,23 +180,9 @@ def wcwidth(wc):
           Full-width (F) category as defined in Unicode Technical
           Report #11 have a column width of 2.
     """
-    # pylint: disable=C0103
-    #         Invalid argument name "wc"
     ucs = ord(wc)
 
-    # NOTE: created by hand, there isn't anything identifiable other than
-    # general Cf category code to identify these, and some characters in Cf
-    # category code are of non-zero width.
-
-    # pylint: disable=too-many-boolean-expressions
-    #          Too many boolean expressions in if statement (7/5)
-    if (ucs == 0 or
-            ucs == 0x034F or
-            0x200B <= ucs <= 0x200F or
-            ucs == 0x2028 or
-            ucs == 0x2029 or
-            0x202A <= ucs <= 0x202E or
-            0x2060 <= ucs <= 0x2063):
+    if ucs in ZERO_WIDTH_CF:
         return 0
 
     # C0/C1 control characters
@@ -176,10 +190,10 @@ def wcwidth(wc):
         return -1
 
     # combining characters with zero width
-    if _bisearch(ucs, ZERO_WIDTH):
+    if _bisearch(ucs, ZERO_WIDTH, UBOUND_ZERO_WIDTH):
         return 0
 
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN)
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN, UBOUND_WIDE_EASTASIAN)
 
 
 def wcswidth(pwcs, n=None):
@@ -202,6 +216,5 @@ def wcswidth(pwcs, n=None):
         wcw = wcwidth(char)
         if wcw < 0:
             return -1
-        else:
-            width += wcw
+        width += wcw
     return width
