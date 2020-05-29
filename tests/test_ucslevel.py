@@ -1,15 +1,15 @@
 # coding: utf-8
 """Unicode version level tests for wcwidth."""
 # std imports
-import pkg_resources
 import json
 import warnings
 
-# local imports
-import wcwidth
-
-# 3rd-party
+# 3rd party
 import pytest
+import pkg_resources
+
+# local
+import wcwidth
 
 
 def test_list_versions():

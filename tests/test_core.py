@@ -1,9 +1,9 @@
 # coding: utf-8
 """Core tests for wcwidth module."""
-# std imports
+# 3rd party
 import pkg_resources
 
-# local imports
+# local
 import wcwidth
 
 

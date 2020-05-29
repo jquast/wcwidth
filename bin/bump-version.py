@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import json
-import sys
+# std imports
 import os
+import sys
+import json
 
 json_version = os.path.join(
     os.path.dirname(__file__), os.path.pardir, 'wcwidth', 'version.json')

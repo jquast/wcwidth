@@ -4,8 +4,11 @@ Setup.py distribution file for wcwidth.
 
 https://github.com/jquast/wcwidth
 """
-import codecs
+# std imports
 import os
+import codecs
+
+# 3rd party
 import setuptools
 
 

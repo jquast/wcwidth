@@ -9,18 +9,22 @@ https://github.com/jquast/wcwidth
 # http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
 
 from __future__ import print_function
-import setuptools.command.test
-import unicodedata
-import collections
-import setuptools
-import datetime
-import codecs
-import urllib
-import string
-import json
-import glob
+
+# std imports
 import os
 import re
+import glob
+import json
+import codecs
+import string
+import urllib
+import datetime
+import collections
+import unicodedata
+
+# 3rd party
+import setuptools
+import setuptools.command.test
 
 try:
     # py2
@@ -267,7 +271,7 @@ def do_write_table(fname, variable, table):
     with open(fname, 'w') as fout:
         print(f"writing {fname} ... ", end='')
         fout.write(
-            f'"""{variable.title()} table. Created by setup.py."""\n'
+            f'"""{variable.title()} table, created by bin/update-tables.py."""\n'
             f"# Generated: {utc_now.isoformat()}\n"
             f"{variable} = {{\n")
 

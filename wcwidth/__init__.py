@@ -7,16 +7,20 @@ https://github.com/jquast/wcwidth
 # path, to allow for 'from wcwidth import _private_func'.  Of course, user
 # beware that any _private function may disappear or change signature at any
 # future version.
-from .wcwidth import (
-    _bisearch,
-    wcwidth,
-    wcswidth,
-    list_versions,
-    _wcversion_value,
-    _wcmatch_version,
-    _get_package_version,
-    _wcmatch_version,
-)  # noqa
 
+# local
+from .wcwidth import (wcwidth,
+                      wcswidth,
+                      _bisearch,
+                      ZERO_WIDTH,
+                      list_versions,
+                      WIDE_EASTASIAN,
+                      _wcmatch_version,
+                      _wcversion_value,
+                      _get_package_version,
+                      )
+
+# The __all__ attribute defines the items exported from statement,
+# 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'list_versions')
 __version__ = _get_package_version()

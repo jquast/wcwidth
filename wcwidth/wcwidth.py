@@ -60,13 +60,16 @@ http://www.unicode.org/unicode/reports/tr11/
 
 Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 """
-# std imports
 from __future__ import division
-import pkg_resources
-import warnings
-import json
-import sys
+
+# std imports
 import os
+import sys
+import json
+import warnings
+
+# 3rd party
+import pkg_resources
 
 # local
 from .table_wide import WIDE_EASTASIAN

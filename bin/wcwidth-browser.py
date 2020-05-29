@@ -24,37 +24,30 @@ Options:
 #         Invalid constant name "unichr" (col 8)
 #         Invalid constant name "xrange" (col 8)
 #         Invalid module name "wcwidth-browser"
-#
 #         Redefining built-in 'unichr' (col 8)
 #         Redefining built-in 'xrange' (col 8)
-#
-# std imports
-from __future__ import print_function
-from __future__ import division
-from functools import partial
-import unicodedata
-import string
-import signal
+from __future__ import division, print_function
 
-# 3rd-party
-from blessed import Terminal
+# std imports
+import signal
+import string
+import functools
+import unicodedata
+
+# 3rd party
 from docopt import docopt
+from blessed import Terminal
 
 # local
-from wcwidth.wcwidth import (
-    ZERO_WIDTH,
-    _wcmatch_version,
-    list_versions,
-    wcwidth,
-)
+from wcwidth import ZERO_WIDTH, wcwidth, list_versions, _wcmatch_version
 
 # BEGIN, python 2.6 through 3.4 compatibilities,
 
 #: print function alias, does not end with line terminator.
-echo = partial(print, end='')
+echo = functools.partial(print, end='')
 
 try:
-    flushout = partial(print, end='', flush=True)
+    flushout = functools.partial(print, end='', flush=True)
     flushout('')
 except TypeError as err:
     assert "'flush' is an invalid keyword argument" in err.args[0]
@@ -225,8 +218,7 @@ class Style(object):
         """
         Class constructor.
 
-        Any given keyword arguments are assigned to the class attribute
-        of the same name.
+        Any given keyword arguments are assigned to the class attribute of the same name.
         """
         for key, val in kwargs.items():
             setattr(self, key, val)

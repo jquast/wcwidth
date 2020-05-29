@@ -19,12 +19,15 @@ level for our library to use when comparing to libc.
 
 # standard imports
 from __future__ import print_function
-import unicodedata
-import ctypes.util
-import warnings
-import locale
-import sys
 
+# std imports
+import sys
+import locale
+import warnings
+import ctypes.util
+import unicodedata
+
+# local
 # local imports
 import wcwidth
 
