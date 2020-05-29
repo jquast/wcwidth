@@ -263,7 +263,7 @@ def do_write_table(fname, variable, table):
     # pylint: disable=R0914
     #         Too many local variables (19/15) (col 4)
     utc_now = datetime.datetime.utcnow()
-    indent = 6
+    indent = ' ' * 8
     with open(fname, 'w') as fout:
         print(f"writing {fname} ... ", end='')
         fout.write(
@@ -275,10 +275,10 @@ def do_write_table(fname, variable, table):
             if not version_table.values:
                 continue
             fout.write(
-                f"    '{version_key}': (\n"
-                f"      # Source: {version_table.version}\n"
-                f"      # Date: {version_table.date}\n"
-                f"      #")
+                f"{indent[:-4]}'{version_key}': (\n"
+                f"{indent}# Source: {version_table.version}\n"
+                f"{indent}# Date: {version_table.date}\n"
+                f"{indent}#")
 
             for start, end in make_table(version_table.values):
                 ucs_start, ucs_end = unichr(start), unichr(end)
@@ -291,12 +291,12 @@ def do_write_table(fname, variable, table):
                     name_end = string.capwords(unicodedata.name(ucs_end))
                 except ValueError:
                     name_end = u'(nil)'
-                fout.write('\n' + (' ' * indent))
+                fout.write(f'\n{indent}')
                 comment_startpart = name_start[:24].rstrip()
                 comment_endpart = name_end[:24].rstrip()
                 fout.write(f'({hex_start}, {hex_end},),')
                 fout.write(f'  # {comment_startpart:24s}..{comment_endpart}')
-            fout.write('\n  ),\n')
+            fout.write(f'\n{indent[:-4]}),\n')
         fout.write('}\n')
     print("complete.")
 
