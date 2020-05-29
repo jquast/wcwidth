@@ -17,7 +17,9 @@ def _get_version(fname, key='package'):
 
 class _SetupUpdate(setuptools.Command):
     # This is a compatibility, some downstream distributions might
-    # still call "setup.py update".  New form is tox, 'tox -eupdate'.
+    # still call "setup.py update".
+    # 
+    # New entry point is tox, 'tox -eupdate'.
     description = "Fetch and update unicode code tables"
     user_options = []
 
@@ -59,13 +61,15 @@ def main():
         classifiers=[
             'Intended Audience :: Developers',
             'Natural Language :: English',
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 5 - Production/Stable'
             'Environment :: Console',
             'License :: OSI Approved :: MIT License',
             'Operating System :: POSIX',
             'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
             'Topic :: Software Development :: Libraries',
             'Topic :: Software Development :: Localization',
             'Topic :: Software Development :: Internationalization',
@@ -75,12 +79,14 @@ def main():
             'cjk',
             'combining',
             'console',
+            'eastasian',
             'emoji'
             'emulator',
+            'terminal',
+            'unicode',
             'wcswidth',
             'wcwidth',
             'xterm',
-            'terminal',
         ],
         cmdclass={'update': _SetupUpdate},
     )

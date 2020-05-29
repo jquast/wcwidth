@@ -6,6 +6,7 @@ This library aims to be forward-looking, portable, and most correct.
 The most current release of this API is based on the Unicode Standard
 release files:
 
+
 ``DerivedGeneralCategory-4.1.0.txt``
   *Date: 2005-02-26, 02:35:50 GMT [MD]*
 
@@ -39,8 +40,20 @@ release files:
 ``DerivedGeneralCategory-9.0.0.txt``
   *Date: 2016-06-01, 10:34:26 GMT*
 
-``DerivedGeneralCategory-9.0.0.txt``
-  *Date: 2016-06-01, 10:34:26 GMT*
+``DerivedGeneralCategory-10.0.0.txt``
+  *Date: 2017-03-08, 08:41:49 GMT*
+
+``DerivedGeneralCategory-11.0.0.txt``
+  *Date: 2018-02-21, 05:34:04 GMT*
+
+``DerivedGeneralCategory-12.0.0.txt``
+  *Date: 2019-01-22, 08:18:28 GMT*
+
+``DerivedGeneralCategory-12.1.0.txt``
+  *Date: 2019-03-10, 10:53:08 GMT*
+
+``DerivedGeneralCategory-13.0.0.txt``
+  *Date: 2019-10-21, 14:30:32 GMT*
 
 ``EastAsianWidth-4.1.0.txt``
   *Date: 2005-03-17, 15:21:00 PST [KW]*
@@ -75,3 +88,17 @@ release files:
 ``EastAsianWidth-9.0.0.txt``
   *Date: 2016-05-27, 17:00:00 GMT [KW, LI]*
 
+``EastAsianWidth-10.0.0.txt``
+  *Date: 2017-03-08, 02:00:00 GMT [KW, LI]*
+
+``EastAsianWidth-11.0.0.txt``
+  *Date: 2018-05-14, 09:41:59 GMT [KW, LI]*
+
+``EastAsianWidth-12.0.0.txt``
+  *Date: 2019-01-21, 14:12:58 GMT [KW, LI]*
+
+``EastAsianWidth-12.1.0.txt``
+  *Date: 2019-03-31, 22:01:58 GMT [KW, LI]*
+
+``EastAsianWidth-13.0.0.txt``
+  *Date: 2029-01-21, 18:14:00 GMT [KW, LI]*

@@ -10,10 +10,17 @@ https://github.com/jquast/wcwidth
 
 from __future__ import print_function
 import setuptools.command.test
+import unicodedata
 import collections
 import setuptools
+import datetime
+import codecs
+import urllib
+import string
 import json
+import glob
 import os
+import re
 
 try:
     # py2
@@ -22,11 +29,12 @@ except ImportError:
     # py3
     from urllib.request import urlopen
 
-# local imports
-import wcwidth
-
-PATH_UP = os.path.relpath(
-    os.path.join(os.path.dirname(__file__), os.path.pardir))
+URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
+EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
+PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+PATH_DOCS = os.path.join(PATH_UP, 'docs')
+PATH_DATA = os.path.join(PATH_UP, 'data')
+PATH_CODE = os.path.join(PATH_UP, 'wcwidth')
 
 # use chr() for py3.x,
 # unichr() for py2.x
@@ -42,22 +50,17 @@ except NameError as err:
         raise
 
 
-# note: when a unicode point was released: may be determined from
-# http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
+#EAW_URL = ('http://www.unicode.org/Public/{version}/'
+#           'ucd/EastAsianWidth.txt')
+#EAW_IN = os.path.join(PATH_DATA, 'EastAsianWidth-{version}.txt')
+#EAW_OUT = os.path.join(PATH_CODE, 'table_wide.py')
+#
+#UCD_URL = ('http://www.unicode.org/Public/{version}/ucd/extracted/'
+#           'DerivedGeneralCategory.txt')
+#UCD_IN = os.path.join(PATH_DATA, 'DerivedGeneralCategory-{version}.txt')
+#ZERO_OUT = os.path.join(PATH_CODE, 'wcwidth', 'table_zero.py')
 
-EAW_URL = ('http://www.unicode.org/Public/{version}/'
-           'ucd/EastAsianWidth.txt')
-EAW_IN = os.path.join(PATH_UP, 'data',
-                      'EastAsianWidth-{version}.txt')
-EAW_OUT = os.path.join(PATH_UP, 'wcwidth', 'table_wide.py')
-
-UCD_URL = ('http://www.unicode.org/Public/{version}/ucd/extracted/'
-           'DerivedGeneralCategory.txt')
-UCD_IN = os.path.join(PATH_UP, 'data',
-                      'DerivedGeneralCategory-{version}.txt')
-ZERO_OUT = os.path.join(PATH_UP, 'wcwidth', 'table_zero.py')
-
-FILE_RST = os.path.join(PATH_UP, 'docs/unicode_version.rst')
+FILE_RST = os.path.join(PATH_DOCS, 'unicode_version.rst')
 FILE_PATCH_FROM = "release files:"
 FILE_PATCH_TO = "======="
 
@@ -74,22 +77,23 @@ def main():
 
 def get_unicode_versions():
     # TODO: Dynamically try for the future somehows..
-    return ['4.1.0',
-            '5.0.0',
-            '5.1.0',
-            '5.2.0',
-            '6.0.0',
-            '6.1.0',
-            '6.2.0',
-            '6.3.0',
-            '7.0.0',
-            '8.0.0',
-            '9.0.0']
+
+    # note: when a unicode point was released: may be determined from
+    # http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
+    fname = os.path.join(PATH_DATA, 'DerivedAge.txt')
+    do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
+    pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
+    versions = []
+    for line in open(fname, 'r'):
+        if match := re.match(pattern, line):
+            version = match.group(1)
+            if version not in EXCLUDE_VERSIONS:
+                versions.append(version)
+    versions.sort(key=lambda ver: list(map(int, ver.split('.'))))
+    return versions
 
 def do_rst_file_update():
     """Patch unicode_versions.rst to reflect the data files used in release."""
-    import codecs
-    import glob
 
     # read in,
     data_in = codecs.open(FILE_RST, 'r', 'utf8').read()
@@ -98,60 +102,66 @@ def do_rst_file_update():
     pos_begin = data_in.find(FILE_PATCH_FROM)
     assert pos_begin != -1, (pos_begin, FILE_PATCH_FROM)
     pos_begin += len(FILE_PATCH_FROM)
+    data_out = data_in[:pos_begin] + '\n\n'
 
-    glob_pattern = os.path.join(PATH_UP, 'data', '*.txt')
-    file_descriptions = [
-        describe_file_header(fpath)
-        for fpath in sorted(glob.glob(glob_pattern))]
+    # find all filenames with a version number in it,
+    # sort filenames by name, then dotted number, ascending
+    glob_pattern = os.path.join(PATH_DATA, '*[0-9]*.txt')
+    filenames = glob.glob(glob_pattern)
+    filenames.sort(key = lambda ver: [ver.split('-')[0]] + list(map(int, ver.split('-')[-1][:-4].split('.'))))
 
-    # patch,
-    data_out = (
-        data_in[:pos_begin] +
-        '\n\n' +
-        '\n'.join(file_descriptions) +
-        '\n'
-    )
+    # copy file description as-is, formatted
+    for fpath in filenames:
+        if description := describe_file_header(fpath):
+            data_out += f'\n{description}'
 
     # write.
-    print("patching {} ..".format(FILE_RST))
+    print(f"patching {FILE_RST} ..")
     codecs.open(
         FILE_RST, 'w', 'utf8').write(data_out)
 
 def do_east_asian(versions):
     """Fetch and update east-asian tables."""
+    table = {}
     for version in versions:
-        fin = os.path.join(PATH_UP, 'data', 'EastAsianWidth-{version}.txt')
-        fout = os.path.join(PATH_UP, 'wcwidth', 'table_wide.py')
+        fin = os.path.join(PATH_DATA, 'EastAsianWidth-{version}.txt')
+        fout = os.path.join(PATH_CODE, 'table_wide.py')
         url = ('http://www.unicode.org/Public/{version}/'
                    'ucd/EastAsianWidth.txt')
-        do_retrieve(url=url.format(version=version),
-                    fname=fin.format(version=version))
-    table = {
-        version: parse_east_asian(fname=fin.format(version=version),
-                                  properties=(u'W', u'F',))
-        for version in versions
-    }
+        try:
+            do_retrieve(url=url.format(version=version),
+                        fname=fin.format(version=version))
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise
+        else:
+            table[version] = parse_east_asian(
+                fname=fin.format(version=version),
+                properties=(u'W', u'F',))
     do_write_table(fname=fout, variable='WIDE_EASTASIAN', table=table)
 
 def do_zero_width(versions):
     """Fetch and update zero width tables."""
+    table = {}
+    fout = os.path.join(PATH_CODE, 'table_zero.py')
     for version in versions:
-        fin = os.path.join(PATH_UP, 'data', 'DerivedGeneralCategory-{version}.txt')
-        fout = os.path.join(PATH_UP, 'wcwidth', 'table_zero.py')
+        fin = os.path.join(PATH_DATA, 'DerivedGeneralCategory-{version}.txt')
         url = ('http://www.unicode.org/Public/{version}/ucd/extracted/'
                    'DerivedGeneralCategory.txt')
-        do_retrieve(url=url.format(version=version),
-                     fname=fin.format(version=version))
-    table = {
-        version: parse_category(fname=fin.format(version=version),
-                                categories=('Me', 'Mn',))
-        for version in versions
-    }
+        try:
+            do_retrieve(url=url.format(version=version),
+                        fname=fin.format(version=version))
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise
+        else:
+            table[version] = parse_category(
+                fname=fin.format(version=version),
+                categories=('Me', 'Mn',))
     do_write_table(fname=fout, variable='ZERO_WIDTH', table=table)
 
 def make_table(values):
     """Return a tuple of lookup tables for given values."""
-    import collections
     table = collections.deque()
     start, end = values[0], values[0]
     for num, value in enumerate(values):
@@ -171,19 +181,21 @@ def do_retrieve(url, fname):
     folder = os.path.dirname(fname)
     if not os.path.exists(folder):
         os.makedirs(folder)
-        print("{}/ created.".format(folder))
+        print(f"{folder}{os.path.sep} created.")
     if not os.path.exists(fname):
-        with open(fname, 'wb') as fout:
-            print("retrieving {}.".format(url))
-            resp = urlopen(url)
-            fout.write(resp.read())
-        print("{} saved.".format(fname))
-    else:
-        print("re-using artifact {}".format(fname))
+        try:
+            with open(fname, 'wb') as fout:
+                print(f"retrieving {url}: ", end='', flush=True)
+                resp = urlopen(url)
+                fout.write(resp.read())
+        except:
+            print('failed')
+            os.unlink(fname)
+            raise
+        print(f"{fname} saved.")
     return fname
 
 def describe_file_header(fpath):
-    import codecs
     header_2 = [line.lstrip('# ').rstrip() for line in
                 codecs.open(fpath, 'r', 'utf8').readlines()[:2]]
     # fmt:
@@ -191,13 +203,15 @@ def describe_file_header(fpath):
     # ``EastAsianWidth-8.0.0.txt``
     #   *2015-02-10, 21:00:00 GMT [KW, LI]*
     fmt = '``{0}``\n  *{1}*\n'
+    if len(header_2) == 0:
+        return ''
     assert len(header_2) == 2, (fpath, header_2)
     return (fmt.format(*header_2))
 
 def parse_east_asian(fname, properties=(u'W', u'F',)):
     """Parse unicode east-asian width tables."""
+    print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, []
-    print("parsing {} ..".format(fname))
     for line in open(fname, 'rb'):
         uline = line.decode('utf-8')
         if version is None:
@@ -215,12 +229,13 @@ def parse_east_asian(fname, properties=(u'W', u'F',)):
             if '..' in addrs:
                 start, stop = addrs.split('..')
             values.extend(range(int(start, 16), int(stop, 16) + 1))
+    print('ok')
     return TableDef(version, date, values)
 
 def parse_category(fname, categories):
     """Parse unicode category tables."""
+    print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, []
-    print("parsing {} ..".format(fname))
     for line in open(fname, 'rb'):
         uline = line.decode('utf-8')
         if version is None:
@@ -233,46 +248,40 @@ def parse_category(fname, categories):
             continue
         addrs, details = uline.split(';', 1)
         addrs, details = addrs.rstrip(), details.lstrip()
-        if any(details.startswith('{} #'.format(value))
+        if any(details.startswith(f'{value} #')
                for value in categories):
             start, stop = addrs, addrs
             if '..' in addrs:
                 start, stop = addrs.split('..')
             values.extend(range(int(start, 16), int(stop, 16) + 1))
+    print('ok')
     return TableDef(version, date, sorted(values))
 
 def do_write_table(fname, variable, table):
     """Write combining tables to filesystem as python code."""
     # pylint: disable=R0914
     #         Too many local variables (19/15) (col 4)
-    print("writing {} ..".format(fname))
-    import unicodedata
-    import datetime
-    import string
     utc_now = datetime.datetime.utcnow()
     indent = 4
     with open(fname, 'w') as fout:
+        print(f"writing {fname} ... ", end='')
         fout.write(
-            '"""{variable_proper} table. Created by setup.py."""\n'
-            "# Generated: {iso_utc}\n"
-            "{variable} = {{\n".format(
-                iso_utc=utc_now.isoformat(),
-                variable_proper=variable.title(),
-                variable=variable))
+            f'"""{variable.title()} table. Created by setup.py."""\n'
+            f"# Generated: {utc_now.isoformat()}\n"
+            f"{variable} = {{\n")
 
         for version_key, version_table in sorted(table.items()):
+            if not version_table.values:
+                continue
             fout.write(
-                "  '{version_key}': (\n"
-                "    # Source: {version_table.version}\n"
-                "    # Date: {version_table.date}\n"
-                "    #".format(
-                    version_key=version_key,
-                    version_table=version_table))
+                f"  '{version_key}': (\n"
+                f"    # Source: {version_table.version}\n"
+                f"    # Date: {version_table.date}\n"
+                f"    #")
 
             for start, end in make_table(version_table.values):
                 ucs_start, ucs_end = unichr(start), unichr(end)
-                hex_start, hex_end = ('0x{0:04x}'.format(start),
-                                      '0x{0:04x}'.format(end))
+                hex_start, hex_end = (f'0x{start:04x}', f'0x{end:04x}')
                 try:
                     name_start = string.capwords(unicodedata.name(ucs_start))
                 except ValueError:
@@ -282,17 +291,17 @@ def do_write_table(fname, variable, table):
                 except ValueError:
                     name_end = u''
                 fout.write('\n' + (' ' * indent))
-                fout.write('({0}, {1},),'.format(hex_start, hex_end))
-                fout.write('  # {0:24s}..{1}'.format(
-                    name_start[:24].rstrip() or '(nil)',
-                    name_end[:24].rstrip()))
+                comment_startpart = name_start[:24].rstrip() or '(nil)'
+                comment_endpart = name_end[:24].rstrip()
+                fout.write(f'({hex_start}, {hex_end},),')
+                fout.write(f'  # {comment_startpart:24s}..{comment_endpart}')
             fout.write('\n  ),\n')
         fout.write('}\n')
     print("complete.")
 
 def do_version_json(versions):
-    fname = os.path.join(PATH_UP, 'wcwidth', 'version.json')
-    print("writing {}".format(fname))
+    fname = os.path.join(PATH_CODE, 'version.json')
+    print(f"writing {fname} ... ", end='')
 
     with open(fname, 'r') as fp:
         version_data = json.load(fp)
@@ -301,6 +310,7 @@ def do_version_json(versions):
 
     with open(fname, 'w') as fp:
         version_data = json.dump(version_data, fp)
+    print()
 
 if __name__ == '__main__':
     main()

@@ -55,6 +55,33 @@ To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
     >>> text_len = wcswidth(text)
     >>> print(u' ' * (80 - text_len) + text)
 
+Chosing a Version
+-----------------
+
+Export an environment variable, ``UNICODE_VERSION``. This should be
+done by *terminal emulators* or those developers experimenting with
+authoring one of their own, from shell::
+
+   $ export UNICODE_VERSION=13.0
+
+If unspecified, **?!** is used.
+
+TODO: Author and publish the damn thing as a pypi package, use::
+
+   $ pip install -U wcwidth-detect
+   $ eval `$(which wcwidth-detect)`
+
+This will use blessed, much like the existing resize.py, get_location() method:
+using https://blessed.readthedocs.io/en/latest/examples.html#resize-py   
+
+along with the unique unicode points of double-wide characters in wcwidth,
+to determine the version level supported by the terminal, and display sh-compatible
+"export UNICODE_VERSION=[...]" line for evaluation.
+
+Although I wish we could distribute this with wcwidth directly, we wish to keep 'wcwidth'
+dependencies as light as possible, as it has so many downstream dependers, and besides, blessed
+depends on wcwidth so it would be circular.
+
 wcwidth, wcswidth
 -----------------
 Use function ``wcwidth()`` to determine the length of a *single unicode
@@ -126,13 +153,17 @@ This library is used in:
 History
 -------
 
-0.2.0 2017-.....
+0.2.0 *2020-05-29*
   * **Enhancement**:
-    Unicode Specification version may be specified by new optional keyword
-    string argument, ``unicode_version`` to functions ``wcwidth`` and
-    ``wcswidth``, such as ``9.0`` or ``6.3.0``.
+    Unicode Specification version may be specified by exporting the Environment variable
+    ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
   * **Enhancement**:
     API Documentation is published to readthedocs.org.
+  * **Updated** tables for *all* Unicode Specifications with files
+    published in a programmatically consumable format, versions 4.1.0
+    through 13.0
+    that are published
+    , versions 
 
 0.1.7 *2016-07-01*
   * **Updated** tables to Unicode Specification 9.0.0. (`PR #18`_).
