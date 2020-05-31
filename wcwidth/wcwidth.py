@@ -214,6 +214,10 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     :param str pwcs: Measure width of given unicode string.
     :param int n: When ``n`` is None (default), return the length of the
         entire string, otherwise width the first ``n`` characters specified.
+    :param str unicode_version: An explicit definition of the unicode version
+        level to use for determination, may be ``auto`` (default), which uses
+        the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
+        available unicode version, otherwise.
     :rtype: int
     :returns: The width, in cells, necessary to display the first ``n``
         characters of the unicode string ``pwcs``.  Returns ``-1`` if
@@ -229,8 +233,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         wcw = wcwidth(char, unicode_version=unicode_version)
         if wcw < 0:
             return -1
-        else:
-            width += wcw
+        width += wcw
     return width
 
 
@@ -283,19 +286,25 @@ def _wcmatch_version(given_version):
     >>> _wcmatch_version('1')
     '4.1.0'
 
-    :param str version: given version for compare, may be ``auto`` (default),
-        to select Unicode Version from Environment Variable,
-        ``UNICODE_VERSION``. If the environment variable is not set, then
-        the latest is used.
+    :param str given_version: given version for compare, may be ``auto``
+        (default), to select Unicode Version from Environment Variable,
+        ``UNICODE_VERSION``. If the environment variable is not set, then the
+        latest is used.
     :rtype: str
     :returns: unicode string, or non-unicode ``str`` type for python 2
         when given ``version`` is also type ``str``.
     """
+    # pylint: disable=R1260,too-many-return-statements,inconsistent-return-statements
+    #         - '_wcmatch_version' is too complex. The McCabe rating is 13
+    #         - Too many return statements (7/6)
+    #         - Either all return statements in a function should return an
+    #           expression, or none of them should.
+    #
     # Design note: the choice to return the same type that is given certainly
     # complicates it for python 2 str-type, but allows us to define an api that
-    # all code use 'string-type' for unicode version level definitions, so all
-    # of our example code works with all versions of python. That, along with
-    # the string-to-numeric and comparisons of earliest, latest, matching, or
+    # to use 'string-type', for unicode version level definitions, so all of our
+    # example code works with all versions of python. That, along with the
+    # string-to-numeric and comparisons of earliest, latest, matching, or
     # nearest, greatly complicates this function.
     _return_str = not _PY3 and isinstance(given_version, str)
 
@@ -309,12 +318,13 @@ def _wcmatch_version(given_version):
         given_version = os.environ.get(
             'UNICODE_VERSION',
             'latest' if not _return_str else latest_version.encode())
+
     if given_version in (u'latest', 'latest'):
         # default match, when given as 'latest', use the most latest unicode
         # version specification level supported.
         return latest_version if not _return_str else latest_version.encode()
 
-    elif given_version in unicode_versions:
+    if given_version in unicode_versions:
         # exact match, downstream has specified an explicit matching version
         # matching any value of list_versions().
         return given_version if not _return_str else given_version.encode()
@@ -347,7 +357,7 @@ def _wcmatch_version(given_version):
                       "version level, {earliest_version!r}".format(
                           given_version=given_version,
                           earliest_version=earliest_version))
-        return earliest_version
+        return earliest_version if not _return_str else earliest_version.encode()
 
     # create list of versions which are less than our equal to given version,
     # and return the tail value, which is the highest level we may support,
@@ -361,7 +371,7 @@ def _wcmatch_version(given_version):
             cmp_next_version = _wcversion_value(unicode_versions[idx + 1])
         except IndexError:
             # at end of list, return latest version
-            return latest_version
+            return latest_version if not _return_str else earliest_version.encode()
 
         # Maybe our given version has less parts, as in tuple(8, 0), than the
         # next compare version tuple(8, 0, 0). Test for an exact match by
@@ -383,6 +393,7 @@ def _get_package_version():
     Version of wcwidth (produces module-level ``__version__`` val).
 
     :rtype: str
+    :return: the version of the wcwidth library package.
     """
     return json.loads(
         pkg_resources.resource_string(

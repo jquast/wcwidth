@@ -21,70 +21,32 @@ Options:
 # pylint: disable=C0103,W0622
 #         Invalid constant name "echo"
 #         Invalid constant name "flushout" (col 4)
-#         Invalid constant name "unichr" (col 8)
-#         Invalid constant name "xrange" (col 8)
 #         Invalid module name "wcwidth-browser"
-#         Redefining built-in 'unichr' (col 8)
-#         Redefining built-in 'xrange' (col 8)
 from __future__ import division, print_function
 
 # std imports
+import sys
 import signal
 import string
 import functools
 import unicodedata
 
 # 3rd party
-from docopt import docopt
-from blessed import Terminal
+import docopt
+import blessed
 
 # local
 from wcwidth import ZERO_WIDTH, wcwidth, list_versions, _wcmatch_version
 
-# BEGIN, python 2.6 through 3.4 compatibilities,
-
 #: print function alias, does not end with line terminator.
 echo = functools.partial(print, end='')
+flushout = functools.partial(print, end='', flush=True)
 
-try:
-    flushout = functools.partial(print, end='', flush=True)
-    flushout('')
-except TypeError as err:
-    assert "'flush' is an invalid keyword argument" in err.args[0]
-
-    def flushout():
-        """Flush any buffered output on standard out when called."""
-        import sys
-        # pylint: disable=E0602
-        #         Undefined variable 'BrokenPipeError' (col 15)
-        try:
-            sys.stdout.flush()
-        except BrokenPipeError:  # noqa
-            pass
-
-
-try:
-    _ = unichr(0)
-except NameError as err:
-    if err.args[0] == "name 'unichr' is not defined":
-        unichr = chr
-    else:
-        raise
-
-try:
-    _ = xrange(0)
-except NameError as err:
-    if err.args[0] == "name 'xrange' is not defined":
-        xrange = range
-    else:
-        raise
-
-# END, python 2.6 - 3.3 compatibilities
 
 # some poor python builds (apple, etc.) are narrow, presumably
 # for smaller memory footprint of character strings.
 try:
-    _ = unichr(0x10000)
+    _ = chr(0x10000)
     LIMIT_UCS = 0x3fffd
 except ValueError as err:
     assert 'narrow Python build' in err.args[0], err.args
@@ -101,15 +63,15 @@ def readline(term, width):
         inp = term.inkey()
         if inp.code == term.KEY_ENTER:
             break
-        elif inp.code == term.KEY_ESCAPE or inp == chr(3):
+        if inp.code == term.KEY_ESCAPE or inp == chr(3):
             text = None
             break
-        elif not inp.is_sequence and len(text) < width:
+        if not inp.is_sequence and len(text) < width:
             text += inp
             echo(inp)
             flushout()
         elif inp.code in (term.KEY_BACKSPACE, term.KEY_DELETE):
-            if len(text):
+            if text:
                 text = text[:-1]
                 echo(u'\b \b')
             flushout()
@@ -121,17 +83,17 @@ class WcWideCharacterGenerator(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-
-    def __init__(self, width=2, unicode_version='latest'):
+    def __init__(self, width=2, unicode_version='auto'):
         """
         Class constructor.
 
         :param width: generate characters of given width.
+        :param str unicode_version: Unicode Version for render.
         :type width: int
         """
         self.characters = (
-            unichr(idx) for idx in xrange(LIMIT_UCS)
-            if wcwidth(unichr(idx), unicode_version=unicode_version) == width)
+            chr(idx) for idx in xrange(LIMIT_UCS)
+            if wcwidth(chr(idx), unicode_version=unicode_version) == width)
 
     def __iter__(self):
         """Special method called by iter()."""
@@ -157,12 +119,12 @@ class WcCombinedCharacterGenerator(object):
     # pylint: disable=R0903
     #         Too few public methods (0/2)
 
-    def __init__(self, width=1, unicode_version='latest'):
+    def __init__(self, width=1, unicode_version='auto'):
         """
         Class constructor.
 
-        :param width: generate characters of given width.
-        :type width: int
+        :param int width: generate characters of given width.
+        :param str unicode_version: Unicode version.
         """
         self.characters = []
         letters_o = (u'o' * width)
@@ -172,9 +134,10 @@ class WcCombinedCharacterGenerator(object):
                     for val in [_val for _val in
                                 range(begin, end + 1)
                                 if _val <= LIMIT_UCS]:
-                        self.characters.append(letters_o[:1] +
-                                               unichr(val) +
-                                               letters_o[wcwidth(unichr(val)) + 1:])
+                        self.characters.append(
+                            letters_o[:1] +
+                            chr(val) +
+                            letters_o[wcwidth(chr(val)) + 1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -182,7 +145,13 @@ class WcCombinedCharacterGenerator(object):
         return self
 
     def __next__(self):
-        """Special method called by next()."""
+        """
+        Special method called by next().
+
+        :return: unicode character and name, as tuple.
+        :rtype: tuple[unicode, unicode]
+        :raises StopIteration: no more characters
+        """
         while True:
             if not self.characters:
                 raise StopIteration
@@ -202,11 +171,16 @@ class Style(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-    def attr_major(self, text):
+    @staticmethod
+    def attr_major(text):
+        """non-stylized callable for "major" text, for non-ttys."""
         return text
 
-    def attr_minor(self, text):
+    @staticmethod
+    def attr_minor(text):
+        """non-stylized callable for "minor" text, for non-ttys."""
         return text
+
     delimiter = u'|'
     continuation = u' $'
     header_hint = u'-'
@@ -303,6 +277,7 @@ class Screen(object):
 
 class Pager(object):
     """A less(1)-like browser for browsing unicode characters."""
+    # pylint: disable=too-many-instance-attributes
 
     #: screen state for next draw method(s).
     STATE_CLEAN, STATE_DIRTY, STATE_REFRESH = 0, 1, 2
@@ -321,7 +296,7 @@ class Pager(object):
         self.term = term
         self.screen = screen
         self.character_factory = character_factory
-        self.unicode_version = 'latest'
+        self.unicode_version = 'auto'
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
         self._page_data = list()
@@ -357,6 +332,7 @@ class Pager(object):
 
     def initialize_page_data(self):
         """Initialize the page data for the given screen."""
+        # pylint: disable=attribute-defined-outside-init
         if self.term.is_a_tty:
             self.display_initialize()
         self.character_generator = self.character_factory(
@@ -413,7 +389,6 @@ class Pager(object):
                 break
             page_idx = npage_idx
             self.dirty = self.STATE_DIRTY
-        return
 
     def _run_tty(self, writer, reader):
         """Pager run method for terminals that are a tty."""
@@ -462,7 +437,7 @@ class Pager(object):
         """
         Process keystroke ``inp``, adjusting screen parameters.
 
-        :param inp: return value of Terminal.inkey().
+        :param inp: return value of blessed.Terminal.inkey().
         :type inp: blessed.keyboard.Keystroke
         :param idx: page index.
         :type idx: int
@@ -532,23 +507,23 @@ class Pager(object):
         # a little vi-inspired.
         if inp in (u'y', u'k') or inp.code in (term.KEY_UP,):
             # scroll backward 1 line
-            idx, offset = (idx, offset - self.screen.num_columns)
+            offset = offset - self.screen.num_columns
         elif inp in (u'e', u'j') or inp.code in (term.KEY_ENTER,
                                                  term.KEY_DOWN,):
             # scroll forward 1 line
-            idx, offset = (idx, offset + self.screen.num_columns)
+            offset = offset + self.screen.num_columns
         elif inp in (u'f', u' ') or inp.code in (term.KEY_PGDOWN,):
             # scroll forward 1 page
-            idx, offset = (idx + 1, offset)
+            idx += 1
         elif inp == u'b' or inp.code in (term.KEY_PGUP,):
             # scroll backward 1 page
-            idx, offset = (max(0, idx - 1), offset)
+            offset = max(0, idx - 1)
         elif inp == u'F' or inp.code in (term.KEY_SDOWN,):
             # scroll forward 10 pages
-            idx, offset = (max(0, idx + 10), offset)
+            offset = max(0, idx + 10)
         elif inp == u'B' or inp.code in (term.KEY_SUP,):
             # scroll forward 10 pages
-            idx, offset = (max(0, idx - 10), offset)
+            idx = max(0, idx - 10)
         elif inp.code == term.KEY_HOME:
             # top
             idx, offset = (0, 0)
@@ -561,12 +536,9 @@ class Pager(object):
         """
         Draw the current page view to ``writer``.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :type writer: callable
-        :param idx: current page index.
-        :type idx: int
-        :param offset: scrolling region offset of current page.
-        :type offset: int
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :param int idx: current page index.
+        :param int offset: scrolling region offset of current page.
         :returns: tuple of next (idx, offset).
         :rtype: (int, int)
         """
@@ -590,8 +562,9 @@ class Pager(object):
         When Pager attribute ``dirty`` is ``STATE_REFRESH``, cursor is moved
         to (0,0), screen is cleared, and heading is displayed.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :returns: True if class attribute ``dirty`` is ``STATE_REFRESH``.
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :return: True if class attribute ``dirty`` is ``STATE_REFRESH``.
+        :rtype: bool
         """
         if self.dirty == self.STATE_REFRESH:
             writer(u''.join(
@@ -599,13 +572,14 @@ class Pager(object):
                  self.screen.msg_intro(version=self.unicode_version), '\n',
                  self.screen.header, '\n',)))
             return True
+        return False
 
     def draw_status(self, writer, idx):
         """
         Conditionally draw status bar when output terminal is a tty.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :param idx: current page position index.
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :param int idx: current page position index.
         :type idx: int
         """
         if self.term.is_a_tty:
@@ -628,8 +602,9 @@ class Pager(object):
         """
         Generator yields text to be displayed for the current unicode pageview.
 
-        :param data: The current page's data as tuple of ``(ucs, name)``.
-        :rtype: generator
+        :param list[(unicode, unicode)] data: The current page's data as tuple
+            of ``(ucs, name)``.
+        :returns: generator for full-page text for display
         """
         if self.term.is_a_tty:
             yield self.term.move(self.screen.row_begins, 0)
@@ -665,8 +640,9 @@ class Pager(object):
         """
         Display a single column segment row describing ``(ucs, name)``.
 
-        :param ucs: target unicode point character string.
-        :param name: name of unicode point.
+        :param str ucs: target unicode point character string.
+        :param str name: name of unicode point.
+        :return: formatted text for display.
         :rtype: unicode
         """
         style = self.screen.style
@@ -724,7 +700,7 @@ def validate_args(opts):
 
 def main(opts):
     """Program entry point."""
-    term = Terminal()
+    term = blessed.Terminal()
     style = Style()
 
     # if the terminal supports colors, use a Style instance with some
@@ -745,4 +721,4 @@ def main(opts):
 
 
 if __name__ == '__main__':
-    exit(main(validate_args(docopt(__doc__))))
+    sys.exit(main(validate_args(docopt.docopt(__doc__))))

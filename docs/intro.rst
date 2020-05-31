@@ -64,23 +64,7 @@ authoring one of their own, from shell::
 
    $ export UNICODE_VERSION=13.0
 
-If unspecified, **?!** is used.
-
-TODO: Author and publish the damn thing as a pypi package, use::
-
-   $ pip install -U wcwidth-detect
-   $ eval `$(which wcwidth-detect)`
-
-This will use blessed, much like the existing resize.py, get_location() method:
-using https://blessed.readthedocs.io/en/latest/examples.html#resize-py   
-
-along with the unique unicode points of double-wide characters in wcwidth,
-to determine the version level supported by the terminal, and display sh-compatible
-"export UNICODE_VERSION=[...]" line for evaluation.
-
-Although I wish we could distribute this with wcwidth directly, we wish to keep 'wcwidth'
-dependencies as light as possible, as it has so many downstream dependers, and besides, blessed
-depends on wcwidth so it would be circular.
+If unspecified, the latest version is used.
 
 wcwidth, wcswidth
 -----------------
