@@ -31,7 +31,7 @@ that carefully produce output to mimick or to be interpreted by an emulator.
 **Problem Statement**: The printable length of *most* strings are equal to the
 number of cells they occupy on the screen.  However, there are categories of
 characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
-(zero-width). 
+(zero-width).
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
@@ -137,7 +137,7 @@ characters are found in the `bin/`_ of this project's source code.  Just ensure
 to first ``pip install -erequirements-develop.txt`` from this projects main
 folder. For example, an interactive browser for testing::
 
-  ./bin/wcwidth-browser.py 
+  ./bin/wcwidth-browser.py
 
 Uses
 ----
@@ -157,14 +157,17 @@ This library is used in:
 
 - `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
 
-- `astanin/python-tabulate`_, Pretty-print tabular data in Python, a library and a command-line utility.
+- `astanin/python-tabulate`_, Pretty-print tabular data in Python, a library
+  and a command-line utility.
 
 - `LuminosoInsight/python-ftfy`_, Fixes mojibake and other glitches in Unicode
   text.
 
-- `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG animations. 
+- `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG
+  animations.
 
-- `peterbrittain/asciimatics`_: Package to help people create full-screen text UIs.
+- `peterbrittain/asciimatics`_: Package to help people create full-screen text
+  UIs.
 
 Other Languages
 ---------------
@@ -276,3 +279,4 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg
+.. _`peterbrittain/asciimatics`: https://github.com/peterbrittain/asciimatics
