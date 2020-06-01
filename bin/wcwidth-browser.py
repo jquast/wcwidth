@@ -233,9 +233,12 @@ class Screen(object):
         hint = self.style.header_hint * self.wide
         heading = (u'{delimiter}{hint}{delimiter}'
                    .format(delimiter=delimiter, hint=hint))
-        alignment = lambda *args: (
-            self.term.rjust(*args) if self.style.alignment == 'right' else
-            self.term.ljust(*args))
+
+        def alignment(*args):
+            if self.style.alignment == 'right':
+                return self.term.rjust(*args)
+            self.term.ljust(*args)
+
         txt = alignment(heading, self.hint_width, self.style.header_fill)
         return self.style.attr_major(txt)
 

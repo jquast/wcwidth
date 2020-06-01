@@ -26,12 +26,12 @@ Introduction
 ============
 
 This Library is mainly for those implementing a Terminal Emulator, or programs
-that carefully produce output to be interpreted by one.
+that carefully produce output to mimick or to be interpreted by an emulator.
 
-**Problem Statement**: When printed to the screen, the length of the string is
-usually equal to the number of cells it occupies.  However, there are
-categories of characters that occupy 2 cells (full-wide), and others that
-occupy 0.
+**Problem Statement**: The printable length of *most* strings are equal to the
+number of cells they occupy on the screen.  However, there are categories of
+characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
+(zero-width). 
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
@@ -48,12 +48,36 @@ The stable version of this package is maintained on pypi, install using pip::
 Example
 -------
 
-To Display ``u'コンニチハ'`` right-adjusted on screen of 80 columns::
+**Problem**: given the following phrase (Japanese),
 
-    >>> from wcwidth import wcswidth
-    >>> text = u'コンニチハ'
-    >>> text_len = wcswidth(text)
-    >>> print(u' ' * (80 - text_len) + text)
+   >>>  text = u'コンニチハ'
+
+Python **incorrectly** uses the *string length* of 5 codepoints rather than the
+*printible length* of 10 cells, so that when using the `rjust` function, the
+output length is wrong::
+
+    >>> print(len('コンニチハ'))
+    5
+
+    >>> print('コンニチハ'.rjust(20, '_'))
+    _____コンニチハ
+
+By defining our own "rjust" function that uses wcwidth, we can correct this::
+
+   >>> def wc_rjust(text, length, padding=' '):
+   ...    from wcwidth import wcswidth
+   ...    return padding * max(0, (length - wcswidth(text))) + text
+   ...
+
+Our **Solution** uses wcswidth to determine the string length correctly::
+
+   >>> from wcwidth import wcswidth
+   >>> print(wcswidth('コンニチハ'))
+   10
+
+   >>> print(wc_rjust('コンニチハ', 20, '_'))
+   __________コンニチハ
+
 
 Chosing a Version
 -----------------
@@ -111,7 +135,9 @@ Regenerate python code tables from latest Unicode Specification data files::
 Supplementary tools for browsing and testing terminals for wide unicode
 characters are found in the `bin/`_ of this project's source code.  Just ensure
 to first ``pip install -erequirements-develop.txt`` from this projects main
-folder.
+folder. For example, an interactive browser for testing::
+
+  ./bin/wcwidth-browser.py 
 
 Uses
 ----
@@ -136,6 +162,10 @@ This library is used in:
 - `LuminosoInsight/python-ftfy`_, Fixes mojibake and other glitches in Unicode
   text.
 
+- `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG animations. 
+
+- `peterbrittain/asciimatics`_: Package to help people create full-screen text UIs.
+
 Other Languages
 ---------------
 
@@ -150,16 +180,23 @@ History
 -------
 
 0.2.0 *2020-05-29*
-  * **Enhancement**:
-    Unicode Specification version may be specified by exporting the Environment variable
-    ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
+  * **Enhancement**: Unicode version may be selected by exporting the
+    Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
+    See the `jquast/ucs-detect`_ CLI utility for automatic detection.
   * **Enhancement**:
     API Documentation is published to readthedocs.org.
   * **Updated** tables for *all* Unicode Specifications with files
     published in a programmatically consumable format, versions 4.1.0
     through 13.0
     that are published
-    , versions 
+    , versions
+
+0.1.9 *2020-03-22*
+  * **Performance** optimization by `Avram Lubkin`_, `PR #35`_.
+  * **Updated** tables to Unicode Specification 13.0.0.
+
+0.1.8 *2020-01-01*
+  * **Updated** tables to Unicode Specification 12.0.0. (`PR #30`_).
 
 0.1.7 *2016-07-01*
   * **Updated** tables to Unicode Specification 9.0.0. (`PR #18`_).
@@ -219,6 +256,8 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #5`: https://github.com/jquast/wcwidth/pull/5
 .. _`PR #11`: https://github.com/jquast/wcwidth/pull/11
 .. _`PR #18`: https://github.com/jquast/wcwidth/pull/18
+.. _`PR #30`: https://github.com/jquast/wcwidth/pull/30
+.. _`PR #35`: https://github.com/jquast/wcwidth/pull/35
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
@@ -234,3 +273,6 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Text::CharWidth`: https://metacpan.org/pod/Text::CharWidth
 .. _`mattn/go-runewidth`: https://github.com/mattn/go-runewidth
 .. _`emugel/wcwidth`: https://github.com/emugel/wcwidth
+.. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
+.. _`Avram Lubkin`: https://github.com/avylove
+.. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg

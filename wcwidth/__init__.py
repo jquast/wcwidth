@@ -9,16 +9,15 @@ https://github.com/jquast/wcwidth
 # any future version.
 
 # local
-from .wcwidth import (wcwidth,
+from .wcwidth import (ZERO_WIDTH,  # noqa
+                      WIDE_EASTASIAN,
+                      wcwidth,
                       wcswidth,
                       _bisearch,
-                      ZERO_WIDTH,
                       list_versions,
-                      WIDE_EASTASIAN,
                       _wcmatch_version,
                       _wcversion_value,
-                      _get_package_version,
-                      )
+                      _get_package_version)
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".

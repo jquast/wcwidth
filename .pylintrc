@@ -9,6 +9,7 @@ load-plugins=
 persistent = no
 jobs = 0
 unsafe-load-any-extension = yes
+good-names = wc
 
 [MESSAGES CONTROL]
 disable=
@@ -19,7 +20,10 @@ disable=
     useless-object-inheritance,
     missing-yield-type-doc,
     missing-yield-doc,
-    too-many-lines
+    too-many-lines,
+    inconsistent-return-statements,
+    too-many-return-statements,
+    too-many-boolean-expressions
 
 [FORMAT]
 max-line-length: 100
@@ -34,7 +38,7 @@ accept-no-return-doc=yes
 max-args=10
 max-attributes=7
 max-branches=12
-max-complexity=11
+max-complexity=13
 max-locals=15
 max-module-lines=1300
 max-parents=7

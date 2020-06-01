@@ -22,10 +22,6 @@ import datetime
 import collections
 import unicodedata
 
-# 3rd party
-import setuptools
-import setuptools.command.test
-
 try:
     # py2
     from urllib2 import urlopen

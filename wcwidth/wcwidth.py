@@ -125,12 +125,13 @@ def wcwidth(wc, unicode_version='auto'):
         Any version string may be specified without error -- the nearest
         matching version is selected.  When ``latest`` (default), the
         highest Unicode version level is used.
-    :returns: The width, in cells, necessary to display the character of
+    :return: The width, in cells, necessary to display the character of
         Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
         not printable, or has an indeterminate effect on the terminal, such as
         a control character.  Otherwise, the number of column positions the
         character occupies on a graphic terminal (1 or 2) is returned.
+    :rtype: int
 
     The following have a column width of -1:
 
@@ -174,16 +175,10 @@ def wcwidth(wc, unicode_version='auto'):
 
     - Some kinds of emjoi or symbols.
     """
-    # pylint: disable=C0103
-    #         Invalid argument name "wc"
-    ucs = ord(wc)
-
     # NOTE: created by hand, there isn't anything identifiable other than
     # general Cf category code to identify these, and some characters in Cf
     # category code are of non-zero width.
-    #
-    # pylint: disable=too-many-boolean-expressions
-    #         Too many boolean expressions in if statement (7/5)
+    ucs = ord(wc)
     if (ucs == 0 or
             ucs == 0x034F or
             0x200B <= ucs <= 0x200F or
@@ -294,12 +289,6 @@ def _wcmatch_version(given_version):
     :returns: unicode string, or non-unicode ``str`` type for python 2
         when given ``version`` is also type ``str``.
     """
-    # pylint: disable=R1260,too-many-return-statements,inconsistent-return-statements
-    #         - '_wcmatch_version' is too complex. The McCabe rating is 13
-    #         - Too many return statements (7/6)
-    #         - Either all return statements in a function should return an
-    #           expression, or none of them should.
-    #
     # Design note: the choice to return the same type that is given certainly
     # complicates it for python 2 str-type, but allows us to define an api that
     # to use 'string-type', for unicode version level definitions, so all of our

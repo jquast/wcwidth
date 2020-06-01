@@ -1,7 +1,6 @@
 """Workaround for https://github.com/codecov/codecov-python/issues/158."""
 # std imports
 import sys
-import time
 
 # 3rd party
 import codecov
