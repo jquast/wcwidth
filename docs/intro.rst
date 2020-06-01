@@ -1,5 +1,5 @@
 |pypi_downloads| |codecov| |license|
- 
+
 ============
 Introduction
 ============
