@@ -237,7 +237,7 @@ class Screen(object):
         def alignment(*args):
             if self.style.alignment == 'right':
                 return self.term.rjust(*args)
-            self.term.ljust(*args)
+            return self.term.ljust(*args)
 
         txt = alignment(heading, self.hint_width, self.style.header_fill)
         return self.style.attr_major(txt)
