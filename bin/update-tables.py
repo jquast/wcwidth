@@ -4,10 +4,6 @@ Update the python Unicode tables for wcwidth.
 
 https://github.com/jquast/wcwidth
 """
-
-# TODO: when a unicode point was released: may be determined from
-# http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt
-
 from __future__ import print_function
 
 # std imports
@@ -204,7 +200,7 @@ def describe_file_header(fpath):
     if len(header_2) == 0:
         return ''
     assert len(header_2) == 2, (fpath, header_2)
-    return (fmt.format(*header_2))
+    return fmt.format(*header_2)
 
 
 def parse_east_asian(fname, properties=(u'W', u'F',)):
@@ -216,7 +212,7 @@ def parse_east_asian(fname, properties=(u'W', u'F',)):
         if version is None:
             version = uline.split(None, 1)[1].rstrip()
             continue
-        elif date is None:
+        if date is None:
             date = uline.split(':', 1)[1].rstrip()
             continue
         if uline.startswith('#') or not uline.lstrip():
@@ -241,7 +237,7 @@ def parse_category(fname, categories):
         if version is None:
             version = uline.split(None, 1)[1].rstrip()
             continue
-        elif date is None:
+        if date is None:
             date = uline.split(':', 1)[1].rstrip()
             continue
         if uline.startswith('#') or not uline.lstrip():
@@ -311,7 +307,7 @@ def do_version_json(versions):
     version_data['tables'] = versions
 
     with open(fname, 'w') as fp:
-        version_data = json.dump(version_data, fp)
+        json.dump(version_data, fp)
     print()
 
 
