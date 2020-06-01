@@ -3,10 +3,10 @@ wcwidth module.
 
 https://github.com/jquast/wcwidth
 """
-# re-export all functions, even private ones, from top-level module
-# path, to allow for 'from wcwidth import _private_func'.  Of course, user
-# beware that any _private function may disappear or change signature at any
-# future version.
+# re-export all functions & definitions, even private ones, from top-level
+# module path, to allow for 'from wcwidth import _private_func'.  Of course,
+# user beware that any _private function may disappear or change signature at
+# any future version.
 
 # local
 from .wcwidth import (wcwidth,

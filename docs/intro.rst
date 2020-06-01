@@ -131,8 +131,20 @@ This library is used in:
 
 - `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
 
-- `timoxley/wcwidth`_, A similar implementation in javascript.
+- `astanin/python-tabulate`_, Pretty-print tabular data in Python, a library and a command-line utility.
 
+- `LuminosoInsight/python-ftfy`_, Fixes mojibake and other glitches in Unicode
+  text.
+
+Other Languages
+---------------
+
+- `timoxley/wcwidth`_: JavaScript
+- `janlelis/unicode-display_width`_: Ruby
+- `alecrabbit/php-wcwidth`_: PHP
+- `Text::CharWidth`_: Perl
+- `mattn/go-runewidth`_: Go
+- `emugel/wcwidth`_: Haxe
 
 History
 -------
@@ -215,3 +227,10 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`timoxley/wcwidth`: https://github.com/timoxley/wcwidth
 .. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
 .. _`wcswidth(3)`: http://man7.org/linux/man-pages/man3/wcswidth.3.html
+.. _`astanin/python-tabulate`: https://github.com/astanin/python-tabulate
+.. _`janlelis/unicode-display_width`: https://github.com/janlelis/unicode-display_width
+.. _`LuminosoInsight/python-ftfy`: https://github.com/LuminosoInsight/python-ftfy
+.. _`alecrabbit/php-wcwidth`: https://github.com/alecrabbit/php-wcwidth
+.. _`Text::CharWidth`: https://metacpan.org/pod/Text::CharWidth
+.. _`mattn/go-runewidth`: https://github.com/mattn/go-runewidth
+.. _`emugel/wcwidth`: https://github.com/emugel/wcwidth

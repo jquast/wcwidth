@@ -92,7 +92,7 @@ class WcWideCharacterGenerator(object):
         :type width: int
         """
         self.characters = (
-            chr(idx) for idx in xrange(LIMIT_UCS)
+            chr(idx) for idx in range(LIMIT_UCS)
             if wcwidth(chr(idx), unicode_version=unicode_version) == width)
 
     def __iter__(self):
@@ -507,7 +507,7 @@ class Pager(object):
         # a little vi-inspired.
         if inp in (u'y', u'k') or inp.code in (term.KEY_UP,):
             # scroll backward 1 line
-            offset = offset - self.screen.num_columns
+            offset -= self.screen.num_columns
         elif inp in (u'e', u'j') or inp.code in (term.KEY_ENTER,
                                                  term.KEY_DOWN,):
             # scroll forward 1 line
@@ -517,12 +517,12 @@ class Pager(object):
             idx += 1
         elif inp == u'b' or inp.code in (term.KEY_PGUP,):
             # scroll backward 1 page
-            offset = max(0, idx - 1)
+            idx = max(0, idx - 1)
         elif inp == u'F' or inp.code in (term.KEY_SDOWN,):
             # scroll forward 10 pages
-            offset = max(0, idx + 10)
+            idx = max(0, idx + 10)
         elif inp == u'B' or inp.code in (term.KEY_SUP,):
-            # scroll forward 10 pages
+            # scroll backward 10 pages
             idx = max(0, idx - 10)
         elif inp.code == term.KEY_HOME:
             # top
