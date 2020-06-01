@@ -244,7 +244,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     idx = slice(0, end)
     width = 0
     for char in pwcs[idx]:
-        wcw = wcwidth(char, unicode_version=unicode_version)
+        wcw = wcwidth(char, unicode_version)
         if wcw < 0:
             return -1
         width += wcw
