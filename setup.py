@@ -63,7 +63,7 @@ def main():
         url='https://github.com/jquast/wcwidth',
         package_data={
             'wcwidth': ['*.json'],
-            '': ['LICENSE.txt', '*.rst'],
+            '': ['LICENSE', '*.rst'],
         },
         zip_safe=True,
         classifiers=[
