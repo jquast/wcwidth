@@ -111,11 +111,8 @@ ZERO_WIDTH_CF = set([
     0x2063,  # Invisible separator
 ])
 
-UBOUND_ZERO_WIDTH = len(ZERO_WIDTH) - 1
-UBOUND_WIDE_EASTASIAN = len(WIDE_EASTASIAN) - 1
 
-
-def _bisearch(ucs, table, ubound):
+def _bisearch(ucs, table):
     """
     Auxiliary function for binary search in interval table.
 
@@ -126,6 +123,7 @@ def _bisearch(ucs, table, ubound):
     :returns: 1 if ordinal value ucs is found within lookup table, else 0.
     """
     lbound = 0
+    ubound = len(table) - 1
 
     if ucs < table[0][0] or ucs > table[ubound][1]:
         return 0
@@ -217,10 +215,10 @@ def wcwidth(wc, unicode_version='auto'):
     _unicode_version = _wcmatch_version(unicode_version)
 
     # combining characters with zero width
-    if _bisearch(ucs, ZERO_WIDTH, UBOUND_ZERO_WIDTH):
+    if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
         return 0
 
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN, UBOUND_WIDE_EASTASIAN)
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
 def wcswidth(pwcs, n=None, unicode_version='auto'):

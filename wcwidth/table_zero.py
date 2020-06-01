@@ -1,5 +1,5 @@
 """Zero_Width table, created by bin/update-tables.py."""
-# Generated: 2020-06-01T15:35:22.306653
+# Generated: 2020-06-01T15:38:31.292746
 ZERO_WIDTH = {
     '4.1.0': (
         # Source: DerivedGeneralCategory-4.1.0.txt
