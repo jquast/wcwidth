@@ -139,6 +139,7 @@ def _bisearch(ucs, table):
     return 0
 
 
+@lru_cache(maxsize=1000)
 def wcwidth(wc, unicode_version='auto'):
     r"""
     Given one Unicode character, return its printable length on a terminal.
