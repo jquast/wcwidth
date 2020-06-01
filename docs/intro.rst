@@ -177,7 +177,7 @@ Other Languages
 History
 -------
 
-0.2.0 *2020-05-29*
+0.2.0 *2020-06-01*
   * **Enhancement**: Unicode version may be selected by exporting the
     Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
     See the `jquast/ucs-detect`_ CLI utility for automatic detection.
