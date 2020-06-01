@@ -28,8 +28,8 @@ characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a
-unicode string is expected to occupy.*
+functions precisely copy.  *These functions return the number of cells a unicode
+string is expected to occupy.*
 
 Installation
 ------------
@@ -72,16 +72,18 @@ Our **Solution** uses wcswidth to determine the string length correctly::
    __________コンニチハ
 
 
-Chosing a Version
------------------
+Choosing a Version
+------------------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be
-done by *terminal emulators* or those developers experimenting with
-authoring one of their own, from shell::
+Export an environment variable, ``UNICODE_VERSION``. This should be done by
+*terminal emulators* or those developers experimenting with authoring one of
+their own, from shell::
 
    $ export UNICODE_VERSION=13.0
 
-If unspecified, the latest version is used.
+If unspecified, the latest version is used. If your Terminal Emulator does not
+export this variable, you can use the `jquast/ucs-detect` utility to
+automatically detect and export it to your shell.
 
 wcwidth, wcswidth
 -----------------
