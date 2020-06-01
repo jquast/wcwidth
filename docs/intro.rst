@@ -1,19 +1,5 @@
-.. image:: https://img.shields.io/travis/jquast/wcwidth.svg
-    :target: https://travis-ci.org/jquast/wcwidth
-    :alt: Travis Continous Integration
-
-.. image:: https://img.shields.io/coveralls/jquast/wcwidth.svg
-    :target: https://coveralls.io/r/jquast/wcwidth
-    :alt: Coveralls Code Coverage
-
-.. image:: https://img.shields.io/github/license/jquast/wcwidth.svg
-    :target: https://pypi.python.org/pypi/wcwidth/
-    :alt: License
-
-.. image:: https://img.shields.io/pypi/dm/wcwidth.svg
-    :target: https://pypi.python.org/pypi/wcwidth/
-    :alt: Downloads
-
+|pypi_downloads| |codecov| |license|
+ 
 ============
 Introduction
 ============
@@ -275,3 +261,12 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg
 .. _`peterbrittain/asciimatics`: https://github.com/peterbrittain/asciimatics
+.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
+    :alt: Downloads
+    :target: https://pypi.org/project/wcwidth/
+.. |codecov| image:: https://codecov.io/gh/jquast/wcwidth/branch/master/graph/badge.svg
+    :alt: codecov.io Code Coverage
+    :target: https://codecov.io/gh/jquast/wcwidth/
+.. |license| image:: https://img.shields.io/github/license/jquast/wcwidth.svg
+    :target: https://pypi.python.org/pypi/wcwidth/
+    :alt: MIT License
