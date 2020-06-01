@@ -179,13 +179,13 @@ def wcwidth(wc, unicode_version='auto'):
     # general Cf category code to identify these, and some characters in Cf
     # category code are of non-zero width.
     ucs = ord(wc)
-    if (ucs == 0 or
-            ucs == 0x034F or
-            0x200B <= ucs <= 0x200F or
-            ucs == 0x2028 or
-            ucs == 0x2029 or
-            0x202A <= ucs <= 0x202E or
-            0x2060 <= ucs <= 0x2063):
+    if (ucs == 0
+            or ucs == 0x034F
+            or 0x200B <= ucs <= 0x200F
+            or ucs == 0x2028
+            or ucs == 0x2029
+            or 0x202A <= ucs <= 0x202E
+            or 0x2060 <= ucs <= 0x2063):
         return 0
 
     # C0/C1 control characters

@@ -135,9 +135,9 @@ class WcCombinedCharacterGenerator(object):
                                 range(begin, end + 1)
                                 if _val <= LIMIT_UCS]:
                         self.characters.append(
-                            letters_o[:1] +
-                            chr(val) +
-                            letters_o[wcwidth(chr(val)) + 1:])
+                            letters_o[:1]
+                            + chr(val)
+                            + letters_o[wcwidth(chr(val)) + 1:])
         self.characters.reverse()
 
     def __iter__(self):
