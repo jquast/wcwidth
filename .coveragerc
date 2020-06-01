@@ -1,6 +1,0 @@
-[run]
-branch = True
-source = wcwidth
-
-[report]
-omit = wcwidth/tests/*

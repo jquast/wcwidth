@@ -1,6 +1,22 @@
 # coding: utf-8
-"""Core tests module for wcwidth."""
+"""Core tests for wcwidth module."""
+# 3rd party
+import pkg_resources
+
+# local
 import wcwidth
+
+
+def test_package_version():
+    """wcwidth.__version__ is expected value."""
+    # given,
+    expected = pkg_resources.get_distribution('wcwidth').version
+
+    # exercise,
+    result = wcwidth.__version__
+
+    # verify.
+    assert result == expected
 
 
 def test_hello_jp():
@@ -20,7 +36,7 @@ def test_hello_jp():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase)
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
@@ -41,7 +57,7 @@ def test_wcswidth_substr():
     # exercise,
     length_phrase = wcwidth.wcswidth(phrase, end)
 
-    # verify,
+    # verify.
     assert length_phrase == expect_length_phrase
 
 
@@ -56,13 +72,13 @@ def test_null_width_0():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
 
 def test_control_c0_width_negative_1():
-    """CSI (Control sequence initiate) reports width -1."""
+    """CSI (Control sequence initiate) reports width -1 for ESC."""
     # given,
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
@@ -72,12 +88,12 @@ def test_control_c0_width_negative_1():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
 
-def test_combining_width_negative_1():
+def test_combining_width():
     """Simple test combining reports total width of 4."""
     # given,
     phrase = u'--\u05bf--'
@@ -88,7 +104,7 @@ def test_combining_width_negative_1():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
@@ -103,7 +119,7 @@ def test_combining_cafe():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
@@ -118,7 +134,7 @@ def test_combining_enclosing():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
@@ -133,6 +149,6 @@ def test_combining_spacing():
     length_each = tuple(map(wcwidth.wcwidth, phrase))
     length_phrase = wcwidth.wcswidth(phrase, len(phrase))
 
-    # verify,
+    # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase

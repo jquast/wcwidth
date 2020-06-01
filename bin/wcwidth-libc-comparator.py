@@ -10,18 +10,24 @@ values. Although wcwidth(3) is POSIX, its actual implementation may differ,
 so these tests are not guaranteed to be successful on all platforms, especially
 where wcwidth(3)/wcswidth(3) is out of date. This is especially true for many
 platforms -- usually conforming only to unicode specification 1.0 or 2.0.
+
+This program accepts one optional command-line argument, the unicode version
+level for our library to use when comparing to libc.
 """
 # pylint: disable=C0103
 #         Invalid module name "wcwidth-libc-comparator"
 
 # standard imports
 from __future__ import print_function
-import unicodedata
-import ctypes.util
-import warnings
-import locale
-import sys
 
+# std imports
+import sys
+import locale
+import warnings
+import ctypes.util
+import unicodedata
+
+# local
 # local imports
 import wcwidth
 
@@ -38,7 +44,8 @@ def is_named(ucs):
         return False
 
 
-isnt_combining = lambda ucs: not unicodedata.combining(ucs)
+def is_not_combining(ucs):
+    return not unicodedata.combining(ucs)
 
 
 def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
@@ -62,6 +69,7 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
     return (u"libc,ours={},{} [--o{}o--] name={} val={} {}"
             " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
 
+
 # use chr() for py3.x,
 # unichr() for py2.x
 try:
@@ -80,9 +88,9 @@ if sys.maxunicode < 1114111:
                   'characters may be tested.')
 
 
-def _is_equal_wcwidth(libc, ucs):
+def _is_equal_wcwidth(libc, ucs, unicode_version):
     w_libc = libc.wcwidth(ucs)
-    w_local = wcwidth.wcwidth(ucs)
+    w_local = wcwidth.wcwidth(ucs, unicode_version)
     assert w_libc == w_local, report_ucs_msg(ucs, w_libc, w_local)
 
 
@@ -101,7 +109,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
     """
     all_ucs = (ucs for ucs in
                [unichr(val) for val in range(sys.maxunicode)]
-               if is_named(ucs) and isnt_combining(ucs))
+               if is_named(ucs) and is_not_combining(ucs))
 
     libc_name = ctypes.util.find_library('c')
     if not libc_name:
@@ -115,12 +123,16 @@ def main(using_locale=('en_US', 'UTF-8',)):
     assert getattr(libc, 'wcswidth', None) is not None
 
     locale.setlocale(locale.LC_ALL, using_locale)
+    unicode_version = 'latest'
+    if len(sys.argv) > 1:
+        unicode_version = sys.argv[1]
 
     for ucs in all_ucs:
         try:
-            _is_equal_wcwidth(libc, ucs)
+            _is_equal_wcwidth(libc, ucs, unicode_version)
         except AssertionError as err:
             print(err)
+
 
 if __name__ == '__main__':
     main()

@@ -21,79 +21,52 @@ Options:
 # pylint: disable=C0103,W0622
 #         Invalid constant name "echo"
 #         Invalid constant name "flushout" (col 4)
-#         Invalid constant name "unichr" (col 8)
-#         Invalid constant name "xrange" (col 8)
 #         Invalid module name "wcwidth-browser"
-#
-#         Redefining built-in 'unichr' (col 8)
-#         Redefining built-in 'xrange' (col 8)
-#
-# std imports
-from __future__ import print_function
-from __future__ import division
-from functools import partial
-import unicodedata
-import string
-import signal
+from __future__ import division, print_function
 
-# 3rd-party
-from blessed import Terminal
-from docopt import docopt
+# std imports
+import sys
+import signal
+import string
+import functools
+import unicodedata
+
+# 3rd party
+import docopt
+import blessed
 
 # local
-from wcwidth.wcwidth import wcwidth, ZERO_WIDTH
-
-# BEGIN, python 2.6 through 3.4 compatibilities,
+from wcwidth import ZERO_WIDTH, wcwidth, list_versions, _wcmatch_version
 
 #: print function alias, does not end with line terminator.
-echo = partial(print, end='')
+echo = functools.partial(print, end='')
+flushout = functools.partial(print, end='', flush=True)
 
-try:
-    flushout = partial(print, end='', flush=True)
-    flushout('')
-except TypeError as err:
-    assert "'flush' is an invalid keyword argument" in err.args[0]
-
-    def flushout():
-        """Flush any buffered output on standard out when called."""
-        import sys
-        # pylint: disable=E0602
-        #         Undefined variable 'BrokenPipeError' (col 15)
-        try:
-            sys.stdout.flush()
-        except BrokenPipeError:  # noqa
-            pass
-
-
-try:
-    _ = unichr(0)
-except NameError as err:
-    if err.args[0] == "name 'unichr' is not defined":
-        unichr = chr
-    else:
-        raise
-
-try:
-    _ = xrange(0)
-except NameError as err:
-    if err.args[0] == "name 'xrange' is not defined":
-        xrange = range
-    else:
-        raise
-
-# END, python 2.6 - 3.3 compatibilities
-
-# some poor python builds (apple, etc.) are narrow, presumably
-# for smaller memory footprint of character strings.
-try:
-    _ = unichr(0x10000)
-    LIMIT_UCS = 0x3fffd
-except ValueError as err:
-    assert 'narrow Python build' in err.args[0], err.args
-    LIMIT_UCS = 0x10000
-
-#: printable length of highest unicode character
+#: printable length of highest unicode character description
+LIMIT_UCS = 0x3fffd
 UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
+
+
+def readline(term, width):
+    """A rudimentary readline implementation."""
+    text = ''
+    while True:
+        inp = term.inkey()
+        if inp.code == term.KEY_ENTER:
+            break
+        if inp.code == term.KEY_ESCAPE or inp == chr(3):
+            text = None
+            break
+        if not inp.is_sequence and len(text) < width:
+            text += inp
+            echo(inp)
+            flushout()
+        elif inp.code in (term.KEY_BACKSPACE, term.KEY_DELETE):
+            if text:
+                text = text[:-1]
+                echo('\b \b')
+            flushout()
+    return text
 
 
 class WcWideCharacterGenerator(object):
@@ -101,17 +74,17 @@ class WcWideCharacterGenerator(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-
-    def __init__(self, width=2):
+    def __init__(self, width=2, unicode_version='auto'):
         """
         Class constructor.
 
         :param width: generate characters of given width.
+        :param str unicode_version: Unicode Version for render.
         :type width: int
         """
-        self.characters = (unichr(idx)
-                           for idx in xrange(LIMIT_UCS)
-                           if wcwidth(unichr(idx)) == width)
+        self.characters = (
+            chr(idx) for idx in range(LIMIT_UCS)
+            if wcwidth(chr(idx), unicode_version=unicode_version) == width)
 
     def __iter__(self):
         """Special method called by iter()."""
@@ -127,9 +100,6 @@ class WcWideCharacterGenerator(object):
                 continue
             return (ucs, name)
 
-    # python 2.6 - 3.3 compatibility
-    next = __next__
-
 
 class WcCombinedCharacterGenerator(object):
     """Generator yields unicode characters with combining."""
@@ -141,18 +111,20 @@ class WcCombinedCharacterGenerator(object):
         """
         Class constructor.
 
-        :param width: generate characters of given width.
-        :type width: int
+        :param int width: generate characters of given width.
+        :param str unicode_version: Unicode version.
         """
         self.characters = []
-        letters_o = (u'o' * width)
-        for boundaries in ZERO_WIDTH:
+        letters_o = ('o' * width)
+        last_version = list_versions()[-1]
+        for (begin, end) in ZERO_WIDTH[last_version].items():
             for val in [_val for _val in
-                        range(boundaries[0], boundaries[1] + 1)
+                        range(begin, end + 1)
                         if _val <= LIMIT_UCS]:
-                self.characters.append(letters_o[:1] +
-                                       unichr(val) +
-                                       letters_o[wcwidth(unichr(val))+1:])
+                self.characters.append(
+                    letters_o[:1] +
+                    chr(val) +
+                    letters_o[wcwidth(chr(val)) + 1:])
         self.characters.reverse()
 
     def __iter__(self):
@@ -160,7 +132,13 @@ class WcCombinedCharacterGenerator(object):
         return self
 
     def __next__(self):
-        """Special method called by next()."""
+        """
+        Special method called by next().
+
+        :return: unicode character and name, as tuple.
+        :rtype: tuple[unicode, unicode]
+        :raises StopIteration: no more characters
+        """
         while True:
             if not self.characters:
                 raise StopIteration
@@ -180,12 +158,20 @@ class Style(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-    attr_major = lambda self, text: text
-    attr_minor = lambda self, text: text
-    delimiter = u'|'
-    continuation = u' $'
-    header_hint = u'-'
-    header_fill = u'='
+    @staticmethod
+    def attr_major(text):
+        """non-stylized callable for "major" text, for non-ttys."""
+        return text
+
+    @staticmethod
+    def attr_minor(text):
+        """non-stylized callable for "minor" text, for non-ttys."""
+        return text
+
+    delimiter = '|'
+    continuation = ' $'
+    header_hint = '-'
+    header_fill = '='
     name_len = 10
     alignment = 'right'
 
@@ -193,8 +179,7 @@ class Style(object):
         """
         Class constructor.
 
-        Any given keyword arguments are assigned to the class attribute
-        of the same name.
+        Any given keyword arguments are assigned to the class attribute of the same name.
         """
         for key, val in kwargs.items():
             setattr(self, key, val)
@@ -203,7 +188,8 @@ class Style(object):
 class Screen(object):
     """Represents terminal style, data dimensions, and drawables."""
 
-    intro_msg_fmt = u'Delimiters ({delim}) should align.'
+    intro_msg_fmt = ('Delimiters ({delim}) should align, '
+                     'unicode version is {version}.')
 
     def __init__(self, term, style, wide=2):
         """Class constructor."""
@@ -222,9 +208,9 @@ class Screen(object):
         return sum((len(self.style.delimiter),
                     self.wide,
                     len(self.style.delimiter),
-                    len(u' '),
+                    len(' '),
                     UCS_PRINTLEN + 2,
-                    len(u' '),
+                    len(' '),
                     self.style.name_len,))
 
     @property
@@ -232,20 +218,22 @@ class Screen(object):
         """Text of a single column heading."""
         delimiter = self.style.attr_minor(self.style.delimiter)
         hint = self.style.header_hint * self.wide
-        heading = (u'{delimiter}{hint}{delimiter}'
+        heading = ('{delimiter}{hint}{delimiter}'
                    .format(delimiter=delimiter, hint=hint))
-        alignment = lambda *args: (
-            self.term.rjust(*args) if self.style.alignment == 'right' else
-            self.term.ljust(*args))
+
+        def alignment(*args):
+            if self.style.alignment == 'right':
+                return self.term.rjust(*args)
+            return self.term.ljust(*args)
+
         txt = alignment(heading, self.hint_width, self.style.header_fill)
         return self.style.attr_major(txt)
 
-    @property
-    def msg_intro(self):
+    def msg_intro(self, version):
         """Introductory message disabled above heading."""
-        delim = self.style.attr_minor(self.style.delimiter)
-        txt = self.intro_msg_fmt.format(delim=delim).rstrip()
-        return self.term.center(txt)
+        return self.term.center(self.intro_msg_fmt.format(
+            delim=self.style.attr_minor(self.style.delimiter),
+            version=self.style.attr_minor(version))).rstrip()
 
     @property
     def row_ends(self):
@@ -279,6 +267,7 @@ class Screen(object):
 
 class Pager(object):
     """A less(1)-like browser for browsing unicode characters."""
+    # pylint: disable=too-many-instance-attributes
 
     #: screen state for next draw method(s).
     STATE_CLEAN, STATE_DIRTY, STATE_REFRESH = 0, 1, 2
@@ -297,7 +286,7 @@ class Pager(object):
         self.term = term
         self.screen = screen
         self.character_factory = character_factory
-        self.character_generator = self.character_factory(self.screen.wide)
+        self.unicode_version = 'auto'
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
         self._page_data = list()
@@ -306,8 +295,6 @@ class Pager(object):
         """Signal handler callback for SIGWINCH."""
         # pylint: disable=W0613
         #         Unused argument 'args'
-        self.screen.style.name_len = min(self.screen.style.name_len,
-                                         self.term.width - 15)
         assert self.term.width >= self.screen.hint_width, (
             'Screen to small {}, must be at least {}'.format(
                 self.term.width, self.screen.hint_width))
@@ -325,30 +312,20 @@ class Pager(object):
         echo(self.term.center('Initializing page data ...').rstrip())
         flushout()
 
-        if LIMIT_UCS == 0x10000:
-            echo('\n\n')
-            echo(self.term.blink_red(self.term.center(
-                'narrow Python build: upperbound value is {n}.'
-                .format(n=LIMIT_UCS)).rstrip()))
-            echo('\n\n')
-            flushout()
-
     def initialize_page_data(self):
         """Initialize the page data for the given screen."""
+        # pylint: disable=attribute-defined-outside-init
         if self.term.is_a_tty:
             self.display_initialize()
-        self.character_generator = self.character_factory(self.screen.wide)
-        page_data = list()
+        self.character_generator = self.character_factory(
+            self.screen.wide)
+        self._page_data = list()
         while True:
             try:
-                page_data.append(next(self.character_generator))
+                self._page_data.append(next(self.character_generator))
             except StopIteration:
                 break
-        if LIMIT_UCS == 0x10000:
-            echo(self.term.center('press any key.').rstrip())
-            flushout()
-            self.term.inkey(timeout=None)
-        return page_data
+        self._set_lastpage()
 
     def page_data(self, idx, offset):
         """
@@ -390,7 +367,6 @@ class Pager(object):
                 break
             page_idx = npage_idx
             self.dirty = self.STATE_DIRTY
-        return
 
     def _run_tty(self, writer, reader):
         """Pager run method for terminals that are a tty."""
@@ -409,6 +385,8 @@ class Pager(object):
                 nxt, noff = self.process_keystroke(inp,
                                                    page_idx,
                                                    page_offset)
+                if self.dirty:
+                    continue
             if not self.dirty:
                 self.dirty = nxt != page_idx or noff != page_offset
             page_idx, page_offset = nxt, noff
@@ -429,8 +407,7 @@ class Pager(object):
                        instance of blessed.keyboard.Keystroke.
         :type reader: callable
         """
-        self._page_data = self.initialize_page_data()
-        self._set_lastpage()
+        self.initialize_page_data()
         if not self.term.is_a_tty:
             self._run_notty(writer)
         else:
@@ -440,7 +417,7 @@ class Pager(object):
         """
         Process keystroke ``inp``, adjusting screen parameters.
 
-        :param inp: return value of Terminal.inkey().
+        :param inp: return value of blessed.Terminal.inkey().
         :type inp: blessed.keyboard.Keystroke
         :param idx: page index.
         :type idx: int
@@ -449,7 +426,7 @@ class Pager(object):
         :returns: tuple of next (idx, offset).
         :rtype: (int, int)
         """
-        if inp.lower() in (u'q', u'Q'):
+        if inp.lower() in ('q', 'Q'):
             # exit
             return (-1, -1)
         self._process_keystroke_commands(inp)
@@ -458,68 +435,92 @@ class Pager(object):
 
     def _process_keystroke_commands(self, inp):
         """Process keystrokes that issue commands (side effects)."""
-        if inp in (u'1', u'2'):
-            # chose 1 or 2-character wide
-            if int(inp) != self.screen.wide:
-                self.screen.wide = int(inp)
-                self.on_resize(None, None)
-        elif inp in (u'_', u'-'):
+        if inp in ('1', '2') and self.screen.wide != int(inp):
+            # change between 1 or 2-character wide mode.
+            self.screen.wide = int(inp)
+            self.initialize_page_data()
+            self.on_resize(None, None)
+        elif inp == 'c':
+            # switch on/off combining characters
+            self.character_factory = (
+                WcWideCharacterGenerator
+                if self.character_factory != WcWideCharacterGenerator
+                else WcCombinedCharacterGenerator)
+            self.initialize_page_data()
+            self.on_resize(None, None)
+        elif inp in ('_', '-'):
             # adjust name length -2
             nlen = max(1, self.screen.style.name_len - 2)
             if nlen != self.screen.style.name_len:
                 self.screen.style.name_len = nlen
                 self.on_resize(None, None)
-        elif inp in (u'+', u'='):
+        elif inp in ('+', '='):
             # adjust name length +2
             nlen = min(self.term.width - 8, self.screen.style.name_len + 2)
             if nlen != self.screen.style.name_len:
                 self.screen.style.name_len = nlen
                 self.on_resize(None, None)
-        elif inp == u'2' and self.screen.wide != 2:
-            # change 2 or 1-cell wide view
-            self.screen.wide = 2
-            self.on_resize(None, None)
+        elif inp == 'v':
+            with self.term.location(x=0, y=self.term.height - 2):
+                print(self.term.clear_eos())
+                input_selection_msg = (
+                    "--> Enter unicode version [{versions}] ("
+                    "current: {self.unicode_version}):".format(
+                        versions=', '.join(list_versions()),
+                        self=self))
+                echo('\n'.join(self.term.wrap(input_selection_msg,
+                                              subsequent_indent='    ')))
+                echo(' ')
+                flushout()
+                inp = readline(self.term, width=max(map(len, list_versions())))
+                if inp.strip() and inp != self.unicode_version:
+                    # set new unicode version -- page data must be
+                    # re-initialized. Any version is legal, underlying
+                    # library performs best-match (with warnings)
+                    self.unicode_version = _wcmatch_version(inp)
+                    self.initialize_page_data()
+                    self.on_resize(None, None)
 
     def _process_keystroke_movement(self, inp, idx, offset):
         """Process keystrokes that adjust index and offset."""
         term = self.term
-        if inp in (u'y', u'k') or inp.code in (term.KEY_UP,):
+        # a little vi-inspired.
+        if inp in ('y', 'k') or inp.code in (term.KEY_UP,):
             # scroll backward 1 line
-            idx, offset = (idx, offset - self.screen.num_columns)
-        elif inp in (u'e', u'j') or inp.code in (term.KEY_ENTER,
+            offset -= self.screen.num_columns
+        elif inp in ('e', 'j') or inp.code in (term.KEY_ENTER,
                                                  term.KEY_DOWN,):
             # scroll forward 1 line
-            idx, offset = (idx, offset + self.screen.num_columns)
-        elif inp in (u'f', u' ') or inp.code in (term.KEY_PGDOWN,):
+            offset = offset + self.screen.num_columns
+        elif inp in ('f', ' ') or inp.code in (term.KEY_PGDOWN,):
             # scroll forward 1 page
-            idx, offset = (idx + 1, offset)
-        elif inp == u'b' or inp.code in (term.KEY_PGUP,):
+            idx += 1
+        elif inp == 'b' or inp.code in (term.KEY_PGUP,):
             # scroll backward 1 page
-            idx, offset = (max(0, idx - 1), offset)
-        elif inp.code in (term.KEY_SDOWN,):
+            idx = max(0, idx - 1)
+        elif inp == 'F' or inp.code in (term.KEY_SDOWN,):
             # scroll forward 10 pages
-            idx, offset = (max(0, idx + 10), offset)
-        elif inp.code in (term.KEY_SUP,):
-            # scroll forward 10 pages
-            idx, offset = (max(0, idx - 10), offset)
+            idx = max(0, idx + 10)
+        elif inp == 'B' or inp.code in (term.KEY_SUP,):
+            # scroll backward 10 pages
+            idx = max(0, idx - 10)
         elif inp.code == term.KEY_HOME:
             # top
             idx, offset = (0, 0)
-        elif inp.code == term.KEY_END:
+        elif inp == 'G' or inp.code == term.KEY_END:
             # bottom
             idx, offset = (self.last_page, 0)
+        elif inp == '\x0c':
+            self.dirty = True
         return idx, offset
 
     def draw(self, writer, idx, offset):
         """
         Draw the current page view to ``writer``.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :type writer: callable
-        :param idx: current page index.
-        :type idx: int
-        :param offset: scrolling region offset of current page.
-        :type offset: int
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :param int idx: current page index.
+        :param int offset: scrolling region offset of current page.
         :returns: tuple of next (idx, offset).
         :rtype: (int, int)
         """
@@ -543,22 +544,24 @@ class Pager(object):
         When Pager attribute ``dirty`` is ``STATE_REFRESH``, cursor is moved
         to (0,0), screen is cleared, and heading is displayed.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :returns: True if class attribute ``dirty`` is ``STATE_REFRESH``.
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :return: True if class attribute ``dirty`` is ``STATE_REFRESH``.
+        :rtype: bool
         """
         if self.dirty == self.STATE_REFRESH:
-            writer(u''.join(
+            writer(''.join(
                 (self.term.home, self.term.clear,
-                 self.screen.msg_intro, '\n',
+                 self.screen.msg_intro(version=self.unicode_version), '\n',
                  self.screen.header, '\n',)))
             return True
+        return False
 
     def draw_status(self, writer, idx):
         """
         Conditionally draw status bar when output terminal is a tty.
 
-        :param writer: callable writes to output stream, receiving unicode.
-        :param idx: current page position index.
+        :param callable writer: callable writes to output stream, receiving unicode.
+        :param int idx: current page position index.
         :type idx: int
         """
         if self.term.is_a_tty:
@@ -566,23 +569,24 @@ class Pager(object):
             style = self.screen.style
             writer(self.term.move(self.term.height - 1))
             if idx == self.last_page:
-                last_end = u'(END)'
+                last_end = '(END)'
             else:
-                last_end = u'/{0}'.format(self.last_page)
-            txt = (u'Page {idx}{last_end} - '
-                   u'{q} to quit, [keys: {keyset}]'
-                   .format(idx=style.attr_minor(u'{0}'.format(idx)),
+                last_end = '/{0}'.format(self.last_page)
+            txt = ('Page {idx}{last_end} - '
+                   '{q} to quit, [keys: {keyset}]'
+                   .format(idx=style.attr_minor('{0}'.format(idx)),
                            last_end=style.attr_major(last_end),
-                           keyset=style.attr_major('kjfb12-='),
-                           q=style.attr_minor(u'q')))
+                           keyset=style.attr_major('kjfbvc12-='),
+                           q=style.attr_minor('q')))
             writer(self.term.center(txt).rstrip())
 
     def page_view(self, data):
         """
         Generator yields text to be displayed for the current unicode pageview.
 
-        :param data: The current page's data as tuple of ``(ucs, name)``.
-        :rtype: generator
+        :param list[(unicode, unicode)] data: The current page's data as tuple
+            of ``(ucs, name)``.
+        :returns: generator for full-page text for display
         """
         if self.term.is_a_tty:
             yield self.term.move(self.screen.row_begins, 0)
@@ -606,35 +610,36 @@ class Pager(object):
             if col == self.screen.num_columns:
                 col = 0
                 if self.term.is_a_tty:
-                    val = u''.join((val, clear_eol, u'\n'))
+                    val = ''.join((val, clear_eol, '\n'))
                 else:
-                    val = u''.join((val.rstrip(), u'\n'))
+                    val = ''.join((val.rstrip(), '\n'))
             yield val
 
         if self.term.is_a_tty:
-            yield u''.join((clear_eol, u'\n', clear_eos))
+            yield ''.join((clear_eol, '\n', clear_eos))
 
     def text_entry(self, ucs, name):
         """
         Display a single column segment row describing ``(ucs, name)``.
 
-        :param ucs: target unicode point character string.
-        :param name: name of unicode point.
+        :param str ucs: target unicode point character string.
+        :param str name: name of unicode point.
+        :return: formatted text for display.
         :rtype: unicode
         """
         style = self.screen.style
         if len(name) > style.name_len:
             idx = max(0, style.name_len - len(style.continuation))
-            name = u''.join((name[:idx], style.continuation if idx else u''))
+            name = ''.join((name[:idx], style.continuation if idx else ''))
         if style.alignment == 'right':
-            fmt = u' '.join(('0x{val:0>{ucs_printlen}x}',
-                             '{name:<{name_len}s}',
-                             '{delimiter}{ucs}{delimiter}'
-                             ))
+            fmt = ' '.join(('0x{val:0>{ucs_printlen}x}',
+                            '{name:<{name_len}s}',
+                            '{delimiter}{ucs}{delimiter}'
+                            ))
         else:
-            fmt = u' '.join(('{delimiter}{ucs}{delimiter}',
-                             '0x{val:0>{ucs_printlen}x}',
-                             '{name:<{name_len}s}'))
+            fmt = ' '.join(('{delimiter}{ucs}{delimiter}',
+                            '0x{val:0>{ucs_printlen}x}',
+                            '{name:<{name_len}s}'))
         delimiter = style.attr_minor(style.delimiter)
         if len(ucs) != 1:
             # determine display of combining characters
@@ -677,7 +682,7 @@ def validate_args(opts):
 
 def main(opts):
     """Program entry point."""
-    term = Terminal()
+    term = blessed.Terminal()
     style = Style()
 
     # if the terminal supports colors, use a Style instance with some
@@ -686,7 +691,7 @@ def main(opts):
         style = Style(attr_major=term.magenta,
                       attr_minor=term.bright_cyan,
                       alignment=opts['--alignment'])
-    style.name_len = term.width - 15
+    style.name_len = 10
 
     screen = Screen(term, style, wide=opts['--wide'])
     pager = Pager(term, screen, opts['character_factory'])
@@ -696,5 +701,6 @@ def main(opts):
         pager.run(writer=echo, reader=term.inkey)
     return 0
 
+
 if __name__ == '__main__':
-    exit(main(validate_args(docopt(__doc__))))
+    sys.exit(main(validate_args(docopt.docopt(__doc__))))
