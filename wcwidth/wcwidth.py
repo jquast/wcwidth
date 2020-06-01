@@ -360,7 +360,7 @@ def _wcmatch_version(given_version):
             cmp_next_version = _wcversion_value(unicode_versions[idx + 1])
         except IndexError:
             # at end of list, return latest version
-            return latest_version if not _return_str else earliest_version.encode()
+            return latest_version if not _return_str else latest_version.encode()
 
         # Maybe our given version has less parts, as in tuple(8, 0), than the
         # next compare version tuple(8, 0, 0). Test for an exact match by
