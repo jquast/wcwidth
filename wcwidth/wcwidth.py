@@ -199,7 +199,7 @@ def wcwidth(wc, unicode_version='auto'):
           Full-width (F) category as defined in Unicode Technical
           Report #11 have a column width of 2.
 
-    - Some kinds of emjoi or symbols.
+         - Some kinds of Emoji or symbols.
     """
     # NOTE: created by hand, there isn't anything identifiable other than
     # general Cf category code to identify these, and some characters in Cf
