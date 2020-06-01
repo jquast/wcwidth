@@ -1,36 +1,34 @@
 language: python
-
-sudo: false
-
-env:
-  - TOXENV=py26
-  - TOXENV=py27
-  - TOXENV=py33
-  - TOXENV=py34
+matrix:
+  fast_finish: true
+  include:
+    - python: 3.8
+      env: TOXENV=about,pydocstyle,pylint,flake8,flake8_tests,sphinx COVERAGE_ID=travis-ci
+    - python: 2.6
+      env: TOXENV=py26,codecov TEST_QUICK=1 COVERAGE_ID=travis-ci
+      dist: trusty
+    - python: 2.7
+      env: TOXENV=py27,codecov COVERAGE_ID=travis-ci TEST_KEYBOARD=yes TEST_RAW=yes
+    - python: 3.4
+      env: TOXENV=py34,codecov TEST_QUICK=1 COVERAGE_ID=travis-ci
+    - python: 3.5
+      env: TOXENV=py35,codecov TEST_QUICK=1 COVERAGE_ID=travis-ci
+    - python: 3.6
+      env: TOXENV=py36,codecov TEST_QUICK=1 COVERAGE_ID=travis-ci
+    - python: 3.7
+      env: TOXENV=py37,codecov TEST_QUICK=1 COVERAGE_ID=travis-ci
+    - python: 3.8
+      env: TOXENV=py38,codecov COVERAGE_ID=travis-ci TEST_RAW=yes
 
 install:
-  - pip install -q tox 
-
-  # for python version =33, cinstall and overage, coveralls.
-  # coverage is only measured and published for one version.
-  - if [[ $TOXENV == "py34" ]]; then
-        pip install -q coverage coveralls;
-    fi
-
-
-# disabled: not working (prospector tool issues)
-#
-#script:
-#  - tox -e $TOXENV
-#  - if [[ $TOXENV == "py34" ]]; then
-#        tox -echeck;
-#    fi
-
-after_success:
-  - if [[ $TOXENV == "py34" ]]; then
-        coveralls;
-    fi
+  - pip install tox
+script:
+  - tox
+sudo: false
 
 notifications:
   email:
-    - contact@jeffquast.com
+    recipients:
+      - contact@jeffquast.com
+    on_success: change
+    on_failure: change

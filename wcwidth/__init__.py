@@ -9,8 +9,8 @@ https://github.com/jquast/wcwidth
 # any future version.
 
 # local
-from .wcwidth import (ZERO_WIDTH,  # noqa
-                      WIDE_EASTASIAN,
+from .wcwidth import ZERO_WIDTH  # noqa
+from .wcwidth import (WIDE_EASTASIAN,
                       wcwidth,
                       wcswidth,
                       _bisearch,
