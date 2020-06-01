@@ -139,23 +139,23 @@ Uses
 
 This library is used in:
 
-- `jquast/blessed`_, a thin, practical wrapper around terminal capabilities in
+- `jquast/blessed`_: a thin, practical wrapper around terminal capabilities in
   Python.
 
-- `jonathanslenders/python-prompt-toolkit`_, a Library for building powerful
+- `jonathanslenders/python-prompt-toolkit`_: a Library for building powerful
   interactive command lines in Python.
 
-- `dbcli/pgcli`_, Postgres CLI with autocompletion and syntax highlighting.
+- `dbcli/pgcli`_: Postgres CLI with autocompletion and syntax highlighting.
 
-- `thomasballinger/curtsies`_, a Curses-like terminal wrapper with a display
+- `thomasballinger/curtsies`_: a Curses-like terminal wrapper with a display
   based on compositing 2d arrays of text.
 
-- `selectel/pyte`_, Simple VTXXX-compatible linux terminal emulator.
+- `selectel/pyte`_: Simple VTXXX-compatible linux terminal emulator.
 
-- `astanin/python-tabulate`_, Pretty-print tabular data in Python, a library
+- `astanin/python-tabulate`_: Pretty-print tabular data in Python, a library
   and a command-line utility.
 
-- `LuminosoInsight/python-ftfy`_, Fixes mojibake and other glitches in Unicode
+- `LuminosoInsight/python-ftfy`_: Fixes mojibake and other glitches in Unicode
   text.
 
 - `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG
