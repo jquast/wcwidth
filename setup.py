@@ -69,7 +69,7 @@ def main():
         classifiers=[
             'Intended Audience :: Developers',
             'Natural Language :: English',
-            'Development Status :: 5 - Production/Stable'
+            'Development Status :: 5 - Production/Stable',
             'Environment :: Console',
             'License :: OSI Approved :: MIT License',
             'Operating System :: POSIX',
