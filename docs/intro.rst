@@ -14,8 +14,8 @@ characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a unicode
-string is expected to occupy.*
+functions precisely copy.  *These functions return the number of cells a
+unicode string is expected to occupy.*
 
 Installation
 ------------
