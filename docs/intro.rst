@@ -4,13 +4,13 @@
 Introduction
 ============
 
-This Library is mainly for those implementing a Terminal Emulator, or programs
-that carefully produce output to mimick or to be interpreted by an emulator.
+This library is mainly for CLI programs that carefully produce output for
+Terminals, or make pretend to be an emulator.
 
 **Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen.  However, there are categories of
-characters that *occupy 2 cells* (full-wide), and others that *occupy 0* cells
-(zero-width).
+number of cells they occupy on the screen ``1 charater : 1 cell``.  However,
+there are categories of characters that *occupy 2 cells* (full-wide), and others
+that *occupy 0* cells (zero-width).
 
 **Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
 `wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
@@ -68,7 +68,7 @@ their own, from shell::
    $ export UNICODE_VERSION=13.0
 
 If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect` utility to
+export this variable, you can use the `jquast/ucs-detect`_ utility to
 automatically detect and export it to your shell.
 
 wcwidth, wcswidth
