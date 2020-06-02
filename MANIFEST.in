@@ -1,1 +1,2 @@
-include LICENSE *.rst 
+include LICENSE *.rst
+recursive-include tests *.py
