@@ -16,20 +16,30 @@ previous version (4.1.0).
 """
 # std imports
 import json
+import sys
 
 
 # List new WIDE characters at each unicode version.
 #
 def main():
     from wcwidth import WIDE_EASTASIAN, _bisearch
-    next_version_values = []
+    versions = list(WIDE_EASTASIAN.keys())
     results = {}
-    for version, table in reversed(WIDE_EASTASIAN.items()):
-        for value_pair in next_version_values:
+    for version in versions:
+        prev_idx = versions.index(version) - 1
+        if prev_idx == -1:
+            continue
+        previous_version = versions[prev_idx]
+        previous_table = WIDE_EASTASIAN[previous_version]
+        for value_pair in WIDE_EASTASIAN[version]:
             for value in range(*value_pair):
-                if not _bisearch(value, table):
+                if not _bisearch(value, previous_table):
                     results[version] = results.get(version, []) + [value]
-        next_version_values = table
+                    if '--debug' in sys.argv:
+                        print(f'version {version} has unicode character '
+                              f'0x{value:05x} ({chr(value)}) but previous '
+                              f'version, {previous_version} does not.',
+                              file=sys.stderr)
     print(json.dumps(results, indent=4))
 
 
