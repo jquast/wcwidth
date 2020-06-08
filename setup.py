@@ -48,6 +48,7 @@ def main():
     """Setup.py entry point."""
     setuptools.setup(
         name='wcwidth',
+        # NOTE: manually manage __version__ in wcwidth/__init__.py !
         version=_get_version(
             _get_here(os.path.join('wcwidth', 'version.json'))),
         description=(
