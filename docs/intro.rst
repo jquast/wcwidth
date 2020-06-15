@@ -157,8 +157,13 @@ Other Languages
 - `janlelis/unicode-display_width`_: Ruby
 - `alecrabbit/php-wcwidth`_: PHP
 - `Text::CharWidth`_: Perl
+- `bluebear94/Terminal-WCWidth`: Perl 6
 - `mattn/go-runewidth`_: Go
 - `emugel/wcwidth`_: Haxe
+- `aperezdc/lua-wcwidth`: Lua
+- `joachimschmidt557/zig-wcwidth`: Zig
+- `fumiyas/wcwidth-cjk`: `LD_PRELOAD` override
+- `joshuarubin/wcwidth9`: Unicode version 9 in C
 
 History
 -------
@@ -255,12 +260,15 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`LuminosoInsight/python-ftfy`: https://github.com/LuminosoInsight/python-ftfy
 .. _`alecrabbit/php-wcwidth`: https://github.com/alecrabbit/php-wcwidth
 .. _`Text::CharWidth`: https://metacpan.org/pod/Text::CharWidth
+.. _`bluebear94/Terminal-WCWidth`: https://github.com/bluebear94/Terminal-WCWidth
 .. _`mattn/go-runewidth`: https://github.com/mattn/go-runewidth
 .. _`emugel/wcwidth`: https://github.com/emugel/wcwidth
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg
 .. _`peterbrittain/asciimatics`: https://github.com/peterbrittain/asciimatics
+.. _`aperezdc/lua-wcwidth`: https://github.com/aperezdc/lua-wcwidth
+.. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
