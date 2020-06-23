@@ -10,7 +10,6 @@ from __future__ import print_function
 import os
 import re
 import glob
-import json
 import codecs
 import string
 import urllib
