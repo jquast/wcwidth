@@ -15,8 +15,8 @@ for Unicode vesion 5.0.0, and were not WIDE values for the
 previous version (4.1.0).
 """
 # std imports
-import json
 import sys
+import json
 
 
 # List new WIDE characters at each unicode version.

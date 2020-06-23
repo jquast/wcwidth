@@ -1,12 +1,10 @@
-"""
-Workaround for https://github.com/codecov/codecov-python/issues/158
-"""
+"""Workaround for https://github.com/codecov/codecov-python/issues/158."""
 
 # std imports
 import sys
 import time
 
-# local
+# 3rd party
 import codecov
 
 RETRIES = 5
@@ -14,10 +12,7 @@ TIMEOUT = 2
 
 
 def main():
-    """
-    Run codecov up to RETRIES times
-    On the final attempt, let it exit normally
-    """
+    """Run codecov up to RETRIES times On the final attempt, let it exit normally."""
 
     # Make a copy of argv and make sure --required is in it
     args = sys.argv[1:]

@@ -12,20 +12,6 @@ import pkg_resources
 import wcwidth
 
 
-def test_list_versions():
-    """wcwidth.list_versions() returns expected value."""
-    # given,
-    expected = json.loads(
-        pkg_resources.resource_string('wcwidth', 'version.json').decode('utf8')
-    )['tables']
-
-    # exercise,
-    result = wcwidth.list_versions()
-
-    # verify,
-    assert result == expected
-
-
 def test_latest():
     """wcwidth._wcmatch_version('latest') returns tail item."""
     # given,

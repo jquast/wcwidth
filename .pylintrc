@@ -9,7 +9,7 @@ load-plugins=
 persistent = no
 jobs = 0
 unsafe-load-any-extension = yes
-good-names = wc
+good-names = wc,fp
 
 [MESSAGES CONTROL]
 disable=

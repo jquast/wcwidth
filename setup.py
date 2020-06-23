@@ -16,11 +16,6 @@ def _get_here(fname):
     return os.path.join(os.path.dirname(__file__), fname)
 
 
-def _get_version(fname, key='package'):
-    import json
-    return json.load(open(fname, 'r'))[key]
-
-
 class _SetupUpdate(setuptools.Command):
     # This is a compatibility, some downstream distributions might
     # still call "setup.py update".
@@ -49,8 +44,7 @@ def main():
     setuptools.setup(
         name='wcwidth',
         # NOTE: manually manage __version__ in wcwidth/__init__.py !
-        version=_get_version(
-            _get_here(os.path.join('wcwidth', 'version.json'))),
+        version='0.2.5',
         description=(
             "Measures the displayed width of unicode strings in a terminal"),
         long_description=codecs.open(
