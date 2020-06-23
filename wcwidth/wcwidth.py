@@ -65,15 +65,12 @@ from __future__ import division
 # std imports
 import os
 import sys
-import json
 import warnings
-
-# 3rd party
-import pkg_resources
 
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .unicode_versions import list_versions
 
 try:
     from functools import lru_cache
@@ -252,25 +249,6 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     return width
 
 
-@lru_cache(maxsize=1)
-def list_versions():
-    """
-    Return Unicode version levels supported by this module release.
-
-    Any of the version strings returned may be used as keyword argument
-    ``unicode_version`` to the ``wcwidth()`` family of functions.
-
-    :returns: Supported Unicode version numbers in ascending sorted order.
-    :rtype: list[str]
-    """
-    # load from 'version.json', use setuptools to access
-    # resource string so that the package is zip/wheel-compatible.
-    return json.loads(
-        pkg_resources.resource_string(
-            'wcwidth', "version.json"
-        ).decode('utf8'))['tables']
-
-
 @lru_cache(maxsize=128)
 def _wcversion_value(ver_string):
     """
@@ -395,16 +373,3 @@ def _wcmatch_version(given_version):
         if cmp_next_version > cmp_given:
             return unicode_version
     assert False, ("Code path unreachable", given_version, unicode_versions)
-
-
-def _get_package_version():
-    """
-    Version of wcwidth (produces module-level ``__version__`` val).
-
-    :rtype: str
-    :return: the version of the wcwidth library package.
-    """
-    return json.loads(
-        pkg_resources.resource_string(
-            'wcwidth', "version.json"
-        ).decode('utf8'))['package']

@@ -489,7 +489,7 @@ class Pager(object):
             # scroll backward 1 line
             offset -= self.screen.num_columns
         elif inp in ('e', 'j') or inp.code in (term.KEY_ENTER,
-                                                 term.KEY_DOWN,):
+                                               term.KEY_DOWN,):
             # scroll forward 1 line
             offset = offset + self.screen.num_columns
         elif inp in ('f', ' ') or inp.code in (term.KEY_PGDOWN,):
