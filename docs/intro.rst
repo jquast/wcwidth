@@ -39,7 +39,7 @@ output length is wrong::
     5
 
     >>> print('コンニチハ'.rjust(20, '_'))
-    _____コンニチハ
+    _______________コンニチハ
 
 By defining our own "rjust" function that uses wcwidth, we can correct this::
 
