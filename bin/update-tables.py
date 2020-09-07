@@ -24,7 +24,6 @@ except ImportError:
     # py3
     from urllib.request import urlopen
 
-URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 PATH_UP = os.path.relpath(
     os.path.join(
@@ -60,6 +59,7 @@ def main():
     versions = get_unicode_versions()
     do_east_asian(versions)
     do_zero_width(versions)
+    do_emoji_zero_width(versions)
     do_rst_file_update()
     do_unicode_versions(versions)
 
@@ -67,7 +67,9 @@ def main():
 def get_unicode_versions():
     """Fetch, determine, and return Unicode Versions for processing."""
     fname = os.path.join(PATH_DATA, 'DerivedAge.txt')
-    do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
+    # fetch the 'latest', and return its version.
+    url = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
+    do_retrieve(url=url, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
     versions = []
     for line in open(fname, 'r'):
@@ -127,7 +129,7 @@ def do_east_asian(versions):
             table[version] = parse_east_asian(
                 fname=fin.format(version=version),
                 properties=(u'W', u'F',))
-    do_write_table(fname=fout, variable='WIDE_EASTASIAN', table=table)
+    do_write_table(fname=fout, variable_name='WIDE_EASTASIAN', table=table)
 
 
 def do_zero_width(versions):
@@ -148,7 +150,42 @@ def do_zero_width(versions):
             table[version] = parse_category(
                 fname=fin.format(version=version),
                 categories=('Me', 'Mn',))
-    do_write_table(fname=fout, variable='ZERO_WIDTH', table=table)
+    do_write_table(fname=fout, variable_name='ZERO_WIDTH', table=table)
+
+def do_emoji_zero_width(versions):
+    """Fetch the latest emoji zero width joiner (ZWJ)."""
+    # From Unicode® Technical Standard #51
+    #
+    # > Starting with Version 11.0 of this specification, the repertoire of
+    # > emoji characters is synchronized with the Unicode Standard, and has the
+    # > same version numbering system. For details, see Section 1.5.2, Versioning.
+    #
+    # http://www.unicode.org/reports/tr51/#Versioning
+    latest_version = versions[-1]
+    url = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
+    fname = os.path.join(PATH_DATA, 'emoji-zwj-sequences.txt')
+    while True:
+        try:
+            do_retrieve(url=url.format(version=latest_version), fname=fname)
+            break
+        except urllib.error.HTTPError as err:
+            if err.code != 404:
+                raise
+            if latest_version.count('.') == 1:
+                raise
+            # trim trailing '.0' from '13.0.0', for example
+            latest_version = latest_version[:latest_version.rfind('.')]
+    fout = os.path.join(PATH_CODE, 'table_emoji_zjw.py')
+    source_txt = open(fname, 'r').read()
+    publish_date = source_txt.splitlines()[1]
+    assert 'Date:' in publish_date
+    source_data = [
+        'Source: emoji-zwj-sequences.txt',
+        'Date: ' + publish_date.split(':', 1)[1],
+        'Version: ' + latest_version]
+    do_write_emoji_table(fname=fout,
+                         source_data=source_data,
+                         table=parse_emoji_zwj(fname))
 
 
 def make_table(values):
@@ -253,7 +290,46 @@ def parse_category(fname, categories):
     return TableDef(version, date, sorted(values))
 
 
-def do_write_table(fname, variable, table):
+def parse_emoji_zwj(fname):
+    #table = {}
+    emoji_unicode_version_mapping = {
+        'E1.0': '8.0',
+        'E2.0': '8.0',
+        'E3.0': '9.0',
+        'E4.0': '9.0',
+        'E5.0': '10.0',
+        # > Starting with Version 11.0 of this specification, the repertoire
+        # > of emoji characters is synchronized with the Unicode Standard
+    }
+    table = {}
+    for line in open(fname, 'rb'):
+        # Format:
+        #   code_point(s) ; type_field ; description # comments
+        #   1F469 1F3FF 200D 1F527                      ; RGI_Emoji_ZWJ_Sequence  ; woman mechanic: dark skin tone                                 # E4.0   [1] (👩🏿‍🔧)
+        uline = line.decode('utf-8')
+        if uline.startswith('#') or not uline.lstrip():
+            continue
+        code_points, _type_field, description_comments = uline.split(';', 3)
+        description, comments = description_comments.split('#', 1)
+        version, _display = comments.split(None, 1)
+        description = description.strip() + f' (v{version})'
+        if '[' in version:
+            version = version[:version.find('[')]
+        version = emoji_unicode_version_mapping.get(version, version[1:])
+        values = tuple(int(code_point, 16) for code_point in code_points.split())
+        table[version] = table.get(version, []) + [(values, description)]
+    sorted_versions = sorted(table, key=lambda ver: list(map(int, ver.split('.'))))
+    expanded_table = {}
+    for idx, version in enumerate(sorted_versions):
+        expanded_table[version] = set(table[version])
+        if idx:
+            for prev_version in sorted_versions[:idx]:
+                expanded_table[version].update(table[prev_version])
+        expanded_table[version] = tuple(sorted(expanded_table[version]))
+    return expanded_table
+
+
+def do_write_table(fname, variable_name, table):
     """Write combining tables to filesystem as python code."""
     # pylint: disable=R0914
     #         Too many local variables (19/15) (col 4)
@@ -262,9 +338,9 @@ def do_write_table(fname, variable, table):
     with open(fname, 'w') as fout:
         print(f"writing {fname} ... ", end='')
         fout.write(
-            f'"""{variable.title()} table, created by bin/update-tables.py."""\n'
+            f'"""{variable_name.title()} table, created by bin/update-tables.py."""\n'
             f"# Generated: {utc_now.isoformat()}\n"
-            f"{variable} = {{\n")
+            f"{variable_name} = {{\n")
 
         for version_key, version_table in table.items():
             if not version_table.values:
@@ -292,6 +368,36 @@ def do_write_table(fname, variable, table):
                 fout.write(f'({hex_start}, {hex_end},),')
                 fout.write(f'  # {comment_startpart:24s}..{comment_endpart}')
             fout.write(f'\n{indent[:-4]}),\n')
+        fout.write('}\n')
+    print("complete.")
+
+
+def do_write_emoji_table(fname, source_data, table):
+    """Write Emoji Zero-Width Joiner (ZWJ) Sequences table, as python code."""
+    utc_now = datetime.datetime.utcnow()
+    indent = ' ' * 12
+    with open(fname, 'w') as fout:
+        print(f"writing {fname} ...", end='')
+        fout.write(
+            f'"""Emoji Zero-Width Joiner table, created by bin/update-tables.py."""\n'
+            f"# Generated: {utc_now.isoformat()}\n"
+            + '\n'.join(f"# {sd_txt}" for sd_txt in source_data)
+            + '\n'
+            + 'EMOJI_ZERO_WIDTH_SEQUENCES = {\n')
+        for version_key, emoji_data in table.items():
+            fout.write(f"{indent[:-8]}'{version_key}': {{\n")
+            sequence_lengths = {len(values) for values, _ in emoji_data}
+            for slen in sorted(sequence_lengths):
+                assert slen > 1
+                fout.write(f"{indent[:-4]}{slen}: (\n")
+                for values, description in emoji_data:
+                    if len(values) == slen:
+                        str_tuples = ", ".join(f"0x{val:05x}" for val in values)
+                        maybe_comma = ',' if len(str_tuples) > 1 else ''
+                        fout.write(f'{indent}({str_tuples}{maybe_comma}),'.ljust(82))
+                        fout.write(f'# {description}\n')
+                fout.write(f'{indent[:-4]}),\n')
+            fout.write(f'{indent[:-8]}}},\n')
         fout.write('}\n')
     print("complete.")
 

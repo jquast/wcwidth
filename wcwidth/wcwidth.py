@@ -70,6 +70,7 @@ import warnings
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .table_emoji_zjw import EMOJI_ZERO_WIDTH_SEQUENCES
 from .unicode_versions import list_versions
 
 try:
@@ -108,6 +109,8 @@ ZERO_WIDTH_CF = set([
     0x2063,  # Invisible separator
 ])
 
+def _is_c0c1_control_character(ucp):
+    return ucp < 32 or 0x07F <= ucp < 0x0A0
 
 def _bisearch(ucs, table):
     """
@@ -134,6 +137,42 @@ def _bisearch(ucs, table):
             return 1
 
     return 0
+
+
+@lru_cache(maxsize=1000)
+def _wwidth(ucs, _unicode_version):
+    r"""
+    Given one Unicode point, return its printable length on a terminal.
+
+    :param str ucp: A single Ordinal Unicode point.
+    :param str _unicode_version: Return value of :func:`_wcmatch_version`.
+
+    :return: The width, in cells, necessary to display the character of
+        Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
+        not printable, or has an indeterminate effect on the terminal, such as
+        a control character.  Otherwise, the number of column positions the
+        character occupies on a graphic terminal (1 or 2) is returned.
+    :rtype: int
+
+    This function is precisely the same as :func:`wcwidth`, but receives the
+    ordinal value (unicode point) rather than a string character, and,
+    ``_unicode_version`` is already resolved.
+    """
+    # NOTE: created by hand, there isn't anything identifiable other than
+    # general Cf category code to identify these, and some characters in Cf
+    # category code are of non-zero width.
+    if ucs in ZERO_WIDTH_CF:
+        return 0
+    # C0/C1 control characters
+    if _is_c0c1_control_character(ucs):
+        return -1
+
+    # combining characters with zero width
+    if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
+        return 0
+
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
 @lru_cache(maxsize=1000)
@@ -207,7 +246,7 @@ def wcwidth(wc, unicode_version='auto'):
         return 0
 
     # C0/C1 control characters
-    if ucs < 32 or 0x07F <= ucs < 0x0A0:
+    if _is_c0c1_control_character(ucs):
         return -1
 
     _unicode_version = _wcmatch_version(unicode_version)
@@ -231,9 +270,9 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
         available unicode version, otherwise.
     :rtype: int
-    :returns: The width, in cells, necessary to display the first ``n``
-        characters of the unicode string ``pwcs``.  Returns ``-1`` if
-        a non-printable character is encountered.
+    :returns: The width, in cells, needed to display the first ``n`` characters
+        of the unicode string ``pwcs``.  Returns ``-1`` if a non-printable
+        character is encountered.
     """
     # pylint: disable=C0103
     #         Invalid argument name "n"
@@ -247,6 +286,67 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             return -1
         width += wcw
     return width
+
+
+def width(text, unicode_version='auto'):
+    """
+    Given a unicode string, return its printable length on a terminal.
+
+    Unlike :func:`wcswidth`, ``-1`` is never returned when a non-printable
+    character is encountered, and, Emoji Zero Width Joiner (ZWJ) Sequences are
+    handled.
+
+    :param str text: Measure width of given unicode string.
+    :param str unicode_version: An explicit definition of the unicode version
+        level to use for determination, may be ``auto`` (default), which uses
+        the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
+        available unicode version, otherwise.
+    :rtype: int
+    :returns: The width, in cells, needed to display the characters of ``text``.
+    """
+    _unicode_version = _wcmatch_version(unicode_version)
+    # match longest to shortest
+    emoji_lengths = sorted(
+        EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version], reverse=True)
+    ordinals = (ord(char) for char in text)
+    length = len(text)
+    width = 0
+    for idx, ucs in enumerate(ordinals):
+        # at each character, for any series of lengths of emoji zero width
+        # sequences remaining, of matching lengths of characters remaining
+        # in string, measure its length (2)
+        for e_length in (eidx for eidx in emoji_lengths
+                         if length - idx >= eidx):
+            if ucs in ZERO_WIDTH_CF or _is_c0c1_control_character(ucs):
+                continue
+    # combining characters with zero width
+#        return 0
+#
+#    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
+#
+        # TODO: EMOJI Zero Width Sequences should exist in series!
+        if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
+            if (ordinals[idx:idx + e_length] in
+                    EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version][e_length]):
+                width += 2
+                break
+        else:
+            pass
+
+#            #if (length - eidx) < idx
+##########################################################################################
+#        #width = max(_wwidth(ucs), 1)
+#        #if width < 0:
+#        #for emoji_zwj in EMOJI_ZERO_WIDTH_SEQUENCES
+#        #if width - 0:
+#        #
+#        #wcw = wcwidth(char, unicode_version)
+#        #if wcw < 0:
+#        #    return -1
+#        #width += wcw
+    return width
+
+
 
 
 @lru_cache(maxsize=128)
