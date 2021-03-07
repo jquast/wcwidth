@@ -16,12 +16,13 @@ matrix:
       env: TOXENV=py37,codecov COVERAGE_ID=travis-ci
     - python: 3.8
       env: TOXENV=py38,codecov COVERAGE_ID=travis-ci
+    - python: 3.9
+      env: TOXENV=py39,codecov COVERAGE_ID=travis-ci
 
 install:
   - pip install tox
 script:
   - tox
-sudo: false
 
 notifications:
   email:
