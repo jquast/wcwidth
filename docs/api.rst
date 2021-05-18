@@ -2,7 +2,7 @@
 Public API
 ==========
 
-This package follows SEMVER_ rules for version, therefor, for all of the
+This package follows SEMVER_ rules for version, therefore, for all of the
 given functions signatures, at example version 1.1.1, you may use version
 dependency ``>=1.1.1,<2.0`` for forward compatibility of future wcwidth
 versions.
