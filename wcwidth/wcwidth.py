@@ -63,6 +63,7 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 from __future__ import division
 
 # std imports
+import re
 import os
 import sys
 import warnings
@@ -70,8 +71,8 @@ import warnings
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .table_emoji_zjw import EMOJI_ZERO_WIDTH_SEQUENCES
-from .unicode_versions import list_versions
+from .table_emoji_zwj import EMOJI_ZERO_WIDTH_SEQUENCES
+from .unicode_versions import list_versions, list_zwj_versions
 
 try:
     from functools import lru_cache
@@ -80,7 +81,6 @@ except ImportError:
     from backports.functools_lru_cache import lru_cache
 
 # global cache
-_UNICODE_CMPTABLE = None
 _PY3 = (sys.version_info[0] >= 3)
 
 
@@ -109,8 +109,11 @@ ZERO_WIDTH_CF = set([
     0x2063,  # Invisible separator
 ])
 
+
 def _is_c0c1_control_character(ucp):
+# XXX
     return ucp < 32 or 0x07F <= ucp < 0x0A0
+
 
 def _bisearch(ucs, table):
     """
@@ -139,12 +142,29 @@ def _bisearch(ucs, table):
     return 0
 
 
+@lru_cache(maxsize=10)
+def _fetch_zero_width_emoji_patterns(_unicode_version):
+    r"""
+    yo/.
+    """
+    # compile and return regex to match any emoji zero width sequences,
+    # note that they are ordered longest-first in the code table, and so
+    # should be longest first, in left-to-right pattern here.
+    zwj_version = _wcmatch_zwj_version(_unicode_version)
+    pattern = '(' + '|'.join((
+        re.escape(''.join(map(chr, sequence)))
+        for ordinals in EMOJI_ZERO_WIDTH_SEQUENCES[zwj_version].values()
+        for sequence in ordinals
+    )) + ')'
+    return re.compile(pattern)
+
+
 @lru_cache(maxsize=1000)
 def _wwidth(ucs, _unicode_version):
     r"""
     Given one Unicode point, return its printable length on a terminal.
 
-    :param str ucp: A single Ordinal Unicode point.
+    :param str ucs: A single Ordinal Unicode point.
     :param str _unicode_version: Return value of :func:`_wcmatch_version`.
 
     :return: The width, in cells, necessary to display the character of
@@ -238,24 +258,7 @@ def wcwidth(wc, unicode_version='auto'):
 
          - Some kinds of Emoji or symbols.
     """
-    # NOTE: created by hand, there isn't anything identifiable other than
-    # general Cf category code to identify these, and some characters in Cf
-    # category code are of non-zero width.
-    ucs = ord(wc)
-    if ucs in ZERO_WIDTH_CF:
-        return 0
-
-    # C0/C1 control characters
-    if _is_c0c1_control_character(ucs):
-        return -1
-
-    _unicode_version = _wcmatch_version(unicode_version)
-
-    # combining characters with zero width
-    if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
-        return 0
-
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
+    return _wwidth(ord(wc), _wcmatch_version(unicode_version))
 
 
 def wcswidth(pwcs, n=None, unicode_version='auto'):
@@ -279,13 +282,15 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
 
     end = len(pwcs) if n is None else n
     idx = slice(0, end)
-    width = 0
+    measured_width = 0
     for char in pwcs[idx]:
         wcw = wcwidth(char, unicode_version)
         if wcw < 0:
+            # this final -1 return value is an old C POSIX ugly, see function
+            # width() for a version that never returns -1.
             return -1
-        width += wcw
-    return width
+        measured_width += wcw
+    return measured_width
 
 
 def width(text, unicode_version='auto'):
@@ -305,34 +310,44 @@ def width(text, unicode_version='auto'):
     :returns: The width, in cells, needed to display the characters of ``text``.
     """
     _unicode_version = _wcmatch_version(unicode_version)
-    # match longest to shortest
-    emoji_lengths = sorted(
-        EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version], reverse=True)
-    ordinals = (ord(char) for char in text)
-    length = len(text)
-    width = 0
-    for idx, ucs in enumerate(ordinals):
-        # at each character, for any series of lengths of emoji zero width
-        # sequences remaining, of matching lengths of characters remaining
-        # in string, measure its length (2)
-        for e_length in (eidx for eidx in emoji_lengths
-                         if length - idx >= eidx):
-            if ucs in ZERO_WIDTH_CF or _is_c0c1_control_character(ucs):
-                continue
-    # combining characters with zero width
+    emoji_zero_width_seqs = _fetch_zero_width_emoji_patterns(_unicode_version)
+    measured_width = 0
+#    for zwe_match in re.findall
+    return 0
+#    ordinal_length = len(text)
+#    ordinals = tuple(ord(char) for char in text)
+#    result_width = 0
+#    for 
+#    for idx, ucs in enumerate(ordinals):
+#        # at each character, for any series of lengths of emoji zero width
+#        # sequences remaining, of matching lengths of characters remaining
+#        # in string, measure its length (2)
+#        # is there any value of range 
+#        #        FE00..FE0F    ; Mn #  [16] VARIATION SELECTOR-1..VARIATION SELECTOR-16
+#
+#        # for all emoji zero width sequences that may fit beginning at this index onward,
+#        # by the way, can't we use re.?
+#        search_e_lengths = tuple(_elength for _elength in EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version]
+#                                 if ordinal_length - idx >= _elength):
+#            if 
+#            # match for any characters here?
+#    return width
+#            if ucs in ZERO_WIDTH_CF or _is_c0c1_control_character(ucs):
+#                continue
+#    # combining characters with zero width
 #        return 0
 #
 #    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 #
-        # TODO: EMOJI Zero Width Sequences should exist in series!
-        if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
-            if (ordinals[idx:idx + e_length] in
-                    EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version][e_length]):
-                width += 2
-                break
-        else:
-            pass
-
+#        # TODO: EMOJI Zero Width Sequences should exist in series!
+#        if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
+#            if (ordinals[idx:idx + e_length] in EMOJI_ZERO_WIDTH_SEQUENCES[_unicode_version][e_length]):
+#                width += 2
+#                break
+#        else:
+#            pass
+#
+#    # match longest to shortest
 #            #if (length - eidx) < idx
 ##########################################################################################
 #        #width = max(_wwidth(ucs), 1)
@@ -344,7 +359,6 @@ def width(text, unicode_version='auto'):
 #        #if wcw < 0:
 #        #    return -1
 #        #width += wcw
-    return width
 
 
 
@@ -389,17 +403,15 @@ def _wcmatch_version(given_version):
     """
     # Design note: the choice to return the same type that is given certainly
     # complicates it for python 2 str-type, but allows us to define an api that
-    # to use 'string-type', for unicode version level definitions, so all of our
-    # example code works with all versions of python. That, along with the
-    # string-to-numeric and comparisons of earliest, latest, matching, or
-    # nearest, greatly complicates this function.
+    # uses 'string-type', for unicode version level definitions, so all of our
+    # example code works with all versions of python.
     _return_str = not _PY3 and isinstance(given_version, str)
 
     if _return_str:
-        unicode_versions = [ucs.encode() for ucs in list_versions()]
+        str_unicode_versions = [ucs.encode() for ucs in list_versions()]
     else:
-        unicode_versions = list_versions()
-    latest_version = unicode_versions[-1]
+        str_unicode_versions = list_versions()
+    latest_version = str_unicode_versions[-1]
 
     if given_version in (u'auto', 'auto'):
         given_version = os.environ.get(
@@ -411,7 +423,7 @@ def _wcmatch_version(given_version):
         # version specification level supported.
         return latest_version if not _return_str else latest_version.encode()
 
-    if given_version in unicode_versions:
+    if given_version in str_unicode_versions:
         # exact match, downstream has specified an explicit matching version
         # matching any value of list_versions().
         return given_version if not _return_str else given_version.encode()
@@ -432,7 +444,7 @@ def _wcmatch_version(given_version):
 
     # given version is less than any available version, return earliest
     # version.
-    earliest_version = unicode_versions[0]
+    earliest_version = str_unicode_versions[0]
     cmp_earliest_version = _wcversion_value(earliest_version)
 
     if cmp_given <= cmp_earliest_version:
@@ -452,10 +464,10 @@ def _wcmatch_version(given_version):
     # than any supported version.
     #
     # function will never complete, always returns.
-    for idx, unicode_version in enumerate(unicode_versions):
+    for idx, unicode_version in enumerate(str_unicode_versions):
         # look ahead to next value
         try:
-            cmp_next_version = _wcversion_value(unicode_versions[idx + 1])
+            cmp_next_version = _wcversion_value(str_unicode_versions[idx + 1])
         except IndexError:
             # at end of list, return latest version
             return latest_version if not _return_str else latest_version.encode()
@@ -464,7 +476,7 @@ def _wcmatch_version(given_version):
         # next compare version tuple(8, 0, 0). Test for an exact match by
         # comparison of only the leading dotted piece(s): (8, 0) == (8, 0).
         if cmp_given == cmp_next_version[:len(cmp_given)]:
-            return unicode_versions[idx + 1]
+            return str_unicode_versions[idx + 1]
 
         # Or, if any next value is greater than our given support level
         # version, return the current value in index.  Even though it must
@@ -472,4 +484,38 @@ def _wcmatch_version(given_version):
         # is, 4.1 is returned for given 4.9.9, where 4.1 and 5.0 are available.
         if cmp_next_version > cmp_given:
             return unicode_version
-    assert False, ("Code path unreachable", given_version, unicode_versions)
+    assert False, ("Code path unreachable", given_version, str_unicode_versions)
+
+
+@lru_cache(maxsize=8)
+def _wcmatch_zwj_version(given_version):
+    zwj_unicode_versions = list_zwj_versions()
+    latest_version = zwj_unicode_versions[-1]
+    # the given_version is return value of _wcmatch_version, so we already know
+    # it is well-formed. Now, we need to find the nearest ZWJ version.
+    #
+    # copied from above, reuse?
+    #
+    # function will never complete, always returns.
+    cmp_given = _wcversion_value(given_version)
+    for idx, unicode_version in enumerate(zwj_unicode_versions):
+        # look ahead to next value
+        try:
+            cmp_next_version = _wcversion_value(zwj_unicode_versions[idx + 1])
+        except IndexError:
+            # at end of list, return latest version
+            return latest_version
+
+        # Maybe our given version has less parts, as in tuple(8, 0), than the
+        # next compare version tuple(8, 0, 0). Test for an exact match by
+        # comparison of only the leading dotted piece(s): (8, 0) == (8, 0).
+        if cmp_given == cmp_next_version[:len(cmp_given)]:
+            return zwj_unicode_versions[idx + 1]
+
+        # Or, if any next value is greater than our given support level
+        # version, return the current value in index.  Even though it must
+        # be less than the given value, its our closest possible match. That
+        # is, 4.1 is returned for given 4.9.9, where 4.1 and 5.0 are available.
+        if cmp_next_version > cmp_given:
+            return unicode_version
+    assert False, ("Code path unreachable", given_version, zwj_unicode_versions)

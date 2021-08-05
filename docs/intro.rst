@@ -168,6 +168,10 @@ Other Languages
 History
 -------
 
+0.2.1 *2021-02-25*
+  * **Feature**: New function ``width()``, now determines printable length for
+    emojis using valid zero width joiners for the given verison of unicode.
+
 0.2.0 *2020-06-01*
   * **Enhancement**: Unicode version may be selected by exporting the
     Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.

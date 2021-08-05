@@ -1,5 +1,5 @@
 """Wide_Eastasian table, created by bin/update-tables.py."""
-# Generated: 2020-08-23T17:59:15.625178
+# Generated: 2021-02-26T13:27:53.774253
 WIDE_EASTASIAN = {
     '4.1.0': (
         # Source: EastAsianWidth-4.1.0.txt

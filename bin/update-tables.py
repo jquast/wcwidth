@@ -59,9 +59,9 @@ def main():
     versions = get_unicode_versions()
     do_east_asian(versions)
     do_zero_width(versions)
-    do_emoji_zero_width(versions)
+    zwj_versions = do_emoji_zero_width(versions)
     do_rst_file_update()
-    do_unicode_versions(versions)
+    do_unicode_versions(versions, zwj_versions)
 
 
 def get_unicode_versions():
@@ -175,7 +175,7 @@ def do_emoji_zero_width(versions):
                 raise
             # trim trailing '.0' from '13.0.0', for example
             latest_version = latest_version[:latest_version.rfind('.')]
-    fout = os.path.join(PATH_CODE, 'table_emoji_zjw.py')
+    fout = os.path.join(PATH_CODE, 'table_emoji_zwj.py')
     source_txt = open(fname, 'r').read()
     publish_date = source_txt.splitlines()[1]
     assert 'Date:' in publish_date
@@ -183,10 +183,11 @@ def do_emoji_zero_width(versions):
         'Source: emoji-zwj-sequences.txt',
         'Date: ' + publish_date.split(':', 1)[1],
         'Version: ' + latest_version]
-    do_write_emoji_table(fname=fout,
-                         source_data=source_data,
-                         table=parse_emoji_zwj(fname))
-
+    zwj_versions = do_write_emoji_table(
+        fname=fout,
+        source_data=source_data,
+        table=parse_emoji_zwj(fname))
+    return zwj_versions
 
 def make_table(values):
     """Return a tuple of lookup tables for given values."""
@@ -384,11 +385,13 @@ def do_write_emoji_table(fname, source_data, table):
             + '\n'.join(f"# {sd_txt}" for sd_txt in source_data)
             + '\n'
             + 'EMOJI_ZERO_WIDTH_SEQUENCES = {\n')
+        # write sequences, longest length first
         for version_key, emoji_data in table.items():
             fout.write(f"{indent[:-8]}'{version_key}': {{\n")
             sequence_lengths = {len(values) for values, _ in emoji_data}
-            for slen in sorted(sequence_lengths):
+            for slen in sorted(sequence_lengths, reverse=True):
                 assert slen > 1
+                # TODO: no need for by-length anymore 
                 fout.write(f"{indent[:-4]}{slen}: (\n")
                 for values, description in emoji_data:
                     if len(values) == slen:
@@ -400,9 +403,10 @@ def do_write_emoji_table(fname, source_data, table):
             fout.write(f'{indent[:-8]}}},\n')
         fout.write('}\n')
     print("complete.")
+    return table.keys()
 
 
-def do_unicode_versions(versions):
+def do_unicode_versions(versions, zwj_versions):
     """Write unicode_versions.py function list_versions()."""
     fname = os.path.join(PATH_CODE, 'unicode_versions.py')
     print(f"writing {fname} ... ", end='')
@@ -410,6 +414,8 @@ def do_unicode_versions(versions):
     utc_now = datetime.datetime.utcnow()
     version_tuples_str = '\n        '.join(
         f'"{ver}",' for ver in versions)
+    zwj_version_tuples_str ='\n        '.join(
+        f'"{ver}",' for ver in zwj_versions)
     with open(fname, 'w') as fp:
         fp.write(f"""\"\"\"
 Exports function list_versions() for unicode version level support.
@@ -430,6 +436,15 @@ def list_versions():
     \"\"\"
     return (
         {version_tuples_str}
+    )
+
+
+def list_zwj_versions():
+    \"\"\"
+XXX
+    \"\"\"
+    return (
+        {zwj_version_tuples_str}
     )
 """)
         print('done.')
