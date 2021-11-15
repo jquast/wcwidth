@@ -160,8 +160,8 @@ def fetch_table_zero_data():
         else:
             table[version] = parse_category(
                 fname=fin.format(version=version),
-                # todo: test whether all of category, 'Cf' should be excluded,
-                # or, just a subset, see issue about 2060..2064 range
+                # todo: test whether all of category, 'Cf' should be 'zero
+                # width', or, just the subset 2060..2064, see open issue
                 # https://github.com/jquast/wcwidth/issues/26
                 categories=('Me', 'Mn',))
     return table
