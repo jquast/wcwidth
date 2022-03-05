@@ -93,20 +93,18 @@ def do_rst_file_update():
 def do_east_asian(versions):
     """Fetch and update east-asian tables."""
     table = {}
+    fout = os.path.join(PATH_CODE, 'table_wide.py')
     for version in versions:
-        fin = os.path.join(PATH_DATA, 'EastAsianWidth-{version}.txt')
-        fout = os.path.join(PATH_CODE, 'table_wide.py')
-        url = ('http://www.unicode.org/Public/{version}/'
-               'ucd/EastAsianWidth.txt')
+        fin = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
+        url = f'http://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
         try:
-            do_retrieve(url=url.format(version=version),
-                        fname=fin.format(version=version))
+            do_retrieve(url=url, fname=fin)
         except urllib.error.HTTPError as err:
             if err.code != 404:
                 raise
         else:
             table[version] = parse_east_asian(
-                fname=fin.format(version=version),
+                fname=fin,
                 properties=('W', 'F',))
     do_write_table(fname=fout, variable='WIDE_EASTASIAN', table=table)
 
@@ -116,18 +114,17 @@ def do_zero_width(versions):
     table = {}
     fout = os.path.join(PATH_CODE, 'table_zero.py')
     for version in versions:
-        fin = os.path.join(PATH_DATA, 'DerivedGeneralCategory-{version}.txt')
-        url = ('http://www.unicode.org/Public/{version}/ucd/extracted/'
-               'DerivedGeneralCategory.txt')
+        fin = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
+        url = (f'http://www.unicode.org/Public/{version}/ucd/extracted/'
+                'DerivedGeneralCategory.txt')
         try:
-            do_retrieve(url=url.format(version=version),
-                        fname=fin.format(version=version))
+            do_retrieve(url=url, fname=fin)
         except urllib.error.HTTPError as err:
             if err.code != 404:
                 raise
         else:
             table[version] = parse_category(
-                fname=fin.format(version=version),
+                fname=fin,
                 categories=('Me', 'Mn',))
     do_write_table(fname=fout, variable='ZERO_WIDTH', table=table)
 
@@ -175,7 +172,7 @@ def describe_file_header(fpath):
     # fmt:
     #
     # ``EastAsianWidth-8.0.0.txt``
-    #   *2015-02-10, 21:00:00 GMT [KW, LI]*
+    #   *Date: 2015-02-10, 21:00:00 GMT [KW, LI]*
     fmt = '``{0}``\n  *{1}*\n'
     if len(header_2) == 0:
         return ''
