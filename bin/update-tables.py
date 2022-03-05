@@ -4,7 +4,6 @@ Update the python Unicode tables for wcwidth.
 
 https://github.com/jquast/wcwidth
 """
-from __future__ import print_function
 
 # std imports
 import os
@@ -70,7 +69,7 @@ def get_unicode_versions():
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
     versions = []
-    for line in open(fname, 'r'):
+    for line in open(fname):
         if match := re.match(pattern, line):
             version = match.group(1)
             if version not in EXCLUDE_VERSIONS:
@@ -126,7 +125,7 @@ def do_east_asian(versions):
         else:
             table[version] = parse_east_asian(
                 fname=fin.format(version=version),
-                properties=(u'W', u'F',))
+                properties=('W', 'F',))
     do_write_table(fname=fout, variable='WIDE_EASTASIAN', table=table)
 
 
@@ -202,7 +201,7 @@ def describe_file_header(fpath):
     return fmt.format(*header_2)
 
 
-def parse_east_asian(fname, properties=(u'W', u'F',)):
+def parse_east_asian(fname, properties=('W', 'F',)):
     """Parse unicode east-asian width tables."""
     print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, []
@@ -281,11 +280,11 @@ def do_write_table(fname, variable, table):
                 try:
                     name_start = string.capwords(unicodedata.name(ucs_start))
                 except ValueError:
-                    name_start = u'(nil)'
+                    name_start = '(nil)'
                 try:
                     name_end = string.capwords(unicodedata.name(ucs_end))
                 except ValueError:
-                    name_end = u'(nil)'
+                    name_end = '(nil)'
                 fout.write(f'\n{indent}')
                 comment_startpart = name_start[:24].rstrip()
                 comment_endpart = name_end[:24].rstrip()
