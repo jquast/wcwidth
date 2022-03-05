@@ -5,23 +5,17 @@ Update the python Unicode tables for wcwidth.
 https://github.com/jquast/wcwidth
 """
 
-# std imports
+
 import os
 import re
 import glob
-import codecs
 import string
 import urllib
 import datetime
 import collections
 import unicodedata
+from urllib.request import urlopen
 
-try:
-    # py2
-    from urllib2 import urlopen
-except ImportError:
-    # py3
-    from urllib.request import urlopen
 
 URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
@@ -35,20 +29,6 @@ PATH_CODE = os.path.join(PATH_UP, 'wcwidth')
 FILE_RST = os.path.join(PATH_DOCS, 'unicode_version.rst')
 FILE_PATCH_FROM = "release files:"
 FILE_PATCH_TO = "======="
-
-
-# use chr() for py3.x,
-# unichr() for py2.x
-try:
-    _ = unichr(0)
-except NameError as err:
-    if err.args[0] == "name 'unichr' is not defined":
-        # pylint: disable=C0103,W0622
-        #         Invalid constant name "unichr" (col 8)
-        #         Redefining built-in 'unichr' (col 8)
-        unichr = chr
-    else:
-        raise
 
 
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
@@ -69,11 +49,12 @@ def get_unicode_versions():
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
     versions = []
-    for line in open(fname):
-        if match := re.match(pattern, line):
-            version = match.group(1)
-            if version not in EXCLUDE_VERSIONS:
-                versions.append(version)
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if match := re.match(pattern, line):
+                version = match.group(1)
+                if version not in EXCLUDE_VERSIONS:
+                    versions.append(version)
     versions.sort(key=lambda ver: list(map(int, ver.split('.'))))
     return versions
 
@@ -82,7 +63,8 @@ def do_rst_file_update():
     """Patch unicode_versions.rst to reflect the data files used in release."""
 
     # read in,
-    data_in = codecs.open(FILE_RST, 'r', 'utf8').read()
+    with open(FILE_RST, encoding='utf-8') as f:
+        data_in = f.read()
 
     # search for beginning and end positions,
     pos_begin = data_in.find(FILE_PATCH_FROM)
@@ -104,8 +86,8 @@ def do_rst_file_update():
 
     # write.
     print(f"patching {FILE_RST} ..")
-    codecs.open(
-        FILE_RST, 'w', 'utf8').write(data_out)
+    with open(FILE_RST, 'w', encoding='utf-8') as f:
+        f.write(data_out)
 
 
 def do_east_asian(versions):
@@ -177,8 +159,8 @@ def do_retrieve(url, fname):
         try:
             with open(fname, 'wb') as fout:
                 print(f"retrieving {url}: ", end='', flush=True)
-                resp = urlopen(url)
-                fout.write(resp.read())
+                with urlopen(url) as resp:
+                    fout.write(resp.read())
         except BaseException:
             print('failed')
             os.unlink(fname)
@@ -188,8 +170,8 @@ def do_retrieve(url, fname):
 
 
 def describe_file_header(fpath):
-    header_2 = [line.lstrip('# ').rstrip() for line in
-                codecs.open(fpath, 'r', 'utf8').readlines()[:2]]
+    with open(fpath, encoding='utf-8') as f:
+        header_2 = [line.lstrip('# ').rstrip() for _, line in zip(range(2), f)]
     # fmt:
     #
     # ``EastAsianWidth-8.0.0.txt``
@@ -205,23 +187,23 @@ def parse_east_asian(fname, properties=('W', 'F',)):
     """Parse unicode east-asian width tables."""
     print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, []
-    for line in open(fname, 'rb'):
-        uline = line.decode('utf-8')
-        if version is None:
-            version = uline.split(None, 1)[1].rstrip()
-            continue
-        if date is None:
-            date = uline.split(':', 1)[1].rstrip()
-            continue
-        if uline.startswith('#') or not uline.lstrip():
-            continue
-        addrs, details = uline.split(';', 1)
-        if any(details.startswith(property)
-               for property in properties):
-            start, stop = addrs, addrs
-            if '..' in addrs:
-                start, stop = addrs.split('..')
-            values.extend(range(int(start, 16), int(stop, 16) + 1))
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if version is None:
+                version = line.split(None, 1)[1].rstrip()
+                continue
+            if date is None:
+                date = line.split(':', 1)[1].rstrip()
+                continue
+            if line.startswith('#') or not line.lstrip():
+                continue
+            addrs, details = line.split(';', 1)
+            if any(details.startswith(property)
+                   for property in properties):
+                start, stop = addrs, addrs
+                if '..' in addrs:
+                    start, stop = addrs.split('..')
+                values.extend(range(int(start, 16), int(stop, 16) + 1))
     print('ok')
     return TableDef(version, date, values)
 
@@ -230,24 +212,24 @@ def parse_category(fname, categories):
     """Parse unicode category tables."""
     print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, []
-    for line in open(fname, 'rb'):
-        uline = line.decode('utf-8')
-        if version is None:
-            version = uline.split(None, 1)[1].rstrip()
-            continue
-        if date is None:
-            date = uline.split(':', 1)[1].rstrip()
-            continue
-        if uline.startswith('#') or not uline.lstrip():
-            continue
-        addrs, details = uline.split(';', 1)
-        addrs, details = addrs.rstrip(), details.lstrip()
-        if any(details.startswith(f'{value} #')
-               for value in categories):
-            start, stop = addrs, addrs
-            if '..' in addrs:
-                start, stop = addrs.split('..')
-            values.extend(range(int(start, 16), int(stop, 16) + 1))
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if version is None:
+                version = line.split(None, 1)[1].rstrip()
+                continue
+            if date is None:
+                date = line.split(':', 1)[1].rstrip()
+                continue
+            if line.startswith('#') or not line.lstrip():
+                continue
+            addrs, details = line.split(';', 1)
+            addrs, details = addrs.rstrip(), details.lstrip()
+            if any(details.startswith(f'{value} #')
+                   for value in categories):
+                start, stop = addrs, addrs
+                if '..' in addrs:
+                    start, stop = addrs.split('..')
+                values.extend(range(int(start, 16), int(stop, 16) + 1))
     print('ok')
     return TableDef(version, date, sorted(values))
 
@@ -258,7 +240,7 @@ def do_write_table(fname, variable, table):
     #         Too many local variables (19/15) (col 4)
     utc_now = datetime.datetime.utcnow()
     indent = ' ' * 8
-    with open(fname, 'w') as fout:
+    with open(fname, 'w', encoding='utf-8') as fout:
         print(f"writing {fname} ... ", end='')
         fout.write(
             f'"""{variable.title()} table, created by bin/update-tables.py."""\n'
@@ -275,7 +257,7 @@ def do_write_table(fname, variable, table):
                 f"{indent}#")
 
             for start, end in make_table(version_table.values):
-                ucs_start, ucs_end = unichr(start), unichr(end)
+                ucs_start, ucs_end = chr(start), chr(end)
                 hex_start, hex_end = (f'0x{start:05x}', f'0x{end:05x}')
                 try:
                     name_start = string.capwords(unicodedata.name(ucs_start))
@@ -303,7 +285,7 @@ def do_unicode_versions(versions):
     utc_now = datetime.datetime.utcnow()
     version_tuples_str = '\n        '.join(
         f'"{ver}",' for ver in versions)
-    with open(fname, 'w') as fp:
+    with open(fname, 'w', encoding='utf-8') as fp:
         fp.write(f"""\"\"\"
 Exports function list_versions() for unicode version level support.
 
