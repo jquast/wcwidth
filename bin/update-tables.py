@@ -17,7 +17,7 @@ import unicodedata
 from urllib.request import urlopen
 
 
-URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
+URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 PATH_UP = os.path.relpath(
     os.path.join(
@@ -96,7 +96,7 @@ def do_east_asian(versions):
     fout = os.path.join(PATH_CODE, 'table_wide.py')
     for version in versions:
         fin = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
-        url = f'http://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
+        url = f'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
         try:
             do_retrieve(url=url, fname=fin)
         except urllib.error.HTTPError as err:
@@ -115,7 +115,7 @@ def do_zero_width(versions):
     fout = os.path.join(PATH_CODE, 'table_zero.py')
     for version in versions:
         fin = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
-        url = (f'http://www.unicode.org/Public/{version}/ucd/extracted/'
+        url = (f'https://www.unicode.org/Public/{version}/ucd/extracted/'
                 'DerivedGeneralCategory.txt')
         try:
             do_retrieve(url=url, fname=fin)
