@@ -19,7 +19,6 @@ import os
 import re
 import sys
 import glob
-import codecs
 import string
 import logging
 import datetime
@@ -32,6 +31,7 @@ import jinja2
 import requests
 import tenacity
 import dateutil.parser
+
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
@@ -67,11 +67,12 @@ def fetch_unicode_versions():
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
     versions = []
-    for line in open(fname, 'r'):
-        if match := re.match(pattern, line):
-            version = match.group(1)
-            if version not in EXCLUDE_VERSIONS:
-                versions.append(version)
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if match := re.match(pattern, line):
+                version = match.group(1)
+                if version not in EXCLUDE_VERSIONS:
+                    versions.append(version)
     versions.sort(key=lambda ver: list(map(int, ver.split('.'))))
     return {'versions': versions}
 
@@ -121,7 +122,7 @@ def cite_source_description(filename):
     """Return unicode.org source data file's own description as citation."""
     header_twolines = [
         line.lstrip('# ').rstrip()
-        for line in codecs.open(filename, 'r', 'utf8')
+        for line in open(filename, encoding='utf-8')
         .readlines()[:2]
     ]
     if len(header_twolines) == 2:
@@ -183,28 +184,28 @@ def parse_category(fname, category_codes=('Me', 'Mn',)):
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
     version, date, values = None, None, set()
-    for line in open(fname, 'rb'):
-        uline = line.decode('utf-8')
-        if version is None:
-            # pull "version string" from first line of source file
-            version = uline.split(None, 1)[1].rstrip()
-            continue
-        if date is None:
-            # and "date string" from second line
-            date = uline.split(':', 1)[1].rstrip()
-            continue
-        if uline.startswith('#') or not uline.lstrip():
-            # ignore any further comments or empty lines
-            continue
-        addrs, details = uline.split(';', 1)
-        addrs, details = addrs.rstrip(), details.lstrip()
-        if any(details.startswith(f'{category_code}')
-               for category_code in category_codes):
-            if '..' in addrs:
-                start, stop = addrs.split('..')
-            else:
-                start, stop = addrs, addrs
-            values.update(range(int(start, 16), int(stop, 16) + 1))
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if version is None:
+                # pull "version string" from first line of source file
+                version = line.split(None, 1)[1].rstrip()
+                continue
+            if date is None:
+                # and "date string" from second line
+                date = line.split(':', 1)[1].rstrip()
+                continue
+            if line.startswith('#') or not line.lstrip():
+                # ignore any further comments or empty lines
+                continue
+            addrs, details = line.split(';', 1)
+            addrs, details = addrs.rstrip(), details.lstrip()
+            if any(details.startswith(f'{category_code}')
+                   for category_code in category_codes):
+                if '..' in addrs:
+                    start, stop = addrs.split('..')
+                else:
+                    start, stop = addrs, addrs
+                values.update(range(int(start, 16), int(stop, 16) + 1))
     txt_values = convert_values_to_string_table(make_table(sorted(values)))
     print('ok')
     return TableDef(version, date, txt_values)
@@ -268,7 +269,7 @@ def main():
             fn_data=fetch_table_zero_data)
     ]
     for render_def in CODEGEN_DEFINITIONS:
-        with open(render_def.output_filename, 'w') as fout:
+        with open(render_def.output_filename, 'w', encoding='utf-8') as fout:
             data = render_def.fn_data()
             print(f'write {render_def.output_filename}: ', flush=True, end='')
             fout.write(render_template(render_def.jinja_filename, **data))
