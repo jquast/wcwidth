@@ -56,6 +56,30 @@ class UnicodeVersion:
         """
         return f'{self.major}.{self.minor}.{self.micro}'
 
+    def __format__(self, fmt_spec: str):
+        """
+        >>> v = UnicodeVersion(13, 0, 0)
+        >>> format(v, '')
+        '13.0.0'
+        >>> format(v, '2')
+        '13.0'
+        >>> f'{v:1}'
+        '13'
+        >>> '{:3}'.format(v)
+        '13.0.0'
+        """
+        if not fmt_spec:
+            return str(self)
+        value = int(fmt_spec)
+        if value == 3:
+            return str(self)
+        elif value == 2:
+            return f'{self.major}.{self.minor}'
+        elif value == 1:
+            return f'{self.major}'
+        else:
+            raise ValueError('format_spec must be digital')
+
 
 @dataclass(frozen=True)
 class TableEntry:
