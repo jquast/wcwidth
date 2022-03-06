@@ -148,7 +148,8 @@ def do_rst_file_update():
         int(m.group(3)),
         int(m.group(4)),
     ))
-    filenames = [match.string for match in filename_matches]
+    filenames = [os.path.join(PATH_DATA, match.string)
+                 for match in filename_matches]
 
     # copy file description as-is, formatted
     for fpath in filenames:
@@ -277,7 +278,8 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
 
 def parse_file_select_by_first_property(
     fname: str,
-    properties: Container
+    properties: Container,
+    sort: bool,
 ) -> TableDef:
     print(f'parsing {fname}: ', end='', flush=True)
 
@@ -292,19 +294,20 @@ def parse_file_select_by_first_property(
                     and entry.properties[0] in properties):
                 values.extend(entry.code_range)
 
-    values.sort()
+    if sort:
+        values.sort()
     print('ok')
     return TableDef(version, date, values)
 
 
 def parse_east_asian(fname: str, properties: Container) -> TableDef:
     """Parse unicode east-asian width tables."""
-    return parse_file_select_by_first_property(fname, properties)
+    return parse_file_select_by_first_property(fname, properties, False)
 
 
 def parse_category(fname: str, categories: Container) -> TableDef:
     """Parse unicode category tables."""
-    return parse_file_select_by_first_property(fname, categories)
+    return parse_file_select_by_first_property(fname, categories, True)
 
 
 def do_write_table(
