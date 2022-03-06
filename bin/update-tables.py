@@ -18,7 +18,7 @@ import unicodedata
 from urllib.request import urlopen
 from dataclasses import dataclass
 
-from typing import Any, Collection
+from typing import Any, Container, Collection, Mapping, Iterator, Iterable
 
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
@@ -57,7 +57,18 @@ class UnicodeVersion:
         return f'{self.major}.{self.minor}.{self.micro}'
 
 
-TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
+@dataclass(frozen=True)
+class TableEntry:
+    code_range: range
+    properties: tuple[str, ...]
+    comment: str
+
+
+@dataclass
+class TableDef:
+    version: str  # source file name
+    date: str
+    values: list[int]
 
 
 def main() -> None:
@@ -217,58 +228,61 @@ def describe_file_header(fpath):
     return fmt.format(*header_2)
 
 
-def parse_east_asian(fname, properties=('W', 'F',)):
-    """Parse unicode east-asian width tables."""
+def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
+    """Parse unicode tables.
+    See details: https://www.unicode.org/reports/tr44/#Format_Conventions
+    """
+    for line in file:
+        data, _, comment = line.partition('#')
+        data_fields: Iterator[str] = (field.strip() for field in data.split(';'))
+        code_points_str, *properties = data_fields
+
+        if '..' in code_points_str:
+            start, end = code_points_str.split('..')
+        else:
+            start = end = code_points_str
+        code_range = range(int(start, base=16),
+                           int(end, base=16) + 1)
+
+        yield TableEntry(code_range, tuple(properties), comment)
+
+
+def parse_file_select_by_first_property(
+    fname: str,
+    properties: Container
+) -> TableDef:
     print(f'parsing {fname}: ', end='', flush=True)
-    version, date, values = None, None, []
+
     with open(fname, encoding='utf-8') as f:
-        for line in f:
-            if version is None:
-                version = line.split(None, 1)[1].rstrip()
-                continue
-            if date is None:
-                date = line.split(':', 1)[1].rstrip()
-                continue
-            if line.startswith('#') or not line.lstrip():
-                continue
-            addrs, details = line.split(';', 1)
-            if any(details.startswith(property)
-                   for property in properties):
-                start, stop = addrs, addrs
-                if '..' in addrs:
-                    start, stop = addrs.split('..')
-                values.extend(range(int(start, 16), int(stop, 16) + 1))
+        table_iter = parse_unicode_table(f)
+        version = next(table_iter).comment.strip()
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+        values: list[int] = []
+
+        for entry in table_iter:
+            if entry.properties[0] in properties:
+                values.extend(entry.code_range)
+
+    values.sort()
     print('ok')
     return TableDef(version, date, values)
 
 
-def parse_category(fname, categories):
+def parse_east_asian(fname: str, properties: Container) -> TableDef:
+    """Parse unicode east-asian width tables."""
+    return parse_file_select_by_first_property(fname, properties)
+
+
+def parse_category(fname: str, categories: Container) -> TableDef:
     """Parse unicode category tables."""
-    print(f'parsing {fname}: ', end='', flush=True)
-    version, date, values = None, None, []
-    with open(fname, encoding='utf-8') as f:
-        for line in f:
-            if version is None:
-                version = line.split(None, 1)[1].rstrip()
-                continue
-            if date is None:
-                date = line.split(':', 1)[1].rstrip()
-                continue
-            if line.startswith('#') or not line.lstrip():
-                continue
-            addrs, details = line.split(';', 1)
-            addrs, details = addrs.rstrip(), details.lstrip()
-            if any(details.startswith(f'{value} #')
-                   for value in categories):
-                start, stop = addrs, addrs
-                if '..' in addrs:
-                    start, stop = addrs.split('..')
-                values.extend(range(int(start, 16), int(stop, 16) + 1))
-    print('ok')
-    return TableDef(version, date, sorted(values))
+    return parse_file_select_by_first_property(fname, categories)
 
 
-def do_write_table(fname, variable, table):
+def do_write_table(
+    fname: str,
+    variable: str,
+    table: Mapping[UnicodeVersion, TableDef]
+) -> None:
     """Write combining tables to filesystem as python code."""
     # pylint: disable=R0914
     #         Too many local variables (19/15) (col 4)
