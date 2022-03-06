@@ -6,6 +6,8 @@ https://github.com/jquast/wcwidth
 """
 
 
+from __future__ import annotations
+
 import os
 import re
 import string
@@ -14,6 +16,9 @@ import datetime
 import collections
 import unicodedata
 from urllib.request import urlopen
+from dataclasses import dataclass
+
+from typing import Any, Collection
 
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
@@ -30,10 +35,32 @@ FILE_PATCH_FROM = "release files:"
 FILE_PATCH_TO = "======="
 
 
+@dataclass(order=True, frozen=True)
+class UnicodeVersion:
+    major: int
+    minor: int
+    micro: int
+
+    @classmethod
+    def parse(cls, version_str: str) -> UnicodeVersion:
+        """parse a version string
+        >>> UnicodeVersion.parse("14.0.0")
+        UnicodeVersion(major=14, minor=0, micro=0)
+        """
+        return cls(*map(int, version_str.split(".")[:3]))
+
+    def __str__(self):
+        """
+        >>> str(UnicodeVersion(12, 1, 0))
+        '12.1.0'
+        """
+        return f'{self.major}.{self.minor}.{self.micro}'
+
+
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
 
 
-def main():
+def main() -> None:
     """Update east-asian, combining and zero width tables."""
     versions = get_unicode_versions()
     do_east_asian(versions)
@@ -42,19 +69,19 @@ def main():
     do_unicode_versions(versions)
 
 
-def get_unicode_versions():
+def get_unicode_versions() -> list[UnicodeVersion]:
     """Fetch, determine, and return Unicode Versions for processing."""
     fname = os.path.join(PATH_DATA, 'DerivedAge.txt')
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
-    versions = []
+    versions: list[UnicodeVersion] = []
     with open(fname, encoding='utf-8') as f:
         for line in f:
             if match := re.match(pattern, line):
                 version = match.group(1)
                 if version not in EXCLUDE_VERSIONS:
-                    versions.append(version)
-    versions.sort(key=lambda ver: list(map(int, ver.split('.'))))
+                    versions.append(UnicodeVersion.parse(version))
+    versions.sort()
     return versions
 
 
@@ -100,9 +127,9 @@ def do_rst_file_update():
         f.write(data_out)
 
 
-def do_east_asian(versions):
+def do_east_asian(versions: Collection[UnicodeVersion]):
     """Fetch and update east-asian tables."""
-    table = {}
+    table: dict[UnicodeVersion, TableDef] = {}
     fout = os.path.join(PATH_CODE, 'table_wide.py')
     for version in versions:
         fin = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
@@ -119,9 +146,9 @@ def do_east_asian(versions):
     do_write_table(fname=fout, variable='WIDE_EASTASIAN', table=table)
 
 
-def do_zero_width(versions):
+def do_zero_width(versions: Collection[UnicodeVersion]):
     """Fetch and update zero width tables."""
-    table = {}
+    table: dict[UnicodeVersion, TableDef] = {}
     fout = os.path.join(PATH_CODE, 'table_zero.py')
     for version in versions:
         fin = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
@@ -284,7 +311,7 @@ def do_write_table(fname, variable, table):
     print("complete.")
 
 
-def do_unicode_versions(versions):
+def do_unicode_versions(versions: Collection[UnicodeVersion]):
     """Write unicode_versions.py function list_versions()."""
     fname = os.path.join(PATH_CODE, 'unicode_versions.py')
     print(f"writing {fname} ... ", end='')
@@ -292,6 +319,7 @@ def do_unicode_versions(versions):
     utc_now = datetime.datetime.utcnow()
     version_tuples_str = '\n        '.join(
         f'"{ver}",' for ver in versions)
+
     with open(fname, 'w', encoding='utf-8') as fp:
         fp.write(f"""\"\"\"
 Exports function list_versions() for unicode version level support.
