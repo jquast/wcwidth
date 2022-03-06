@@ -18,7 +18,7 @@ import unicodedata
 from urllib.request import urlopen
 from dataclasses import dataclass
 
-from typing import Any, Container, Collection, Mapping, Iterator, Iterable
+from typing import Container, Collection, Mapping, Iterator, Iterable
 
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
