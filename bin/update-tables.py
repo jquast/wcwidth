@@ -286,7 +286,7 @@ def do_write_table(
     """Write combining tables to filesystem as python code."""
     # pylint: disable=R0914
     #         Too many local variables (19/15) (col 4)
-    utc_now = datetime.datetime.utcnow()
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
     indent = ' ' * 8
     with open(fname, 'w', encoding='utf-8') as fout:
         print(f"writing {fname} ... ", end='')
@@ -330,7 +330,7 @@ def do_unicode_versions(versions: Collection[UnicodeVersion]):
     fname = os.path.join(PATH_CODE, 'unicode_versions.py')
     print(f"writing {fname} ... ", end='')
 
-    utc_now = datetime.datetime.utcnow()
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
     version_tuples_str = '\n        '.join(
         f'"{ver}",' for ver in versions)
 
