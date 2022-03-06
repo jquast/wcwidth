@@ -83,7 +83,7 @@ class UnicodeVersion:
 
 @dataclass(frozen=True)
 class TableEntry:
-    code_range: range
+    code_range: range | None
     properties: tuple[str, ...]
     comment: str
 
@@ -261,6 +261,10 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
         data_fields: Iterator[str] = (field.strip() for field in data.split(';'))
         code_points_str, *properties = data_fields
 
+        if not code_points_str:
+            yield TableEntry(None, tuple(properties), comment)
+            continue
+
         if '..' in code_points_str:
             start, end = code_points_str.split('..')
         else:
@@ -284,7 +288,8 @@ def parse_file_select_by_first_property(
         values: list[int] = []
 
         for entry in table_iter:
-            if entry.properties[0] in properties:
+            if (entry.code_range is not None
+                    and entry.properties[0] in properties):
                 values.extend(entry.code_range)
 
     values.sort()
