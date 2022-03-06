@@ -8,7 +8,6 @@ https://github.com/jquast/wcwidth
 
 import os
 import re
-import glob
 import string
 import urllib
 import datetime
@@ -70,22 +69,33 @@ def do_rst_file_update():
     pos_begin = data_in.find(FILE_PATCH_FROM)
     assert pos_begin != -1, (pos_begin, FILE_PATCH_FROM)
     pos_begin += len(FILE_PATCH_FROM)
-    data_out = data_in[:pos_begin] + '\n\n'
+    data_out_list = [data_in[:pos_begin], '\n\n']
 
     # find all filenames with a version number in it,
     # sort filenames by name, then dotted number, ascending
-    glob_pattern = os.path.join(PATH_DATA, '*[0-9]*.txt')
-    filenames = glob.glob(glob_pattern)
-    filenames.sort(key=lambda ver: [ver.split(
-        '-')[0]] + list(map(int, ver.split('-')[-1][:-4].split('.'))))
+    pattern = re.compile(
+        r'^(DerivedGeneralCategory|EastAsianWidth)-(\d+)\.(\d+)\.(\d+)\.txt$')
+    filename_matches = []
+    for fname in os.listdir(PATH_DATA):
+        if match := re.search(pattern, fname):
+            filename_matches.append(match)
+
+    filename_matches.sort(key = lambda m: (
+        m.group(1),
+        int(m.group(2)),
+        int(m.group(3)),
+        int(m.group(4)),
+    ))
+    filenames = [match.string for match in filename_matches]
 
     # copy file description as-is, formatted
     for fpath in filenames:
         if description := describe_file_header(fpath):
-            data_out += f'\n{description}'
+            data_out_list.append(f'\n{description}')
 
     # write.
     print(f"patching {FILE_RST} ..")
+    data_out = "".join(data_out_list)
     with open(FILE_RST, 'w', encoding='utf-8') as f:
         f.write(data_out)
 
