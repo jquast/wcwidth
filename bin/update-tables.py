@@ -382,7 +382,7 @@ def list_versions():
     ``unicode_version`` to the ``wcwidth()`` family of functions.
 
     :returns: Supported Unicode version numbers in ascending sorted order.
-    :rtype: list[str]
+    :rtype: tuple[str]
     \"\"\"
     return (
         {version_tuples_str}
