@@ -22,7 +22,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-import glob
 import string
 import logging
 import datetime
@@ -120,14 +119,29 @@ def fetch_unicode_versions() -> list[UnicodeVersion]:
     return versions
 
 
-def fetch_source_headers():
-    glob_pattern = os.path.join(PATH_DATA, '*[0-9]*.txt')
-    filenames = glob.glob(glob_pattern)
-    filenames.sort(key=lambda filename: make_sortable_source_name(filename))
-    headers = []
+def fetch_source_headers() -> dict[str, list[tuple[str, str]]]:
+    # find all filenames with a version number in it,
+    # sort filenames by name, then dotted number, ascending
+    pattern = re.compile(
+        r'^(DerivedGeneralCategory|EastAsianWidth)-(\d+)\.(\d+)\.(\d+)\.txt$')
+    filename_matches = []
+    for fname in os.listdir(PATH_DATA):
+        if match := re.search(pattern, fname):
+            filename_matches.append(match)
+
+    filename_matches.sort(key = lambda m: (
+        m.group(1),
+        int(m.group(2)),
+        int(m.group(3)),
+        int(m.group(4)),
+    ))
+    filenames = [os.path.join(PATH_DATA, match.string)
+                 for match in filename_matches]
+
+    headers: list[tuple[str, str]] = []
     for filename in filenames:
-        if header_description := cite_source_description(filename):
-            headers.append(header_description)
+        header_description = cite_source_description(filename)
+        headers.append(header_description)
     return {'source_headers': headers}
 
 
