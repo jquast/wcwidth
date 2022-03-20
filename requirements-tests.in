@@ -1,0 +1,12 @@
+pytest
+pytest-cov
+flake8
+autopep8
+docformatter
+isort
+pylint
+pydocstyle
+restructuredtext_lint
+doc8
+pygments
+
