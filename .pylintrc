@@ -23,7 +23,9 @@ disable=
     too-many-lines,
     inconsistent-return-statements,
     too-many-return-statements,
-    too-many-boolean-expressions
+    too-many-boolean-expressions,
+    redundant-u-string-prefix,
+    consider-using-f-string,
 
 [FORMAT]
 max-line-length: 100
