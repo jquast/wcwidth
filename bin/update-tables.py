@@ -28,31 +28,34 @@ import functools
 import collections
 import unicodedata
 
+# 3rd party
 # third party
 import jinja2
-import tenacity
 import requests
+import tenacity
 import dateutil.parser
 
-
 URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
-URL_EASTASIAN_WIDTH     = 'http://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
-URL_DERIVED_CATEGORY    = 'http://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
+URL_EASTASIAN_WIDTH = 'http://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
+URL_DERIVED_CATEGORY = 'http://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
-THIS_FILEPATH = os.path.relpath(__file__, os.path.join(PATH_UP, os.path.pardir))  # "wcwidth/bin/update-tables.py"
+THIS_FILEPATH = os.path.relpath(__file__, os.path.join(
+    PATH_UP, os.path.pardir))  # "wcwidth/bin/update-tables.py"
 JINJA_ENV = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
-            keep_trailing_newline=True)
+    loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
+    keep_trailing_newline=True)
 UTC_NOW = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
-RenderDefinition = collections.namedtuple('render', ['jinja_filename', 'output_filename', 'fn_data'])
+RenderDefinition = collections.namedtuple(
+    'render', ['jinja_filename', 'output_filename', 'fn_data'])
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 @functools.cache
 def fetch_unicode_versions():
@@ -90,6 +93,7 @@ def fetch_table_wide_data():
         table[version] = parse_category(fname=fname, category_codes=('W', 'F',))
     return {'table': table, 'variable_name': 'WIDE_EASTASIAN'}
 
+
 def fetch_table_zero_data():
     """Fetch and update zero width tables."""
     table = {}
@@ -109,6 +113,7 @@ def render_template(jinja_filename, utc_now=UTC_NOW, this_filepath=THIS_FILEPATH
         this_filepath=THIS_FILEPATH,
         **kwargs)
 
+
 def cite_source_description(filename):
     """Return unicode.org source data file's own description as citation."""
     header_twolines = [
@@ -119,6 +124,7 @@ def cite_source_description(filename):
     if len(header_twolines) == 2:
         return header_twolines
 
+
 def make_sortable_source_name(filename):
     # make a sortable filename of unicode text file,
     #
@@ -127,6 +133,7 @@ def make_sortable_source_name(filename):
     basename, remaining = filename.split('-', 1)
     version_numbers, _extension = os.path.splitext(remaining)
     return (basename, *list(map(int, version_numbers.split('.'))))
+
 
 def make_table(values):
     """Return a tuple of lookup tables for given values."""
@@ -149,6 +156,7 @@ def make_table(values):
             # and start a new one
             table.append((value, value,))
     return tuple(table)
+
 
 def convert_values_to_string_table(values):
     """Convert integers into string table of (hex_start, hex_end, txt_description)."""
@@ -202,6 +210,7 @@ def parse_category(fname, category_codes=('Me', 'Mn',)):
     print('ok')
     return TableDef(version, date, txt_values)
 
+
 def is_url_newer(url, fname):
     if not os.path.exists(fname):
         return True
@@ -212,6 +221,7 @@ def is_url_newer(url, fname):
         local_file_dt = datetime.datetime.fromtimestamp(os.path.getmtime(fname)).astimezone()
         return remote_url_dt > local_file_dt
     return False
+
 
 @tenacity.retry(reraise=True, wait=tenacity.wait_none(),
                 retry=tenacity.retry_if_exception_type(requests.exceptions.RequestException),
@@ -227,7 +237,7 @@ def do_retrieve(url, fname):
     resp = requests.get(url, timeout=CONNECT_TIMEOUT)
     resp.raise_for_status()
     print(f"saving {fname}: ", end='', flush=True)
-    with open(fname , 'wb') as fout:
+    with open(fname, 'wb') as fout:
         for chunk in resp.iter_content(FETCH_BLOCKSIZE):
             fout.write(chunk)
             print('.', end='', flush=True)
