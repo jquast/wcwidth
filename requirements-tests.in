@@ -1,10 +1,11 @@
-pytest
+pytest<7
 pytest-cov
+coverage[toml]<6
 flake8
 autopep8
 docformatter
 isort
-pylint
+pylint<2.10
 pydocstyle
 restructuredtext_lint
 doc8
