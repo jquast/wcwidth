@@ -35,9 +35,9 @@ import requests
 import tenacity
 import dateutil.parser
 
-URL_UNICODE_DERIVED_AGE = 'http://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
-URL_EASTASIAN_WIDTH = 'http://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
-URL_DERIVED_CATEGORY = 'http://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
+URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
+URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
+URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
@@ -173,9 +173,10 @@ def convert_values_to_string_table(values):
             name_end = string.capwords(unicodedata.name(ucs_end))
         except ValueError:
             pass
-        txt_description = f'{name_start[:24].rstrip():24s}'
         if name_start != name_end:
-            txt_description += f'..{name_end[:24].rstrip()}'
+            txt_description = f'{name_start[:24].rstrip():24s}..{name_end[:24].rstrip()}'
+        else:
+            txt_description = f'{name_start[:48]}'
         pytable_values.append((hex_start, hex_end, txt_description))
     return pytable_values
 
