@@ -73,9 +73,11 @@ from .table_zero import ZERO_WIDTH
 from .unicode_versions import list_versions
 
 try:
+    # std imports
     from functools import lru_cache
 except ImportError:
     # lru_cache was added in Python 3.2
+    # 3rd party
     from backports.functools_lru_cache import lru_cache
 
 # global cache
