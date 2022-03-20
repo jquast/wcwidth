@@ -111,14 +111,14 @@ Execute unit tests using tox_::
 
 Regenerate python code tables from latest Unicode Specification data files::
 
-   tox -eupdate
+   tox -e update
 
 Supplementary tools for browsing and testing terminals for wide unicode
 characters are found in the `bin/`_ of this project's source code.  Just ensure
 to first ``pip install -erequirements-develop.txt`` from this projects main
 folder. For example, an interactive browser for testing::
 
-  ./bin/wcwidth-browser.py
+  python ./bin/wcwidth-browser.py
 
 Uses
 ----

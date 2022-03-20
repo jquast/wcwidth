@@ -21,7 +21,6 @@ import sys
 import glob
 import codecs
 import string
-import urllib
 import logging
 import datetime
 import functools
