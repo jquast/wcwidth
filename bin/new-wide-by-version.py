@@ -18,11 +18,11 @@ previous version (4.1.0).
 import sys
 import json
 
+# local
+from wcwidth import WIDE_EASTASIAN, _bisearch
 
-# List new WIDE characters at each unicode version.
-#
 def main():
-    from wcwidth import WIDE_EASTASIAN, _bisearch
+    """List new WIDE characters at each unicode version."""
     versions = list(WIDE_EASTASIAN.keys())
     results = {}
     for version in versions:
