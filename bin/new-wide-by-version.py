@@ -21,6 +21,7 @@ import json
 # local
 from wcwidth import WIDE_EASTASIAN, _bisearch
 
+
 def main():
     """List new WIDE characters at each unicode version."""
     versions = list(WIDE_EASTASIAN.keys())
