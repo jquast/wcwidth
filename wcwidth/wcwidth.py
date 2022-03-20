@@ -216,6 +216,7 @@ def wcwidth(wc, unicode_version='auto'):
     if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
         return 0
 
+    # "Wide AastAsian" (and emojis)
     return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
