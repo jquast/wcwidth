@@ -13,3 +13,4 @@ htmlcov
 .coveralls.yml
 data
 .DS_Store
+.idea
