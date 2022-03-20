@@ -140,13 +140,8 @@ def make_table(values):
     start, end = values[0], values[0]
     table = collections.deque()
     table.append((start, end))
-    for num, value in enumerate(values):
-        try:
-            start, end = table.pop()
-        except IndexError:
-            # first item
-            table.append((value, value))
-            continue
+    for value in values[1:]:
+        start, end = table.pop()
         if end == value - 1:
             # continuation of existing range
             table.append((start, value,))
@@ -184,7 +179,7 @@ def convert_values_to_string_table(values):
 def parse_category(fname, category_codes=('Me', 'Mn',)):
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
-    version, date, values = None, None, []
+    version, date, values = None, None, set()
     for line in open(fname, 'rb'):
         uline = line.decode('utf-8')
         if version is None:
@@ -206,8 +201,8 @@ def parse_category(fname, category_codes=('Me', 'Mn',)):
                 start, stop = addrs.split('..')
             else:
                 start, stop = addrs, addrs
-            values.extend(range(int(start, 16), int(stop, 16) + 1))
-    txt_values = convert_values_to_string_table(make_table(values))
+            values.update(range(int(start, 16), int(stop, 16) + 1))
+    txt_values = convert_values_to_string_table(make_table(sorted(values)))
     print('ok')
     return TableDef(version, date, txt_values)
 
