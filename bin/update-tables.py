@@ -31,7 +31,7 @@ import collections
 import unicodedata
 from dataclasses import dataclass
 
-from typing import Iterable, Iterator, Container
+from typing import Iterable, Iterator, Container, Collection
 
 # 3rd party
 import jinja2
@@ -171,22 +171,24 @@ def cite_source_description(filename: str) -> tuple[str, str]:
     return fname, date
 
 
-def make_sortable_source_name(filename):
-    # make a sortable filename of unicode text file,
-    #
-    # >>> make_sorted_name("DerivedGeneralCategory-5.0.0.txt")
-    # ('DerivedGeneralCategory', 5, 0, 0)
+def make_sortable_source_name(filename: str) -> tuple:
+    """make a sortable filename of unicode text file
+    >>> make_sorted_name("DerivedGeneralCategory-5.0.0.txt")
+    ('DerivedGeneralCategory', 5, 0, 0)
+    """
     basename, remaining = filename.split('-', 1)
     version_numbers, _extension = os.path.splitext(remaining)
     return (basename, *list(map(int, version_numbers.split('.'))))
 
 
-def make_table(values):
+def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
     """Return a tuple of lookup tables for given values."""
-    start, end = values[0], values[0]
-    table = collections.deque()
+    table: list[tuple[int, int]] = []
+    values_iter = iter(values)
+    start = end = next(values_iter)
     table.append((start, end))
-    for value in values[1:]:
+
+    for value in values_iter:
         start, end = table.pop()
         if end == value - 1:
             # continuation of existing range
@@ -199,9 +201,11 @@ def make_table(values):
     return tuple(table)
 
 
-def convert_values_to_string_table(values):
+def convert_values_to_string_table(
+    values: Collection[tuple[int, int]],
+) -> list[tuple[str, str, str]]:
     """Convert integers into string table of (hex_start, hex_end, txt_description)."""
-    pytable_values = []
+    pytable_values: list[tuple[str, str, str]] = []
     for start, end in values:
         hex_start, hex_end = (f'0x{start:05x}', f'0x{end:05x}')
         ucs_start, ucs_end = chr(start), chr(end)
