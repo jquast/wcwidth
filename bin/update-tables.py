@@ -28,7 +28,6 @@ import collections
 import unicodedata
 
 # 3rd party
-# third party
 import jinja2
 import requests
 import tenacity
@@ -38,20 +37,25 @@ URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/Derived
 URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
 URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
+
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
 THIS_FILEPATH = os.path.relpath(__file__, os.path.join(
     PATH_UP, os.path.pardir))  # "wcwidth/bin/update-tables.py"
+
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True)
 UTC_NOW = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
+
 TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
 RenderDefinition = collections.namedtuple(
     'render', ['jinja_filename', 'output_filename', 'fn_data'])
+
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
