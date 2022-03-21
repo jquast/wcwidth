@@ -161,15 +161,14 @@ def render_template(jinja_filename, utc_now=UTC_NOW, this_filepath=THIS_FILEPATH
         **kwargs)
 
 
-def cite_source_description(filename):
+def cite_source_description(filename: str) -> tuple[str, str]:
     """Return unicode.org source data file's own description as citation."""
-    header_twolines = [
-        line.lstrip('# ').rstrip()
-        for line in open(filename, encoding='utf-8')
-        .readlines()[:2]
-    ]
-    if len(header_twolines) == 2:
-        return header_twolines
+    with open(filename, encoding='utf-8') as f:
+        entry_iter = parse_unicode_table(f)
+        fname = next(entry_iter).comment.strip()
+        date = next(entry_iter).comment.strip()
+
+    return fname, date
 
 
 def make_sortable_source_name(filename):
