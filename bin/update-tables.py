@@ -31,12 +31,13 @@ import collections
 import unicodedata
 from dataclasses import dataclass
 
+from typing import Iterable, Iterator, Container
+
 # 3rd party
 import jinja2
 import requests
 import tenacity
 import dateutil.parser
-
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
@@ -83,7 +84,21 @@ class UnicodeVersion:
         return f'{self.major}.{self.minor}.{self.micro}'
 
 
-TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
+@dataclass(frozen=True)
+class TableEntry:
+    """An entry of a unicode table"""
+    code_range: range | None
+    properties: tuple[str, ...]
+    comment: str
+
+
+@dataclass
+class TableDef:
+    filename: str
+    date: str
+    values: list[tuple[str, str, str]]
+
+
 RenderDefinition = collections.namedtuple(
     'render', ['jinja_filename', 'output_filename', 'fn_data'])
 
@@ -118,7 +133,7 @@ def fetch_source_headers():
 
 def fetch_table_wide_data() -> dict:
     """Fetch and update east-asian tables."""
-    table = {}
+    table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname)
@@ -128,7 +143,7 @@ def fetch_table_wide_data() -> dict:
 
 def fetch_table_zero_data() -> dict:
     """Fetch and update zero width tables."""
-    table = {}
+    table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname)
@@ -208,34 +223,47 @@ def convert_values_to_string_table(values):
     return pytable_values
 
 
-def parse_category(fname: str, category_codes=('Me', 'Mn',)) -> TableDef:
+def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
+    """Parse unicode tables.
+    See details: https://www.unicode.org/reports/tr44/#Format_Conventions
+    """
+    for line in file:
+        data, _, comment = line.partition('#')
+        data_fields: Iterator[str] = (field.strip() for field in data.split(';'))
+        code_points_str, *properties = data_fields
+
+        if not code_points_str:
+            yield TableEntry(None, tuple(properties), comment)
+            continue
+
+        if '..' in code_points_str:
+            start, end = code_points_str.split('..')
+        else:
+            start = end = code_points_str
+        code_range = range(int(start, base=16),
+                           int(end, base=16) + 1)
+
+        yield TableEntry(code_range, tuple(properties), comment)
+
+
+def parse_category(fname: str, category_codes: Container) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
-    version = None
-    date = None
-    values: set[int] = set()
+
     with open(fname, encoding='utf-8') as f:
-        for line in f:
-            if version is None:
-                # pull "version string" from first line of source file
-                version = line.split(None, 1)[1].rstrip()
-                continue
-            if date is None:
-                # and "date string" from second line
-                date = line.split(':', 1)[1].rstrip()
-                continue
-            if line.startswith('#') or not line.lstrip():
-                # ignore any further comments or empty lines
-                continue
-            addrs, details = line.split(';', 1)
-            addrs, details = addrs.rstrip(), details.lstrip()
-            if any(details.startswith(f'{category_code}')
-                   for category_code in category_codes):
-                if '..' in addrs:
-                    start, stop = addrs.split('..')
-                else:
-                    start, stop = addrs, addrs
-                values.update(range(int(start, 16), int(stop, 16) + 1))
+        table_iter = parse_unicode_table(f)
+
+        # pull "version string" from first line of source file
+        version = next(table_iter).comment.strip()
+        # and "date string" from second line
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+
+        values: set[int] = set()
+        for entry in table_iter:
+            if (entry.code_range is not None
+                    and entry.properties[0] in category_codes):
+                values.update(entry.code_range)
+
     txt_values = convert_values_to_string_table(make_table(sorted(values)))
     print('ok')
     return TableDef(version, date, txt_values)
