@@ -14,6 +14,10 @@ URLs.
 
 https://github.com/jquast/wcwidth
 """
+
+
+from __future__ import annotations
+
 # std imports
 import os
 import re
@@ -25,6 +29,7 @@ import datetime
 import functools
 import collections
 import unicodedata
+from dataclasses import dataclass
 
 # 3rd party
 import jinja2
@@ -52,29 +57,53 @@ CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
 
-TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
-RenderDefinition = collections.namedtuple(
-    'render', ['jinja_filename', 'output_filename', 'fn_data'])
-
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+@dataclass(order=True, frozen=True)
+class UnicodeVersion:
+    """A class for camparable unicode version"""
+    major: int
+    minor: int
+    micro: int
+
+    @classmethod
+    def parse(cls, version_str: str) -> UnicodeVersion:
+        """parse a version string
+        >>> UnicodeVersion.parse("14.0.0")
+        UnicodeVersion(major=14, minor=0, micro=0)
+        """
+        return cls(*map(int, version_str.split(".")[:3]))
+
+    def __str__(self):
+        """
+        >>> str(UnicodeVersion(12, 1, 0))
+        '12.1.0'
+        """
+        return f'{self.major}.{self.minor}.{self.micro}'
+
+
+TableDef = collections.namedtuple('table', ['version', 'date', 'values'])
+RenderDefinition = collections.namedtuple(
+    'render', ['jinja_filename', 'output_filename', 'fn_data'])
+
+
 @functools.cache
-def fetch_unicode_versions():
+def fetch_unicode_versions() -> list[UnicodeVersion]:
     """Fetch, determine, and return Unicode Versions for processing."""
     fname = os.path.join(PATH_DATA, os.path.basename(URL_UNICODE_DERIVED_AGE))
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
-    versions = []
+    versions: list[UnicodeVersion] = []
     with open(fname, encoding='utf-8') as f:
         for line in f:
             if match := re.match(pattern, line):
                 version = match.group(1)
                 if version not in EXCLUDE_VERSIONS:
-                    versions.append(version)
-    versions.sort(key=lambda ver: list(map(int, ver.split('.'))))
-    return {'versions': versions}
+                    versions.append(UnicodeVersion.parse(version))
+    versions.sort()
+    return versions
 
 
 def fetch_source_headers():
@@ -88,20 +117,20 @@ def fetch_source_headers():
     return {'source_headers': headers}
 
 
-def fetch_table_wide_data():
+def fetch_table_wide_data() -> dict:
     """Fetch and update east-asian tables."""
     table = {}
-    for version in fetch_unicode_versions()['versions']:
+    for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname)
         table[version] = parse_category(fname=fname, category_codes=('W', 'F',))
     return {'table': table, 'variable_name': 'WIDE_EASTASIAN'}
 
 
-def fetch_table_zero_data():
+def fetch_table_zero_data() -> dict:
     """Fetch and update zero width tables."""
     table = {}
-    for version in fetch_unicode_versions()['versions']:
+    for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname)
         # TODO: test whether all of category, 'Cf' should be 'zero
@@ -180,10 +209,12 @@ def convert_values_to_string_table(values):
     return pytable_values
 
 
-def parse_category(fname, category_codes=('Me', 'Mn',)):
+def parse_category(fname: str, category_codes=('Me', 'Mn',)) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
-    version, date, values = None, None, set()
+    version = None
+    date = None
+    values: set[int] = set()
     with open(fname, encoding='utf-8') as f:
         for line in f:
             if version is None:
@@ -244,7 +275,7 @@ def do_retrieve(url, fname):
     print('ok')
 
 
-def main():
+def main() -> None:
     """Update east-asian, combining and zero width tables."""
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
@@ -254,7 +285,7 @@ def main():
         RenderDefinition(
             jinja_filename='unicode_versions.py.j2',
             output_filename=os.path.join(PATH_UP, 'wcwidth', 'unicode_versions.py'),
-            fn_data=fetch_unicode_versions),
+            fn_data=lambda: {'versions': fetch_unicode_versions()}),
         RenderDefinition(
             jinja_filename='unicode_version.rst.j2',
             output_filename=os.path.join(PATH_UP, 'docs', 'unicode_version.rst'),
