@@ -57,7 +57,6 @@ CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
 
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -277,6 +276,8 @@ def do_retrieve(url, fname):
 
 def main() -> None:
     """Update east-asian, combining and zero width tables."""
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
     # language options using jinja2 templates, with minimal modification of the
