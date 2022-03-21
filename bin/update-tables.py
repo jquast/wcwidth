@@ -28,6 +28,7 @@ import datetime
 import functools
 import collections
 import unicodedata
+from pathlib import Path
 from dataclasses import dataclass
 
 from typing import Iterable, Iterator, Container, Collection
@@ -45,8 +46,10 @@ EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
-THIS_FILEPATH = os.path.relpath(__file__, os.path.join(
-    PATH_UP, os.path.pardir))  # "wcwidth/bin/update-tables.py"
+# "wcwidth/bin/update-tables.py", even on Windows
+# not really a path, if the git repo isn't named "wcwidth"
+THIS_FILEPATH = ('wcwidth/' +
+    Path(__file__).resolve().relative_to(Path(PATH_UP).resolve()).as_posix())
 
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
@@ -168,7 +171,7 @@ def fetch_table_zero_data() -> dict:
     return {'table': table, 'variable_name': 'ZERO_WIDTH'}
 
 
-def render_template(jinja_filename, utc_now=UTC_NOW, this_filepath=THIS_FILEPATH, **kwargs):
+def render_template(jinja_filename, utc_now=UTC_NOW, **kwargs):
     return JINJA_ENV.get_template(jinja_filename).render(
         utc_now=utc_now,
         this_filepath=THIS_FILEPATH,
