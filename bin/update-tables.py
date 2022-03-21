@@ -26,12 +26,11 @@ import string
 import logging
 import datetime
 import functools
-import collections
 import unicodedata
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import field, fields, dataclass
 
-from typing import Iterable, Iterator, Container, Collection
+from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collection
 
 # 3rd party
 import jinja2
@@ -101,8 +100,103 @@ class TableDef:
     values: list[tuple[str, str, str]]
 
 
-RenderDefinition = collections.namedtuple(
-    'render', ['jinja_filename', 'output_filename', 'fn_data'])
+@dataclass(frozen=True)
+class RenderContext:
+
+    def to_dict(self) -> dict[str, Any]:
+        return {field.name: getattr(self, field.name)
+                for field in fields(self)}
+
+
+@dataclass(frozen=True)
+class UnicodeVersionPyRenderCtx(RenderContext):
+    versions: Collection[UnicodeVersion]
+
+
+@dataclass(frozen=True)
+class UnicodeVersionRstRenderCtx(RenderContext):
+    source_headers: Sequence[tuple[str, str]]
+
+
+@dataclass(frozen=True)
+class UnicodeTableRenderCtx(RenderContext):
+    variable_name: str
+    table: Mapping[UnicodeVersion, TableDef]
+
+
+@dataclass
+class RenderDefinition:
+    """Base class, do not instantiate it directly."""
+    jinja_filename: str
+    output_filename: str
+    render_context: RenderContext
+
+    _template: jinja2.Template = field(init=False, repr=False)
+    _render_context: dict[str, Any] = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self._template = JINJA_ENV.get_template(self.jinja_filename)
+        self._render_context = {
+            'utc_now': UTC_NOW,
+            'this_filepath': THIS_FILEPATH,
+            **self.render_context.to_dict(),
+        }
+
+    def render(self) -> str:
+        """just like jinja2.Template.render"""
+        return self._template.render(self._render_context)
+
+    def generate(self) -> Iterator[str]:
+        """just like jinja2.Template.generate"""
+        return self._template.generate(self._render_context)
+
+
+@dataclass
+class UnicodeVersionPyRenderDef(RenderDefinition):
+    render_context: UnicodeVersionPyRenderCtx
+
+    @classmethod
+    def new(cls, context: UnicodeVersionPyRenderCtx):
+        return cls(
+            jinja_filename='unicode_versions.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'unicode_versions.py'),
+            render_context=context,
+        )
+
+
+@dataclass
+class UnicodeVersionRstRenderDef(RenderDefinition):
+    render_context: UnicodeVersionRstRenderCtx
+
+    @classmethod
+    def new(cls, context: UnicodeVersionRstRenderCtx):
+        return cls(
+            jinja_filename='unicode_version.rst.j2',
+            output_filename=os.path.join(PATH_UP, 'docs', 'unicode_version.rst'),
+            render_context=context,
+        )
+
+
+@dataclass
+class UnicodeTableRenderDef(RenderDefinition):
+    render_context: UnicodeTableRenderCtx
+
+    @classmethod
+    def new(cls, filename: str, context: UnicodeTableRenderCtx):
+        _, ext = os.path.splitext(filename)
+        if ext == '.py':
+            jinja_filename = 'python_table.py.j2'
+        elif ext == '.c':
+            # TODO
+            jinja_filename = 'c_table.c.j2'
+        else:
+            raise ValueError('filename must be a Python or a C file')
+
+        return cls(
+            jinja_filename=jinja_filename,
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=context,
+        )
 
 
 @functools.cache
@@ -122,7 +216,7 @@ def fetch_unicode_versions() -> list[UnicodeVersion]:
     return versions
 
 
-def fetch_source_headers() -> dict[str, list[tuple[str, str]]]:
+def fetch_source_headers() -> UnicodeVersionRstRenderCtx:
     # find all filenames with a version number in it,
     # sort filenames by name, then dotted number, ascending
     pattern = re.compile(
@@ -145,20 +239,20 @@ def fetch_source_headers() -> dict[str, list[tuple[str, str]]]:
     for filename in filenames:
         header_description = cite_source_description(filename)
         headers.append(header_description)
-    return {'source_headers': headers}
+    return UnicodeVersionRstRenderCtx(headers)
 
 
-def fetch_table_wide_data() -> dict:
+def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     """Fetch and update east-asian tables."""
     table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname)
         table[version] = parse_category(fname=fname, category_codes=('W', 'F',))
-    return {'table': table, 'variable_name': 'WIDE_EASTASIAN'}
+    return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
-def fetch_table_zero_data() -> dict:
+def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     """Fetch and update zero width tables."""
     table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
@@ -168,14 +262,7 @@ def fetch_table_zero_data() -> dict:
         #       width', or, just the subset 2060..2064, see open issue
         #       https://github.com/jquast/wcwidth/issues/26
         table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn',))
-    return {'table': table, 'variable_name': 'ZERO_WIDTH'}
-
-
-def render_template(jinja_filename, utc_now=UTC_NOW, **kwargs):
-    return JINJA_ENV.get_template(jinja_filename).render(
-        utc_now=utc_now,
-        this_filepath=THIS_FILEPATH,
-        **kwargs)
+    return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
 def cite_source_description(filename: str) -> tuple[str, str]:
@@ -186,16 +273,6 @@ def cite_source_description(filename: str) -> tuple[str, str]:
         date = next(entry_iter).comment.strip()
 
     return fname, date
-
-
-def make_sortable_source_name(filename: str) -> tuple:
-    """make a sortable filename of unicode text file
-    >>> make_sorted_name("DerivedGeneralCategory-5.0.0.txt")
-    ('DerivedGeneralCategory', 5, 0, 0)
-    """
-    basename, remaining = filename.split('-', 1)
-    version_numbers, _extension = os.path.splitext(remaining)
-    return (basename, *list(map(int, version_numbers.split('.'))))
 
 
 def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
@@ -330,29 +407,19 @@ def main() -> None:
     # and what function defines the source data. We hope to add more source
     # language options using jinja2 templates, with minimal modification of the
     # code.
-    CODEGEN_DEFINITIONS = [
-        RenderDefinition(
-            jinja_filename='unicode_versions.py.j2',
-            output_filename=os.path.join(PATH_UP, 'wcwidth', 'unicode_versions.py'),
-            fn_data=lambda: {'versions': fetch_unicode_versions()}),
-        RenderDefinition(
-            jinja_filename='unicode_version.rst.j2',
-            output_filename=os.path.join(PATH_UP, 'docs', 'unicode_version.rst'),
-            fn_data=fetch_source_headers),
-        RenderDefinition(
-            jinja_filename='python_table.py.j2',
-            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_wide.py'),
-            fn_data=fetch_table_wide_data),
-        RenderDefinition(
-            jinja_filename='python_table.py.j2',
-            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_zero.py'),
-            fn_data=fetch_table_zero_data)
-    ]
-    for render_def in CODEGEN_DEFINITIONS:
+    def get_codegen_definitions() -> Iterator[RenderDefinition]:
+        yield UnicodeVersionPyRenderDef.new(
+            UnicodeVersionPyRenderCtx(fetch_unicode_versions())
+        )
+        yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
+        yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
+        yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+
+    for render_def in get_codegen_definitions():
         with open(render_def.output_filename, 'w', encoding='utf-8') as fout:
-            data = render_def.fn_data()
             print(f'write {render_def.output_filename}: ', flush=True, end='')
-            fout.write(render_template(render_def.jinja_filename, **data))
+            for data in render_def.generate():
+                fout.write(data)
             print('ok')
 
 
