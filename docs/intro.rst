@@ -168,6 +168,16 @@ Other Languages
 History
 -------
 
+0.2.6 *2022-06-022*
+  * **Updated** tables to include Unicode Specification 14.0.0.
+  * **Changed** developer tools to use pip-compile, and to use jinja2 templates
+    for code generation in `bin/update-tables.py` to prepare for possible
+    compiler optimization release.
+
+0.2.1 .. 0.2.5 *2020-06-23*
+  * **Repository** changes to update tests and packaging issues, and
+    begin tagging repository with matching release versions.
+
 0.2.0 *2020-06-01*
   * **Enhancement**: Unicode version may be selected by exporting the
     Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
@@ -177,8 +187,6 @@ History
   * **Updated** tables for *all* Unicode Specifications with files
     published in a programmatically consumable format, versions 4.1.0
     through 13.0
-    that are published
-    , versions
 
 0.1.9 *2020-03-22*
   * **Performance** optimization by `Avram Lubkin`_, `PR #35`_.
