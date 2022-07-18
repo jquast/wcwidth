@@ -5,7 +5,6 @@ import warnings
 
 # 3rd party
 import pytest
-import pkg_resources
 
 # local
 import wcwidth
