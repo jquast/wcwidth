@@ -82,7 +82,7 @@ def main():
             'combining',
             'console',
             'eastasian',
-            'emoji'
+            'emoji',
             'emulator',
             'terminal',
             'unicode',
