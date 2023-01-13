@@ -117,7 +117,7 @@ class WcCombinedCharacterGenerator(object):
         self.characters = []
         letters_o = ('o' * width)
         last_version = list_versions()[-1]
-        for (begin, end) in ZERO_WIDTH[last_version].items():
+        for (begin, end) in ZERO_WIDTH[last_version]:
             for val in [_val for _val in
                         range(begin, end + 1)
                         if _val <= LIMIT_UCS]:
