@@ -27,6 +27,7 @@ import logging
 import datetime
 import functools
 import unicodedata
+import urllib3.util
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
@@ -35,7 +36,6 @@ from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collec
 # 3rd party
 import jinja2
 import requests
-import tenacity
 import dateutil.parser
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
@@ -58,6 +58,7 @@ UTC_NOW = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
+BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ class UnicodeTableRenderDef(RenderDefinition):
 @functools.cache
 def fetch_unicode_versions() -> list[UnicodeVersion]:
     """Fetch, determine, and return Unicode Versions for processing."""
-    fname = os.path.join(PATH_DATA, os.path.basename(URL_UNICODE_DERIVED_AGE))
+    fname = os.path.join(PATH_DATA, URL_UNICODE_DERIVED_AGE.rsplit('/', 1)[-1])
     do_retrieve(url=URL_UNICODE_DERIVED_AGE, fname=fname)
     pattern = re.compile(r'#.*assigned in Unicode ([0-9.]+)')
     versions: list[UnicodeVersion] = []
@@ -276,7 +277,11 @@ def cite_source_description(filename: str) -> tuple[str, str]:
 
 
 def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
-    """Return a tuple of lookup tables for given values."""
+    """Return a tuple of lookup tables for given values.
+    >>> make_table([0,1,2,5,6,7,9])
+    ((0, 2), (5, 7), (9, 9))
+
+    """
     table: list[tuple[int, int]] = []
     values_iter = iter(values)
     start = end = next(values_iter)
@@ -370,6 +375,7 @@ def is_url_newer(url, fname):
     if not os.path.exists(fname):
         return True
     if '--check-last-modified' in sys.argv[1:]:
+        # XXX
         resp = requests.head(url, timeout=CONNECT_TIMEOUT)
         resp.raise_for_status()
         remote_url_dt = dateutil.parser.parse(resp.headers['Last-Modified']).astimezone()
@@ -378,10 +384,6 @@ def is_url_newer(url, fname):
     return False
 
 
-@tenacity.retry(reraise=True, wait=tenacity.wait_none(),
-                retry=tenacity.retry_if_exception_type(requests.exceptions.RequestException),
-                stop=tenacity.stop_after_attempt(MAX_RETRIES),
-                before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG))
 def do_retrieve(url, fname):
     """Retrieve given url to target filepath fname."""
     folder = os.path.dirname(fname)
@@ -389,13 +391,17 @@ def do_retrieve(url, fname):
         os.makedirs(folder)
     if not is_url_newer(url, fname):
         return
-    resp = requests.get(url, timeout=CONNECT_TIMEOUT)
+    session = requests.Session()
+    retries = urllib3.util.Retry(total=MAX_RETRIES,
+                                 backoff_factor=BACKOFF_FACTOR,
+                                 status_forcelist=[500, 502, 503, 504])
+    session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+    resp = session.get(url, timeout=CONNECT_TIMEOUT)
     resp.raise_for_status()
     print(f"saving {fname}: ", end='', flush=True)
     with open(fname, 'wb') as fout:
         for chunk in resp.iter_content(FETCH_BLOCKSIZE):
             fout.write(chunk)
-            print('.', end='', flush=True)
     print('ok')
 
 
