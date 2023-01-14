@@ -29,6 +29,7 @@ from pathlib import Path
 from dataclasses import field, fields, dataclass
 
 from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collection
+from typing_extensions import Self
 
 # 3rd party
 import jinja2
@@ -78,7 +79,7 @@ class UnicodeVersion:
         """
         return cls(*map(int, version_str.split(".")[:3]))
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         >>> str(UnicodeVersion(12, 1, 0))
         '12.1.0'
@@ -135,7 +136,7 @@ class RenderDefinition:
     _template: jinja2.Template = field(init=False, repr=False)
     _render_context: dict[str, Any] = field(init=False, repr=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._template = JINJA_ENV.get_template(self.jinja_filename)
         self._render_context = {
             'utc_now': UTC_NOW,
@@ -157,7 +158,7 @@ class UnicodeVersionPyRenderDef(RenderDefinition):
     render_context: UnicodeVersionPyRenderCtx
 
     @classmethod
-    def new(cls, context: UnicodeVersionPyRenderCtx):
+    def new(cls, context: UnicodeVersionPyRenderCtx) -> Self:
         return cls(
             jinja_filename='unicode_versions.py.j2',
             output_filename=os.path.join(PATH_UP, 'wcwidth', 'unicode_versions.py'),
@@ -170,7 +171,7 @@ class UnicodeVersionRstRenderDef(RenderDefinition):
     render_context: UnicodeVersionRstRenderCtx
 
     @classmethod
-    def new(cls, context: UnicodeVersionRstRenderCtx):
+    def new(cls, context: UnicodeVersionRstRenderCtx) -> Self:
         return cls(
             jinja_filename='unicode_version.rst.j2',
             output_filename=os.path.join(PATH_UP, 'docs', 'unicode_version.rst'),
@@ -183,7 +184,7 @@ class UnicodeTableRenderDef(RenderDefinition):
     render_context: UnicodeTableRenderCtx
 
     @classmethod
-    def new(cls, filename: str, context: UnicodeTableRenderCtx):
+    def new(cls, filename: str, context: UnicodeTableRenderCtx) -> Self:
         _, ext = os.path.splitext(filename)
         if ext == '.py':
             jinja_filename = 'python_table.py.j2'
@@ -351,7 +352,7 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
         yield TableEntry(code_range, tuple(properties), comment)
 
 
-def parse_category(fname: str, category_codes: Container) -> TableDef:
+def parse_category(fname: str, category_codes: Container[str]) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
 
@@ -384,7 +385,7 @@ def get_http_session() -> requests.Session:
     return session
 
 
-def is_url_newer(url, fname):
+def is_url_newer(url: str, fname: str) -> bool:
     if not os.path.exists(fname):
         return True
     if '--no-check-last-modified' not in sys.argv[1:]:
@@ -397,7 +398,7 @@ def is_url_newer(url, fname):
     return False
 
 
-def do_retrieve(url, fname):
+def do_retrieve(url: str, fname: str) -> None:
     """Retrieve given url to target filepath fname."""
     folder = os.path.dirname(fname)
     if not os.path.exists(folder):
