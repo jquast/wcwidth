@@ -168,7 +168,7 @@ Other Languages
 History
 -------
 
-0.2.6 *2022-06-022*
+0.2.6 *2023-01-14*
   * **Updated** tables to include Unicode Specification 14.0.0 and 15.0.0.
   * **Changed** developer tools to use pip-compile, and to use jinja2 templates
     for code generation in `bin/update-tables.py` to prepare for possible
