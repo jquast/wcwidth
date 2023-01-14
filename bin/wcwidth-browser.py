@@ -116,7 +116,6 @@ class WcCombinedCharacterGenerator(object):
         """
         self.characters = []
         letters_o = ('o' * width)
-        #last_version = list_versions()[-1]
         for (begin, end) in ZERO_WIDTH[unicode_version]:
             for val in [_val for _val in
                         range(begin, end + 1)

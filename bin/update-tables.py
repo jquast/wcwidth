@@ -25,7 +25,6 @@ import logging
 import datetime
 import functools
 import unicodedata
-import urllib3.util
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
@@ -34,6 +33,7 @@ from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collec
 # 3rd party
 import jinja2
 import requests
+import urllib3.util
 import dateutil.parser
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
@@ -46,7 +46,7 @@ PATH_DATA = os.path.join(PATH_UP, 'data')
 # "wcwidth/bin/update-tables.py", even on Windows
 # not really a path, if the git repo isn't named "wcwidth"
 THIS_FILEPATH = ('wcwidth/' +
-    Path(__file__).resolve().relative_to(Path(PATH_UP).resolve()).as_posix())
+                 Path(__file__).resolve().relative_to(Path(PATH_UP).resolve()).as_posix())
 
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
@@ -63,14 +63,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass(order=True, frozen=True)
 class UnicodeVersion:
-    """A class for camparable unicode version"""
+    """A class for camparable unicode version."""
     major: int
     minor: int
     micro: int
 
     @classmethod
     def parse(cls, version_str: str) -> UnicodeVersion:
-        """parse a version string
+        """
+        parse a version string.
+
         >>> UnicodeVersion.parse("14.0.0")
         UnicodeVersion(major=14, minor=0, micro=0)
         """
@@ -86,7 +88,7 @@ class UnicodeVersion:
 
 @dataclass(frozen=True)
 class TableEntry:
-    """An entry of a unicode table"""
+    """An entry of a unicode table."""
     code_range: range | None
     properties: tuple[str, ...]
     comment: str
@@ -142,11 +144,11 @@ class RenderDefinition:
         }
 
     def render(self) -> str:
-        """just like jinja2.Template.render"""
+        """just like jinja2.Template.render."""
         return self._template.render(self._render_context)
 
     def generate(self) -> Iterator[str]:
-        """just like jinja2.Template.generate"""
+        """just like jinja2.Template.generate."""
         return self._template.generate(self._render_context)
 
 
@@ -225,7 +227,7 @@ def fetch_source_headers() -> UnicodeVersionRstRenderCtx:
         if match := re.search(pattern, fname):
             filename_matches.append(match)
 
-    filename_matches.sort(key = lambda m: (
+    filename_matches.sort(key=lambda m: (
         m.group(1),
         int(m.group(2)),
         int(m.group(3)),
@@ -275,10 +277,11 @@ def cite_source_description(filename: str) -> tuple[str, str]:
 
 
 def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
-    """Return a tuple of lookup tables for given values.
+    """
+    Return a tuple of lookup tables for given values.
+
     >>> make_table([0,1,2,5,6,7,9])
     ((0, 2), (5, 7), (9, 9))
-
     """
     table: list[tuple[int, int]] = []
     values_iter = iter(values)
@@ -324,7 +327,9 @@ def convert_values_to_string_table(
 
 
 def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
-    """Parse unicode tables.
+    """
+    Parse unicode tables.
+
     See details: https://www.unicode.org/reports/tr44/#Format_Conventions
     """
     for line in file:
