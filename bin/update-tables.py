@@ -374,15 +374,21 @@ def parse_category(fname: str, category_codes: Container) -> TableDef:
     return TableDef(version, date, txt_values)
 
 
+@functools.cache
+def get_http_session() -> requests.Session:
+    session = requests.Session()
+    retries = urllib3.util.Retry(total=MAX_RETRIES,
+                                 backoff_factor=BACKOFF_FACTOR,
+                                 status_forcelist=[500, 502, 503, 504])
+    session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+    return session
+
+
 def is_url_newer(url, fname):
     if not os.path.exists(fname):
         return True
     if '--no-check-last-modified' not in sys.argv[1:]:
-        session = requests.Session()
-        retries = urllib3.util.Retry(total=MAX_RETRIES,
-                                     backoff_factor=BACKOFF_FACTOR,
-                                     status_forcelist=[500, 502, 503, 504])
-        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+        session = get_http_session()
         resp = session.head(url, timeout=CONNECT_TIMEOUT)
         resp.raise_for_status()
         remote_url_dt = dateutil.parser.parse(resp.headers['Last-Modified']).astimezone()
@@ -398,11 +404,7 @@ def do_retrieve(url, fname):
         os.makedirs(folder)
     if not is_url_newer(url, fname):
         return
-    session = requests.Session()
-    retries = urllib3.util.Retry(total=MAX_RETRIES,
-                                 backoff_factor=BACKOFF_FACTOR,
-                                 status_forcelist=[500, 502, 503, 504])
-    session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+    session = get_http_session()
     resp = session.get(url, timeout=CONNECT_TIMEOUT)
     resp.raise_for_status()
     print(f"saving {fname}: ", end='', flush=True)
