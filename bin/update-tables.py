@@ -435,7 +435,7 @@ def main() -> None:
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
 
     for render_def in get_codegen_definitions():
-        with open(render_def.output_filename, 'w', encoding='utf-8') as fout:
+        with open(render_def.output_filename, 'w', encoding='utf-8', newline='\n') as fout:
             print(f'write {render_def.output_filename}: ', flush=True, end='')
             for data in render_def.generate():
                 fout.write(data)
