@@ -8,7 +8,7 @@ This library is mainly for CLI programs that carefully produce output for
 Terminals, or make pretend to be an emulator.
 
 **Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen ``1 charater : 1 cell``.  However,
+number of cells they occupy on the screen ``1 character : 1 cell``.  However,
 there are categories of characters that *occupy 2 cells* (full-wide), and
 others that *occupy 0* cells (zero-width).
 
