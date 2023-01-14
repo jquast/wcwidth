@@ -416,7 +416,11 @@ def do_retrieve(url, fname):
 
 def main() -> None:
     """Update east-asian, combining and zero width tables."""
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    if "--debug" in sys.argv[1:]:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.WARNING
+    logging.basicConfig(stream=sys.stderr, level=loglevel)
 
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
