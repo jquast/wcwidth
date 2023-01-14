@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 """
-Update the python Unicode tables for wcwidth.
+Update the Unicode code tables for wcwidth.  This is code generation using jinja2.
 
 This should be executed through tox,
 
     $ tox -e update
 
-Use argument --check-last-modified if data files were previously downloaded,
-but will refresh by last-modified check using HEAD request from unicode.org
-URLs.
+If data files were previously downloaded, but will refresh by last-modified
+check using HEAD request from unicode.org URLs, unless --no-check-last-modified
+is used:
 
     $ tox -e update -- --check-last-modified
 
 https://github.com/jquast/wcwidth
 """
-
-
 from __future__ import annotations
 
 # std imports
@@ -374,9 +372,13 @@ def parse_category(fname: str, category_codes: Container) -> TableDef:
 def is_url_newer(url, fname):
     if not os.path.exists(fname):
         return True
-    if '--check-last-modified' in sys.argv[1:]:
-        # XXX
-        resp = requests.head(url, timeout=CONNECT_TIMEOUT)
+    if '--no-check-last-modified' not in sys.argv[1:]:
+        session = requests.Session()
+        retries = urllib3.util.Retry(total=MAX_RETRIES,
+                                     backoff_factor=BACKOFF_FACTOR,
+                                     status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+        resp = session.head(url, timeout=CONNECT_TIMEOUT)
         resp.raise_for_status()
         remote_url_dt = dateutil.parser.parse(resp.headers['Last-Modified']).astimezone()
         local_file_dt = datetime.datetime.fromtimestamp(os.path.getmtime(fname)).astimezone()
