@@ -1,3 +1,4 @@
+# for python 3.9 *and newer*
 pytest
 pytest-cov
 flake8

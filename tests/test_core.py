@@ -1,7 +1,10 @@
 # coding: utf-8
 """Core tests for wcwidth module."""
 # 3rd party
-import pkg_resources
+try:
+    import importlib.metadata as importmeta
+except ImportError:
+    import importlib_metadata as importmeta
 
 # local
 import wcwidth
@@ -10,7 +13,7 @@ import wcwidth
 def test_package_version():
     """wcwidth.__version__ is expected value."""
     # given,
-    expected = pkg_resources.get_distribution('wcwidth').version
+    expected = importmeta.version('wcwidth')
 
     # exercise,
     result = wcwidth.__version__
