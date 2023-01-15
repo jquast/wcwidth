@@ -74,7 +74,7 @@ class WcWideCharacterGenerator(object):
 
     # pylint: disable=R0903
     #         Too few public methods (0/2)
-    def __init__(self, width=2, unicode_version='auto'):
+    def __init__(self, width, unicode_version):
         """
         Class constructor.
 
@@ -107,7 +107,7 @@ class WcCombinedCharacterGenerator(object):
     # pylint: disable=R0903
     #         Too few public methods (0/2)
 
-    def __init__(self, width=1):
+    def __init__(self, width, unicode_version):
         """
         Class constructor.
 
@@ -116,8 +116,7 @@ class WcCombinedCharacterGenerator(object):
         """
         self.characters = []
         letters_o = ('o' * width)
-        last_version = list_versions()[-1]
-        for (begin, end) in ZERO_WIDTH[last_version].items():
+        for (begin, end) in ZERO_WIDTH[unicode_version]:
             for val in [_val for _val in
                         range(begin, end + 1)
                         if _val <= LIMIT_UCS]:
@@ -318,7 +317,7 @@ class Pager(object):
         if self.term.is_a_tty:
             self.display_initialize()
         self.character_generator = self.character_factory(
-            self.screen.wide)
+            self.screen.wide, self.unicode_version)
         self._page_data = list()
         while True:
             try:

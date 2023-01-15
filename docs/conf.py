@@ -22,7 +22,6 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
 # local
-# 3rd-party imports
 import wcwidth
 
 # -- General configuration ------------------------------------------------

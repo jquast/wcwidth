@@ -44,7 +44,7 @@ def main():
     setuptools.setup(
         name='wcwidth',
         # NOTE: manually manage __version__ in wcwidth/__init__.py !
-        version='0.2.5',
+        version='0.2.6',
         description=(
             "Measures the displayed width of unicode strings in a terminal"),
         long_description=codecs.open(
@@ -82,7 +82,7 @@ def main():
             'combining',
             'console',
             'eastasian',
-            'emoji'
+            'emoji',
             'emulator',
             'terminal',
             'unicode',
