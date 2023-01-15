@@ -1,9 +1,10 @@
 # coding: utf-8
-"""Core tests for wcwidth module."""
-# 3rd party
+"""Core tests for wcwidth module. isort:skip_file"""
 try:
+    # std import
     import importlib.metadata as importmeta
 except ImportError:
+    # 3rd party for python3.7 and earlier
     import importlib_metadata as importmeta
 
 # local
