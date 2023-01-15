@@ -56,7 +56,7 @@ UTC_NOW = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
-MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
+MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '6'))
 BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
 
 logger = logging.getLogger(__name__)
