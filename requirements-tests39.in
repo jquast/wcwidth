@@ -5,9 +5,11 @@ flake8
 autopep8
 docformatter
 isort
-pylint
 pydocstyle
 restructuredtext_lint
 doc8
 pygments
+pylint>=2.15
+astroid>=2.11
+wrapt>=1.14
 

@@ -4,14 +4,18 @@
 #
 #    pip-compile --no-emit-index-url --output-file=requirements-tests39.txt requirements-tests39.in
 #
-astroid==2.9.3
-    # via pylint
+astroid==2.13.2
+    # via
+    #   -r requirements-tests39.in
+    #   pylint
 attrs==21.4.0
     # via pytest
 autopep8==1.6.0
     # via -r requirements-tests39.in
 coverage[toml]==6.3.2
     # via pytest-cov
+dill==0.3.6
+    # via pylint
 doc8==0.10.1
     # via -r requirements-tests39.in
 docformatter==1.4
@@ -56,7 +60,7 @@ pygments==2.11.2
     # via
     #   -r requirements-tests39.in
     #   doc8
-pylint==2.12.2
+pylint==2.15.10
     # via -r requirements-tests39.in
 pyparsing==3.0.7
     # via packaging
@@ -75,21 +79,21 @@ snowballstemmer==2.2.0
 stevedore==3.5.0
     # via doc8
 toml==0.10.2
-    # via
-    #   autopep8
-    #   pylint
+    # via autopep8
 tomli==2.0.1
     # via
     #   coverage
+    #   pylint
     #   pytest
+tomlkit==0.11.6
+    # via pylint
 typing-extensions==4.4.0
     # via
     #   astroid
     #   pylint
 untokenize==0.1.1
     # via docformatter
-wrapt==1.13.3
-    # via astroid
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
+wrapt==1.14.1
+    # via
+    #   -r requirements-tests39.in
+    #   astroid
