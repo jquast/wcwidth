@@ -95,7 +95,7 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
-Full API Documentation at http://wcwidth.readthedocs.org
+Full API Documentation at https://wcwidth.readthedocs.org
 
 ==========
 Developing
@@ -128,7 +128,7 @@ This library is used in:
 - `jquast/blessed`_: a thin, practical wrapper around terminal capabilities in
   Python.
 
-- `jonathanslenders/python-prompt-toolkit`_: a Library for building powerful
+- `prompt-toolkit/python-prompt-toolkit`_: a Library for building powerful
   interactive command lines in Python.
 
 - `dbcli/pgcli`_: Postgres CLI with autocompletion and syntax highlighting.
@@ -141,7 +141,7 @@ This library is used in:
 - `astanin/python-tabulate`_: Pretty-print tabular data in Python, a library
   and a command-line utility.
 
-- `LuminosoInsight/python-ftfy`_: Fixes mojibake and other glitches in Unicode
+- `rspeer/python-ftfy`_: Fixes mojibake and other glitches in Unicode
   text.
 
 - `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG
@@ -159,7 +159,7 @@ Other Languages
 - `Text::CharWidth`_: Perl
 - `bluebear94/Terminal-WCWidth`: Perl 6
 - `mattn/go-runewidth`_: Go
-- `emugel/wcwidth`_: Haxe
+- `grepsuzette/wcwidth`_: Haxe
 - `aperezdc/lua-wcwidth`: Lua
 - `joachimschmidt557/zig-wcwidth`: Zig
 - `fumiyas/wcwidth-cjk`: `LD_PRELOAD` override
@@ -232,7 +232,7 @@ History
 
 This code was originally derived directly from C code of the same name,
 whose latest version is available at
-http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
+https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 
  * Markus Kuhn -- 2007-05-26 (Unicode 5.0)
  *
@@ -240,11 +240,11 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
-.. _`tox`: https://testrun.org/tox/latest/install.html
+.. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
 .. _`bin/`: https://github.com/jquast/wcwidth/tree/master/bin
-.. _`bin/wcwidth-browser.py`: https://github.com/jquast/wcwidth/tree/master/bin/wcwidth-browser.py
+.. _`bin/wcwidth-browser.py`: https://github.com/jquast/wcwidth/blob/master/bin/wcwidth-browser.py
 .. _`Thomas Ballinger`: https://github.com/thomasballinger
 .. _`Leta Montopoli`: https://github.com/lmontopo
 .. _`Philip Craig`: https://github.com/philipc
@@ -259,18 +259,18 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
 .. _`dbcli/pgcli`: https://github.com/dbcli/pgcli
-.. _`jonathanslenders/python-prompt-toolkit`: https://github.com/jonathanslenders/python-prompt-toolkit
+.. _`prompt-toolkit/python-prompt-toolkit`: https://github.com/prompt-toolkit/python-prompt-toolkit
 .. _`timoxley/wcwidth`: https://github.com/timoxley/wcwidth
-.. _`wcwidth(3)`:  http://man7.org/linux/man-pages/man3/wcwidth.3.html
-.. _`wcswidth(3)`: http://man7.org/linux/man-pages/man3/wcswidth.3.html
+.. _`wcwidth(3)`:  https://man7.org/linux/man-pages/man3/wcwidth.3.html
+.. _`wcswidth(3)`: https://man7.org/linux/man-pages/man3/wcswidth.3.html
 .. _`astanin/python-tabulate`: https://github.com/astanin/python-tabulate
 .. _`janlelis/unicode-display_width`: https://github.com/janlelis/unicode-display_width
-.. _`LuminosoInsight/python-ftfy`: https://github.com/LuminosoInsight/python-ftfy
+.. _`rspeer/python-ftfy`: https://github.com/rspeer/python-ftfy
 .. _`alecrabbit/php-wcwidth`: https://github.com/alecrabbit/php-wcwidth
 .. _`Text::CharWidth`: https://metacpan.org/pod/Text::CharWidth
 .. _`bluebear94/Terminal-WCWidth`: https://github.com/bluebear94/Terminal-WCWidth
 .. _`mattn/go-runewidth`: https://github.com/mattn/go-runewidth
-.. _`emugel/wcwidth`: https://github.com/emugel/wcwidth
+.. _`grepsuzette/wcwidth`: https://github.com/grepsuzette/wcwidth
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg
@@ -282,7 +282,7 @@ http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
     :target: https://pypi.org/project/wcwidth/
 .. |codecov| image:: https://codecov.io/gh/jquast/wcwidth/branch/master/graph/badge.svg
     :alt: codecov.io Code Coverage
-    :target: https://codecov.io/gh/jquast/wcwidth/
-.. |license| image:: https://img.shields.io/github/license/jquast/wcwidth.svg
-    :target: https://pypi.python.org/pypi/wcwidth/
+    :target: https://app.codecov.io/gh/jquast/wcwidth/
+.. |license| image:: https://img.shields.io/pypi/l/wcwidth.svg
+    :target: https://pypi.org/project/wcwidth/
     :alt: MIT License
