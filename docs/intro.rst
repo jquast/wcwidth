@@ -151,6 +151,15 @@ This library is used in:
 - `peterbrittain/asciimatics`_: Package to help people create full-screen text
   UIs.
 
+- `python-cmd2/cmd2`_: A tool for building interactive command line apps
+
+- `stratis-storage/stratis-cli`_: CLI for the Stratis project
+
+- `ihabunek/toot`_: A Mastodon CLI/TUI client
+
+- `saulpw/visidata`_: Terminal spreadsheet multitool for discovering and
+  arranging data
+
 ===============
 Other Languages
 ===============
@@ -282,6 +291,10 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`joachimschmidt557/zig-wcwidth`: https://github.com/joachimschmidt557/zig-wcwidth
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
+.. _`python-cmd2/cmd2`: https://github.com/python-cmd2/cmd2
+.. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
+.. _`ihabunek/toot`: https://github.com/ihabunek/toot
+.. _`saulpw/visidata`: https://github.com/saulpw/visidata
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
