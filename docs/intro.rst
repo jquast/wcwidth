@@ -103,7 +103,7 @@ Developing
 
 Install wcwidth in editable mode::
 
-   pip install -e.
+   pip install -e .
 
 Execute unit tests using tox_::
 
@@ -115,13 +115,14 @@ Regenerate python code tables from latest Unicode Specification data files::
 
 Supplementary tools for browsing and testing terminals for wide unicode
 characters are found in the `bin/`_ of this project's source code.  Just ensure
-to first ``pip install -erequirements-develop.txt`` from this projects main
+to first ``pip install -r requirements-develop.txt`` from this projects main
 folder. For example, an interactive browser for testing::
 
   python ./bin/wcwidth-browser.py
 
+====
 Uses
-----
+====
 
 This library is used in:
 
@@ -150,23 +151,25 @@ This library is used in:
 - `peterbrittain/asciimatics`_: Package to help people create full-screen text
   UIs.
 
+===============
 Other Languages
----------------
+===============
 
 - `timoxley/wcwidth`_: JavaScript
 - `janlelis/unicode-display_width`_: Ruby
 - `alecrabbit/php-wcwidth`_: PHP
 - `Text::CharWidth`_: Perl
-- `bluebear94/Terminal-WCWidth`: Perl 6
+- `bluebear94/Terminal-WCWidth`_: Perl 6
 - `mattn/go-runewidth`_: Go
 - `grepsuzette/wcwidth`_: Haxe
-- `aperezdc/lua-wcwidth`: Lua
-- `joachimschmidt557/zig-wcwidth`: Zig
-- `fumiyas/wcwidth-cjk`: `LD_PRELOAD` override
-- `joshuarubin/wcwidth9`: Unicode version 9 in C
+- `aperezdc/lua-wcwidth`_: Lua
+- `joachimschmidt557/zig-wcwidth`_: Zig
+- `fumiyas/wcwidth-cjk`_: `LD_PRELOAD` override
+- `joshuarubin/wcwidth9`_: Unicode version 9 in C
 
+=======
 History
--------
+=======
 
 0.2.6 *2023-01-14*
   * **Updated** tables to include Unicode Specification 14.0.0 and 15.0.0.
@@ -276,7 +279,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`nbedos/termtosvg`: https://github.com/nbedos/termtosvg
 .. _`peterbrittain/asciimatics`: https://github.com/peterbrittain/asciimatics
 .. _`aperezdc/lua-wcwidth`: https://github.com/aperezdc/lua-wcwidth
+.. _`joachimschmidt557/zig-wcwidth`: https://github.com/joachimschmidt557/zig-wcwidth
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
+.. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
