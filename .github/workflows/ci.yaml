@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: '3.8'
+          - python: '3.11'
             TOXENV: update,compile,autopep8,docformatter,isort,pylint,flake8,pydocstyle,docs
           - python: '3.7'
             TOXENV: py37,codecov
