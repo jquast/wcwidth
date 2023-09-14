@@ -33,6 +33,4 @@ Pull Request!
 
 .. autofunction:: wcwidth._wcmatch_version
 
-.. autofunction:: wcwidth._get_package_version
-
-.. autofunction:: wcwidth._wcmatch_version
+.. autofunction:: wcwidth._wcversion_value
