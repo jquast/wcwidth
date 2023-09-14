@@ -1,0 +1,48 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: "36 4 * * 2"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: 3.8
+            TOXENV: update,compile,autopep8,docformatter,isort,pylint,flake8,flake8_tests,pydocstyle,docs
+          - python: 2.7
+            TOXENV: py27,codecov
+          - python: 3.4
+            TOXENV: py34,codecov
+          - python: 3.5
+            TOXENV: py35,codecov
+          - python: 3.6
+            TOXENV: py36,codecov
+          - python: 3.7
+            TOXENV: py37,codecov
+          - python: 3.8
+            TOXENV: py38,codecov
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '${{ matrix.python }}'
+
+      - run: pip install tox tox-gh-actions
+
+      - name: Run tests
+        run: tox
+        env:
+          TOX_ENV: ${{ matrix.TOXENV }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
