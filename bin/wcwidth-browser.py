@@ -159,12 +159,12 @@ class Style(object):
     #         Too few public methods (0/2)
     @staticmethod
     def attr_major(text):
-        """non-stylized callable for "major" text, for non-ttys."""
+        """Non-stylized callable for "major" text, for non-ttys."""
         return text
 
     @staticmethod
     def attr_minor(text):
-        """non-stylized callable for "minor" text, for non-ttys."""
+        """Non-stylized callable for "minor" text, for non-ttys."""
         return text
 
     delimiter = '|'

@@ -72,7 +72,7 @@ class UnicodeVersion:
     @classmethod
     def parse(cls, version_str: str) -> UnicodeVersion:
         """
-        parse a version string.
+        Parse a version string.
 
         >>> UnicodeVersion.parse("14.0.0")
         UnicodeVersion(major=14, minor=0, micro=0)
@@ -145,11 +145,11 @@ class RenderDefinition:
         }
 
     def render(self) -> str:
-        """just like jinja2.Template.render."""
+        """Just like jinja2.Template.render."""
         return self._template.render(self._render_context)
 
     def generate(self) -> Iterator[str]:
-        """just like jinja2.Template.generate."""
+        """Just like jinja2.Template.generate."""
         return self._template.generate(self._render_context)
 
 

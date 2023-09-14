@@ -1,5 +1,5 @@
 """
-wcwidth module.
+Wcwidth module.
 
 https://github.com/jquast/wcwidth
 """
