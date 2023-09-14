@@ -33,7 +33,14 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+          - "pypy-2.7"
+          - "pypy-3.7"
+          - "pypy-3.8"
+          - "pypy-3.9"
+          - "pypy-3.10"
         include:
+          - os: ubuntu-22.04
+            python-version: "pypy-3.6"
           - os: ubuntu-20.04
             python-version: "3.6"
           - os: ubuntu-20.04
@@ -58,11 +65,19 @@ jobs:
         shell: bash
         run: |
           V=${{ matrix.python-version }}
-          V=py$(echo $V | tr -d .)
 
+          if [[ "$V" = pypy-* ]]; then
+            V=$(echo $V | tr -d .-)
+            IS_PYPY=1
+          else
+            V=py$(echo $V | tr -d .)
+            IS_PYPY=0
+          fi
+
+          echo IS_PYPY=$IS_PYPY >>$GITHUB_ENV
           echo TOX_PYTHON=$V >>$GITHUB_ENV
 
-          if test ${{ matrix.python-version }} = "2.7"; then
+          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
             python -m pip install tox
           else
             python -Im pip install tox
@@ -71,7 +86,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          if test ${{ matrix.python-version }} = "2.7"; then
+          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
             python -m tox -e ${{ env.TOX_PYTHON }}
           else
             python -Im tox -e ${{ env.TOX_PYTHON }}
