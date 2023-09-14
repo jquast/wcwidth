@@ -24,11 +24,11 @@ jobs:
           - python: '3.8'
             TOXENV: py38,codecov
           - python: '3.9'
-            TOXENV: py38,codecov
+            TOXENV: py39,codecov
           - python: '3.10'
-            TOXENV: py38,codecov
+            TOXENV: py310,codecov
           - python: '3.11'
-            TOXENV: py38,codecov
+            TOXENV: py311,codecov
     steps:
       - name: Checkout
         uses: actions/checkout@v3
