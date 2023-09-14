@@ -82,7 +82,7 @@ except ImportError:
 
 # global cache
 _UNICODE_CMPTABLE = None
-_PY3 = (sys.version_info[0] >= 3)
+_PY3 = sys.version_info[0] >= 3
 
 
 # NOTE: created by hand, there isn't anything identifiable other than
