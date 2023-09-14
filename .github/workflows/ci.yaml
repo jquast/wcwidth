@@ -36,7 +36,7 @@ jobs:
         with:
           python-version: '${{ matrix.python }}'
 
-      - run: pip install tox tox-gh-actions
+      - run: pip install tox
 
       - name: Run tests
         run: tox
