@@ -61,6 +61,9 @@ release files:
 ``DerivedGeneralCategory-15.0.0.txt``
   *Date: 2022-04-26, 23:14:35 GMT*
 
+``DerivedGeneralCategory-15.1.0.txt``
+  *Date: 2023-07-28, 23:34:02 GMT*
+
 ``EastAsianWidth-4.1.0.txt``
   *Date: 2005-03-17, 15:21:00 PST [KW]*
 
@@ -114,4 +117,7 @@ release files:
 
 ``EastAsianWidth-15.0.0.txt``
   *Date: 2022-05-24, 17:40:20 GMT [KW, LI]*
+
+``EastAsianWidth-15.1.0.txt``
+  *Date: 2023-07-28, 23:34:08 GMT*
 
