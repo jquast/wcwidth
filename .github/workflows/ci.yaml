@@ -19,8 +19,6 @@ jobs:
         include:
           - python: 3.8
             TOXENV: update,compile,autopep8,docformatter,isort,pylint,flake8,flake8_tests,pydocstyle,docs
-          - python: 2.7
-            TOXENV: py27,codecov
           - python: 3.4
             TOXENV: py34,codecov
           - python: 3.5
