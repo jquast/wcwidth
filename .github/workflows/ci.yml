@@ -123,16 +123,22 @@ jobs:
         with:
           name: coverage-data
 
-      - name: Combine coverage & fail if it's <100%.
+      - name: Combine coverage data
         run: |
           python -Im pip install coverage[toml]
 
           python -Im coverage combine
           python -Im coverage html --skip-covered --skip-empty
+          python -Im coverage xml
 
           # Report and write to summary.
           python -Im coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+
+      - name: Fail if coverage is <100%.
+        run: |
           # Report again and fail if under 100%.
           python -Im coverage report --fail-under=100
 
