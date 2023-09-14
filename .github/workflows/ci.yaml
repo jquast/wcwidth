@@ -17,17 +17,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 3.8
+          - python: '3.8'
             TOXENV: update,compile,autopep8,docformatter,isort,pylint,flake8,flake8_tests,pydocstyle,docs
-          - python: 3.4
-            TOXENV: py34,codecov
-          - python: 3.5
-            TOXENV: py35,codecov
-          - python: 3.6
-            TOXENV: py36,codecov
-          - python: 3.7
+          - python: '3.7'
             TOXENV: py37,codecov
-          - python: 3.8
+          - python: '3.8'
+            TOXENV: py38,codecov
+          - python: '3.9'
+            TOXENV: py38,codecov
+          - python: '3.10'
             TOXENV: py38,codecov
     steps:
       - name: Checkout
