@@ -9,7 +9,7 @@ on:
     - cron: "36 4 * * 2"
 
 jobs:
-  analyze:
+  main:
     name: Analyze
     runs-on: ubuntu-latest
 
