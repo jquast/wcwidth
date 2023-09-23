@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ["*"]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  # https://force-color.org/
+  FORCE_COLOR: "1"
+  # https://pip.pypa.io/en/stable/topics/configuration/#environment-variables
+  # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-disable-pip-version-check
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-no-python-version-warning
+  PIP_NO_PYTHON_VERSION_WARNING: "1"
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "pypy-2.7"
+          - "pypy-3.7"
+          - "pypy-3.8"
+          - "pypy-3.9"
+          - "pypy-3.10"
+        include:
+          - os: ubuntu-22.04
+            python-version: "pypy-3.6"
+          - os: ubuntu-20.04
+            python-version: "3.6"
+          - os: ubuntu-20.04
+            python-version: "3.5"
+          - os: ubuntu-20.04
+            container: python:2.7-buster
+            python-version: "2.7"
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+          cache: pip
+        if: '! matrix.container'
+
+      - name: Prepare tox
+        shell: bash
+        run: |
+          V=${{ matrix.python-version }}
+
+          if [[ "$V" = pypy-* ]]; then
+            V=$(echo $V | tr -d .-)
+            IS_PYPY=1
+          else
+            V=py$(echo $V | tr -d .)
+            IS_PYPY=0
+          fi
+
+          echo IS_PYPY=$IS_PYPY >>$GITHUB_ENV
+          echo TOX_PYTHON=$V >>$GITHUB_ENV
+
+          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
+            python -m pip install tox
+          else
+            python -Im pip install tox
+          fi
+
+      - name: Run tests
+        shell: bash
+        run: |
+          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
+            python -m tox -e ${{ env.TOX_PYTHON }}
+          else
+            python -Im tox -e ${{ env.TOX_PYTHON }}
+          fi
+
+      - name: Rename coverage data
+        shell: bash
+        run: |
+          if test -f .coverage; then
+            mv .coverage{,.${{ matrix.os }}.${{ env.TOX_PYTHON }}.$(date +"%Y-%m-%d_%H%M%S")}
+          fi
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-data
+          path: .coverage.*
+          if-no-files-found: ignore
+
+  coverage:
+    name: Combine & check coverage.
+    runs-on: ubuntu-latest
+    needs: tests
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version-file: .python-version-default
+          cache: pip
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage-data
+
+      - name: Combine coverage data
+        run: |
+          python -Im pip install coverage[toml]
+
+          python -Im coverage combine
+          python -Im coverage html --skip-covered --skip-empty
+          python -Im coverage xml
+
+          # Report and write to summary.
+          python -Im coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+
+      - name: Fail if coverage is <100%.
+        run: |
+          # Report again and fail if under 100%.
+          python -Im coverage report --fail-under=100
+
+      - name: Upload HTML report if check failed.
+        uses: actions/upload-artifact@v3
+        with:
+          name: html-report
+          path: htmlcov
+        if: ${{ failure() }}
