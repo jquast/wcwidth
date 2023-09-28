@@ -217,7 +217,7 @@ Other Languages
 History
 =======
 
-0.2.7 *2023-09-23*
+0.2.7 *2023-09-28*
   * **Updated** tables to include Unicode Specification 15.1.0.
 
 0.2.6 *2023-01-14*
