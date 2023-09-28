@@ -54,8 +54,8 @@ def readline(term, width):
         inp = term.inkey()
         if inp.code == term.KEY_ENTER:
             break
-        if inp.code == term.KEY_ESCAPE or inp == chr(3):
-            text = None
+        if inp.code == term.KEY_ESCAPE:
+            text = ''
             break
         if not inp.is_sequence and len(text) < width:
             text += inp
@@ -478,7 +478,7 @@ class Pager(object):
                     # library performs best-match (with warnings)
                     self.unicode_version = _wcmatch_version(inp)
                     self.initialize_page_data()
-                    self.on_resize(None, None)
+                self.on_resize(None, None)
 
     def _process_keystroke_movement(self, inp, idx, offset):
         """Process keystrokes that adjust index and offset."""

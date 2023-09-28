@@ -107,7 +107,7 @@ Install wcwidth in editable mode::
 
 Execute unit tests using tox_::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312
+   tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312
 
 Updating Unicode Version
 ------------------------
@@ -217,7 +217,7 @@ Other Languages
 History
 =======
 
-Unreleased *2023-?-?*
+0.2.7 *2023-09-28*
   * **Updated** tables to include Unicode Specification 15.1.0.
 
 0.2.6 *2023-01-14*
