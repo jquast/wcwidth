@@ -217,8 +217,8 @@ Other Languages
 History
 =======
 
-0.2.8 Unreleased
-  * Include requirements files in the source distibution
+0.2.8 *2023-09-29*
+  * Include requirements files in the source distibution (`PR #82`).
 
 0.2.7 *2023-09-28*
   * **Updated** tables to include Unicode Specification 15.1.0.
