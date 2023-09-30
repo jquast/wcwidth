@@ -63,7 +63,6 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 from __future__ import division
 
 # std imports
-import re
 import os
 import sys
 import warnings
