@@ -337,9 +337,8 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname)
         # Determine values of zero-width character lookup table by the following category codes
         table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn', 'Cf', 'Zl', 'Zp', 'Sk'))
-
         # Inject NULL into all table versions.
-        table[version].values.append(('0x00000', '0x00000', name_ucs('\x00')))
+        table[version].values.append(('0x00000', '0x00000', 'NULL'))
         table[version].values.sort()
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
