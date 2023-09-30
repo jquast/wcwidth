@@ -156,21 +156,12 @@ def _wcswidth(ucs, unicode_version, errors='ignore'):
     :param str unicode_version: Return value of :func:`_wcmatch_version`.
     :param str errors: for POSIX compatibility in :func:`wcswidth`,
         setting argument ``errors='strict'`` will raise a UnicodeError
-        on any C0/C1 Control Characters.
+        if ``ucs`` contains any C0/C1 Control Characters.
 
     Any ZWJ character is measured as though the current character
     width is zero, and the subsequent character will occupy the same
     cell as the preceeding.
 
-    Although a list of Recommened Emoji ZWJ Sequences is made available by
-    unicode data files and as tests in this library, for performance reasons we
-    trust any combination. This library is not intended to defend against
-    non-recommended combinations ("glitch text").
-
-    A C1 Control character is abnormal and meant for machine-machine communication.
-    C0 Control characters, such as Tab ('\t') cannot be accounted for, as the
-    current screen position and tabstop value is not known. Both C0 and C1
-    control characters are measured as width 0.
     """
     idx = 0
     measured_width = 0
@@ -269,25 +260,22 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         return -1
 
 
-def width(text, unicode_version='auto', emoji_zwj_version='auto'):
+def width(text, unicode_version='auto'):
     """
     Given a unicode string, return its printable length on a terminal.
 
-    Unlike :func:`wcswidth`, ``-1`` is never returned when a non-printable
-    character is encountered, and, Emoji Zero Width Joiner (ZWJ) Sequences are
-    handled.
+    Unlike :func:`wcswidth`, ``-1`` is never returned when a C0 or C1 control
+    character is encountered.
 
     :param str text: Measure width of given unicode string.
     :param str unicode_version: An explicit definition of the unicode version
         level to target for measurement, may be ``auto`` (default), which uses
         the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
         available unicode version, otherwise.
-    :param str emoji_zwj_version: An explicit definition of the unicode emoji
-        version to use, may be 'None' for no support.
     :rtype: int
     :returns: Approximate number cells needed to display the characters of ``text``.
     """
-    unicode_version = _wcmatch_version(unicode_version)
+    return _wcswidth(text, unicode_version=_wcmatch_version(unicode_version), errors='ignore')
 
 
 @lru_cache(maxsize=128)
