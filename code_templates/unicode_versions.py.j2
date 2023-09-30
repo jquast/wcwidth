@@ -20,15 +20,3 @@ def list_versions():
         "{{version}}",
 {%- endfor %}
     )
-
-def list_zwj_versions():
-    """
-    Return Unicode Emoji version levels supported by this module release.
-
-    :rtype: list[str]
-    """
-    return (
-{%- for zjw_version in zjw_versions %}
-        "{{zjw_version}}",
-{%- endfor %}
-    )

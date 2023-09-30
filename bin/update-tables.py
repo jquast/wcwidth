@@ -581,7 +581,8 @@ def main() -> None:
     # code.
     def get_codegen_definitions() -> Iterator[RenderDefinition]:
         yield UnicodeVersionPyRenderDef.new(
-            UnicodeVersionPyRenderCtx(versions=fetch_unicode_versions())
+            UnicodeVersionPyRenderCtx(fetch_unicode_versions())
+        )
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())

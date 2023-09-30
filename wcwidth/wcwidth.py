@@ -71,7 +71,7 @@ import warnings
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .unicode_versions import list_versions, list_zwj_versions
+from .unicode_versions import list_versions
 
 try:
     # std imports
@@ -217,7 +217,7 @@ def wcwidth(wc, unicode_version='auto'):
 
         - C1 control characters and DEL (U+07F through U+0A0).
 
-    The following have a column width of 0, by Unicode General Category code:
+    The following have a column width of 0, by general category code of:
       - ``Me``: an enclosing combining mark
       - ``Mn``: a nonspacing combining mark (zero advance width)
       - ``Cf``: a format control character
