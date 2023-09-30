@@ -43,7 +43,6 @@ URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWid
 URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
 URL_EMOJI_ZWJ_SEQUENCES = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
-EMOJI_LEGACY_ZWJ_VERSIONS = ['2.0', '3.0', '4.0', '5.0']
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
