@@ -24,23 +24,26 @@ import string
 import logging
 import datetime
 import functools
+import collections
 import unicodedata
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
 from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collection
-from typing_extensions import Self
 
 # 3rd party
 import jinja2
 import requests
 import urllib3.util
 import dateutil.parser
+from typing_extensions import Self
 
 URL_UNICODE_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
 URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
 URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
+URL_EMOJI_ZWJ_SEQUENCES = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
+EMOJI_LEGACY_ZWJ_VERSIONS = ['2.0', '3.0', '4.0', '5.0']
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
@@ -52,7 +55,7 @@ THIS_FILEPATH = ('wcwidth/' +
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True)
-UTC_NOW = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
@@ -64,34 +67,61 @@ logger = logging.getLogger(__name__)
 
 @dataclass(order=True, frozen=True)
 class UnicodeVersion:
-    """A class for camparable unicode version."""
+    """A class for comparing 2 and 3-digit versions used in unicode data files"""
     major: int
     minor: int
-    micro: int
+    micro: int = None
 
     @classmethod
     def parse(cls, version_str: str) -> UnicodeVersion:
         """
-        parse a version string.
+        Parse version strings used by unicode data files.
 
         >>> UnicodeVersion.parse("14.0.0")
         UnicodeVersion(major=14, minor=0, micro=0)
+
+        >>> UnicodeVersion.parse("15.1")
+        UnicodeVersion(major=15, minor=1, micro=None)
         """
-        return cls(*map(int, version_str.split(".")[:3]))
+        versions = list(map(int, version_str.split(".")[:3]))
+        while len(versions) < 3:
+            versions.append(None)
+        return cls(*versions)
 
     def __str__(self) -> str:
         """
         >>> str(UnicodeVersion(12, 1, 0))
         '12.1.0'
+        >>> str(UnicodeVersion(15, 1, None))
+        '15.1'
+
         """
-        return f'{self.major}.{self.minor}.{self.micro}'
+        maybe_micro = ''
+        if self.micro is not None:
+            maybe_micro = f'.{self.micro}'
+        return f'{self.major}.{self.minor}{maybe_micro}'
+
+    @property
+    def major_minor(self) -> str:
+        """
+        >>> UnicodeVersion(11, 0, 0).major_minor
+        '11.0'
+        """
+        return f'{self.major}.{self.minor}'
 
 
 @dataclass(frozen=True)
 class TableEntry:
     """An entry of a unicode table."""
-    code_range: range | None
+    code_range: tuple[int, int] | None
     properties: tuple[str, ...]
+    comment: str
+
+@dataclass(frozen=True)
+class SequenceEntry:
+    """An entry of a unicode sequence."""
+    code_seq: str | None
+    description: str
     comment: str
 
 
@@ -102,9 +132,15 @@ class TableDef:
     values: list[tuple[str, str, str]]
 
 
+@dataclass
+class SequenceDef:
+    filename: str
+    date: str
+    sequences: dict[int, list[tuple[str, str]]]
+
+
 @dataclass(frozen=True)
 class RenderContext:
-
     def to_dict(self) -> dict[str, Any]:
         return {field.name: getattr(self, field.name)
                 for field in fields(self)}
@@ -124,6 +160,12 @@ class UnicodeVersionRstRenderCtx(RenderContext):
 class UnicodeTableRenderCtx(RenderContext):
     variable_name: str
     table: Mapping[UnicodeVersion, TableDef]
+
+
+@dataclass(frozen=True)
+class UnicodeRegexRenderCtx(RenderContext):
+    variable_name: str
+    patterns: Mapping[UnicodeVersion, str]
 
 
 @dataclass
@@ -200,6 +242,44 @@ class UnicodeTableRenderDef(RenderDefinition):
             render_context=context,
         )
 
+@dataclass
+class UnicodeSequenceRenderDef(RenderDefinition):
+    render_context: UnicodeTableRenderCtx
+
+    @classmethod
+    def new(cls, filename: str, context: UnicodeTableRenderCtx) -> Self:
+        _, ext = os.path.splitext(filename)
+        if ext == '.py':
+            jinja_filename = 'emoji_zwj_sequences.py.j2'
+        else:
+            raise ValueError('filename must be Python')
+
+        return cls(
+            jinja_filename=jinja_filename,
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=context,
+        )
+
+@dataclass
+class UnicodeRegexRenderDef(RenderDefinition):
+    render_context: UnicodeRegexRenderCtx
+
+    @classmethod
+    def new(cls, filename: str, context: UnicodeTableRenderCtx) -> Self:
+        _, ext = os.path.splitext(filename)
+        if ext == '.py':
+            jinja_filename = 're_patterns.py.j2'
+        else:
+            raise ValueError('filename must be Python')
+
+        return cls(
+            jinja_filename=jinja_filename,
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=context,
+        )
+
+
+
 
 @functools.cache
 def fetch_unicode_versions() -> list[UnicodeVersion]:
@@ -217,6 +297,28 @@ def fetch_unicode_versions() -> list[UnicodeVersion]:
     versions.sort()
     return versions
 
+def fetch_zwj_versions() -> list[UnicodeVersion]:
+    """Determine Unicode Versions with Emoji Zero Width Join character support."""
+    # From Unicode® Technical Standard #51
+    #
+    # > Starting with Version 11.0 of this specification, the repertoire of
+    # > emoji characters is synchronized with the Unicode Standard, and has the
+    # > same version numbering system. For details, see Section 1.5.2, Versioning.
+    #
+    # http://www.unicode.org/reports/tr51/#Versioning
+    #
+    fname = os.path.join(PATH_DATA, URL_EMOJI_ZWJ_SEQUENCES.rsplit('/', 1)[-1])
+    filename, ext = os.path.splitext(fname)
+    fname = filename + '-latest' + ext
+    do_retrieve(url=URL_EMOJI_ZWJ_SEQUENCES.format(version='latest'), fname=fname)
+    pattern = re.compile(r'.*# E([0-9.]+)')
+    versions = set()
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if match := re.match(pattern, line):
+                version = match.group(1)
+                versions.add(UnicodeVersion.parse(version))
+    return sorted(versions)
 
 def fetch_source_headers() -> UnicodeVersionRstRenderCtx:
     # find all filenames with a version number in it,
@@ -260,11 +362,23 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname)
-        # TODO: test whether all of category, 'Cf' should be 'zero
-        #       width', or, just the subset 2060..2064, see open issue
-        #       https://github.com/jquast/wcwidth/issues/26
-        table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn',))
+        # Determine values of zero-width character lookup table by the following category codes
+        table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn', 'Cf', 'Zl', 'Zp', 'Sk'))
+
+        # Inject NULL into all table versions.
+        table[version].values.append(('0x00000', '0x00000', name_ucs('\x00')))
+        table[version].values.sort()
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
+
+
+def fetch_emoji_zero_data() -> UnicodeTableRenderCtx:
+    """Fetch the latest emoji zero width joiner (ZWJ)."""
+    table: dict[UnicodeVersion, SequenceDef] = {}
+    for version in fetch_zwj_versions():
+        fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-{version}.txt')
+        do_retrieve(url=URL_EMOJI_ZWJ_SEQUENCES.format(version=version), fname=fname)
+        table[version] = parse_zwj(fname=fname, version=version)
+    return UnicodeTableRenderCtx('EMOJI_ZWJ_SEQUENCES', table)
 
 
 def cite_source_description(filename: str) -> tuple[str, str]:
@@ -276,13 +390,12 @@ def cite_source_description(filename: str) -> tuple[str, str]:
 
     return fname, date
 
-
-def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
+def make_table(values: Collection[int]) -> list[tuple[int, int]]:
     """
-    Return a tuple of lookup tables for given values.
+    Return a tuple of (start, end) lookup pairs for given sequence of sorted values.
 
     >>> make_table([0,1,2,5,6,7,9])
-    ((0, 2), (5, 7), (9, 9))
+    [(0, 2), (5, 7), (9, 9)]
     """
     table: list[tuple[int, int]] = []
     values_iter = iter(values)
@@ -295,12 +408,17 @@ def make_table(values: Collection[int]) -> tuple[tuple[int, int], ...]:
             # continuation of existing range
             table.append((start, value,))
         else:
-            # put back existing range,
+            # insert back previous range,
             table.append((start, end,))
             # and start a new one
             table.append((value, value,))
-    return tuple(table)
+    return table
 
+def name_ucs(ucs: str) -> str:
+    try:
+        return string.capwords(unicodedata.name(ucs))
+    except ValueError:
+        return None
 
 def convert_values_to_string_table(
     values: Collection[tuple[int, int]],
@@ -308,17 +426,10 @@ def convert_values_to_string_table(
     """Convert integers into string table of (hex_start, hex_end, txt_description)."""
     pytable_values: list[tuple[str, str, str]] = []
     for start, end in values:
-        hex_start, hex_end = (f'0x{start:05x}', f'0x{end:05x}')
+        hex_start, hex_end = f'0x{start:05x}', f'0x{end:05x}'
         ucs_start, ucs_end = chr(start), chr(end)
-        name_start, name_end = '(nil)', '(nil)'
-        try:
-            name_start = string.capwords(unicodedata.name(ucs_start))
-        except ValueError:
-            pass
-        try:
-            name_end = string.capwords(unicodedata.name(ucs_end))
-        except ValueError:
-            pass
+        name_start = name_ucs(ucs_start) or '(nil)'
+        name_end = name_ucs(ucs_end) or '(nil)'
         if name_start != name_end:
             txt_description = f'{name_start[:24].rstrip():24s}..{name_end[:24].rstrip()}'
         else:
@@ -346,8 +457,7 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
             start, end = code_points_str.split('..')
         else:
             start = end = code_points_str
-        code_range = range(int(start, base=16),
-                           int(end, base=16) + 1)
+        code_range = (int(start, base=16), int(end, base=16) + 1)
 
         yield TableEntry(code_range, tuple(properties), comment)
 
@@ -364,15 +474,57 @@ def parse_category(fname: str, category_codes: Container[str]) -> TableDef:
         # and "date string" from second line
         date = next(table_iter).comment.split(':', 1)[1].strip()
 
-        values: set[int] = set()
-        for entry in table_iter:
-            if (entry.code_range is not None
-                    and entry.properties[0] in category_codes):
-                values.update(entry.code_range)
-
-    txt_values = convert_values_to_string_table(make_table(sorted(values)))
+        values: list[tuple[int, int]] = (
+            codepoint
+            for entry in table_iter
+            if entry.code_range is not None and entry.properties[0] in category_codes
+            for codepoint in range(*entry.code_range)
+            )
+        txt_values = convert_values_to_string_table(make_table(values))
     print('ok')
     return TableDef(version, date, txt_values)
+
+
+def parse_zwj_file(file: Iterable[str]) -> Iterator[SequenceEntry]:
+    """
+    Parse Emoji ZWJ Sequences
+
+    Format:
+        code_point(s) ; type_field ; description # comments
+    """
+    for line in file:
+        data, _, comment = line.partition('#')
+        data_fields: Iterator[str] = (field.strip() for field in data.split(';'))
+        code_points_str, *type_description = data_fields
+        description = ''
+        if len(type_description) > 1:
+            description = type_description[1]
+
+        if not code_points_str:
+            # ignore comments or empty lines, except for 'Date:' -- a marker
+            # found across all releases so far.
+            if 'Date:' in comment:
+                yield SequenceEntry(None, None, comment)
+            continue
+
+        hex_values = tuple(f'0x{int(code_point, 16):05x}'
+                           for code_point in code_points_str.split())
+        yield SequenceEntry(hex_values, description, comment)
+
+
+def parse_zwj(fname: str, version: str) -> SequenceDef:
+    print(f'parsing {fname}: ', end='', flush=True)
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_zwj_file(f)
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+        # sequences are keyed by length
+        sequences = collections.defaultdict(list)
+        for entry in table_iter:
+            if entry.code_seq is not None:
+                sequences[len(entry.code_seq)].append((entry.code_seq, entry.description))
+    sorted_sequences = collections.OrderedDict([(k, v) for k, v in sorted(sequences.items())])
+    print('ok')
+    return SequenceDef(fname, date, sorted_sequences)
 
 
 @functools.cache
@@ -401,7 +553,7 @@ def is_url_newer(url: str, fname: str) -> bool:
 def do_retrieve(url: str, fname: str) -> None:
     """Retrieve given url to target filepath fname."""
     folder = os.path.dirname(fname)
-    if not os.path.exists(folder):
+    if folder and not os.path.exists(folder):
         os.makedirs(folder)
     if not is_url_newer(url, fname):
         return
@@ -429,11 +581,11 @@ def main() -> None:
     # code.
     def get_codegen_definitions() -> Iterator[RenderDefinition]:
         yield UnicodeVersionPyRenderDef.new(
-            UnicodeVersionPyRenderCtx(fetch_unicode_versions())
-        )
+            UnicodeVersionPyRenderCtx(versions=fetch_unicode_versions())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+        yield UnicodeSequenceRenderDef.new('emoji_zwj_sequences.py', fetch_emoji_zero_data())
 
     for render_def in get_codegen_definitions():
         with open(render_def.output_filename, 'w', encoding='utf-8', newline='\n') as fout:
@@ -441,7 +593,6 @@ def main() -> None:
             for data in render_def.generate():
                 fout.write(data)
             print('ok')
-
 
 if __name__ == '__main__':
     main()

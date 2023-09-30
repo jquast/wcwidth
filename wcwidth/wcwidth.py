@@ -63,6 +63,7 @@ Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 from __future__ import division
 
 # std imports
+import re
 import os
 import sys
 import warnings
@@ -70,7 +71,7 @@ import warnings
 # local
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .unicode_versions import list_versions
+from .unicode_versions import list_versions, list_zwj_versions
 
 try:
     # std imports
@@ -81,34 +82,9 @@ except ImportError:
     from backports.functools_lru_cache import lru_cache
 
 # global cache
-_UNICODE_CMPTABLE = None
 _PY3 = (sys.version_info[0] >= 3)
 
 
-# NOTE: created by hand, there isn't anything identifiable other than
-# general Cf category code to identify these, and some characters in Cf
-# category code are of non-zero width.
-# Also includes some Cc, Mn, Zl, and Zp characters
-ZERO_WIDTH_CF = set([
-    0,       # Null (Cc)
-    0x034F,  # Combining grapheme joiner (Mn)
-    0x200B,  # Zero width space
-    0x200C,  # Zero width non-joiner
-    0x200D,  # Zero width joiner
-    0x200E,  # Left-to-right mark
-    0x200F,  # Right-to-left mark
-    0x2028,  # Line separator (Zl)
-    0x2029,  # Paragraph separator (Zp)
-    0x202A,  # Left-to-right embedding
-    0x202B,  # Right-to-left embedding
-    0x202C,  # Pop directional formatting
-    0x202D,  # Left-to-right override
-    0x202E,  # Right-to-left override
-    0x2060,  # Word joiner
-    0x2061,  # Function application
-    0x2062,  # Invisible times
-    0x2063,  # Invisible separator
-])
 
 
 def _bisearch(ucs, table):
@@ -139,14 +115,90 @@ def _bisearch(ucs, table):
 
 
 @lru_cache(maxsize=1000)
+def _wcwidth(ucs, unicode_version):
+    r"""
+    Given one Unicode point, return its printable length on a terminal.
+
+    :param int ucs: A Unicode codepoint value.
+    :param str unicode_version: Return value of :func:`_wcmatch_version`.
+
+    :return: The width, in cells, necessary to display the character of
+        Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
+        not printable, or has an indeterminate effect on the terminal, such as
+        a control character.  Otherwise, the number of column positions the
+        character occupies on a graphic terminal (1 or 2) is returned.
+    :rtype: int
+
+    This function is precisely the same as :func:`wcwidth`, but receives the
+    ordinal value (unicode point) rather than a string character, and,
+    ``unicode_version`` is already resolved.
+    """
+    # NULL
+    if ucs == 0:
+        return 0
+
+    # C0/C1 control characters are -1 for compatibility with POSIX-like calls
+    if ucs and ucs < 32 or 0x07F <= ucs < 0x0A0:
+        return -1
+
+    # Zero width
+    if _bisearch(ucs, ZERO_WIDTH[unicode_version]):
+        return 0
+
+    # 1 or 2 width
+    return 1 + _bisearch(ucs, WIDE_EASTASIAN[unicode_version])
+
+
+def _wcswidth(ucs, unicode_version, errors='ignore'):
+    """
+    :param str ucs: A single Ordinal Unicode point.
+    :param str unicode_version: Return value of :func:`_wcmatch_version`.
+    :param str errors: for POSIX compatibility in :func:`wcswidth`,
+        setting argument ``errors='strict'`` will raise a UnicodeError
+        on any C0/C1 Control Characters.
+
+    Any ZWJ character is measured as though the current character
+    width is zero, and the subsequent character will occupy the same
+    cell as the preceeding.
+
+    Although a list of Recommened Emoji ZWJ Sequences is made available by
+    unicode data files and as tests in this library, for performance reasons we
+    trust any combination. This library is not intended to defend against
+    non-recommended combinations ("glitch text").
+
+    A C1 Control character is abnormal and meant for machine-machine communication.
+    C0 Control characters, such as Tab ('\t') cannot be accounted for, as the
+    current screen position and tabstop value is not known. Both C0 and C1
+    control characters are measured as width 0.
+    """
+    idx = 0
+    measured_width = 0
+    while idx < len(ucs):
+        if ucs[idx] == '\u200D':
+            # Zero Width Joiner, do not measure this or next character
+            idx += 2
+            continue
+        # measure width at current index
+        result = wcwidth(ucs[idx], unicode_version)
+        if result < 0:
+            if errors == 'strict':
+                raise UnicodeError('Control character {0!r} at index {1}'.format(ucs[idx], idx))
+        else:
+            measured_width += result
+        idx += 1
+    return measured_width
+
+
+@lru_cache(maxsize=1000)
 def wcwidth(wc, unicode_version='auto'):
     r"""
     Given one Unicode character, return its printable length on a terminal.
 
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as
-        ``'6.0.0'``, the list of available version levels may be
-        listed by pairing function :func:`list_versions`.
+        ``'6.0.0'``. A list of version levels suported by wcwidth
+        is returned by :func:`list_versions`.
 
         Any version string may be specified without error -- the nearest
         matching version is selected.  When ``latest`` (default), the
@@ -165,30 +217,16 @@ def wcwidth(wc, unicode_version='auto'):
 
         - C1 control characters and DEL (U+07F through U+0A0).
 
-    The following have a column width of 0:
-
-    - Non-spacing and enclosing combining characters (general
-      category code Mn or Me in the Unicode database).
-
-    - NULL (``U+0000``).
-
-    - COMBINING GRAPHEME JOINER (``U+034F``).
-
-    - ZERO WIDTH SPACE (``U+200B``) *through*
-      RIGHT-TO-LEFT MARK (``U+200F``).
-
-    - LINE SEPARATOR (``U+2028``) *and*
-      PARAGRAPH SEPARATOR (``U+2029``).
-
-    - LEFT-TO-RIGHT EMBEDDING (``U+202A``) *through*
-      RIGHT-TO-LEFT OVERRIDE (``U+202E``).
-
-    - WORD JOINER (``U+2060``) *through*
-      INVISIBLE SEPARATOR (``U+2063``).
+    The following have a column width of 0, by Unicode General Category code:
+      - ``Me``: an enclosing combining mark
+      - ``Mn``: a nonspacing combining mark (zero advance width)
+      - ``Cf``: a format control character
+      - ``Zl``: U+2028 LINE SEPARATOR only
+      - ``Zp``: U+2029 PARAGRAPH SEPARATOR only
+      - ``Sk``: a non-letterlike modifier symbol
+      - and NULL (``U+0000``).
 
     The following have a column width of 1:
-
-    - SOFT HYPHEN (``U+00AD``).
 
     - All remaining characters, including all printable ISO 8859-1
       and WGL4 characters, Unicode control characters, etc.
@@ -201,25 +239,7 @@ def wcwidth(wc, unicode_version='auto'):
 
          - Some kinds of Emoji or symbols.
     """
-    # NOTE: created by hand, there isn't anything identifiable other than
-    # general Cf category code to identify these, and some characters in Cf
-    # category code are of non-zero width.
-    ucs = ord(wc)
-    if ucs in ZERO_WIDTH_CF:
-        return 0
-
-    # C0/C1 control characters
-    if ucs < 32 or 0x07F <= ucs < 0x0A0:
-        return -1
-
-    _unicode_version = _wcmatch_version(unicode_version)
-
-    # combining characters with zero width
-    if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
-        return 0
-
-    # "Wide EastAsian" (and emojis)
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
+    return _wcwidth(ucs=ord(wc), unicode_version=_wcmatch_version(unicode_version))
 
 
 def wcswidth(pwcs, n=None, unicode_version='auto'):
@@ -234,22 +254,40 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
         available unicode version, otherwise.
     :rtype: int
-    :returns: The width, in cells, necessary to display the first ``n``
-        characters of the unicode string ``pwcs``.  Returns ``-1`` if
-        a non-printable character is encountered.
+    :returns: The width, in cells, needed to display the first ``n`` characters
+        of the unicode string ``pwcs``.  Returns ``-1`` if a non-printable
+        character is encountered.
     """
-    # pylint: disable=C0103
-    #         Invalid argument name "n"
+    try:
+        return _wcswidth(pwcs[:n],
+                        unicode_version=_wcmatch_version(unicode_version),
+                        errors='strict')
+    except UnicodeError:
+        # this final -1 return value is an ugly C POSIX holdover for C0/C1
+        # control characters, only -- see function width() for a version that
+        # never returns -1!
+        return -1
 
-    end = len(pwcs) if n is None else n
-    idx = slice(0, end)
-    width = 0
-    for char in pwcs[idx]:
-        wcw = wcwidth(char, unicode_version)
-        if wcw < 0:
-            return -1
-        width += wcw
-    return width
+
+def width(text, unicode_version='auto', emoji_zwj_version='auto'):
+    """
+    Given a unicode string, return its printable length on a terminal.
+
+    Unlike :func:`wcswidth`, ``-1`` is never returned when a non-printable
+    character is encountered, and, Emoji Zero Width Joiner (ZWJ) Sequences are
+    handled.
+
+    :param str text: Measure width of given unicode string.
+    :param str unicode_version: An explicit definition of the unicode version
+        level to target for measurement, may be ``auto`` (default), which uses
+        the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
+        available unicode version, otherwise.
+    :param str emoji_zwj_version: An explicit definition of the unicode emoji
+        version to use, may be 'None' for no support.
+    :rtype: int
+    :returns: Approximate number cells needed to display the characters of ``text``.
+    """
+    unicode_version = _wcmatch_version(unicode_version)
 
 
 @lru_cache(maxsize=128)
@@ -292,10 +330,12 @@ def _wcmatch_version(given_version):
     """
     # Design note: the choice to return the same type that is given certainly
     # complicates it for python 2 str-type, but allows us to define an api that
-    # to use 'string-type', for unicode version level definitions, so all of our
-    # example code works with all versions of python. That, along with the
-    # string-to-numeric and comparisons of earliest, latest, matching, or
-    # nearest, greatly complicates this function.
+    # uses 'string-type' for unicode version level definitions, so all of our
+    # example code works with all versions of python.
+    #
+    # That, along with the string-to-numeric and comparisons of earliest,
+    # latest, matching, or # nearest, greatly complicates this function.
+    # Performance is somewhat curbed by memoization.
     _return_str = not _PY3 and isinstance(given_version, str)
 
     if _return_str:

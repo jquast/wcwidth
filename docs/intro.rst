@@ -217,6 +217,14 @@ Other Languages
 History
 =======
 
+0.3.0 **unreleased experimental**
+  * **Bugfix**: ``wcswidth()`` for zero-width join characters such as used in emoji
+    sequences, and variations such as emoji skin tone, as well as many other
+    non-printable characters now correctly identified as zero-width.
+  * **Enhancement**: new function ``width()``, a copy of ``wcswidth()`` without
+    the POSIX compliance to return total width of -1 for any C0 or C1 control
+    characters, those characters measured as width 0 by this new function.
+ 
 0.2.8 *2023-09-30*
   * Include requirements files in the source distibution (`PR #82`).
 

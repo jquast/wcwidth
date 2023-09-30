@@ -703,3 +703,6 @@ def main(opts):
 
 if __name__ == '__main__':
     sys.exit(main(validate_args(docopt.docopt(__doc__))))
+
+
+# TODO: --emoji-zwj --automatic-test !!
