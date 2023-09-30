@@ -124,7 +124,6 @@ class SequenceEntry:
     description: str
     comment: str
 
-
 @dataclass
 class TableDef:
     filename: str
@@ -160,12 +159,6 @@ class UnicodeVersionRstRenderCtx(RenderContext):
 class UnicodeTableRenderCtx(RenderContext):
     variable_name: str
     table: Mapping[UnicodeVersion, TableDef]
-
-
-@dataclass(frozen=True)
-class UnicodeRegexRenderCtx(RenderContext):
-    variable_name: str
-    patterns: Mapping[UnicodeVersion, str]
 
 
 @dataclass
@@ -259,26 +252,6 @@ class UnicodeSequenceRenderDef(RenderDefinition):
             output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
             render_context=context,
         )
-
-@dataclass
-class UnicodeRegexRenderDef(RenderDefinition):
-    render_context: UnicodeRegexRenderCtx
-
-    @classmethod
-    def new(cls, filename: str, context: UnicodeTableRenderCtx) -> Self:
-        _, ext = os.path.splitext(filename)
-        if ext == '.py':
-            jinja_filename = 're_patterns.py.j2'
-        else:
-            raise ValueError('filename must be Python')
-
-        return cls(
-            jinja_filename=jinja_filename,
-            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
-            render_context=context,
-        )
-
-
 
 
 @functools.cache
@@ -389,6 +362,7 @@ def cite_source_description(filename: str) -> tuple[str, str]:
         date = next(entry_iter).comment.strip()
 
     return fname, date
+
 
 def make_table(values: Collection[int]) -> list[tuple[int, int]]:
     """
