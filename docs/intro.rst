@@ -217,7 +217,7 @@ Other Languages
 History
 =======
 
-0.2.8 *2023-09-29*
+0.2.8 *2023-09-30*
   * Include requirements files in the source distibution (`PR #82`).
 
 0.2.7 *2023-09-28*
