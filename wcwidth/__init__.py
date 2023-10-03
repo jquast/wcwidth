@@ -23,7 +23,9 @@ from .wcwidth import (
     _wcmatch_version,
     _wcversion_value,
     ZERO_WIDTH,
-    WIDE_EASTASIAN)
+    WIDE_EASTASIAN,
+    )
+from .emoji_zwj_sequences import EMOJI_ZWJ_SEQUENCES
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API"

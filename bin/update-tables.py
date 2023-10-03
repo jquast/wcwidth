@@ -324,7 +324,8 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         fname = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname)
-        table[version] = parse_category(fname=fname, category_codes=('W', 'F',))
+        # , 'Sk'
+        table[version] = parse_category(fname=fname, category_codes=('W', 'F', 'Sk'), wide=2)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
@@ -335,7 +336,8 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         fname = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname)
         # Determine values of zero-width character lookup table by the following category codes
-        table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn', 'Cf', 'Zl', 'Zp', 'Sk'))
+        table[version] = parse_category(fname=fname, category_codes=('Me', 'Mn', 'Cf', 'Zl', 'Zp', 'Sk'), wide=0)
+        #, 'Sk'
         # Inject NULL into all table versions.
         table[version].values.append(('0x00000', '0x00000', 'NULL'))
         table[version].values.sort()
@@ -434,7 +436,7 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
         yield TableEntry(code_range, tuple(properties), comment)
 
 
-def parse_category(fname: str, category_codes: Container[str]) -> TableDef:
+def parse_category(fname: str, category_codes: Container[str], wide: int) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
     print(f'parsing {fname}: ', end='', flush=True)
 
@@ -446,15 +448,37 @@ def parse_category(fname: str, category_codes: Container[str]) -> TableDef:
         # and "date string" from second line
         date = next(table_iter).comment.split(':', 1)[1].strip()
 
-        values: list[tuple[int, int]] = (
-            codepoint
-            for entry in table_iter
-            if entry.code_range is not None and entry.properties[0] in category_codes
-            for codepoint in range(*entry.code_range)
-            )
+        values = parse_category_values(category_codes, table_iter, wide)
         txt_values = convert_values_to_string_table(make_table(values))
     print('ok')
     return TableDef(version, date, txt_values)
+
+def parse_category_values(category_codes: str,
+                          table_iter: Iterator[TableEntry],
+                          wide: int) -> list[int]:
+    """
+    Parse value ranges of unicode data files, by given categories.
+    """
+    def filter_entry(entry):
+        # I doubt the unicode folks wanted to design the 'Sk' category this way, but for the most
+        # part, we can distinguish narrow, zero, and wide characters by their individual categories,
+        # but 'Zk' contains characters of all widths -- 0, 1, and 2 !!
+        if entry.code_range is None:
+            return False
+        if entry.properties[0] != 'Sk':
+            return entry.code_range is not None and entry.properties[0] in category_codes
+        elif 'MODIFIER' in entry.comment:
+            return wide == 0
+        elif 'FULLWIDTH' in entry.comment:
+            return wide == 2
+        else:
+            return wide == 1
+    return [
+            codepoint
+            for entry in table_iter
+            if filter_entry(entry)
+            for codepoint in range(*entry.code_range)
+            ]
 
 
 def parse_zwj_file(file: Iterable[str]) -> Iterator[SequenceEntry]:
