@@ -38,10 +38,12 @@ def test_hello_jp():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase)
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase
 
 
@@ -59,10 +61,11 @@ def test_wcswidth_substr():
     expect_length_phrase = sum(expect_length_each)
 
     # exercise,
-    length_phrase = wcwidth.wcswidth(phrase, end)
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase, end)
 
     # verify.
-    assert length_phrase == expect_length_phrase
+    assert length_phrase_wcs == expect_length_phrase
 
 
 def test_null_width_0():
@@ -74,26 +77,55 @@ def test_null_width_0():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase
 
 
 def test_control_c0_width_negative_1():
-    """CSI (Control sequence initiate) reports width -1 for ESC."""
+    """How the API reacts to CSI (Control sequence initiate)."""
     # given,
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
-    expect_length_phrase = -1
+    expect_length_phrase_wcs = -1
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify, our API gets it wrong in every case, this is actually
+    # of 0 width for a terminal
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase_wcs
+    assert length_phrase == expect_length_phrase
+
+
+def test_control_c0_width_zero():
+    """Using width() function reports 0 for ESC in terminal sequence."""
+    # given a maybe poor example, as the terminal sequence is a width of 0
+    # rendered on all terminals, but wcwidth doesn't parse
+    # Control-Sequence-Inducer (CSI) sequences. Also the "legacy" posix
+    # functions wcwidth and wcswidth return -1 for any string containing the C1
+    # control character \x1b (ESC).
+    phrase = u'\x1b[0m'
+    expect_length_each = (-1, 1, 1, 1)
+    expect_length_phrase_wcs = -1
+    expect_length_phrase = 3
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase_wcs
     assert length_phrase == expect_length_phrase
 
 
@@ -106,10 +138,12 @@ def test_combining_width():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase
 
 
@@ -121,10 +155,12 @@ def test_combining_cafe():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase
 
 
@@ -136,10 +172,12 @@ def test_combining_enclosing():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase
 
 
@@ -151,8 +189,33 @@ def test_combining_spacing():
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
-    length_phrase = wcwidth.wcswidth(phrase, len(phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
 
     # verify.
     assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+
+def test_kr_jamo_filler():
+    u"""
+    Jamo filler is 0 width.
+
+    According to https://www.unicode.org/L2/L2006/06310-hangul-decompose9.pdf this character and others
+    like it, ``\uffa0``, ``\u1160``, ``\u115f``, ``\u1160``, are not commonly viewed with a terminal,
+    seems it doesn't matter whether it is implemented or not, they are not typically used !
+    """
+    phrase = "\u1100\u1160"
+    expect_length_each = (2, 1)
+    expect_length_phrase = 3
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
     assert length_phrase == expect_length_phrase

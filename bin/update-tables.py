@@ -116,25 +116,36 @@ class TableEntry:
     properties: tuple[str, ...]
     comment: str
 
-    def filter_by_category(entry, category_codes, wide):
-        if entry.code_range is None:
+    def filter_by_category(self, category_codes: str, wide: int) -> bool:
+        """
+        Return whether entry matches given category code and displayed width
+
+        Categories are described here, https://www.unicode.org/reports/tr44/#GC_Values_Table
+        """
+        if self.code_range is None:
             return False
-        elif entry.properties[0] == 'Sk':
-            if 'EMOJI MODIFIER' in entry.comment:
+        elif self.properties[0] == 'Sk':
+            if 'EMOJI MODIFIER' in self.comment:
                 # These codepoints are fullwidth when used without emoji, 0-width with.
                 # Generate code that expects the best case, that is always combined
                 return wide == 0
-            elif 'FULLWIDTH' in entry.comment:
+            elif 'FULLWIDTH' in self.comment:
                 # Some 'Sk' categories are fullwidth,
                 return wide == 2
             else:
                 # the rest are narrow
                 return wide == 1
-        if entry.properties[0] in ('W', 'F'):
-            return wide == 2
-        # TODO I think 'Cf' has some mixed cases ..
-        if entry.properties[0] in ('Me', 'Mn', 'Cf', 'Zl', 'Zp'):
+        # Me Enclosing Mark
+        # Mn Nonspacing Mark
+        # Cf Format
+        # Zl Line Separator
+        # Zp Paragraph Separator
+        if self.properties[0] in ('Me', 'Mn', 'Cf', 'Zl', 'Zp'):
             return wide == 0
+        # F  Fullwidth
+        # W  Wide
+        if self.properties[0] in ('W', 'F'):
+            return wide == 2
         return wide == 1
 
 
@@ -145,10 +156,10 @@ class TableEntry:
         """
         Parse value ranges of unicode data files, by given category and width
         """
-        return {
-            (entry.code_range[0], entry.code_range[1] - 1)
+        return {n
             for entry in table_iter
-            if entry.filter_by_category(category_codes, wide)}
+            if entry.filter_by_category(category_codes, wide)
+            for n in list(range(entry.code_range[0], entry.code_range[1]))}
 
 
 
@@ -163,27 +174,36 @@ class SequenceEntry:
 class TableDef:
     filename: str
     date: str
-    value_ranges: set[tuple[int, int]]
+    values: set[int]
 
-    def optimized_values(self) -> list[tuple[int, int]]:
+    def as_value_ranges(self) -> list[tuple[int, int]]:
         """
-        Given unsorted ranges of (start, end), 'value_ranges', compress into
-        a sorted ascending list of non-overlapping, merged ranges.
+        Return a list of tuple of (start, end) ranges for given set of 'values'.
         """
-        result = []
-        for start, end in sorted(self.value_ranges):
-            if result and result[-1][1] + 1 == start:
-                result[-1] = (result[-1][0], end)
+        table: list[tuple[int, int]] = []
+        values_iter = iter(sorted(self.values))
+        start = end = next(values_iter)
+        table.append((start, end))
+
+        for value in values_iter:
+            # remove last-most entry for comparison,
+            start, end = table.pop()
+            if end == value - 1:
+                # continuation of existing range, rewrite
+                table.append((start, value,))
             else:
-                result.append((start, end))
-        return result
+                # non-continuation: insert back previous range,
+                table.append((start, end,))
+                # and start a new one
+                table.append((value, value,))
+        return table
 
 
     @property
     def hex_range_descriptions(self) -> list[tuple[str, str, str]]:
         """Convert integers into string table of (hex_start, hex_end, txt_description)."""
         pytable_values: list[tuple[str, str, str]] = []
-        for start, end in self.optimized_values():
+        for start, end in self.as_value_ranges():
             hex_start, hex_end = f'0x{start:05x}', f'0x{end:05x}'
             ucs_start, ucs_end = chr(start), chr(end)
             name_start = name_ucs(ucs_start) or '(nil)'
@@ -393,10 +413,15 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname_eaw)
         table[version] = parse_category(fname=fname_eaw, category_codes=('W', 'F'), wide=2)
 
-        # join with some atypical 'wide' characters found in category 'Sk'
+        # subtract(!) wide characters that are defined as 'W' category in EAW, but
+        # as a zero-width category 'Mn' in DGC, which is preferred.
+        # TODO: What about Wide as 'Mc' ? They need to be tested ..
         fname_dgc = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_UNICODE_DERIVED_AGE.format(version=version), fname=fname_dgc)
-        table[version].value_ranges.update(parse_category(fname=fname_dgc, category_codes=('Sk',), wide=2).value_ranges)
+        table[version].values.discard(parse_category(fname=fname_dgc, category_codes=('Mn'), wide=0).values)
+
+        # join with some atypical 'wide' characters defined only by category 'Sk'
+        table[version].values.update(parse_category(fname=fname_dgc, category_codes=('Sk',), wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
@@ -407,15 +432,15 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         # Determine values of zero-width character lookup table by the following category codes
         fname_dgc = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_DERIVED_CATEGORY.format(version=version), fname=fname_dgc)
-        table[version] = parse_category(fname=fname_dgc, category_codes=('Me', 'Mn', 'Cf', 'Zl', 'Zp', 'Sk'), wide=0)
+        table[version] = parse_category(fname=fname_dgc, category_codes=('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp', 'Sk'), wide=0)
 
         # Look for the few zero-width characters mislabelled as W in eastasian width files.
         fname_eaw = os.path.join(PATH_DATA, f'EastAsianWidth-{version}.txt')
         do_retrieve(url=URL_EASTASIAN_WIDTH.format(version=version), fname=fname_eaw)
-        table[version].value_ranges.update(parse_category(fname=fname_eaw, category_codes=('N','W'), wide=0).value_ranges)
+        table[version].values.update(parse_category(fname=fname_eaw, category_codes=('N','W'), wide=0).values)
 
         # And, include NULL
-        table[version].value_ranges.add((0, 0))
+        table[version].values.add(0)
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
@@ -438,30 +463,6 @@ def cite_source_description(filename: str) -> tuple[str, str]:
 
     return fname, date
 
-
-def make_table(value_ranges: Collection[int]) -> list[tuple[int, int]]:
-    """
-    Return a tuple of (start, end) lookup pairs for given sequence of sorted values.
-
-    >>> make_table([0,1,2,5,6,7,9])
-    [(0, 2), (5, 7), (9, 9)]
-    """
-    table: list[tuple[int, int]] = []
-    values_iter = iter(values_range)
-    start = end = next(values_iter)
-    table.append((start, end))
-
-    for value in values_iter:
-        start, end = table.pop()
-        if end == value - 1:
-            # continuation of existing range
-            table.append((start, value,))
-        else:
-            # insert back previous range,
-            table.append((start, end,))
-            # and start a new one
-            table.append((value, value,))
-    return table
 
 def name_ucs(ucs: str) -> str:
     try:
@@ -505,9 +506,9 @@ def parse_category(fname: str, category_codes: Container[str], wide: int) -> Tab
         version = next(table_iter).comment.strip()
         # and "date string" from second line
         date = next(table_iter).comment.split(':', 1)[1].strip()
-        value_ranges = TableEntry.parse_category_values(category_codes, table_iter, wide)
+        values = TableEntry.parse_category_values(category_codes, table_iter, wide)
     print('ok')
-    return TableDef(version, date, value_ranges)
+    return TableDef(version, date, values)
 
 
 def parse_zwj_file(file: Iterable[str]) -> Iterator[SequenceEntry]:
@@ -608,9 +609,9 @@ def main() -> None:
         yield UnicodeVersionPyRenderDef.new(
             UnicodeVersionPyRenderCtx(fetch_unicode_versions())
         )
-        yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+        yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
         yield UnicodeSequenceRenderDef.new('emoji_zwj_sequences.py', fetch_emoji_zero_data())
 
     for render_def in get_codegen_definitions():

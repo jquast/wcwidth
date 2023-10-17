@@ -293,7 +293,7 @@ class Screen(object):
     def num_columns(self):
         """Number of columns displayed."""
         if self.term.is_a_tty:
-            return max(1, self.term.width // self.hint_width)
+            return max(1, (self.term.width - 1) // self.hint_width)
         return 1
 
     @property
@@ -468,7 +468,7 @@ class Pager(object):
                     delta = self.screen.hint_width - distance
                     if delta != 0:
                         # mark failed
-                        records.append({'ucs': repr(ucs),
+                        records.append({'ucs': repr(ucs)[1:-1],
                                                    'named': name,
                                                    'delta': delta,
                                                    'test_type': test_type})
@@ -817,7 +817,7 @@ def parse_args():
     args = argparse.ArgumentParser()
     args.add_argument('--test-type', default='wide',
                       choices=('wide', 'narrow', 'zero', 'emoji-zwj'),
-                      help='Character type for viewing.')
+                      help='Character type for interactive viewing.')
     args.add_argument('--unicode-version', default='auto',
                       help='Unicode version for testing.')
     args.add_argument('--automatic', action='store_true',
