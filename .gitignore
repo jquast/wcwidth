@@ -11,7 +11,7 @@ dist
 docs/_build
 htmlcov
 .coveralls.yml
-data
+data/*.txt
 .DS_Store
 .idea
 .venv

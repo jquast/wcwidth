@@ -1,0 +1,3249 @@
+mismatch_records:
+- delta: 1
+  named: Hangul Jungseong Filler
+  test_type: narrow
+  ucs: "\u1160"
+- delta: 1
+  named: Tagalog Sign Pamudpod
+  test_type: narrow
+  ucs: "\u1715"
+- delta: 1
+  named: Hanunoo Sign Pamudpod
+  test_type: narrow
+  ucs: "\u1734"
+- delta: 1
+  named: Halfwidth Hangul Filler
+  test_type: narrow
+  ucs: "\uFFA0"
+- delta: 1
+  named: Sharada Vowel Sign Prishthamatra E
+  test_type: narrow
+  ucs: "\U000111CE"
+- delta: 1
+  named: Dives Akuru Vowel Sign Aa
+  test_type: narrow
+  ucs: "\U00011930"
+- delta: 1
+  named: Dives Akuru Vowel Sign I
+  test_type: narrow
+  ucs: "\U00011931"
+- delta: 1
+  named: Dives Akuru Vowel Sign Ii
+  test_type: narrow
+  ucs: "\U00011932"
+- delta: 1
+  named: Dives Akuru Vowel Sign U
+  test_type: narrow
+  ucs: "\U00011933"
+- delta: 1
+  named: Dives Akuru Vowel Sign Uu
+  test_type: narrow
+  ucs: "\U00011934"
+- delta: 1
+  named: Dives Akuru Vowel Sign E
+  test_type: narrow
+  ucs: "\U00011935"
+- delta: 1
+  named: Dives Akuru Vowel Sign Ai
+  test_type: narrow
+  ucs: "\U00011937"
+- delta: 1
+  named: Dives Akuru Vowel Sign O
+  test_type: narrow
+  ucs: "\U00011938"
+- delta: 1
+  named: Dives Akuru Sign Halanta
+  test_type: narrow
+  ucs: "\U0001193D"
+- delta: 1
+  named: Dives Akuru Medial Ya
+  test_type: narrow
+  ucs: "\U00011940"
+- delta: 1
+  named: Dives Akuru Medial Ra
+  test_type: narrow
+  ucs: "\U00011942"
+- delta: -1
+  named: Modern Pentathlon
+  test_type: narrow
+  ucs: "\U0001F93B"
+- delta: -1
+  named: Rifle
+  test_type: narrow
+  ucs: "\U0001F946"
+- delta: 2
+  named: Hangul Choseong Filler
+  test_type: wide
+  ucs: "\u115F"
+- delta: 2
+  named: Hangul Filler
+  test_type: wide
+  ucs: "\u3164"
+- delta: 1
+  named: Bopomofo Final Letter G
+  test_type: wide
+  ucs: "\u31BB"
+- delta: 1
+  named: Bopomofo Letter Gw
+  test_type: wide
+  ucs: "\u31BC"
+- delta: 1
+  named: Bopomofo Letter Kw
+  test_type: wide
+  ucs: "\u31BD"
+- delta: 1
+  named: Bopomofo Letter Oe
+  test_type: wide
+  ucs: "\u31BE"
+- delta: 1
+  named: Bopomofo Letter Ah
+  test_type: wide
+  ucs: "\u31BF"
+- delta: 2
+  named: Vietnamese Alternate Reading Mark Ca
+  test_type: wide
+  ucs: "\U00016FF0"
+- delta: 2
+  named: Vietnamese Alternate Reading Mark Nhay
+  test_type: wide
+  ucs: "\U00016FF1"
+- delta: 1
+  named: Tangut Component-756
+  test_type: wide
+  ucs: "\U00018AF3"
+- delta: 1
+  named: Tangut Component-757
+  test_type: wide
+  ucs: "\U00018AF4"
+- delta: 1
+  named: Tangut Component-758
+  test_type: wide
+  ucs: "\U00018AF5"
+- delta: 1
+  named: Tangut Component-759
+  test_type: wide
+  ucs: "\U00018AF6"
+- delta: 1
+  named: Tangut Component-760
+  test_type: wide
+  ucs: "\U00018AF7"
+- delta: 1
+  named: Tangut Component-761
+  test_type: wide
+  ucs: "\U00018AF8"
+- delta: 1
+  named: Tangut Component-762
+  test_type: wide
+  ucs: "\U00018AF9"
+- delta: 1
+  named: Tangut Component-763
+  test_type: wide
+  ucs: "\U00018AFA"
+- delta: 1
+  named: Tangut Component-764
+  test_type: wide
+  ucs: "\U00018AFB"
+- delta: 1
+  named: Tangut Component-765
+  test_type: wide
+  ucs: "\U00018AFC"
+- delta: 1
+  named: Tangut Component-766
+  test_type: wide
+  ucs: "\U00018AFD"
+- delta: 1
+  named: Tangut Component-767
+  test_type: wide
+  ucs: "\U00018AFE"
+- delta: 1
+  named: Tangut Component-768
+  test_type: wide
+  ucs: "\U00018AFF"
+- delta: 1
+  named: Khitan Small Script Character-18b00
+  test_type: wide
+  ucs: "\U00018B00"
+- delta: 1
+  named: Khitan Small Script Character-18b01
+  test_type: wide
+  ucs: "\U00018B01"
+- delta: 1
+  named: Khitan Small Script Character-18b02
+  test_type: wide
+  ucs: "\U00018B02"
+- delta: 1
+  named: Khitan Small Script Character-18b03
+  test_type: wide
+  ucs: "\U00018B03"
+- delta: 1
+  named: Khitan Small Script Character-18b04
+  test_type: wide
+  ucs: "\U00018B04"
+- delta: 1
+  named: Khitan Small Script Character-18b05
+  test_type: wide
+  ucs: "\U00018B05"
+- delta: 1
+  named: Khitan Small Script Character-18b06
+  test_type: wide
+  ucs: "\U00018B06"
+- delta: 1
+  named: Khitan Small Script Character-18b07
+  test_type: wide
+  ucs: "\U00018B07"
+- delta: 1
+  named: Khitan Small Script Character-18b08
+  test_type: wide
+  ucs: "\U00018B08"
+- delta: 1
+  named: Khitan Small Script Character-18b09
+  test_type: wide
+  ucs: "\U00018B09"
+- delta: 1
+  named: Khitan Small Script Character-18b0a
+  test_type: wide
+  ucs: "\U00018B0A"
+- delta: 1
+  named: Khitan Small Script Character-18b0b
+  test_type: wide
+  ucs: "\U00018B0B"
+- delta: 1
+  named: Khitan Small Script Character-18b0c
+  test_type: wide
+  ucs: "\U00018B0C"
+- delta: 1
+  named: Khitan Small Script Character-18b0d
+  test_type: wide
+  ucs: "\U00018B0D"
+- delta: 1
+  named: Khitan Small Script Character-18b0e
+  test_type: wide
+  ucs: "\U00018B0E"
+- delta: 1
+  named: Khitan Small Script Character-18b0f
+  test_type: wide
+  ucs: "\U00018B0F"
+- delta: 1
+  named: Khitan Small Script Character-18b10
+  test_type: wide
+  ucs: "\U00018B10"
+- delta: 1
+  named: Khitan Small Script Character-18b11
+  test_type: wide
+  ucs: "\U00018B11"
+- delta: 1
+  named: Khitan Small Script Character-18b12
+  test_type: wide
+  ucs: "\U00018B12"
+- delta: 1
+  named: Khitan Small Script Character-18b13
+  test_type: wide
+  ucs: "\U00018B13"
+- delta: 1
+  named: Khitan Small Script Character-18b14
+  test_type: wide
+  ucs: "\U00018B14"
+- delta: 1
+  named: Khitan Small Script Character-18b15
+  test_type: wide
+  ucs: "\U00018B15"
+- delta: 1
+  named: Khitan Small Script Character-18b16
+  test_type: wide
+  ucs: "\U00018B16"
+- delta: 1
+  named: Khitan Small Script Character-18b17
+  test_type: wide
+  ucs: "\U00018B17"
+- delta: 1
+  named: Khitan Small Script Character-18b18
+  test_type: wide
+  ucs: "\U00018B18"
+- delta: 1
+  named: Khitan Small Script Character-18b19
+  test_type: wide
+  ucs: "\U00018B19"
+- delta: 1
+  named: Khitan Small Script Character-18b1a
+  test_type: wide
+  ucs: "\U00018B1A"
+- delta: 1
+  named: Khitan Small Script Character-18b1b
+  test_type: wide
+  ucs: "\U00018B1B"
+- delta: 1
+  named: Khitan Small Script Character-18b1c
+  test_type: wide
+  ucs: "\U00018B1C"
+- delta: 1
+  named: Khitan Small Script Character-18b1d
+  test_type: wide
+  ucs: "\U00018B1D"
+- delta: 1
+  named: Khitan Small Script Character-18b1e
+  test_type: wide
+  ucs: "\U00018B1E"
+- delta: 1
+  named: Khitan Small Script Character-18b1f
+  test_type: wide
+  ucs: "\U00018B1F"
+- delta: 1
+  named: Khitan Small Script Character-18b20
+  test_type: wide
+  ucs: "\U00018B20"
+- delta: 1
+  named: Khitan Small Script Character-18b21
+  test_type: wide
+  ucs: "\U00018B21"
+- delta: 1
+  named: Khitan Small Script Character-18b22
+  test_type: wide
+  ucs: "\U00018B22"
+- delta: 1
+  named: Khitan Small Script Character-18b23
+  test_type: wide
+  ucs: "\U00018B23"
+- delta: 1
+  named: Khitan Small Script Character-18b24
+  test_type: wide
+  ucs: "\U00018B24"
+- delta: 1
+  named: Khitan Small Script Character-18b25
+  test_type: wide
+  ucs: "\U00018B25"
+- delta: 1
+  named: Khitan Small Script Character-18b26
+  test_type: wide
+  ucs: "\U00018B26"
+- delta: 1
+  named: Khitan Small Script Character-18b27
+  test_type: wide
+  ucs: "\U00018B27"
+- delta: 1
+  named: Khitan Small Script Character-18b28
+  test_type: wide
+  ucs: "\U00018B28"
+- delta: 1
+  named: Khitan Small Script Character-18b29
+  test_type: wide
+  ucs: "\U00018B29"
+- delta: 1
+  named: Khitan Small Script Character-18b2a
+  test_type: wide
+  ucs: "\U00018B2A"
+- delta: 1
+  named: Khitan Small Script Character-18b2b
+  test_type: wide
+  ucs: "\U00018B2B"
+- delta: 1
+  named: Khitan Small Script Character-18b2c
+  test_type: wide
+  ucs: "\U00018B2C"
+- delta: 1
+  named: Khitan Small Script Character-18b2d
+  test_type: wide
+  ucs: "\U00018B2D"
+- delta: 1
+  named: Khitan Small Script Character-18b2e
+  test_type: wide
+  ucs: "\U00018B2E"
+- delta: 1
+  named: Khitan Small Script Character-18b2f
+  test_type: wide
+  ucs: "\U00018B2F"
+- delta: 1
+  named: Khitan Small Script Character-18b30
+  test_type: wide
+  ucs: "\U00018B30"
+- delta: 1
+  named: Khitan Small Script Character-18b31
+  test_type: wide
+  ucs: "\U00018B31"
+- delta: 1
+  named: Khitan Small Script Character-18b32
+  test_type: wide
+  ucs: "\U00018B32"
+- delta: 1
+  named: Khitan Small Script Character-18b33
+  test_type: wide
+  ucs: "\U00018B33"
+- delta: 1
+  named: Khitan Small Script Character-18b34
+  test_type: wide
+  ucs: "\U00018B34"
+- delta: 1
+  named: Khitan Small Script Character-18b35
+  test_type: wide
+  ucs: "\U00018B35"
+- delta: 1
+  named: Khitan Small Script Character-18b36
+  test_type: wide
+  ucs: "\U00018B36"
+- delta: 1
+  named: Khitan Small Script Character-18b37
+  test_type: wide
+  ucs: "\U00018B37"
+- delta: 1
+  named: Khitan Small Script Character-18b38
+  test_type: wide
+  ucs: "\U00018B38"
+- delta: 1
+  named: Khitan Small Script Character-18b39
+  test_type: wide
+  ucs: "\U00018B39"
+- delta: 1
+  named: Khitan Small Script Character-18b3a
+  test_type: wide
+  ucs: "\U00018B3A"
+- delta: 1
+  named: Khitan Small Script Character-18b3b
+  test_type: wide
+  ucs: "\U00018B3B"
+- delta: 1
+  named: Khitan Small Script Character-18b3c
+  test_type: wide
+  ucs: "\U00018B3C"
+- delta: 1
+  named: Khitan Small Script Character-18b3d
+  test_type: wide
+  ucs: "\U00018B3D"
+- delta: 1
+  named: Khitan Small Script Character-18b3e
+  test_type: wide
+  ucs: "\U00018B3E"
+- delta: 1
+  named: Khitan Small Script Character-18b3f
+  test_type: wide
+  ucs: "\U00018B3F"
+- delta: 1
+  named: Khitan Small Script Character-18b40
+  test_type: wide
+  ucs: "\U00018B40"
+- delta: 1
+  named: Khitan Small Script Character-18b41
+  test_type: wide
+  ucs: "\U00018B41"
+- delta: 1
+  named: Khitan Small Script Character-18b42
+  test_type: wide
+  ucs: "\U00018B42"
+- delta: 1
+  named: Khitan Small Script Character-18b43
+  test_type: wide
+  ucs: "\U00018B43"
+- delta: 1
+  named: Khitan Small Script Character-18b44
+  test_type: wide
+  ucs: "\U00018B44"
+- delta: 1
+  named: Khitan Small Script Character-18b45
+  test_type: wide
+  ucs: "\U00018B45"
+- delta: 1
+  named: Khitan Small Script Character-18b46
+  test_type: wide
+  ucs: "\U00018B46"
+- delta: 1
+  named: Khitan Small Script Character-18b47
+  test_type: wide
+  ucs: "\U00018B47"
+- delta: 1
+  named: Khitan Small Script Character-18b48
+  test_type: wide
+  ucs: "\U00018B48"
+- delta: 1
+  named: Khitan Small Script Character-18b49
+  test_type: wide
+  ucs: "\U00018B49"
+- delta: 1
+  named: Khitan Small Script Character-18b4a
+  test_type: wide
+  ucs: "\U00018B4A"
+- delta: 1
+  named: Khitan Small Script Character-18b4b
+  test_type: wide
+  ucs: "\U00018B4B"
+- delta: 1
+  named: Khitan Small Script Character-18b4c
+  test_type: wide
+  ucs: "\U00018B4C"
+- delta: 1
+  named: Khitan Small Script Character-18b4d
+  test_type: wide
+  ucs: "\U00018B4D"
+- delta: 1
+  named: Khitan Small Script Character-18b4e
+  test_type: wide
+  ucs: "\U00018B4E"
+- delta: 1
+  named: Khitan Small Script Character-18b4f
+  test_type: wide
+  ucs: "\U00018B4F"
+- delta: 1
+  named: Khitan Small Script Character-18b50
+  test_type: wide
+  ucs: "\U00018B50"
+- delta: 1
+  named: Khitan Small Script Character-18b51
+  test_type: wide
+  ucs: "\U00018B51"
+- delta: 1
+  named: Khitan Small Script Character-18b52
+  test_type: wide
+  ucs: "\U00018B52"
+- delta: 1
+  named: Khitan Small Script Character-18b53
+  test_type: wide
+  ucs: "\U00018B53"
+- delta: 1
+  named: Khitan Small Script Character-18b54
+  test_type: wide
+  ucs: "\U00018B54"
+- delta: 1
+  named: Khitan Small Script Character-18b55
+  test_type: wide
+  ucs: "\U00018B55"
+- delta: 1
+  named: Khitan Small Script Character-18b56
+  test_type: wide
+  ucs: "\U00018B56"
+- delta: 1
+  named: Khitan Small Script Character-18b57
+  test_type: wide
+  ucs: "\U00018B57"
+- delta: 1
+  named: Khitan Small Script Character-18b58
+  test_type: wide
+  ucs: "\U00018B58"
+- delta: 1
+  named: Khitan Small Script Character-18b59
+  test_type: wide
+  ucs: "\U00018B59"
+- delta: 1
+  named: Khitan Small Script Character-18b5a
+  test_type: wide
+  ucs: "\U00018B5A"
+- delta: 1
+  named: Khitan Small Script Character-18b5b
+  test_type: wide
+  ucs: "\U00018B5B"
+- delta: 1
+  named: Khitan Small Script Character-18b5c
+  test_type: wide
+  ucs: "\U00018B5C"
+- delta: 1
+  named: Khitan Small Script Character-18b5d
+  test_type: wide
+  ucs: "\U00018B5D"
+- delta: 1
+  named: Khitan Small Script Character-18b5e
+  test_type: wide
+  ucs: "\U00018B5E"
+- delta: 1
+  named: Khitan Small Script Character-18b5f
+  test_type: wide
+  ucs: "\U00018B5F"
+- delta: 1
+  named: Khitan Small Script Character-18b60
+  test_type: wide
+  ucs: "\U00018B60"
+- delta: 1
+  named: Khitan Small Script Character-18b61
+  test_type: wide
+  ucs: "\U00018B61"
+- delta: 1
+  named: Khitan Small Script Character-18b62
+  test_type: wide
+  ucs: "\U00018B62"
+- delta: 1
+  named: Khitan Small Script Character-18b63
+  test_type: wide
+  ucs: "\U00018B63"
+- delta: 1
+  named: Khitan Small Script Character-18b64
+  test_type: wide
+  ucs: "\U00018B64"
+- delta: 1
+  named: Khitan Small Script Character-18b65
+  test_type: wide
+  ucs: "\U00018B65"
+- delta: 1
+  named: Khitan Small Script Character-18b66
+  test_type: wide
+  ucs: "\U00018B66"
+- delta: 1
+  named: Khitan Small Script Character-18b67
+  test_type: wide
+  ucs: "\U00018B67"
+- delta: 1
+  named: Khitan Small Script Character-18b68
+  test_type: wide
+  ucs: "\U00018B68"
+- delta: 1
+  named: Khitan Small Script Character-18b69
+  test_type: wide
+  ucs: "\U00018B69"
+- delta: 1
+  named: Khitan Small Script Character-18b6a
+  test_type: wide
+  ucs: "\U00018B6A"
+- delta: 1
+  named: Khitan Small Script Character-18b6b
+  test_type: wide
+  ucs: "\U00018B6B"
+- delta: 1
+  named: Khitan Small Script Character-18b6c
+  test_type: wide
+  ucs: "\U00018B6C"
+- delta: 1
+  named: Khitan Small Script Character-18b6d
+  test_type: wide
+  ucs: "\U00018B6D"
+- delta: 1
+  named: Khitan Small Script Character-18b6e
+  test_type: wide
+  ucs: "\U00018B6E"
+- delta: 1
+  named: Khitan Small Script Character-18b6f
+  test_type: wide
+  ucs: "\U00018B6F"
+- delta: 1
+  named: Khitan Small Script Character-18b70
+  test_type: wide
+  ucs: "\U00018B70"
+- delta: 1
+  named: Khitan Small Script Character-18b71
+  test_type: wide
+  ucs: "\U00018B71"
+- delta: 1
+  named: Khitan Small Script Character-18b72
+  test_type: wide
+  ucs: "\U00018B72"
+- delta: 1
+  named: Khitan Small Script Character-18b73
+  test_type: wide
+  ucs: "\U00018B73"
+- delta: 1
+  named: Khitan Small Script Character-18b74
+  test_type: wide
+  ucs: "\U00018B74"
+- delta: 1
+  named: Khitan Small Script Character-18b75
+  test_type: wide
+  ucs: "\U00018B75"
+- delta: 1
+  named: Khitan Small Script Character-18b76
+  test_type: wide
+  ucs: "\U00018B76"
+- delta: 1
+  named: Khitan Small Script Character-18b77
+  test_type: wide
+  ucs: "\U00018B77"
+- delta: 1
+  named: Khitan Small Script Character-18b78
+  test_type: wide
+  ucs: "\U00018B78"
+- delta: 1
+  named: Khitan Small Script Character-18b79
+  test_type: wide
+  ucs: "\U00018B79"
+- delta: 1
+  named: Khitan Small Script Character-18b7a
+  test_type: wide
+  ucs: "\U00018B7A"
+- delta: 1
+  named: Khitan Small Script Character-18b7b
+  test_type: wide
+  ucs: "\U00018B7B"
+- delta: 1
+  named: Khitan Small Script Character-18b7c
+  test_type: wide
+  ucs: "\U00018B7C"
+- delta: 1
+  named: Khitan Small Script Character-18b7d
+  test_type: wide
+  ucs: "\U00018B7D"
+- delta: 1
+  named: Khitan Small Script Character-18b7e
+  test_type: wide
+  ucs: "\U00018B7E"
+- delta: 1
+  named: Khitan Small Script Character-18b7f
+  test_type: wide
+  ucs: "\U00018B7F"
+- delta: 1
+  named: Khitan Small Script Character-18b80
+  test_type: wide
+  ucs: "\U00018B80"
+- delta: 1
+  named: Khitan Small Script Character-18b81
+  test_type: wide
+  ucs: "\U00018B81"
+- delta: 1
+  named: Khitan Small Script Character-18b82
+  test_type: wide
+  ucs: "\U00018B82"
+- delta: 1
+  named: Khitan Small Script Character-18b83
+  test_type: wide
+  ucs: "\U00018B83"
+- delta: 1
+  named: Khitan Small Script Character-18b84
+  test_type: wide
+  ucs: "\U00018B84"
+- delta: 1
+  named: Khitan Small Script Character-18b85
+  test_type: wide
+  ucs: "\U00018B85"
+- delta: 1
+  named: Khitan Small Script Character-18b86
+  test_type: wide
+  ucs: "\U00018B86"
+- delta: 1
+  named: Khitan Small Script Character-18b87
+  test_type: wide
+  ucs: "\U00018B87"
+- delta: 1
+  named: Khitan Small Script Character-18b88
+  test_type: wide
+  ucs: "\U00018B88"
+- delta: 1
+  named: Khitan Small Script Character-18b89
+  test_type: wide
+  ucs: "\U00018B89"
+- delta: 1
+  named: Khitan Small Script Character-18b8a
+  test_type: wide
+  ucs: "\U00018B8A"
+- delta: 1
+  named: Khitan Small Script Character-18b8b
+  test_type: wide
+  ucs: "\U00018B8B"
+- delta: 1
+  named: Khitan Small Script Character-18b8c
+  test_type: wide
+  ucs: "\U00018B8C"
+- delta: 1
+  named: Khitan Small Script Character-18b8d
+  test_type: wide
+  ucs: "\U00018B8D"
+- delta: 1
+  named: Khitan Small Script Character-18b8e
+  test_type: wide
+  ucs: "\U00018B8E"
+- delta: 1
+  named: Khitan Small Script Character-18b8f
+  test_type: wide
+  ucs: "\U00018B8F"
+- delta: 1
+  named: Khitan Small Script Character-18b90
+  test_type: wide
+  ucs: "\U00018B90"
+- delta: 1
+  named: Khitan Small Script Character-18b91
+  test_type: wide
+  ucs: "\U00018B91"
+- delta: 1
+  named: Khitan Small Script Character-18b92
+  test_type: wide
+  ucs: "\U00018B92"
+- delta: 1
+  named: Khitan Small Script Character-18b93
+  test_type: wide
+  ucs: "\U00018B93"
+- delta: 1
+  named: Khitan Small Script Character-18b94
+  test_type: wide
+  ucs: "\U00018B94"
+- delta: 1
+  named: Khitan Small Script Character-18b95
+  test_type: wide
+  ucs: "\U00018B95"
+- delta: 1
+  named: Khitan Small Script Character-18b96
+  test_type: wide
+  ucs: "\U00018B96"
+- delta: 1
+  named: Khitan Small Script Character-18b97
+  test_type: wide
+  ucs: "\U00018B97"
+- delta: 1
+  named: Khitan Small Script Character-18b98
+  test_type: wide
+  ucs: "\U00018B98"
+- delta: 1
+  named: Khitan Small Script Character-18b99
+  test_type: wide
+  ucs: "\U00018B99"
+- delta: 1
+  named: Khitan Small Script Character-18b9a
+  test_type: wide
+  ucs: "\U00018B9A"
+- delta: 1
+  named: Khitan Small Script Character-18b9b
+  test_type: wide
+  ucs: "\U00018B9B"
+- delta: 1
+  named: Khitan Small Script Character-18b9c
+  test_type: wide
+  ucs: "\U00018B9C"
+- delta: 1
+  named: Khitan Small Script Character-18b9d
+  test_type: wide
+  ucs: "\U00018B9D"
+- delta: 1
+  named: Khitan Small Script Character-18b9e
+  test_type: wide
+  ucs: "\U00018B9E"
+- delta: 1
+  named: Khitan Small Script Character-18b9f
+  test_type: wide
+  ucs: "\U00018B9F"
+- delta: 1
+  named: Khitan Small Script Character-18ba0
+  test_type: wide
+  ucs: "\U00018BA0"
+- delta: 1
+  named: Khitan Small Script Character-18ba1
+  test_type: wide
+  ucs: "\U00018BA1"
+- delta: 1
+  named: Khitan Small Script Character-18ba2
+  test_type: wide
+  ucs: "\U00018BA2"
+- delta: 1
+  named: Khitan Small Script Character-18ba3
+  test_type: wide
+  ucs: "\U00018BA3"
+- delta: 1
+  named: Khitan Small Script Character-18ba4
+  test_type: wide
+  ucs: "\U00018BA4"
+- delta: 1
+  named: Khitan Small Script Character-18ba5
+  test_type: wide
+  ucs: "\U00018BA5"
+- delta: 1
+  named: Khitan Small Script Character-18ba6
+  test_type: wide
+  ucs: "\U00018BA6"
+- delta: 1
+  named: Khitan Small Script Character-18ba7
+  test_type: wide
+  ucs: "\U00018BA7"
+- delta: 1
+  named: Khitan Small Script Character-18ba8
+  test_type: wide
+  ucs: "\U00018BA8"
+- delta: 1
+  named: Khitan Small Script Character-18ba9
+  test_type: wide
+  ucs: "\U00018BA9"
+- delta: 1
+  named: Khitan Small Script Character-18baa
+  test_type: wide
+  ucs: "\U00018BAA"
+- delta: 1
+  named: Khitan Small Script Character-18bab
+  test_type: wide
+  ucs: "\U00018BAB"
+- delta: 1
+  named: Khitan Small Script Character-18bac
+  test_type: wide
+  ucs: "\U00018BAC"
+- delta: 1
+  named: Khitan Small Script Character-18bad
+  test_type: wide
+  ucs: "\U00018BAD"
+- delta: 1
+  named: Khitan Small Script Character-18bae
+  test_type: wide
+  ucs: "\U00018BAE"
+- delta: 1
+  named: Khitan Small Script Character-18baf
+  test_type: wide
+  ucs: "\U00018BAF"
+- delta: 1
+  named: Khitan Small Script Character-18bb0
+  test_type: wide
+  ucs: "\U00018BB0"
+- delta: 1
+  named: Khitan Small Script Character-18bb1
+  test_type: wide
+  ucs: "\U00018BB1"
+- delta: 1
+  named: Khitan Small Script Character-18bb2
+  test_type: wide
+  ucs: "\U00018BB2"
+- delta: 1
+  named: Khitan Small Script Character-18bb3
+  test_type: wide
+  ucs: "\U00018BB3"
+- delta: 1
+  named: Khitan Small Script Character-18bb4
+  test_type: wide
+  ucs: "\U00018BB4"
+- delta: 1
+  named: Khitan Small Script Character-18bb5
+  test_type: wide
+  ucs: "\U00018BB5"
+- delta: 1
+  named: Khitan Small Script Character-18bb6
+  test_type: wide
+  ucs: "\U00018BB6"
+- delta: 1
+  named: Khitan Small Script Character-18bb7
+  test_type: wide
+  ucs: "\U00018BB7"
+- delta: 1
+  named: Khitan Small Script Character-18bb8
+  test_type: wide
+  ucs: "\U00018BB8"
+- delta: 1
+  named: Khitan Small Script Character-18bb9
+  test_type: wide
+  ucs: "\U00018BB9"
+- delta: 1
+  named: Khitan Small Script Character-18bba
+  test_type: wide
+  ucs: "\U00018BBA"
+- delta: 1
+  named: Khitan Small Script Character-18bbb
+  test_type: wide
+  ucs: "\U00018BBB"
+- delta: 1
+  named: Khitan Small Script Character-18bbc
+  test_type: wide
+  ucs: "\U00018BBC"
+- delta: 1
+  named: Khitan Small Script Character-18bbd
+  test_type: wide
+  ucs: "\U00018BBD"
+- delta: 1
+  named: Khitan Small Script Character-18bbe
+  test_type: wide
+  ucs: "\U00018BBE"
+- delta: 1
+  named: Khitan Small Script Character-18bbf
+  test_type: wide
+  ucs: "\U00018BBF"
+- delta: 1
+  named: Khitan Small Script Character-18bc0
+  test_type: wide
+  ucs: "\U00018BC0"
+- delta: 1
+  named: Khitan Small Script Character-18bc1
+  test_type: wide
+  ucs: "\U00018BC1"
+- delta: 1
+  named: Khitan Small Script Character-18bc2
+  test_type: wide
+  ucs: "\U00018BC2"
+- delta: 1
+  named: Khitan Small Script Character-18bc3
+  test_type: wide
+  ucs: "\U00018BC3"
+- delta: 1
+  named: Khitan Small Script Character-18bc4
+  test_type: wide
+  ucs: "\U00018BC4"
+- delta: 1
+  named: Khitan Small Script Character-18bc5
+  test_type: wide
+  ucs: "\U00018BC5"
+- delta: 1
+  named: Khitan Small Script Character-18bc6
+  test_type: wide
+  ucs: "\U00018BC6"
+- delta: 1
+  named: Khitan Small Script Character-18bc7
+  test_type: wide
+  ucs: "\U00018BC7"
+- delta: 1
+  named: Khitan Small Script Character-18bc8
+  test_type: wide
+  ucs: "\U00018BC8"
+- delta: 1
+  named: Khitan Small Script Character-18bc9
+  test_type: wide
+  ucs: "\U00018BC9"
+- delta: 1
+  named: Khitan Small Script Character-18bca
+  test_type: wide
+  ucs: "\U00018BCA"
+- delta: 1
+  named: Khitan Small Script Character-18bcb
+  test_type: wide
+  ucs: "\U00018BCB"
+- delta: 1
+  named: Khitan Small Script Character-18bcc
+  test_type: wide
+  ucs: "\U00018BCC"
+- delta: 1
+  named: Khitan Small Script Character-18bcd
+  test_type: wide
+  ucs: "\U00018BCD"
+- delta: 1
+  named: Khitan Small Script Character-18bce
+  test_type: wide
+  ucs: "\U00018BCE"
+- delta: 1
+  named: Khitan Small Script Character-18bcf
+  test_type: wide
+  ucs: "\U00018BCF"
+- delta: 1
+  named: Khitan Small Script Character-18bd0
+  test_type: wide
+  ucs: "\U00018BD0"
+- delta: 1
+  named: Khitan Small Script Character-18bd1
+  test_type: wide
+  ucs: "\U00018BD1"
+- delta: 1
+  named: Khitan Small Script Character-18bd2
+  test_type: wide
+  ucs: "\U00018BD2"
+- delta: 1
+  named: Khitan Small Script Character-18bd3
+  test_type: wide
+  ucs: "\U00018BD3"
+- delta: 1
+  named: Khitan Small Script Character-18bd4
+  test_type: wide
+  ucs: "\U00018BD4"
+- delta: 1
+  named: Khitan Small Script Character-18bd5
+  test_type: wide
+  ucs: "\U00018BD5"
+- delta: 1
+  named: Khitan Small Script Character-18bd6
+  test_type: wide
+  ucs: "\U00018BD6"
+- delta: 1
+  named: Khitan Small Script Character-18bd7
+  test_type: wide
+  ucs: "\U00018BD7"
+- delta: 1
+  named: Khitan Small Script Character-18bd8
+  test_type: wide
+  ucs: "\U00018BD8"
+- delta: 1
+  named: Khitan Small Script Character-18bd9
+  test_type: wide
+  ucs: "\U00018BD9"
+- delta: 1
+  named: Khitan Small Script Character-18bda
+  test_type: wide
+  ucs: "\U00018BDA"
+- delta: 1
+  named: Khitan Small Script Character-18bdb
+  test_type: wide
+  ucs: "\U00018BDB"
+- delta: 1
+  named: Khitan Small Script Character-18bdc
+  test_type: wide
+  ucs: "\U00018BDC"
+- delta: 1
+  named: Khitan Small Script Character-18bdd
+  test_type: wide
+  ucs: "\U00018BDD"
+- delta: 1
+  named: Khitan Small Script Character-18bde
+  test_type: wide
+  ucs: "\U00018BDE"
+- delta: 1
+  named: Khitan Small Script Character-18bdf
+  test_type: wide
+  ucs: "\U00018BDF"
+- delta: 1
+  named: Khitan Small Script Character-18be0
+  test_type: wide
+  ucs: "\U00018BE0"
+- delta: 1
+  named: Khitan Small Script Character-18be1
+  test_type: wide
+  ucs: "\U00018BE1"
+- delta: 1
+  named: Khitan Small Script Character-18be2
+  test_type: wide
+  ucs: "\U00018BE2"
+- delta: 1
+  named: Khitan Small Script Character-18be3
+  test_type: wide
+  ucs: "\U00018BE3"
+- delta: 1
+  named: Khitan Small Script Character-18be4
+  test_type: wide
+  ucs: "\U00018BE4"
+- delta: 1
+  named: Khitan Small Script Character-18be5
+  test_type: wide
+  ucs: "\U00018BE5"
+- delta: 1
+  named: Khitan Small Script Character-18be6
+  test_type: wide
+  ucs: "\U00018BE6"
+- delta: 1
+  named: Khitan Small Script Character-18be7
+  test_type: wide
+  ucs: "\U00018BE7"
+- delta: 1
+  named: Khitan Small Script Character-18be8
+  test_type: wide
+  ucs: "\U00018BE8"
+- delta: 1
+  named: Khitan Small Script Character-18be9
+  test_type: wide
+  ucs: "\U00018BE9"
+- delta: 1
+  named: Khitan Small Script Character-18bea
+  test_type: wide
+  ucs: "\U00018BEA"
+- delta: 1
+  named: Khitan Small Script Character-18beb
+  test_type: wide
+  ucs: "\U00018BEB"
+- delta: 1
+  named: Khitan Small Script Character-18bec
+  test_type: wide
+  ucs: "\U00018BEC"
+- delta: 1
+  named: Khitan Small Script Character-18bed
+  test_type: wide
+  ucs: "\U00018BED"
+- delta: 1
+  named: Khitan Small Script Character-18bee
+  test_type: wide
+  ucs: "\U00018BEE"
+- delta: 1
+  named: Khitan Small Script Character-18bef
+  test_type: wide
+  ucs: "\U00018BEF"
+- delta: 1
+  named: Khitan Small Script Character-18bf0
+  test_type: wide
+  ucs: "\U00018BF0"
+- delta: 1
+  named: Khitan Small Script Character-18bf1
+  test_type: wide
+  ucs: "\U00018BF1"
+- delta: 1
+  named: Khitan Small Script Character-18bf2
+  test_type: wide
+  ucs: "\U00018BF2"
+- delta: 1
+  named: Khitan Small Script Character-18bf3
+  test_type: wide
+  ucs: "\U00018BF3"
+- delta: 1
+  named: Khitan Small Script Character-18bf4
+  test_type: wide
+  ucs: "\U00018BF4"
+- delta: 1
+  named: Khitan Small Script Character-18bf5
+  test_type: wide
+  ucs: "\U00018BF5"
+- delta: 1
+  named: Khitan Small Script Character-18bf6
+  test_type: wide
+  ucs: "\U00018BF6"
+- delta: 1
+  named: Khitan Small Script Character-18bf7
+  test_type: wide
+  ucs: "\U00018BF7"
+- delta: 1
+  named: Khitan Small Script Character-18bf8
+  test_type: wide
+  ucs: "\U00018BF8"
+- delta: 1
+  named: Khitan Small Script Character-18bf9
+  test_type: wide
+  ucs: "\U00018BF9"
+- delta: 1
+  named: Khitan Small Script Character-18bfa
+  test_type: wide
+  ucs: "\U00018BFA"
+- delta: 1
+  named: Khitan Small Script Character-18bfb
+  test_type: wide
+  ucs: "\U00018BFB"
+- delta: 1
+  named: Khitan Small Script Character-18bfc
+  test_type: wide
+  ucs: "\U00018BFC"
+- delta: 1
+  named: Khitan Small Script Character-18bfd
+  test_type: wide
+  ucs: "\U00018BFD"
+- delta: 1
+  named: Khitan Small Script Character-18bfe
+  test_type: wide
+  ucs: "\U00018BFE"
+- delta: 1
+  named: Khitan Small Script Character-18bff
+  test_type: wide
+  ucs: "\U00018BFF"
+- delta: 1
+  named: Khitan Small Script Character-18c00
+  test_type: wide
+  ucs: "\U00018C00"
+- delta: 1
+  named: Khitan Small Script Character-18c01
+  test_type: wide
+  ucs: "\U00018C01"
+- delta: 1
+  named: Khitan Small Script Character-18c02
+  test_type: wide
+  ucs: "\U00018C02"
+- delta: 1
+  named: Khitan Small Script Character-18c03
+  test_type: wide
+  ucs: "\U00018C03"
+- delta: 1
+  named: Khitan Small Script Character-18c04
+  test_type: wide
+  ucs: "\U00018C04"
+- delta: 1
+  named: Khitan Small Script Character-18c05
+  test_type: wide
+  ucs: "\U00018C05"
+- delta: 1
+  named: Khitan Small Script Character-18c06
+  test_type: wide
+  ucs: "\U00018C06"
+- delta: 1
+  named: Khitan Small Script Character-18c07
+  test_type: wide
+  ucs: "\U00018C07"
+- delta: 1
+  named: Khitan Small Script Character-18c08
+  test_type: wide
+  ucs: "\U00018C08"
+- delta: 1
+  named: Khitan Small Script Character-18c09
+  test_type: wide
+  ucs: "\U00018C09"
+- delta: 1
+  named: Khitan Small Script Character-18c0a
+  test_type: wide
+  ucs: "\U00018C0A"
+- delta: 1
+  named: Khitan Small Script Character-18c0b
+  test_type: wide
+  ucs: "\U00018C0B"
+- delta: 1
+  named: Khitan Small Script Character-18c0c
+  test_type: wide
+  ucs: "\U00018C0C"
+- delta: 1
+  named: Khitan Small Script Character-18c0d
+  test_type: wide
+  ucs: "\U00018C0D"
+- delta: 1
+  named: Khitan Small Script Character-18c0e
+  test_type: wide
+  ucs: "\U00018C0E"
+- delta: 1
+  named: Khitan Small Script Character-18c0f
+  test_type: wide
+  ucs: "\U00018C0F"
+- delta: 1
+  named: Khitan Small Script Character-18c10
+  test_type: wide
+  ucs: "\U00018C10"
+- delta: 1
+  named: Khitan Small Script Character-18c11
+  test_type: wide
+  ucs: "\U00018C11"
+- delta: 1
+  named: Khitan Small Script Character-18c12
+  test_type: wide
+  ucs: "\U00018C12"
+- delta: 1
+  named: Khitan Small Script Character-18c13
+  test_type: wide
+  ucs: "\U00018C13"
+- delta: 1
+  named: Khitan Small Script Character-18c14
+  test_type: wide
+  ucs: "\U00018C14"
+- delta: 1
+  named: Khitan Small Script Character-18c15
+  test_type: wide
+  ucs: "\U00018C15"
+- delta: 1
+  named: Khitan Small Script Character-18c16
+  test_type: wide
+  ucs: "\U00018C16"
+- delta: 1
+  named: Khitan Small Script Character-18c17
+  test_type: wide
+  ucs: "\U00018C17"
+- delta: 1
+  named: Khitan Small Script Character-18c18
+  test_type: wide
+  ucs: "\U00018C18"
+- delta: 1
+  named: Khitan Small Script Character-18c19
+  test_type: wide
+  ucs: "\U00018C19"
+- delta: 1
+  named: Khitan Small Script Character-18c1a
+  test_type: wide
+  ucs: "\U00018C1A"
+- delta: 1
+  named: Khitan Small Script Character-18c1b
+  test_type: wide
+  ucs: "\U00018C1B"
+- delta: 1
+  named: Khitan Small Script Character-18c1c
+  test_type: wide
+  ucs: "\U00018C1C"
+- delta: 1
+  named: Khitan Small Script Character-18c1d
+  test_type: wide
+  ucs: "\U00018C1D"
+- delta: 1
+  named: Khitan Small Script Character-18c1e
+  test_type: wide
+  ucs: "\U00018C1E"
+- delta: 1
+  named: Khitan Small Script Character-18c1f
+  test_type: wide
+  ucs: "\U00018C1F"
+- delta: 1
+  named: Khitan Small Script Character-18c20
+  test_type: wide
+  ucs: "\U00018C20"
+- delta: 1
+  named: Khitan Small Script Character-18c21
+  test_type: wide
+  ucs: "\U00018C21"
+- delta: 1
+  named: Khitan Small Script Character-18c22
+  test_type: wide
+  ucs: "\U00018C22"
+- delta: 1
+  named: Khitan Small Script Character-18c23
+  test_type: wide
+  ucs: "\U00018C23"
+- delta: 1
+  named: Khitan Small Script Character-18c24
+  test_type: wide
+  ucs: "\U00018C24"
+- delta: 1
+  named: Khitan Small Script Character-18c25
+  test_type: wide
+  ucs: "\U00018C25"
+- delta: 1
+  named: Khitan Small Script Character-18c26
+  test_type: wide
+  ucs: "\U00018C26"
+- delta: 1
+  named: Khitan Small Script Character-18c27
+  test_type: wide
+  ucs: "\U00018C27"
+- delta: 1
+  named: Khitan Small Script Character-18c28
+  test_type: wide
+  ucs: "\U00018C28"
+- delta: 1
+  named: Khitan Small Script Character-18c29
+  test_type: wide
+  ucs: "\U00018C29"
+- delta: 1
+  named: Khitan Small Script Character-18c2a
+  test_type: wide
+  ucs: "\U00018C2A"
+- delta: 1
+  named: Khitan Small Script Character-18c2b
+  test_type: wide
+  ucs: "\U00018C2B"
+- delta: 1
+  named: Khitan Small Script Character-18c2c
+  test_type: wide
+  ucs: "\U00018C2C"
+- delta: 1
+  named: Khitan Small Script Character-18c2d
+  test_type: wide
+  ucs: "\U00018C2D"
+- delta: 1
+  named: Khitan Small Script Character-18c2e
+  test_type: wide
+  ucs: "\U00018C2E"
+- delta: 1
+  named: Khitan Small Script Character-18c2f
+  test_type: wide
+  ucs: "\U00018C2F"
+- delta: 1
+  named: Khitan Small Script Character-18c30
+  test_type: wide
+  ucs: "\U00018C30"
+- delta: 1
+  named: Khitan Small Script Character-18c31
+  test_type: wide
+  ucs: "\U00018C31"
+- delta: 1
+  named: Khitan Small Script Character-18c32
+  test_type: wide
+  ucs: "\U00018C32"
+- delta: 1
+  named: Khitan Small Script Character-18c33
+  test_type: wide
+  ucs: "\U00018C33"
+- delta: 1
+  named: Khitan Small Script Character-18c34
+  test_type: wide
+  ucs: "\U00018C34"
+- delta: 1
+  named: Khitan Small Script Character-18c35
+  test_type: wide
+  ucs: "\U00018C35"
+- delta: 1
+  named: Khitan Small Script Character-18c36
+  test_type: wide
+  ucs: "\U00018C36"
+- delta: 1
+  named: Khitan Small Script Character-18c37
+  test_type: wide
+  ucs: "\U00018C37"
+- delta: 1
+  named: Khitan Small Script Character-18c38
+  test_type: wide
+  ucs: "\U00018C38"
+- delta: 1
+  named: Khitan Small Script Character-18c39
+  test_type: wide
+  ucs: "\U00018C39"
+- delta: 1
+  named: Khitan Small Script Character-18c3a
+  test_type: wide
+  ucs: "\U00018C3A"
+- delta: 1
+  named: Khitan Small Script Character-18c3b
+  test_type: wide
+  ucs: "\U00018C3B"
+- delta: 1
+  named: Khitan Small Script Character-18c3c
+  test_type: wide
+  ucs: "\U00018C3C"
+- delta: 1
+  named: Khitan Small Script Character-18c3d
+  test_type: wide
+  ucs: "\U00018C3D"
+- delta: 1
+  named: Khitan Small Script Character-18c3e
+  test_type: wide
+  ucs: "\U00018C3E"
+- delta: 1
+  named: Khitan Small Script Character-18c3f
+  test_type: wide
+  ucs: "\U00018C3F"
+- delta: 1
+  named: Khitan Small Script Character-18c40
+  test_type: wide
+  ucs: "\U00018C40"
+- delta: 1
+  named: Khitan Small Script Character-18c41
+  test_type: wide
+  ucs: "\U00018C41"
+- delta: 1
+  named: Khitan Small Script Character-18c42
+  test_type: wide
+  ucs: "\U00018C42"
+- delta: 1
+  named: Khitan Small Script Character-18c43
+  test_type: wide
+  ucs: "\U00018C43"
+- delta: 1
+  named: Khitan Small Script Character-18c44
+  test_type: wide
+  ucs: "\U00018C44"
+- delta: 1
+  named: Khitan Small Script Character-18c45
+  test_type: wide
+  ucs: "\U00018C45"
+- delta: 1
+  named: Khitan Small Script Character-18c46
+  test_type: wide
+  ucs: "\U00018C46"
+- delta: 1
+  named: Khitan Small Script Character-18c47
+  test_type: wide
+  ucs: "\U00018C47"
+- delta: 1
+  named: Khitan Small Script Character-18c48
+  test_type: wide
+  ucs: "\U00018C48"
+- delta: 1
+  named: Khitan Small Script Character-18c49
+  test_type: wide
+  ucs: "\U00018C49"
+- delta: 1
+  named: Khitan Small Script Character-18c4a
+  test_type: wide
+  ucs: "\U00018C4A"
+- delta: 1
+  named: Khitan Small Script Character-18c4b
+  test_type: wide
+  ucs: "\U00018C4B"
+- delta: 1
+  named: Khitan Small Script Character-18c4c
+  test_type: wide
+  ucs: "\U00018C4C"
+- delta: 1
+  named: Khitan Small Script Character-18c4d
+  test_type: wide
+  ucs: "\U00018C4D"
+- delta: 1
+  named: Khitan Small Script Character-18c4e
+  test_type: wide
+  ucs: "\U00018C4E"
+- delta: 1
+  named: Khitan Small Script Character-18c4f
+  test_type: wide
+  ucs: "\U00018C4F"
+- delta: 1
+  named: Khitan Small Script Character-18c50
+  test_type: wide
+  ucs: "\U00018C50"
+- delta: 1
+  named: Khitan Small Script Character-18c51
+  test_type: wide
+  ucs: "\U00018C51"
+- delta: 1
+  named: Khitan Small Script Character-18c52
+  test_type: wide
+  ucs: "\U00018C52"
+- delta: 1
+  named: Khitan Small Script Character-18c53
+  test_type: wide
+  ucs: "\U00018C53"
+- delta: 1
+  named: Khitan Small Script Character-18c54
+  test_type: wide
+  ucs: "\U00018C54"
+- delta: 1
+  named: Khitan Small Script Character-18c55
+  test_type: wide
+  ucs: "\U00018C55"
+- delta: 1
+  named: Khitan Small Script Character-18c56
+  test_type: wide
+  ucs: "\U00018C56"
+- delta: 1
+  named: Khitan Small Script Character-18c57
+  test_type: wide
+  ucs: "\U00018C57"
+- delta: 1
+  named: Khitan Small Script Character-18c58
+  test_type: wide
+  ucs: "\U00018C58"
+- delta: 1
+  named: Khitan Small Script Character-18c59
+  test_type: wide
+  ucs: "\U00018C59"
+- delta: 1
+  named: Khitan Small Script Character-18c5a
+  test_type: wide
+  ucs: "\U00018C5A"
+- delta: 1
+  named: Khitan Small Script Character-18c5b
+  test_type: wide
+  ucs: "\U00018C5B"
+- delta: 1
+  named: Khitan Small Script Character-18c5c
+  test_type: wide
+  ucs: "\U00018C5C"
+- delta: 1
+  named: Khitan Small Script Character-18c5d
+  test_type: wide
+  ucs: "\U00018C5D"
+- delta: 1
+  named: Khitan Small Script Character-18c5e
+  test_type: wide
+  ucs: "\U00018C5E"
+- delta: 1
+  named: Khitan Small Script Character-18c5f
+  test_type: wide
+  ucs: "\U00018C5F"
+- delta: 1
+  named: Khitan Small Script Character-18c60
+  test_type: wide
+  ucs: "\U00018C60"
+- delta: 1
+  named: Khitan Small Script Character-18c61
+  test_type: wide
+  ucs: "\U00018C61"
+- delta: 1
+  named: Khitan Small Script Character-18c62
+  test_type: wide
+  ucs: "\U00018C62"
+- delta: 1
+  named: Khitan Small Script Character-18c63
+  test_type: wide
+  ucs: "\U00018C63"
+- delta: 1
+  named: Khitan Small Script Character-18c64
+  test_type: wide
+  ucs: "\U00018C64"
+- delta: 1
+  named: Khitan Small Script Character-18c65
+  test_type: wide
+  ucs: "\U00018C65"
+- delta: 1
+  named: Khitan Small Script Character-18c66
+  test_type: wide
+  ucs: "\U00018C66"
+- delta: 1
+  named: Khitan Small Script Character-18c67
+  test_type: wide
+  ucs: "\U00018C67"
+- delta: 1
+  named: Khitan Small Script Character-18c68
+  test_type: wide
+  ucs: "\U00018C68"
+- delta: 1
+  named: Khitan Small Script Character-18c69
+  test_type: wide
+  ucs: "\U00018C69"
+- delta: 1
+  named: Khitan Small Script Character-18c6a
+  test_type: wide
+  ucs: "\U00018C6A"
+- delta: 1
+  named: Khitan Small Script Character-18c6b
+  test_type: wide
+  ucs: "\U00018C6B"
+- delta: 1
+  named: Khitan Small Script Character-18c6c
+  test_type: wide
+  ucs: "\U00018C6C"
+- delta: 1
+  named: Khitan Small Script Character-18c6d
+  test_type: wide
+  ucs: "\U00018C6D"
+- delta: 1
+  named: Khitan Small Script Character-18c6e
+  test_type: wide
+  ucs: "\U00018C6E"
+- delta: 1
+  named: Khitan Small Script Character-18c6f
+  test_type: wide
+  ucs: "\U00018C6F"
+- delta: 1
+  named: Khitan Small Script Character-18c70
+  test_type: wide
+  ucs: "\U00018C70"
+- delta: 1
+  named: Khitan Small Script Character-18c71
+  test_type: wide
+  ucs: "\U00018C71"
+- delta: 1
+  named: Khitan Small Script Character-18c72
+  test_type: wide
+  ucs: "\U00018C72"
+- delta: 1
+  named: Khitan Small Script Character-18c73
+  test_type: wide
+  ucs: "\U00018C73"
+- delta: 1
+  named: Khitan Small Script Character-18c74
+  test_type: wide
+  ucs: "\U00018C74"
+- delta: 1
+  named: Khitan Small Script Character-18c75
+  test_type: wide
+  ucs: "\U00018C75"
+- delta: 1
+  named: Khitan Small Script Character-18c76
+  test_type: wide
+  ucs: "\U00018C76"
+- delta: 1
+  named: Khitan Small Script Character-18c77
+  test_type: wide
+  ucs: "\U00018C77"
+- delta: 1
+  named: Khitan Small Script Character-18c78
+  test_type: wide
+  ucs: "\U00018C78"
+- delta: 1
+  named: Khitan Small Script Character-18c79
+  test_type: wide
+  ucs: "\U00018C79"
+- delta: 1
+  named: Khitan Small Script Character-18c7a
+  test_type: wide
+  ucs: "\U00018C7A"
+- delta: 1
+  named: Khitan Small Script Character-18c7b
+  test_type: wide
+  ucs: "\U00018C7B"
+- delta: 1
+  named: Khitan Small Script Character-18c7c
+  test_type: wide
+  ucs: "\U00018C7C"
+- delta: 1
+  named: Khitan Small Script Character-18c7d
+  test_type: wide
+  ucs: "\U00018C7D"
+- delta: 1
+  named: Khitan Small Script Character-18c7e
+  test_type: wide
+  ucs: "\U00018C7E"
+- delta: 1
+  named: Khitan Small Script Character-18c7f
+  test_type: wide
+  ucs: "\U00018C7F"
+- delta: 1
+  named: Khitan Small Script Character-18c80
+  test_type: wide
+  ucs: "\U00018C80"
+- delta: 1
+  named: Khitan Small Script Character-18c81
+  test_type: wide
+  ucs: "\U00018C81"
+- delta: 1
+  named: Khitan Small Script Character-18c82
+  test_type: wide
+  ucs: "\U00018C82"
+- delta: 1
+  named: Khitan Small Script Character-18c83
+  test_type: wide
+  ucs: "\U00018C83"
+- delta: 1
+  named: Khitan Small Script Character-18c84
+  test_type: wide
+  ucs: "\U00018C84"
+- delta: 1
+  named: Khitan Small Script Character-18c85
+  test_type: wide
+  ucs: "\U00018C85"
+- delta: 1
+  named: Khitan Small Script Character-18c86
+  test_type: wide
+  ucs: "\U00018C86"
+- delta: 1
+  named: Khitan Small Script Character-18c87
+  test_type: wide
+  ucs: "\U00018C87"
+- delta: 1
+  named: Khitan Small Script Character-18c88
+  test_type: wide
+  ucs: "\U00018C88"
+- delta: 1
+  named: Khitan Small Script Character-18c89
+  test_type: wide
+  ucs: "\U00018C89"
+- delta: 1
+  named: Khitan Small Script Character-18c8a
+  test_type: wide
+  ucs: "\U00018C8A"
+- delta: 1
+  named: Khitan Small Script Character-18c8b
+  test_type: wide
+  ucs: "\U00018C8B"
+- delta: 1
+  named: Khitan Small Script Character-18c8c
+  test_type: wide
+  ucs: "\U00018C8C"
+- delta: 1
+  named: Khitan Small Script Character-18c8d
+  test_type: wide
+  ucs: "\U00018C8D"
+- delta: 1
+  named: Khitan Small Script Character-18c8e
+  test_type: wide
+  ucs: "\U00018C8E"
+- delta: 1
+  named: Khitan Small Script Character-18c8f
+  test_type: wide
+  ucs: "\U00018C8F"
+- delta: 1
+  named: Khitan Small Script Character-18c90
+  test_type: wide
+  ucs: "\U00018C90"
+- delta: 1
+  named: Khitan Small Script Character-18c91
+  test_type: wide
+  ucs: "\U00018C91"
+- delta: 1
+  named: Khitan Small Script Character-18c92
+  test_type: wide
+  ucs: "\U00018C92"
+- delta: 1
+  named: Khitan Small Script Character-18c93
+  test_type: wide
+  ucs: "\U00018C93"
+- delta: 1
+  named: Khitan Small Script Character-18c94
+  test_type: wide
+  ucs: "\U00018C94"
+- delta: 1
+  named: Khitan Small Script Character-18c95
+  test_type: wide
+  ucs: "\U00018C95"
+- delta: 1
+  named: Khitan Small Script Character-18c96
+  test_type: wide
+  ucs: "\U00018C96"
+- delta: 1
+  named: Khitan Small Script Character-18c97
+  test_type: wide
+  ucs: "\U00018C97"
+- delta: 1
+  named: Khitan Small Script Character-18c98
+  test_type: wide
+  ucs: "\U00018C98"
+- delta: 1
+  named: Khitan Small Script Character-18c99
+  test_type: wide
+  ucs: "\U00018C99"
+- delta: 1
+  named: Khitan Small Script Character-18c9a
+  test_type: wide
+  ucs: "\U00018C9A"
+- delta: 1
+  named: Khitan Small Script Character-18c9b
+  test_type: wide
+  ucs: "\U00018C9B"
+- delta: 1
+  named: Khitan Small Script Character-18c9c
+  test_type: wide
+  ucs: "\U00018C9C"
+- delta: 1
+  named: Khitan Small Script Character-18c9d
+  test_type: wide
+  ucs: "\U00018C9D"
+- delta: 1
+  named: Khitan Small Script Character-18c9e
+  test_type: wide
+  ucs: "\U00018C9E"
+- delta: 1
+  named: Khitan Small Script Character-18c9f
+  test_type: wide
+  ucs: "\U00018C9F"
+- delta: 1
+  named: Khitan Small Script Character-18ca0
+  test_type: wide
+  ucs: "\U00018CA0"
+- delta: 1
+  named: Khitan Small Script Character-18ca1
+  test_type: wide
+  ucs: "\U00018CA1"
+- delta: 1
+  named: Khitan Small Script Character-18ca2
+  test_type: wide
+  ucs: "\U00018CA2"
+- delta: 1
+  named: Khitan Small Script Character-18ca3
+  test_type: wide
+  ucs: "\U00018CA3"
+- delta: 1
+  named: Khitan Small Script Character-18ca4
+  test_type: wide
+  ucs: "\U00018CA4"
+- delta: 1
+  named: Khitan Small Script Character-18ca5
+  test_type: wide
+  ucs: "\U00018CA5"
+- delta: 1
+  named: Khitan Small Script Character-18ca6
+  test_type: wide
+  ucs: "\U00018CA6"
+- delta: 1
+  named: Khitan Small Script Character-18ca7
+  test_type: wide
+  ucs: "\U00018CA7"
+- delta: 1
+  named: Khitan Small Script Character-18ca8
+  test_type: wide
+  ucs: "\U00018CA8"
+- delta: 1
+  named: Khitan Small Script Character-18ca9
+  test_type: wide
+  ucs: "\U00018CA9"
+- delta: 1
+  named: Khitan Small Script Character-18caa
+  test_type: wide
+  ucs: "\U00018CAA"
+- delta: 1
+  named: Khitan Small Script Character-18cab
+  test_type: wide
+  ucs: "\U00018CAB"
+- delta: 1
+  named: Khitan Small Script Character-18cac
+  test_type: wide
+  ucs: "\U00018CAC"
+- delta: 1
+  named: Khitan Small Script Character-18cad
+  test_type: wide
+  ucs: "\U00018CAD"
+- delta: 1
+  named: Khitan Small Script Character-18cae
+  test_type: wide
+  ucs: "\U00018CAE"
+- delta: 1
+  named: Khitan Small Script Character-18caf
+  test_type: wide
+  ucs: "\U00018CAF"
+- delta: 1
+  named: Khitan Small Script Character-18cb0
+  test_type: wide
+  ucs: "\U00018CB0"
+- delta: 1
+  named: Khitan Small Script Character-18cb1
+  test_type: wide
+  ucs: "\U00018CB1"
+- delta: 1
+  named: Khitan Small Script Character-18cb2
+  test_type: wide
+  ucs: "\U00018CB2"
+- delta: 1
+  named: Khitan Small Script Character-18cb3
+  test_type: wide
+  ucs: "\U00018CB3"
+- delta: 1
+  named: Khitan Small Script Character-18cb4
+  test_type: wide
+  ucs: "\U00018CB4"
+- delta: 1
+  named: Khitan Small Script Character-18cb5
+  test_type: wide
+  ucs: "\U00018CB5"
+- delta: 1
+  named: Khitan Small Script Character-18cb6
+  test_type: wide
+  ucs: "\U00018CB6"
+- delta: 1
+  named: Khitan Small Script Character-18cb7
+  test_type: wide
+  ucs: "\U00018CB7"
+- delta: 1
+  named: Khitan Small Script Character-18cb8
+  test_type: wide
+  ucs: "\U00018CB8"
+- delta: 1
+  named: Khitan Small Script Character-18cb9
+  test_type: wide
+  ucs: "\U00018CB9"
+- delta: 1
+  named: Khitan Small Script Character-18cba
+  test_type: wide
+  ucs: "\U00018CBA"
+- delta: 1
+  named: Khitan Small Script Character-18cbb
+  test_type: wide
+  ucs: "\U00018CBB"
+- delta: 1
+  named: Khitan Small Script Character-18cbc
+  test_type: wide
+  ucs: "\U00018CBC"
+- delta: 1
+  named: Khitan Small Script Character-18cbd
+  test_type: wide
+  ucs: "\U00018CBD"
+- delta: 1
+  named: Khitan Small Script Character-18cbe
+  test_type: wide
+  ucs: "\U00018CBE"
+- delta: 1
+  named: Khitan Small Script Character-18cbf
+  test_type: wide
+  ucs: "\U00018CBF"
+- delta: 1
+  named: Khitan Small Script Character-18cc0
+  test_type: wide
+  ucs: "\U00018CC0"
+- delta: 1
+  named: Khitan Small Script Character-18cc1
+  test_type: wide
+  ucs: "\U00018CC1"
+- delta: 1
+  named: Khitan Small Script Character-18cc2
+  test_type: wide
+  ucs: "\U00018CC2"
+- delta: 1
+  named: Khitan Small Script Character-18cc3
+  test_type: wide
+  ucs: "\U00018CC3"
+- delta: 1
+  named: Khitan Small Script Character-18cc4
+  test_type: wide
+  ucs: "\U00018CC4"
+- delta: 1
+  named: Khitan Small Script Character-18cc5
+  test_type: wide
+  ucs: "\U00018CC5"
+- delta: 1
+  named: Khitan Small Script Character-18cc6
+  test_type: wide
+  ucs: "\U00018CC6"
+- delta: 1
+  named: Khitan Small Script Character-18cc7
+  test_type: wide
+  ucs: "\U00018CC7"
+- delta: 1
+  named: Khitan Small Script Character-18cc8
+  test_type: wide
+  ucs: "\U00018CC8"
+- delta: 1
+  named: Khitan Small Script Character-18cc9
+  test_type: wide
+  ucs: "\U00018CC9"
+- delta: 1
+  named: Khitan Small Script Character-18cca
+  test_type: wide
+  ucs: "\U00018CCA"
+- delta: 1
+  named: Khitan Small Script Character-18ccb
+  test_type: wide
+  ucs: "\U00018CCB"
+- delta: 1
+  named: Khitan Small Script Character-18ccc
+  test_type: wide
+  ucs: "\U00018CCC"
+- delta: 1
+  named: Khitan Small Script Character-18ccd
+  test_type: wide
+  ucs: "\U00018CCD"
+- delta: 1
+  named: Khitan Small Script Character-18cce
+  test_type: wide
+  ucs: "\U00018CCE"
+- delta: 1
+  named: Khitan Small Script Character-18ccf
+  test_type: wide
+  ucs: "\U00018CCF"
+- delta: 1
+  named: Khitan Small Script Character-18cd0
+  test_type: wide
+  ucs: "\U00018CD0"
+- delta: 1
+  named: Khitan Small Script Character-18cd1
+  test_type: wide
+  ucs: "\U00018CD1"
+- delta: 1
+  named: Khitan Small Script Character-18cd2
+  test_type: wide
+  ucs: "\U00018CD2"
+- delta: 1
+  named: Khitan Small Script Character-18cd3
+  test_type: wide
+  ucs: "\U00018CD3"
+- delta: 1
+  named: Khitan Small Script Character-18cd4
+  test_type: wide
+  ucs: "\U00018CD4"
+- delta: 1
+  named: Khitan Small Script Character-18cd5
+  test_type: wide
+  ucs: "\U00018CD5"
+- delta: 1
+  named: Katakana Letter Minnan Tone-2
+  test_type: wide
+  ucs: "\U0001AFF0"
+- delta: 1
+  named: Katakana Letter Minnan Tone-3
+  test_type: wide
+  ucs: "\U0001AFF1"
+- delta: 1
+  named: Katakana Letter Minnan Tone-4
+  test_type: wide
+  ucs: "\U0001AFF2"
+- delta: 1
+  named: Katakana Letter Minnan Tone-5
+  test_type: wide
+  ucs: "\U0001AFF3"
+- delta: 1
+  named: Katakana Letter Minnan Tone-7
+  test_type: wide
+  ucs: "\U0001AFF5"
+- delta: 1
+  named: Katakana Letter Minnan Tone-8
+  test_type: wide
+  ucs: "\U0001AFF6"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-1
+  test_type: wide
+  ucs: "\U0001AFF7"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-2
+  test_type: wide
+  ucs: "\U0001AFF8"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-3
+  test_type: wide
+  ucs: "\U0001AFF9"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-4
+  test_type: wide
+  ucs: "\U0001AFFA"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-5
+  test_type: wide
+  ucs: "\U0001AFFB"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-7
+  test_type: wide
+  ucs: "\U0001AFFD"
+- delta: 1
+  named: Katakana Letter Minnan Nasalized Tone-8
+  test_type: wide
+  ucs: "\U0001AFFE"
+- delta: 1
+  named: Hiragana Letter Archaic Wu
+  test_type: wide
+  ucs: "\U0001B11F"
+- delta: 1
+  named: Katakana Letter Archaic Yi
+  test_type: wide
+  ucs: "\U0001B120"
+- delta: 1
+  named: Katakana Letter Archaic Ye
+  test_type: wide
+  ucs: "\U0001B121"
+- delta: 1
+  named: Katakana Letter Archaic Wu
+  test_type: wide
+  ucs: "\U0001B122"
+- delta: 1
+  named: Hiragana Letter Small Ko
+  test_type: wide
+  ucs: "\U0001B132"
+- delta: 1
+  named: Katakana Letter Small Ko
+  test_type: wide
+  ucs: "\U0001B155"
+- delta: 1
+  named: Hut
+  test_type: wide
+  ucs: "\U0001F6D6"
+- delta: 1
+  named: Elevator
+  test_type: wide
+  ucs: "\U0001F6D7"
+- delta: 1
+  named: Wireless
+  test_type: wide
+  ucs: "\U0001F6DC"
+- delta: 1
+  named: Playground Slide
+  test_type: wide
+  ucs: "\U0001F6DD"
+- delta: 1
+  named: Wheel
+  test_type: wide
+  ucs: "\U0001F6DE"
+- delta: 1
+  named: Ring Buoy
+  test_type: wide
+  ucs: "\U0001F6DF"
+- delta: 1
+  named: Pickup Truck
+  test_type: wide
+  ucs: "\U0001F6FB"
+- delta: 1
+  named: Roller Skate
+  test_type: wide
+  ucs: "\U0001F6FC"
+- delta: 1
+  named: Heavy Equals Sign
+  test_type: wide
+  ucs: "\U0001F7F0"
+- delta: 1
+  named: Pinched Fingers
+  test_type: wide
+  ucs: "\U0001F90C"
+- delta: 1
+  named: Smiling Face With Tear
+  test_type: wide
+  ucs: "\U0001F972"
+- delta: 1
+  named: Ninja
+  test_type: wide
+  ucs: "\U0001F977"
+- delta: 1
+  named: Disguised Face
+  test_type: wide
+  ucs: "\U0001F978"
+- delta: 1
+  named: Face Holding Back Tears
+  test_type: wide
+  ucs: "\U0001F979"
+- delta: 1
+  named: Mammoth
+  test_type: wide
+  ucs: "\U0001F9A3"
+- delta: 1
+  named: Dodo
+  test_type: wide
+  ucs: "\U0001F9A4"
+- delta: 1
+  named: Beaver
+  test_type: wide
+  ucs: "\U0001F9AB"
+- delta: 1
+  named: Bison
+  test_type: wide
+  ucs: "\U0001F9AC"
+- delta: 1
+  named: Seal
+  test_type: wide
+  ucs: "\U0001F9AD"
+- delta: 1
+  named: Bubble Tea
+  test_type: wide
+  ucs: "\U0001F9CB"
+- delta: 1
+  named: Troll
+  test_type: wide
+  ucs: "\U0001F9CC"
+- delta: 1
+  named: Thong Sandal
+  test_type: wide
+  ucs: "\U0001FA74"
+- delta: 1
+  named: Light Blue Heart
+  test_type: wide
+  ucs: "\U0001FA75"
+- delta: 1
+  named: Grey Heart
+  test_type: wide
+  ucs: "\U0001FA76"
+- delta: 1
+  named: Pink Heart
+  test_type: wide
+  ucs: "\U0001FA77"
+- delta: 1
+  named: X-ray
+  test_type: wide
+  ucs: "\U0001FA7B"
+- delta: 1
+  named: Crutch
+  test_type: wide
+  ucs: "\U0001FA7C"
+- delta: 1
+  named: Boomerang
+  test_type: wide
+  ucs: "\U0001FA83"
+- delta: 1
+  named: Magic Wand
+  test_type: wide
+  ucs: "\U0001FA84"
+- delta: 1
+  named: Pinata
+  test_type: wide
+  ucs: "\U0001FA85"
+- delta: 1
+  named: Nesting Dolls
+  test_type: wide
+  ucs: "\U0001FA86"
+- delta: 1
+  named: Maracas
+  test_type: wide
+  ucs: "\U0001FA87"
+- delta: 1
+  named: Flute
+  test_type: wide
+  ucs: "\U0001FA88"
+- delta: 1
+  named: Military Helmet
+  test_type: wide
+  ucs: "\U0001FA96"
+- delta: 1
+  named: Accordion
+  test_type: wide
+  ucs: "\U0001FA97"
+- delta: 1
+  named: Long Drum
+  test_type: wide
+  ucs: "\U0001FA98"
+- delta: 1
+  named: Coin
+  test_type: wide
+  ucs: "\U0001FA99"
+- delta: 1
+  named: Carpentry Saw
+  test_type: wide
+  ucs: "\U0001FA9A"
+- delta: 1
+  named: Screwdriver
+  test_type: wide
+  ucs: "\U0001FA9B"
+- delta: 1
+  named: Ladder
+  test_type: wide
+  ucs: "\U0001FA9C"
+- delta: 1
+  named: Hook
+  test_type: wide
+  ucs: "\U0001FA9D"
+- delta: 1
+  named: Mirror
+  test_type: wide
+  ucs: "\U0001FA9E"
+- delta: 1
+  named: Window
+  test_type: wide
+  ucs: "\U0001FA9F"
+- delta: 1
+  named: Plunger
+  test_type: wide
+  ucs: "\U0001FAA0"
+- delta: 1
+  named: Sewing Needle
+  test_type: wide
+  ucs: "\U0001FAA1"
+- delta: 1
+  named: Knot
+  test_type: wide
+  ucs: "\U0001FAA2"
+- delta: 1
+  named: Bucket
+  test_type: wide
+  ucs: "\U0001FAA3"
+- delta: 1
+  named: Mouse Trap
+  test_type: wide
+  ucs: "\U0001FAA4"
+- delta: 1
+  named: Toothbrush
+  test_type: wide
+  ucs: "\U0001FAA5"
+- delta: 1
+  named: Headstone
+  test_type: wide
+  ucs: "\U0001FAA6"
+- delta: 1
+  named: Placard
+  test_type: wide
+  ucs: "\U0001FAA7"
+- delta: 1
+  named: Rock
+  test_type: wide
+  ucs: "\U0001FAA8"
+- delta: 1
+  named: Mirror Ball
+  test_type: wide
+  ucs: "\U0001FAA9"
+- delta: 1
+  named: Identification Card
+  test_type: wide
+  ucs: "\U0001FAAA"
+- delta: 1
+  named: Low Battery
+  test_type: wide
+  ucs: "\U0001FAAB"
+- delta: 1
+  named: Hamsa
+  test_type: wide
+  ucs: "\U0001FAAC"
+- delta: 1
+  named: Folding Hand Fan
+  test_type: wide
+  ucs: "\U0001FAAD"
+- delta: 1
+  named: Hair Pick
+  test_type: wide
+  ucs: "\U0001FAAE"
+- delta: 1
+  named: Khanda
+  test_type: wide
+  ucs: "\U0001FAAF"
+- delta: 1
+  named: Fly
+  test_type: wide
+  ucs: "\U0001FAB0"
+- delta: 1
+  named: Worm
+  test_type: wide
+  ucs: "\U0001FAB1"
+- delta: 1
+  named: Beetle
+  test_type: wide
+  ucs: "\U0001FAB2"
+- delta: 1
+  named: Cockroach
+  test_type: wide
+  ucs: "\U0001FAB3"
+- delta: 1
+  named: Potted Plant
+  test_type: wide
+  ucs: "\U0001FAB4"
+- delta: 1
+  named: Wood
+  test_type: wide
+  ucs: "\U0001FAB5"
+- delta: 1
+  named: Feather
+  test_type: wide
+  ucs: "\U0001FAB6"
+- delta: 1
+  named: Lotus
+  test_type: wide
+  ucs: "\U0001FAB7"
+- delta: 1
+  named: Coral
+  test_type: wide
+  ucs: "\U0001FAB8"
+- delta: 1
+  named: Empty Nest
+  test_type: wide
+  ucs: "\U0001FAB9"
+- delta: 1
+  named: Nest With Eggs
+  test_type: wide
+  ucs: "\U0001FABA"
+- delta: 1
+  named: Hyacinth
+  test_type: wide
+  ucs: "\U0001FABB"
+- delta: 1
+  named: Jellyfish
+  test_type: wide
+  ucs: "\U0001FABC"
+- delta: 1
+  named: Wing
+  test_type: wide
+  ucs: "\U0001FABD"
+- delta: 1
+  named: Goose
+  test_type: wide
+  ucs: "\U0001FABF"
+- delta: 1
+  named: Anatomical Heart
+  test_type: wide
+  ucs: "\U0001FAC0"
+- delta: 1
+  named: Lungs
+  test_type: wide
+  ucs: "\U0001FAC1"
+- delta: 1
+  named: People Hugging
+  test_type: wide
+  ucs: "\U0001FAC2"
+- delta: 1
+  named: Pregnant Man
+  test_type: wide
+  ucs: "\U0001FAC3"
+- delta: 1
+  named: Pregnant Person
+  test_type: wide
+  ucs: "\U0001FAC4"
+- delta: 1
+  named: Person With Crown
+  test_type: wide
+  ucs: "\U0001FAC5"
+- delta: 1
+  named: Moose
+  test_type: wide
+  ucs: "\U0001FACE"
+- delta: 1
+  named: Donkey
+  test_type: wide
+  ucs: "\U0001FACF"
+- delta: 1
+  named: Blueberries
+  test_type: wide
+  ucs: "\U0001FAD0"
+- delta: 1
+  named: Bell Pepper
+  test_type: wide
+  ucs: "\U0001FAD1"
+- delta: 1
+  named: Olive
+  test_type: wide
+  ucs: "\U0001FAD2"
+- delta: 1
+  named: Flatbread
+  test_type: wide
+  ucs: "\U0001FAD3"
+- delta: 1
+  named: Tamale
+  test_type: wide
+  ucs: "\U0001FAD4"
+- delta: 1
+  named: Fondue
+  test_type: wide
+  ucs: "\U0001FAD5"
+- delta: 1
+  named: Teapot
+  test_type: wide
+  ucs: "\U0001FAD6"
+- delta: 1
+  named: Pouring Liquid
+  test_type: wide
+  ucs: "\U0001FAD7"
+- delta: 1
+  named: Beans
+  test_type: wide
+  ucs: "\U0001FAD8"
+- delta: 1
+  named: Jar
+  test_type: wide
+  ucs: "\U0001FAD9"
+- delta: 1
+  named: Ginger Root
+  test_type: wide
+  ucs: "\U0001FADA"
+- delta: 1
+  named: Pea Pod
+  test_type: wide
+  ucs: "\U0001FADB"
+- delta: 1
+  named: Melting Face
+  test_type: wide
+  ucs: "\U0001FAE0"
+- delta: 1
+  named: Saluting Face
+  test_type: wide
+  ucs: "\U0001FAE1"
+- delta: 1
+  named: Face With Open Eyes And Hand Over Mouth
+  test_type: wide
+  ucs: "\U0001FAE2"
+- delta: 1
+  named: Face With Peeking Eye
+  test_type: wide
+  ucs: "\U0001FAE3"
+- delta: 1
+  named: Face With Diagonal Mouth
+  test_type: wide
+  ucs: "\U0001FAE4"
+- delta: 1
+  named: Dotted Line Face
+  test_type: wide
+  ucs: "\U0001FAE5"
+- delta: 1
+  named: Biting Lip
+  test_type: wide
+  ucs: "\U0001FAE6"
+- delta: 1
+  named: Bubbles
+  test_type: wide
+  ucs: "\U0001FAE7"
+- delta: 1
+  named: Shaking Face
+  test_type: wide
+  ucs: "\U0001FAE8"
+- delta: 1
+  named: Hand With Index Finger And Thumb Crossed
+  test_type: wide
+  ucs: "\U0001FAF0"
+- delta: 1
+  named: Rightwards Hand
+  test_type: wide
+  ucs: "\U0001FAF1"
+- delta: 1
+  named: Leftwards Hand
+  test_type: wide
+  ucs: "\U0001FAF2"
+- delta: 1
+  named: Palm Down Hand
+  test_type: wide
+  ucs: "\U0001FAF3"
+- delta: 1
+  named: Palm Up Hand
+  test_type: wide
+  ucs: "\U0001FAF4"
+- delta: 1
+  named: Index Pointing At The Viewer
+  test_type: wide
+  ucs: "\U0001FAF5"
+- delta: 1
+  named: Heart Hands
+  test_type: wide
+  ucs: "\U0001FAF6"
+- delta: 1
+  named: Leftwards Pushing Hand
+  test_type: wide
+  ucs: "\U0001FAF7"
+- delta: 1
+  named: Rightwards Pushing Hand
+  test_type: wide
+  ucs: "\U0001FAF8"
+- delta: -1
+  named: Arabic Number Sign
+  test_type: zero
+  ucs: \u0600
+- delta: -1
+  named: Arabic Sign Sanah
+  test_type: zero
+  ucs: \u0601
+- delta: -1
+  named: Arabic Footnote Marker
+  test_type: zero
+  ucs: \u0602
+- delta: -1
+  named: Arabic Sign Safha
+  test_type: zero
+  ucs: \u0603
+- delta: -1
+  named: Arabic Sign Samvat
+  test_type: zero
+  ucs: \u0604
+- delta: -1
+  named: Arabic Number Mark Above
+  test_type: zero
+  ucs: \u0605
+- delta: -1
+  named: Arabic End Of Ayah
+  test_type: zero
+  ucs: \u06dd
+- delta: 1
+  named: Arabic Small High Madda
+  test_type: zero
+  ucs: "\u06E4"
+- delta: -1
+  named: Syriac Abbreviation Mark
+  test_type: zero
+  ucs: \u070f
+- delta: 1
+  named: Syriac Rbasa Above
+  test_type: zero
+  ucs: "\u0736"
+- delta: -1
+  named: Arabic Pound Mark Above
+  test_type: zero
+  ucs: \u0890
+- delta: -1
+  named: Arabic Piastre Mark Above
+  test_type: zero
+  ucs: \u0891
+- delta: -1
+  named: Arabic Disputed End Of Ayah
+  test_type: zero
+  ucs: \u08e2
+- delta: 1
+  named: Arabic Curly Fathatan
+  test_type: zero
+  ucs: "\u08E7"
+- delta: -1
+  named: Lao Yamakkan
+  test_type: zero
+  ucs: "\u0ECE"
+- delta: -1
+  named: Line Separator
+  test_type: zero
+  ucs: \u2028
+- delta: -1
+  named: Paragraph Separator
+  test_type: zero
+  ucs: \u2029
+- delta: -1
+  named: Interlinear Annotation Anchor
+  test_type: zero
+  ucs: \ufff9
+- delta: -1
+  named: Interlinear Annotation Separator
+  test_type: zero
+  ucs: \ufffa
+- delta: -1
+  named: Interlinear Annotation Terminator
+  test_type: zero
+  ucs: \ufffb
+- delta: -1
+  named: Arabic Small Low Word Sakta
+  test_type: zero
+  ucs: "\U00010EFD"
+- delta: -1
+  named: Arabic Small Low Word Qasr
+  test_type: zero
+  ucs: "\U00010EFE"
+- delta: -1
+  named: Arabic Small Low Word Madda
+  test_type: zero
+  ucs: "\U00010EFF"
+- delta: -1
+  named: Kaithi Number Sign
+  test_type: zero
+  ucs: \U000110bd
+- delta: -1
+  named: Kaithi Number Sign Above
+  test_type: zero
+  ucs: \U000110cd
+- delta: -1
+  named: Khojki Vowel Sign Vocalic R
+  test_type: zero
+  ucs: "\U00011241"
+- delta: 1
+  named: Khudawadi Vowel Sign E
+  test_type: zero
+  ucs: "\U000112E5"
+- delta: -1
+  named: Kawi Sign Candrabindu
+  test_type: zero
+  ucs: "\U00011F00"
+- delta: -1
+  named: Kawi Sign Anusvara
+  test_type: zero
+  ucs: "\U00011F01"
+- delta: -1
+  named: Kawi Vowel Sign I
+  test_type: zero
+  ucs: "\U00011F36"
+- delta: -1
+  named: Kawi Vowel Sign Ii
+  test_type: zero
+  ucs: "\U00011F37"
+- delta: -1
+  named: Kawi Vowel Sign U
+  test_type: zero
+  ucs: "\U00011F38"
+- delta: -1
+  named: Kawi Vowel Sign Uu
+  test_type: zero
+  ucs: "\U00011F39"
+- delta: -1
+  named: Kawi Vowel Sign Vocalic R
+  test_type: zero
+  ucs: "\U00011F3A"
+- delta: -1
+  named: Kawi Vowel Sign Eu
+  test_type: zero
+  ucs: "\U00011F40"
+- delta: -1
+  named: Kawi Conjoiner
+  test_type: zero
+  ucs: "\U00011F42"
+- delta: -1
+  named: Egyptian Hieroglyph Vertical Joiner
+  test_type: zero
+  ucs: \U00013430
+- delta: -1
+  named: Egyptian Hieroglyph Horizontal Joiner
+  test_type: zero
+  ucs: \U00013431
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Top Start
+  test_type: zero
+  ucs: \U00013432
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Bottom Start
+  test_type: zero
+  ucs: \U00013433
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Top End
+  test_type: zero
+  ucs: \U00013434
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Bottom End
+  test_type: zero
+  ucs: \U00013435
+- delta: -1
+  named: Egyptian Hieroglyph Overlay Middle
+  test_type: zero
+  ucs: \U00013436
+- delta: -1
+  named: Egyptian Hieroglyph Begin Segment
+  test_type: zero
+  ucs: \U00013437
+- delta: -1
+  named: Egyptian Hieroglyph End Segment
+  test_type: zero
+  ucs: \U00013438
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Middle
+  test_type: zero
+  ucs: \U00013439
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Top
+  test_type: zero
+  ucs: \U0001343a
+- delta: -1
+  named: Egyptian Hieroglyph Insert At Bottom
+  test_type: zero
+  ucs: \U0001343b
+- delta: -1
+  named: Egyptian Hieroglyph Begin Enclosure
+  test_type: zero
+  ucs: \U0001343c
+- delta: -1
+  named: Egyptian Hieroglyph End Enclosure
+  test_type: zero
+  ucs: \U0001343d
+- delta: -1
+  named: Egyptian Hieroglyph Begin Walled Enclosure
+  test_type: zero
+  ucs: \U0001343e
+- delta: -1
+  named: Egyptian Hieroglyph End Walled Enclosure
+  test_type: zero
+  ucs: \U0001343f
+- delta: -1
+  named: Egyptian Hieroglyph Mirror Horizontally
+  test_type: zero
+  ucs: "\U00013440"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Top Start
+  test_type: zero
+  ucs: "\U00013447"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Bottom Start
+  test_type: zero
+  ucs: "\U00013448"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Start
+  test_type: zero
+  ucs: "\U00013449"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Top End
+  test_type: zero
+  ucs: "\U0001344A"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Top
+  test_type: zero
+  ucs: "\U0001344B"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Bottom Start And Top End
+  test_type: zero
+  ucs: "\U0001344C"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Start And Top
+  test_type: zero
+  ucs: "\U0001344D"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Bottom End
+  test_type: zero
+  ucs: "\U0001344E"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Top Start And Bottom End
+  test_type: zero
+  ucs: "\U0001344F"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Bottom
+  test_type: zero
+  ucs: "\U00013450"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Start And Bottom
+  test_type: zero
+  ucs: "\U00013451"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At End
+  test_type: zero
+  ucs: "\U00013452"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Top And End
+  test_type: zero
+  ucs: "\U00013453"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged At Bottom And End
+  test_type: zero
+  ucs: "\U00013454"
+- delta: -1
+  named: Egyptian Hieroglyph Modifier Damaged
+  test_type: zero
+  ucs: "\U00013455"
+- delta: -1
+  named: Combining Cyrillic Small Letter Byelorussian-ukrainian I
+  test_type: zero
+  ucs: "\U0001E08F"
+- delta: 1
+  named: Wancho Tone Koini
+  test_type: zero
+  ucs: "\U0001E2EF"
+- delta: -1
+  named: Nag Mundari Sign Muhor
+  test_type: zero
+  ucs: "\U0001E4EC"
+- delta: -1
+  named: Nag Mundari Sign Toyor
+  test_type: zero
+  ucs: "\U0001E4ED"
+- delta: -1
+  named: Nag Mundari Sign Ikir
+  test_type: zero
+  ucs: "\U0001E4EE"
+- delta: -1
+  named: Nag Mundari Sign Sutuh
+  test_type: zero
+  ucs: "\U0001E4EF"
+- delta: -2
+  named: Emoji Modifier Fitzpatrick Type-1-2
+  test_type: zero
+  ucs: "\U0001F3FB"
+- delta: -2
+  named: Emoji Modifier Fitzpatrick Type-3
+  test_type: zero
+  ucs: "\U0001F3FC"
+- delta: -2
+  named: Emoji Modifier Fitzpatrick Type-4
+  test_type: zero
+  ucs: "\U0001F3FD"
+- delta: -2
+  named: Emoji Modifier Fitzpatrick Type-5
+  test_type: zero
+  ucs: "\U0001F3FE"
+- delta: -2
+  named: Emoji Modifier Fitzpatrick Type-6
+  test_type: zero
+  ucs: "\U0001F3FF"
+- delta: 1
+  named: Waving White Flag, Variation Selector-16, Zero Width Joiner, Male With Stroke
+    And Male And Female Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3F3\uFE0F\\u200d\u26A7\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FC\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-6
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FD\\u200d\U0001FAF2\U0001F3FF"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-5
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FC\\u200d\U0001FAF2\U0001F3FE"
+- delta: 1
+  named: Weight Lifter, Variation Selector-16, Zero Width Joiner, Male Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\uFE0F\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Female Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FD\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FC\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FF\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Male Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FC\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FF\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Male Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FF\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FB\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Heavy Black Heart, Variation Selector-16, Zero Width Joiner, Adhesive Bandage
+  test_type: emoji-zwj
+  ucs: "\u2764\uFE0F\\u200d\U0001FA79"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Leftwards Hand, Emoji Modifier Fitzpatrick Type-6
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FB\\u200d\U0001FAF2\U0001F3FF"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-3
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FF\\u200d\U0001FAF2\U0001F3FC"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-1-2
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FE\\u200d\U0001FAF2\U0001F3FB"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FD\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Variation Selector-16, Zero Width Joiner, Male Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\uFE0F\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FB\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FF\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Chains, Variation Selector-16, Zero Width Joiner, Collision Symbol
+  test_type: emoji-zwj
+  ucs: "\u26D3\uFE0F\\u200d\U0001F4A5"
+- delta: 1
+  named: Sleuth Or Spy, Variation Selector-16, Zero Width Joiner, Female Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\uFE0F\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FC\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Female Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FE\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Golfer, Variation Selector-16, Zero Width Joiner, Male Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\uFE0F\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FD\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FD\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FD\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Female Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FB\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-4
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FF\\u200d\U0001FAF2\U0001F3FD"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-3
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FE\\u200d\U0001FAF2\U0001F3FC"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FE\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Leftwards Hand, Emoji Modifier Fitzpatrick Type-4
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FB\\u200d\U0001FAF2\U0001F3FD"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FC\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Male Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FE\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Female Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FC\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FF\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FD\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FB\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Male Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FB\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-1-2
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FD\\u200d\U0001FAF2\U0001F3FB"
+- delta: 1
+  named: Heavy Black Heart, Variation Selector-16, Zero Width Joiner, Fire
+  test_type: emoji-zwj
+  ucs: "\u2764\uFE0F\\u200d\U0001F525"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-6
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FC\\u200d\U0001FAF2\U0001F3FF"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FF\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FE\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Eye, Variation Selector-16, Zero Width Joiner, Left Speech Bubble, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F441\uFE0F\\u200d\U0001F5E8\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FF\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Leftwards Hand, Emoji Modifier Fitzpatrick Type-5
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FB\\u200d\U0001FAF2\U0001F3FE"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Male Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FB\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FB\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-6, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-1-2
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FF\\u200d\U0001FAF2\U0001F3FB"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Male Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FD\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-6
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FE\\u200d\U0001FAF2\U0001F3FF"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FE\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Person With Ball, Variation Selector-16, Zero Width Joiner, Female Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\uFE0F\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Waving White Flag, Variation Selector-16, Zero Width Joiner, Rainbow
+  test_type: emoji-zwj
+  ucs: "\U0001F3F3\uFE0F\\u200d\U0001F308"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FE\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Golfer, Variation Selector-16, Zero Width Joiner, Female Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\uFE0F\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-3
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FD\\u200d\U0001FAF2\U0001F3FC"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-1-2
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FC\\u200d\U0001FAF2\U0001F3FB"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FD\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Person With Ball, Variation Selector-16, Zero Width Joiner, Male Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\uFE0F\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-4, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-5
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FD\\u200d\U0001FAF2\U0001F3FE"
+- delta: 1
+  named: Golfer, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner, Female Sign,
+    Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CC\U0001F3FB\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Leftwards
+    Hand, Emoji Modifier Fitzpatrick Type-4
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FC\\u200d\U0001FAF2\U0001F3FD"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FE\\u200d\u2642\uFE0F"
+- delta: -1
+  named: Person With Ball, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\u26F9\U0001F3FC\\u200d\u2640\uFE0F"
+- delta: 1
+  named: Sleuth Or Spy, Emoji Modifier Fitzpatrick Type-5, Zero Width Joiner, Male
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F575\U0001F3FE\\u200d\u2642\uFE0F"
+- delta: 1
+  named: Weight Lifter, Emoji Modifier Fitzpatrick Type-3, Zero Width Joiner, Female
+    Sign, Variation Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\U0001F3FC\\u200d\u2640\uFE0F"
+- delta: -1
+  named: Rightwards Hand, Emoji Modifier Fitzpatrick Type-1-2, Zero Width Joiner,
+    Leftwards Hand, Emoji Modifier Fitzpatrick Type-3
+  test_type: emoji-zwj
+  ucs: "\U0001FAF1\U0001F3FB\\u200d\U0001FAF2\U0001F3FC"
+- delta: 1
+  named: Weight Lifter, Variation Selector-16, Zero Width Joiner, Female Sign, Variation
+    Selector-16
+  test_type: emoji-zwj
+  ucs: "\U0001F3CB\uFE0F\\u200d\u2640\uFE0F"
+session_metadata:
+  date: 2023-10-17 02:26:37 -0400
+  parent_exes:
+  - /bin/zsh
+  - /usr/bin/login
+  - /Users/jq/Library/Application Support/iTerm2/iTermServer-3.4.10
+  - /Applications/iTerm.app/Contents/MacOS/iTerm2
+  - /sbin/launchd
+  python_version: 3.12.0
+  seconds_elapsed: 90.59177179192193
+  system: Darwin
+  terminal:
+    height: 43
+    width: 182
+  unicode_version: 15.1.0
+  user_input:
+    Software version: 3.4.10
+    Terminal Software: iTerm2

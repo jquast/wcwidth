@@ -11,7 +11,7 @@ supports utf-8.
 #         Invalid constant name "flushout" (col 4)
 #         Invalid module name "wcwidth-browser"
 from __future__ import division, print_function
-import collections
+import platform
 import contextlib
 import os
 
@@ -80,7 +80,7 @@ def save_report(records, session_metadata):
 @contextlib.contextmanager
 def activate_terminal(term, automatic=False):
     if automatic:
-        with term.location(), term.cbreak():
+        with term.location():
             yield
         return
     else:
@@ -92,14 +92,20 @@ def fetch_terminal_metadata(term, unicode_version):
     """
     parent_processes = psutil.Process(os.getpid()).parents()[:-1]
     return {
+        # this is just to try to help identify the terminal software, xterm etc.
+        # it can be hard to predict at what and how many layers our terminal process
+        # is from ours.
         'parent_exes': [p.exe() for p in parent_processes],
         'terminal': {
             'width': term.width,
             'height': term.height,
         },
-        'unicode_version': unicode_version,
+        'user_input': {},
+        'unicode_version': _wcmatch_version(unicode_version),
+        'python_version': platform.python_version(),
+        'system': platform.system(),
+        'date': time.strftime('%Y-%m-%d %H:%M:%S %z'),
     }
-
 
 
 class WcWideCharacterGenerator(object):
@@ -323,7 +329,7 @@ class Pager(object):
     #: screen state for next draw method(s).
     STATE_CLEAN, STATE_DIRTY, STATE_REFRESH = 0, 1, 2
 
-    def __init__(self, term, screen, test_type, unicode_version='auto'):
+    def __init__(self, term: blessed.Terminal, screen, test_type, unicode_version='auto'):
         """
         Class constructor.
         """
@@ -450,42 +456,45 @@ class Pager(object):
         records = list()
         stime = time.monotonic()
         session_metadata = fetch_terminal_metadata(self.term, unicode_version=self.unicode_version)
-        for test_type in ('narrow', 'wide', 'zero', 'emoji-zwj'):
-            self.initialize_page_data(test_type)
-            self.screen.change_test_type(test_type)
-            page_idx = page_offset = idx = offset = 0
-            self.term.move(self.screen.row_begins, 0)
-            while True:
-                self.draw_heading(writer)
-                (idx, offset), data = self.page_data(idx, offset)
-                col = 0
-                for ucs, name in data:
-                    try:
-                        distance = measure_distance(ucs, name)
-                    except AssertionError:
-                        # drew past newline boundry, just re-execute the same test
-                        distance = measure_distance(ucs, name)
-                    delta = self.screen.hint_width - distance
-                    if delta != 0:
-                        # mark failed
-                        records.append({'ucs': repr(ucs)[1:-1],
-                                                   'named': name,
-                                                   'delta': delta,
-                                                   'test_type': test_type})
-                        redraw_text_entry(ucs, name, style=style_failed)
-                    else:
-                        # mark completed
-                        redraw_text_entry(ucs, name, style=style_completed)
-                    col += 1
-                    if col == self.screen.num_columns:
-                        col = 0
-                        writer(clear_eol + '\n')
-                writer(clear_eol)
-                self.draw_status(writer, idx, automatic=True)
-                if idx == self.last_page:
-                    # page displayed was last page, quit.
-                    break
-                idx += 1
+        session_metadata['user_input']['Terminal Software'] = input('Enter "Terminal Software": ')
+        session_metadata['user_input']['Software version'] = input('Enter "Software Version": ')
+        with self.term.cbreak():
+            for test_type in ('narrow', 'wide', 'zero', 'emoji-zwj'):
+                self.initialize_page_data(test_type)
+                self.screen.change_test_type(test_type)
+                page_idx = page_offset = idx = offset = 0
+                self.term.move(self.screen.row_begins, 0)
+                while True:
+                    self.draw_heading(writer)
+                    (idx, offset), data = self.page_data(idx, offset)
+                    col = 0
+                    for ucs, name in data:
+                        try:
+                            distance = measure_distance(ucs, name)
+                        except AssertionError:
+                            # drew past newline boundry, just re-execute the same test
+                            distance = measure_distance(ucs, name)
+                        delta = self.screen.hint_width - distance
+                        if delta != 0:
+                            # mark failed
+                            records.append({'ucs': repr(ucs)[1:-1],
+                                                    'named': name,
+                                                    'delta': delta,
+                                                    'test_type': test_type})
+                            redraw_text_entry(ucs, name, style=style_failed)
+                        else:
+                            # mark completed
+                            redraw_text_entry(ucs, name, style=style_completed)
+                        col += 1
+                        if col == self.screen.num_columns:
+                            col = 0
+                            writer(clear_eol + '\n')
+                    writer(clear_eol)
+                    self.draw_status(writer, idx, automatic=True)
+                    if idx == self.last_page:
+                        # page displayed was last page, quit.
+                        break
+                    idx += 1
         
         session_metadata['seconds_elapsed'] = time.monotonic() - stime
         # save 'records' to toml file in data/ folder
