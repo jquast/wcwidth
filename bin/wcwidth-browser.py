@@ -445,8 +445,9 @@ class Pager(object):
             y, x = self.term.get_location()
             writer(self.text_entry(ucs, name), end='')
             ny, nx = self.term.get_location()
-            assert y == ny, ("Y position has shifted!", y, ny)
-            return nx - x
+            assert y == ny, ("y position is out of control on ucs value=", hex(ord(ucs)) if len(ucs) == 1 else repr(ucs))
+            if y == ny:
+                return nx - x
 
         def redraw_text_entry(ucs: str, name: str, style: Style):
             """Redraw over previously drawn entry with given blessed term_attr()"""
@@ -471,10 +472,14 @@ class Pager(object):
                     for ucs, name in data:
                         try:
                             distance = measure_distance(ucs, name)
+                            delta = self.screen.hint_width - distance
                         except AssertionError:
                             # drew past newline boundry, just re-execute the same test
-                            distance = measure_distance(ucs, name)
-                        delta = self.screen.hint_width - distance
+                            try:
+                                distance = measure_distance(ucs, name)
+                                delta = self.screen.hint_width - distance
+                            except AssertionError:
+                                delta = 'Vertical Error'
                         if delta != 0:
                             # mark failed
                             records.append({'ucs': repr(ucs)[1:-1],
