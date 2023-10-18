@@ -140,7 +140,7 @@ class TableEntry:
         # Cf Format
         # Zl Line Separator
         # Zp Paragraph Separator
-        if self.properties[0] in ('Me', 'Mn', 'Cf', 'Zl', 'Zp'):
+        if self.properties[0] in ('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp'):
             return wide == 0
         # F  Fullwidth
         # W  Wide
@@ -414,11 +414,10 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
         table[version] = parse_category(fname=fname_eaw, category_codes=('W', 'F'), wide=2)
 
         # subtract(!) wide characters that are defined as 'W' category in EAW, but
-        # as a zero-width category 'Mn' in DGC, which is preferred.
-        # TODO: What about Wide as 'Mc' ? They need to be tested ..
+        # as a zero-width category 'Mn' or 'Mc' in DGC, which is preferred.
         fname_dgc = os.path.join(PATH_DATA, f'DerivedGeneralCategory-{version}.txt')
         do_retrieve(url=URL_UNICODE_DERIVED_AGE.format(version=version), fname=fname_dgc)
-        table[version].values.discard(parse_category(fname=fname_dgc, category_codes=('Mn'), wide=0).values)
+        table[version].values.discard(parse_category(fname=fname_dgc, category_codes=('Mn', 'Mc'), wide=0).values)
 
         # join with some atypical 'wide' characters defined only by category 'Sk'
         table[version].values.update(parse_category(fname=fname_dgc, category_codes=('Sk',), wide=2).values)
