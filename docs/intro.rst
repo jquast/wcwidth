@@ -29,33 +29,51 @@ Example
 
 **Problem**: given the following phrase (Japanese),
 
-   >>>  text = u'コンニチハ'
+   >>>  phrase = u'コンニチハ'
 
-Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printible length* of 10 cells, so that when using the `rjust` function, the
-output length is wrong::
+Python returns the *codepoint length* of **5** from functions such ``len()``::
 
-    >>> print(len('コンニチハ'))
+    >>> len('コンニチハ')
     5
 
-    >>> print('コンニチハ'.rjust(20, '_'))
-    _______________コンニチハ
+And **incorrectly** uses that codepoint length with built-in functions such as `str.rjust`_.
+In the following example, underscore (``_``) should not print::
 
-By defining our own "rjust" function that uses wcwidth, we can correct this::
+    >>> print(phrase.rjust(10,'_'))
+    _____コンニチハ
 
-   >>> def wc_rjust(text, length, padding=' '):
-   ...    from wcwidth import wcswidth
-   ...    return padding * max(0, (length - wcswidth(text))) + text
-   ...
+Terminals with CJK Unicode capabilities use **2** cells for each codepoint,
+and we can test its total printable length of **10** cells in the following,
+where vertical pipe (``|``) should align::
 
-Our **Solution** uses wcswidth to determine the string length correctly::
+    >>> print('|' + phrase + '|\n|1234567890|')
+    |コンニチハ|
+    |1234567890|
 
-   >>> from wcwidth import wcswidth
-   >>> print(wcswidth('コンニチハ'))
+**Solution** Use the `wcwidth.width` function in place of `len` when determining the non-printable
+width of a string::
+
+   >>> import wcwidth
+   >>> print(wcwidth.width(phrase))
    10
 
-   >>> print(wc_rjust('コンニチハ', 20, '_'))
-   __________コンニチハ
+We can then define our own "rjust" function using `wcwidth.width`_::
+
+   >>> import wcwidth
+   >>> def wc_rjust(text, length, padding=' '):
+   ...    return padding * max(0, (length - wcwidth.width(text))) + text
+   ...
+
+Which correctly does not display underscore (``_``)::
+
+   >>> print(wc_rjust('コンニチハ', 10, '_'))
+   コンニチハ
+
+A final example, where vertical pipe will align::
+
+  >>> print('|' + phrase + '|\n|' + wcwidth.width(phrase) * 'X' + '|')
+  |コンニチハ|
+  |XXXXXXXXXX|
 
 
 Choosing a Version
@@ -69,7 +87,7 @@ their own, from shell::
 
 If unspecified, the latest version is used. If your Terminal Emulator does not
 export this variable, you can use the `jquast/ucs-detect`_ utility to
-automatically detect and export it to your shell.
+detect it and export it to your shell.
 
 wcwidth, wcswidth
 -----------------
@@ -304,6 +322,10 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
+.. _`str.rjust`: https://docs.python.org/3.12/library/stdtypes.html#str.rjust
+.. _`wcwidth.wcswidth`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
+.. _`wcwidth.wcwidth`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
+.. _`wcwidth.width`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
 .. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character

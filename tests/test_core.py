@@ -87,7 +87,15 @@ def test_null_width_0():
 
 
 def test_control_c0_width_negative_1():
-    """How the API reacts to CSI (Control sequence initiate)."""
+    """How the API reacts to CSI (Control sequence initiate).
+
+    An example of bad fortune, this terminal sequence is a width of 0
+    on all terminals, but wcwidth doesn't parse Control-Sequence-Inducer
+    (CSI) sequences.
+
+    Also the "legacy" posix functions wcwidth and wcswidth return -1 for
+    any string containing the C1 control character \x1b (ESC).    
+    """
     # given,
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
@@ -108,11 +116,6 @@ def test_control_c0_width_negative_1():
 
 def test_control_c0_width_zero():
     """Using width() function reports 0 for ESC in terminal sequence."""
-    # given a maybe poor example, as the terminal sequence is a width of 0
-    # rendered on all terminals, but wcwidth doesn't parse
-    # Control-Sequence-Inducer (CSI) sequences. Also the "legacy" posix
-    # functions wcwidth and wcswidth return -1 for any string containing the C1
-    # control character \x1b (ESC).
     phrase = u'\x1b[0m'
     expect_length_each = (-1, 1, 1, 1)
     expect_length_phrase_wcs = -1
@@ -181,11 +184,17 @@ def test_combining_enclosing():
     assert length_phrase == expect_length_phrase
 
 
-def test_combining_spacing():
+def test_balinese_script():
     u"""Balinese kapal (ship) is ᬓᬨᬮ᭄ of length 4."""
-    phrase = u"\u1B13\u1B28\u1B2E\u1B44"
-    expect_length_each = (1, 1, 1, 1)
-    expect_length_phrase = 4
+    # in visual studio, it is (2, 1, 2, 0) = 5 ?!
+    # in iTerm2 in vim, it is (1, 1, 0, 1)
+    # 
+    phrase = (u"\u1B13"    # Category 'Lo', EAW 'N' -- BALINESE LETTER KA
+              u"\u1B28"    # Category 'Lo', EAW 'N' -- BALINESE LETTER PA KAPAL
+              u"\u1B2E"    # Category 'Lo', EAW 'N' -- BALINESE LETTER LA
+              u"\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG
+    expect_length_each = (1, 1, 1, 0)
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -209,6 +218,178 @@ def test_kr_jamo_filler():
     phrase = "\u1100\u1160"
     expect_length_each = (2, 1)
     expect_length_phrase = 3
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+def emoji_zwj_sequence():
+    u"""
+    Emoji zwj sequence of four codepoints is just 2 cells.
+    """
+    phrase = (u"\U0001f469"   # Base, Category So, East Asian Width property 'W' -- WOMAN
+              u"\U0001f3fb"   # Modifier, Category Sk, East Asian Width property 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-1-2
+              u"\u200d"       # Joiner, Category Cf, East Asian Width property 'N'  -- ZERO WIDTH JOINER
+              u"\U0001f4bb")  # Fused, Category So, East Asian Width peroperty 'W' -- PERSONAL COMPUTER
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    expect_length_each = (2, 0, 0, 2)
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+def longer_emoji_zwj_sequence():
+    u"""
+    A much longer emoji ZWJ sequence of 10 total codepoints is just 2 cells!
+    """
+    # 'Category Code', 'East Asian Width property' -- 'description'
+    phrase = (u"\U0001F9D1"   # 'So', 'W' -- ADULT
+              u"\U0001F3FB"   # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-1-2
+              u"\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
+              u"\u2764"       # 'So', 'W' -- HEAVY BLACK HEART
+              u"\uFE0F"       # 'Mn', 'A' -- VARIATION SELECTOR-16
+              u"\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
+              u"\U0001F48B"   # 'So', 'N' -- KISS MARK
+              u"\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
+              u"\U0001F9D1"   # 'So', 'W' -- ADULT
+              u"\U0001F3FD")  # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-4
+
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    expect_length_each = (2, 0, 0, 2, 0, 0, 1, 0, 2, 0)
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+def test_devanagari_script():
+    u"""
+    Attempt to test the measurement width of Devanagari script.
+
+    I believe this 'phrase' should be length 3.
+
+    This is a difficult problem, and this library does not yet get it right,
+    because we interpret the unicode data files programmatically, but they do
+    not correctly describe how their terminal width is measured.
+
+    There are very few Terminals that do!
+
+    As of 2023,
+
+    - iTerm2: correct length but individual characters are out of order and
+              horizaontally misplaced as to be unreadable in its language when
+              using 'Noto Sans' font.
+    - mlterm: mixed results, it offers several options in the configuration
+              dialog, "Xft", "Cario", and "Variable Column Width" have some
+              effect, but with neither 'Noto Sans' or 'unifont', it is not
+              recognizable as the Devanagari script it is meant to display.
+
+    Previous testing with Devanagari documented at address https://benizi.com/vim/devanagari/
+
+    See also, https://askubuntu.com/questions/8437/is-there-a-good-mono-spaced-font-for-devanagari-script-in-the-terminal
+    """
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    # please note that document correctly points out that the final width cannot be determined
+    # as a sum of each individual width, as this library currently performs with exception of
+    # ZWJ, but I think it incorrectly gestures what a stateless call to wcwidth.wcwidth of
+    # each codepoint *should* return.
+    phrase = (u"\u0915"    # Akhand, Category 'Lo', East Asian Width property 'N' -- DEVANAGARI LETTER KA
+              u"\u094D"    # Joiner, Category 'Mn', East Asian Width property 'N' -- DEVANAGARI SIGN VIRAMA
+              u"\u0937"    # Fused, Category 'Lo', East Asian Width property 'N' -- DEVANAGARI LETTER SSA
+              u"\u093F")   # MatraL, Category 'Mc', East Asian Width property 'N' -- DEVANAGARI VOWEL SIGN I
+    # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
+    expect_length_each = (1, 0, 1, 0)
+    # I believe the final width *should* be 3.
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+def test_tamil_script():
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    phrase = (u"\u0b95"    # Akhand, Category 'Lo', East Asian Width property 'N' -- TAMIL LETTER KA
+              u"\u0bcd"    # Joiner, Category 'Mn', East Asian Width property 'N' -- TAMIL SIGN VIRAMA
+              u"\u0bb7"    # Fused, Category 'Lo', East Asian Width property 'N' -- TAMIL LETTER SSA
+              u"\u0bcc")   # MatraLR, Category 'Mc', East Asian Width property 'N' -- TAMIL VOWEL SIGN AU
+    # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (3, 0, 0, 4)
+    expect_length_each = (1, 0, 1, 0)
+
+    # I believe the final width should be about 5 or 6.
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+
+def test_kannada_script():
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    # |ರ್ಝೈ|
+    # |123|
+    phrase = ("\u0cb0"    # Repha, Category 'Lo', East Asian Width property 'N' -- KANNADA LETTER RA
+              "\u0ccd"    # Joiner, Category 'Mn', East Asian Width property 'N' -- KANNADA SIGN VIRAMA
+              "\u0c9d"    # Base, Category 'Lo', East Asian Width property 'N' -- KANNADA LETTER JHA
+              "\u0cc8")   # MatraUR, Category 'Mc', East Asian Width property 'N' -- KANNADA VOWEL SIGN AI
+    # 23107-terminal-suppt.pdf suggests should be (2, 0, 3, 1)
+    expect_length_each = (1, 0, 1, 0)
+    # I believe the correct final width *should* be 3 or 4.
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase_wcs = wcwidth.wcswidth(phrase)
+    length_phrase = wcwidth.width(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase_wcs == expect_length_phrase
+    assert length_phrase == expect_length_phrase
+
+
+def test_kannada_script_2():
+    # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+    # |ರ಼್ಚ|
+    # |12|
+    phrase = ("\u0cb0"    # Base, Category 'Lo', East Asian Width property 'N' -- KANNADA LETTER RA
+              "\u0cbc"    # Nukta, Category 'Mn', East Asian Width property 'N' -- KANNADA SIGN NUKTA
+              "\u0ccd"    # Joiner, Category 'Lo', East Asian Width property 'N' -- KANNADA SIGN VIRAMA
+              "\u0c9a")   # Subjoin, Category 'Mc', East Asian Width property 'N' -- KANNADA LETTER CA
+    # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
+    expect_length_each = (1, 0, 0, 1)
+    # I believe the final width is correct, but maybe for the wrong reasons!
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
