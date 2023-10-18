@@ -1,10 +1,25 @@
 #!/usr/bin/env python
 """
-A terminal browser and automatic testing tool for Zero, narrow, wide, and emoji ZWJ.
+A terminal browser and automatic testing tool for Zero, Narrow, Wide characters
+and Emoji with Zero-Width Joiner (ZWJ) sequences. This is a testing tool used by
+wcwidth developers.
 
-This displays the full range of unicode points for 1 or 2-character wide
-ideograms, with pipes ('|') that should align for terminals that
-supports utf-8.
+This Interactive browser can display the full range of unicode points for 0, 1
+or 2-character wide ideograms as determined by the python wcwidth library, with
+pipes (``|``) that should align for terminals that supports utf-8.
+
+The --automatic flag causes the terminal to use the "Cursor Position Sequence"
+supported by terminal emulators to verify whether the expected width matches the
+width determined by the terminal emulator in use, and writes a YAML output
+report to the `data` folder.
+
+Please note that "combining" characters determined zero width must be "combined"
+with the appropriate adjoining character to have an effect, this script does not
+yet make any attempt for that, they are always cojoined with pipe (``|``).  Many
+font and terminal engines will show the given character cojoined with the
+character represented by U+25CC ``◌`` when it cannot be cojoined with pipe. As
+such, these manual and automatic tests are not reliable for zero width
+characters
 """
 # pylint: disable=C0103,W0622
 #         Invalid constant name "echo"
@@ -72,6 +87,7 @@ def save_report(records, session_metadata):
         os.path.dirname(__file__), os.pardir,
         'data', f'record-{int(time.time())}.yaml')
     with open(records_filepath, 'w') as fout:
+        print('Writing report to {records_filepath}')
         yaml.safe_dump({
             'session_metadata': session_metadata,
             'mismatch_records': records,
