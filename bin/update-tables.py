@@ -109,7 +109,8 @@ class TableEntry:
                 # Generate code that expects the best case, that is always combined
                 return wide == 0
             elif 'FULLWIDTH' in self.comment:
-                # Some 'Sk' categories are fullwidth,
+                # Some codepoints in 'Sk' categories are fullwidth(!)
+                # at this time just 3, FULLWIDTH: CIRCUMFLEX ACCENT, GRAVE ACCENT, and MACRON
                 return wide == 2
             else:
                 # the rest are narrow
@@ -136,14 +137,6 @@ class TableEntry:
                 for entry in table_iter
                 if entry.filter_by_category(category_codes, wide)
                 for n in list(range(entry.code_range[0], entry.code_range[1]))}
-
-
-@dataclass(frozen=True)
-class SequenceEntry:
-    """An entry of a unicode sequence."""
-    code_seq: str | None
-    description: str
-    comment: str
 
 
 @dataclass
@@ -187,13 +180,6 @@ class TableDef:
                 txt_description = f'{name_start[:48]}'
             pytable_values.append((hex_start, hex_end, txt_description))
         return pytable_values
-
-
-@dataclass
-class SequenceDef:
-    filename: str
-    date: str
-    sequences: dict[int, list[tuple[str, str]]]
 
 
 @dataclass(frozen=True)
@@ -352,7 +338,8 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
         do_retrieve(url=URL_UNICODE_DERIVED_AGE.format(version=version), fname=fname_dgc)
         table[version].values.discard(parse_category(fname=fname_dgc, category_codes=('Mn', 'Mc'), wide=0).values)
 
-        # join with some atypical 'wide' characters defined only by category 'Sk'
+        # join with some atypical 'wide' characters defined only by category
+        # 'Sk' in DGC
         table[version].values.update(parse_category(fname=fname_dgc, category_codes=('Sk',), wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
