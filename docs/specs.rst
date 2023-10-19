@@ -46,6 +46,7 @@ Width of 2
 
 Any character defined by East Asian Fullwidth (``F``) or Wide (``W``)
 properties in EastAsianWidth txt files, except those that are defined by the
-Category codes of Nonspacing Mark (``Mn``), Spacing Mark (``Mc``), and aprox. 3
-characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
-present in comment of unicode data file.
+Category codes of Nonspacing Mark (``Mn``), Spacing Mark (``Mc``)
+
+Any characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
+present in comment of unicode data file, aprox. 3 characters.
