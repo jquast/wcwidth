@@ -24,7 +24,6 @@ import string
 import logging
 import datetime
 import functools
-import collections
 import unicodedata
 from pathlib import Path
 from dataclasses import field, fields, dataclass

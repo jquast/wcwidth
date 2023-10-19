@@ -134,7 +134,7 @@ def wcwidth(wc, unicode_version='auto'):
 
     See :ref:`Specification` for details of cell measurement.
     """
-    ucs = ord(wc)
+    ucs = ord(wc) if wc else 0
 
     # small optimization: early return of 1 for printable ASCII, this provides
     # approximately 40% performance improvement for mostly-ascii documents, with

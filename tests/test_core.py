@@ -41,6 +41,25 @@ def test_package_version():
     assert result == expected
 
 
+def test_empty_string():
+    """
+    Test empty string is OK.
+
+    https://github.com/jquast/wcwidth/issues/24
+    """
+    phrase = ""
+    expect_length_each = 0
+    expect_length_phrase = 0
+
+    # exercise,
+    length_each = wcwidth.wcwidth(phrase)
+    length_phrase = wcwidth.wcswidth(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
 def basic_string_type():
     """
     This is a python 2-specific test of the basic "string type"
