@@ -4,7 +4,8 @@
 Specification
 =============
 
-This document defines how the wcwidth library measures the printable width of characters of a string.
+This document defines how the wcwidth library measures the printable width
+of characters of a string.
 
 Width of -1
 -----------
@@ -26,8 +27,8 @@ Any characters defined by category codes in DerivedGeneralCategory txt files:
 - 'Cf': Format control character, aprox. 161 characters.
 - 'Zl': U+2028 LINE SEPARATOR only
 - 'Zp': U+2029 PARAGRAPH SEPARATOR only
-- 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase ``'EMOJI
-  MODIFIER'`` is present in comment of unicode data file.
+- 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase
+  ``'EMOJI MODIFIER'`` is present in comment of unicode data file.
 
 The NULL character (``U+0000``).
 
@@ -43,8 +44,9 @@ measured as `Width of 0`_ or `Width of 2`.
 Width of 2
 ----------
 
-Any character defined by East Asian Fullwidth (``F``) or Wide (``W``) properties
-in EastAsianWidth txt files, except those that are defined by the Category codes
-of Nonspacing Mark (``Mn``), Spacing Mark (``Mc``), and the Modifier Symbol
-category, ``'Sk'`` where ``'EMOJI MODIFIER'`` is present in comment of unicode
+Any character defined by East Asian Fullwidth (``F``) or Wide (``W``)
+properties in EastAsianWidth txt files, except those that are defined by the
+Category codes of Nonspacing Mark (``Mn``), Spacing Mark (``Mc``), and the
+Modifier Symbol category, ``'Sk'`` where ``'EMOJI MODIFIER'`` is present in
+comment of unicode
 data file which are defined as `Width of 0`_.

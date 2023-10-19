@@ -40,6 +40,7 @@ def test_package_version():
     # verify.
     assert result == expected
 
+
 def basic_string_type():
     """
     This is a python 2-specific test of the basic "string type"
@@ -128,7 +129,7 @@ def test_control_c0_width_negative_1():
     (CSI) sequences.
 
     Also the "legacy" posix functions wcwidth and wcswidth return -1 for
-    any string containing the C1 control character \x1b (ESC).    
+    any string containing the C1 control character \x1b (ESC).
     """
     # given,
     phrase = u'\x1b[0m'
@@ -142,7 +143,6 @@ def test_control_c0_width_negative_1():
     # verify, though this is actually *0* width for a terminal emulator
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
-
 
 
 def test_combining_width():
@@ -194,7 +194,7 @@ def test_combining_enclosing():
 def test_balinese_script():
     u"""
     Balinese kapal (ship) is length 3.
-    
+
     This may be an example that is not yet correctly rendered by any terminal so
     far, like devanagari.
     """
@@ -234,6 +234,7 @@ def test_kr_jamo_filler():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
+
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
 def emoji_zwj_sequence():
     u"""
@@ -255,6 +256,7 @@ def emoji_zwj_sequence():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
+
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
 def test_unfinished_zwj_sequence():
     u"""
@@ -273,7 +275,7 @@ def test_unfinished_zwj_sequence():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
- 
+
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
 def test_non_recommended_zwj_sequence():
@@ -293,7 +295,6 @@ def test_non_recommended_zwj_sequence():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
- 
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
@@ -324,6 +325,7 @@ def test_longer_emoji_zwj_sequence():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
 
 def test_devanagari_script():
     """
@@ -372,6 +374,7 @@ def test_devanagari_script():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
 
 def test_tamil_script():
     # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf

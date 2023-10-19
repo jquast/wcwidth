@@ -81,7 +81,8 @@ except ImportError:
     from backports.functools_lru_cache import lru_cache
 
 # global cache
-_PY3 = (sys.version_info[0] >= 3)
+_PY3 = sys.version_info[0] >= 3
+
 
 def _bisearch(ucs, table):
     """
@@ -173,42 +174,24 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
 
     See :ref:`Specification` for details of cell measurement.
     """
-    try:
-        return _wcswidth(pwcs[:n],
-                        unicode_version=_wcmatch_version(unicode_version),
-                        errors='strict')
-    except UnicodeError:
-        # this final -1 return value is an ugly C POSIX holdover
-        return -1
-
-
-def _wcswidth(ucs, unicode_version, errors='ignore'):
-    """
-    :param str ucs: A single Ordinal Unicode point.
-    :param str unicode_version: Return value of :func:`_wcmatch_version`.
-    :param str errors: for POSIX compatibility in :func:`wcswidth`,
-        setting argument ``errors='strict'`` will raise a UnicodeError
-        if ``ucs`` contains any C0/C1 Control Characters.
-    """
+    # this 'n' argument is a holdover for POSIX function
+    end = len(pwcs) if n is None else n
+    width = 0
     idx = 0
-    measured_width = 0
-    while idx < len(ucs):
-        if ucs[idx] == u'\u200D':
+    while idx < end:
+        char = pwcs[idx]
+        if char == u'\u200D':
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        # measure width at current index
-        result = wcwidth(ucs[idx], unicode_version)
-        if result < 0:
-            if errors == 'strict':
-                raise UnicodeError('Control character {0!r} at index {1}'.format(ucs[idx], idx))
-        else:
-            measured_width += result
+        # measure character at current index
+        wcw = wcwidth(char, unicode_version)
+        if wcw < 0:
+            # early return -1 on C0 and C1 control characters
+            return wcw
+        width += wcw
         idx += 1
-    return measured_width
-
-
-
+    return width
 
 
 @lru_cache(maxsize=128)
@@ -255,7 +238,7 @@ def _wcmatch_version(given_version):
     # example code works with all versions of python.
     #
     # That, along with the string-to-numeric and comparisons of earliest,
-    # latest, matching, or # nearest, greatly complicates this function.
+    # latest, matching, or nearest, greatly complicates this function.
     # Performance is somewhat curbed by memoization.
     _return_str = not _PY3 and isinstance(given_version, str)
 
