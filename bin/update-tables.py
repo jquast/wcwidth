@@ -344,7 +344,11 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
 
 
 def fetch_table_zero_data() -> UnicodeTableRenderCtx:
-    """Fetch and update zero width tables."""
+    """
+    Fetch and update zero width tables.
+
+    See also: https://unicode.org/L2/L2002/02368-default-ignorable.html
+    """
     table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
         # Determine values of zero-width character lookup table by the following category codes
@@ -485,5 +489,3 @@ def main() -> None:
 if __name__ == '__main__':
     main()
 
-
-# TODO https://unicode.org/L2/L2002/02368-default-ignorable.html, parse??
