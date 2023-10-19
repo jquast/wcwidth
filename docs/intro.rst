@@ -301,9 +301,6 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
-  Get the latest news at `CNN`_.
-
-.. _CNN: http://cnn.com/
 .. _`Specification_from_pypi`: https://wcwidth.readthedocs.io/en/latest/specs.html
 .. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
