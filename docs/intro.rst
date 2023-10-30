@@ -218,7 +218,7 @@ History
 =======
 0.2.9 *2023-10-20*
   * **Bugfix** zero-width characters used in Emoji ZWJ sequences, Balinese,
-    Jamo, Devanagari, Tamil, and Kannada (`PR #91`)
+    Jamo, Devanagari, Tamil, Kannada and others (`PR #91`).
   * **Updated** to include `Specification <Specification_from_pypi>`_ of
     character measurements.
 
