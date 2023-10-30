@@ -5,6 +5,7 @@ wcwidth
 
    intro
    unicode_version
+   specs
    api
 
 Indices and tables

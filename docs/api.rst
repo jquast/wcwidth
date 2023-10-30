@@ -2,10 +2,9 @@
 Public API
 ==========
 
-This package follows SEMVER_ rules for version, therefore, for all of the
-given functions signatures, at example version 1.1.1, you may use version
-dependency ``>=1.1.1,<2.0`` for forward compatibility of future wcwidth
-versions.
+This package follows SEMVER_ rules.  Therefore, for the functions of the below
+list, you may safely use version dependency definition ``wcwidth<2`` in your
+requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.wcwidth
 
@@ -22,7 +21,7 @@ Private API
 These functions should only be used for wcwidth development, and not used by
 dependent packages except with care and by use of frozen version dependency,
 as these functions may change names, signatures, or disappear entirely at any
-time in the future, and not reflected by SEMVER rules.
+time in the future, and not reflected by SEMVER_ rules!
 
 If stable public API for any of the given functions is needed, please suggest a
 Pull Request!
