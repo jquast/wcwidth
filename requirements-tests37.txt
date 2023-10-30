@@ -24,10 +24,15 @@ pluggy==1.2.0
     # via pytest
 py==1.11.0
     # via pytest
+py-cpuinfo==9.0.0
+    # via pytest-benchmark
 pytest==6.2.5
     # via
     #   -r requirements-tests37.in
+    #   pytest-benchmark
     #   pytest-cov
+pytest-benchmark==4.0.0
+    # via -r requirements-tests37.in
 pytest-cov==4.1.0
     # via -r requirements-tests37.in
 toml==0.10.2
