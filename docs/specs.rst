@@ -10,11 +10,13 @@ of characters of a string.
 Width of -1
 -----------
 
-The following have a column width of -1 for only the POSIX-like
-functions :func:`wcwidth.wcwidth` and :func:`wcwidth.wcswidth`:
+The following have a column width of -1 for function :func:`wcwidth.wcwidth`
 
 - C0 control characters (U+001 through U+01F).
 - C1 control characters and DEL (U+07F through U+0A0).
+
+If any character in sequence contains C0 or C1 control characters, the final
+return value of of :func:`wcwidth.wcswidth` is -1.
 
 Width of 0
 ----------
@@ -46,7 +48,7 @@ Width of 2
 
 Any character defined by East Asian Fullwidth (``F``) or Wide (``W``)
 properties in EastAsianWidth txt files, except those that are defined by the
-Category codes of Nonspacing Mark (``Mn``), Spacing Mark (``Mc``)
+Category codes of Nonspacing Mark (``Mn``) and Spacing Mark (``Mc``).
 
 Any characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of unicode data file, aprox. 3 characters.
