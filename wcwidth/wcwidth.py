@@ -187,7 +187,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        if char == '\uFE0F' and last_measured_char:
+        if char == u'\uFE0F' and last_measured_char:
             # on variation selector 16 (VS16) following another character,
             # conditionally add '1' to the measured width if that character is
             # known to be converted from narrow to wide by the VS16 character.
