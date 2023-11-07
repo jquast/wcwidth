@@ -27,7 +27,7 @@ import wcwidth
 
 def make_sequence_from_line(line):
     # convert '002A FE0F  ; ..' -> (0x2a, 0xfe0f) -> chr(0x2a) + chr(0xfe0f)
-    return ''.join(chr(int(cp, 16)) for cp in line.split(';', 1)[0].strip().split())
+    return ''.join(unichr(int(cp, 16)) for cp in line.split(';', 1)[0].strip().split())
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
