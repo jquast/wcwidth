@@ -151,6 +151,7 @@ def read_sequences_from_file(filename):
     return lines, sequences
 
 
+@pytest.mark.skipif(NARROW_ONLY, reason="Some sequences in text file are not compatible with 'narrow' builds")
 def test_recommended_emoji_zwj_sequences():
     """
     Test wcswidth of all of the unicode.org-published emoji-zwj-sequences.txt
