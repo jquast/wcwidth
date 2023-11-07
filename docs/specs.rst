@@ -52,3 +52,7 @@ Category codes of Nonspacing Mark (``Mn``) and Spacing Mark (``Mc``).
 
 Any characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of unicode data file, aprox. 3 characters.
+
+Any character in sequence with U+FE0F (Variation Selector 16) defined by
+Emoji Variation Sequences txt as ``emoji style``.
+

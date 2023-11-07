@@ -216,6 +216,10 @@ Other Languages
 =======
 History
 =======
+0.2.10 *2023-11-08*
+  * **Bugfix** account for Wide characters in wcswidth
+    when combined with U+FE0F Variation Selector 16 (`PR #XX`)
+
 0.2.9 *2023-10-30*
   * **Bugfix** zero-width characters used in Emoji ZWJ sequences, Balinese,
     Jamo, Devanagari, Tamil, Kannada and others (`PR #91`_).
