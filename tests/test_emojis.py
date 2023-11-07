@@ -92,6 +92,7 @@ def test_non_recommended_zwj_sequence():
     assert length_phrase == expect_length_phrase
 
 
+@pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
 def test_another_emoji_zwj_sequence():
     phrase = (
         u"\u26F9"        # PERSON WITH BALL
