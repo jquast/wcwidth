@@ -1,5 +1,6 @@
 # std imports
 import os
+import codecs
 
 # 3rd party
 import pytest
@@ -141,10 +142,11 @@ def test_longer_emoji_zwj_sequence():
 
 
 def read_sequences_from_file(filename):
-    with open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8') as f:
-        lines = [line.strip()
-                 for line in f.readlines()
-                 if not line.startswith('#') and line.strip()]
+    fp = codecs.open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
+    lines = [line.strip()
+                for line in fp.readlines()
+                if not line.startswith('#') and line.strip()]
+    fp.close()
     sequences = [make_sequence_from_line(line) for line in lines]
     return lines, sequences
 
