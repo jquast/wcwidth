@@ -116,6 +116,9 @@ def test_another_emoji_zwj_sequence():
 def test_longer_emoji_zwj_sequence():
     """
     A much longer emoji ZWJ sequence of 10 total codepoints is just 2 cells!
+
+    Also test the same sequence in duplicate, verifying multiple VS-16 sequences
+    in a single function call.
     """
     # 'Category Code', 'East Asian Width property' -- 'description'
     phrase = (u"\U0001F9D1"   # 'So', 'W' -- ADULT
@@ -127,11 +130,11 @@ def test_longer_emoji_zwj_sequence():
               u"\U0001F48B"   # 'So', 'W' -- KISS MARK
               u"\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
               u"\U0001F9D1"   # 'So', 'W' -- ADULT
-              u"\U0001F3FD")  # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-4
-
+              u"\U0001F3FD"   # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-4
+    ) * 2
     # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
-    expect_length_each = (2, 0, 0, 1, 0, 0, 2, 0, 2, 0)
-    expect_length_phrase = 2
+    expect_length_each = (2, 0, 0, 1, 0, 0, 2, 0, 2, 0) * 2
+    expect_length_phrase = 4
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -205,3 +208,36 @@ def test_recommended_variation_16_sequences():
     # verify
     assert errors == []
     assert num >= 742
+
+
+def test_unicode_9_vs16():
+    """Verify effect of VS-16 on unicode_version 9.0 and later"""
+    phrase = (u"\u2640"        # FEMALE SIGN
+              u"\uFE0F")       # VARIATION SELECTOR-16
+
+    expect_length_each = (1, 0)
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(wcwidth.wcwidth(w_char, unicode_version='9.0') for w_char in phrase)
+    length_phrase = wcwidth.wcswidth(phrase, unicode_version='9.0')
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+def test_unicode_8_vs16():
+    """Verify that VS-16 has no effect on unicode_version 8.0 and earler"""
+    phrase = (u"\u2640"        # FEMALE SIGN
+              u"\uFE0F")       # VARIATION SELECTOR-16
+
+    expect_length_each = (1, 0)
+    expect_length_phrase = 1
+
+    # exercise,
+    length_each = tuple(wcwidth.wcwidth(w_char, unicode_version='8.0') for w_char in phrase)
+    length_phrase = wcwidth.wcswidth(phrase, unicode_version='8.0')
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
