@@ -121,3 +121,9 @@ release files:
 ``EastAsianWidth-15.1.0.txt``
   *Date: 2023-07-28, 23:34:08 GMT*
 
+``emoji-variation-sequences-12.0.0.txt``
+  *Date: 2019-01-15, 12:10:05 GMT*
+
+``emoji-variation-sequences-15.1.0.txt``
+  *Date: 2023-02-01, 02:22:54 GMT*
+
