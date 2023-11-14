@@ -150,5 +150,3 @@ jobs:
           name: html-report
           path: htmlcov
         if: ${{ failure() }}
-        env:
-          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
