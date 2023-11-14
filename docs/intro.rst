@@ -216,6 +216,9 @@ Other Languages
 =======
 History
 =======
+0.2.11 *2023-11-??*
+  * Include tests files in the source distibution (`PR #98`_, `PR #100`_).
+
 0.2.10 *2023-11-08*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
     Variation Selector 16 (`PR #97`_).
@@ -325,6 +328,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #82`: https://github.com/jquast/wcwidth/pull/82
 .. _`PR #91`: https://github.com/jquast/wcwidth/pull/91
 .. _`PR #97`: https://github.com/jquast/wcwidth/pull/97
+.. _`PR #98`: https://github.com/jquast/wcwidth/pull/98
+.. _`PR #100`: https://github.com/jquast/wcwidth/pull/100
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
