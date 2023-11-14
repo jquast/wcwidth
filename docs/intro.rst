@@ -219,7 +219,7 @@ History
 0.2.11 *2023-11-??*
   * Include tests files in the source distibution (`PR #98`_, `PR #100`_).
 
-0.2.10 *2023-11-08*
+0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
     Variation Selector 16 (`PR #97`_).
   * **Updated** `Specification <Specification_from_pypi_>`_.
