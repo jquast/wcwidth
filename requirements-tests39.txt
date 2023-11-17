@@ -4,15 +4,15 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-tests39.txt --strip-extras requirements-tests39.in
 #
-astroid==2.15.6
+astroid==3.0.1
     # via
     #   -r requirements-tests39.in
     #   pylint
 autopep8==2.0.4
     # via -r requirements-tests39.in
-charset-normalizer==3.2.0
+charset-normalizer==3.3.0
     # via docformatter
-coverage==7.3.1
+coverage==7.3.2
     # via pytest-cov
 dill==0.3.7
     # via pylint
@@ -34,21 +34,21 @@ isort==5.12.0
     # via
     #   -r requirements-tests39.in
     #   pylint
-lazy-object-proxy==1.9.0
-    # via astroid
 mccabe==0.7.0
     # via
     #   flake8
     #   pylint
-packaging==23.1
+packaging==23.2
     # via pytest
 pbr==5.11.1
     # via stevedore
-platformdirs==3.10.0
+platformdirs==3.11.0
     # via pylint
 pluggy==1.3.0
     # via pytest
-pycodestyle==2.11.0
+py-cpuinfo==9.0.0
+    # via pytest-benchmark
+pycodestyle==2.11.1
     # via
     #   autopep8
     #   flake8
@@ -60,12 +60,15 @@ pygments==2.16.1
     # via
     #   -r requirements-tests39.in
     #   doc8
-pylint==2.17.5
+pylint==3.0.1
     # via -r requirements-tests39.in
 pytest==7.4.2
     # via
     #   -r requirements-tests39.in
+    #   pytest-benchmark
     #   pytest-cov
+pytest-benchmark==4.0.0
+    # via -r requirements-tests39.in
 pytest-cov==4.1.0
     # via -r requirements-tests39.in
 restructuredtext-lint==1.4.0
@@ -85,13 +88,11 @@ tomli==2.0.1
     #   pytest
 tomlkit==0.12.1
     # via pylint
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
     #   astroid
     #   pylint
 untokenize==0.1.1
     # via docformatter
 wrapt==1.15.0
-    # via
-    #   -r requirements-tests39.in
-    #   astroid
+    # via -r requirements-tests39.in
