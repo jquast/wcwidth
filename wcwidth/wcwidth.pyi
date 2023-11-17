@@ -19,6 +19,3 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:
 
 def _wcmatch_version(given_version: str) -> str:
     ...
-
-
-__version__: str = ...
