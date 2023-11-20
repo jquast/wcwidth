@@ -162,5 +162,6 @@ jobs:
         with:
           python-version: '3.x'
       - run: pip install mypy
+      - run: pip install -e .
       - name: Run tests
         run: stubtest wcwidth
