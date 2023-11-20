@@ -10,14 +10,10 @@ https://github.com/jquast/wcwidth
 
 # local
 from .unicode_versions import list_versions
-from .table_zero import ZERO_WIDTH
-from .table_wide import WIDE_EASTASIAN
-from .table_vs16 import VS16_NARROW_TO_WIDE
-from .wcwidth import (wcwidth,
-                      wcswidth,
-                      _bisearch,
-                      _wcmatch_version,
-                      _wcversion_value)
+from .table_zero import ZERO_WIDTH  # noqa
+from .table_wide import WIDE_EASTASIAN  # noqa
+from .table_vs16 import VS16_NARROW_TO_WIDE  # noqa
+from .wcwidth import wcwidth, wcswidth, _bisearch, _wcmatch_version, _wcversion_value
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
