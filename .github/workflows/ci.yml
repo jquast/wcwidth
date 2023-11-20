@@ -152,3 +152,15 @@ jobs:
         if: ${{ failure() }}
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+
+  typing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - run: pip install mypy
+      - name: Run tests
+        run: stubtest wcwidth

@@ -9,13 +9,13 @@ https://github.com/jquast/wcwidth
 # any future version.
 
 # local
-from .wcwidth import ZERO_WIDTH  # noqa
-from .wcwidth import (WIDE_EASTASIAN,
-                      VS16_NARROW_TO_WIDE,
-                      wcwidth,
+from .unicode_versions import list_versions
+from .table_zero import ZERO_WIDTH
+from .table_wide import WIDE_EASTASIAN
+from .table_vs16 import VS16_NARROW_TO_WIDE
+from .wcwidth import (wcwidth,
                       wcswidth,
                       _bisearch,
-                      list_versions,
                       _wcmatch_version,
                       _wcversion_value)
 
