@@ -216,6 +216,8 @@ Other Languages
 =======
 History
 =======
+0.2.12 *2023-11-21*
+  * re-release to remove .pyi file misplaced in wheel files `Issue #101`.
 0.2.11 *2023-11-20*
   * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
 
@@ -330,6 +332,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #97`: https://github.com/jquast/wcwidth/pull/97
 .. _`PR #98`: https://github.com/jquast/wcwidth/pull/98
 .. _`PR #100`: https://github.com/jquast/wcwidth/pull/100
+.. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
