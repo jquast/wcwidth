@@ -217,7 +217,7 @@ Other Languages
 History
 =======
 0.2.11 *2023-11-20*
-  * Include tests files in the source distibution (`PR #98`_, `PR #100`_).
+  * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
 
 0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
@@ -231,7 +231,7 @@ History
     character measurements.
 
 0.2.8 *2023-09-30*
-  * Include requirements files in the source distibution (`PR #82`_).
+  * Include requirements files in the source distribution (`PR #82`_).
 
 0.2.7 *2023-09-28*
   * **Updated** tables to include Unicode Specification 15.1.0.
