@@ -216,7 +216,7 @@ Other Languages
 =======
 History
 =======
-0.2.11 *2023-11-??*
+0.2.11 *2023-11-20*
   * Include tests files in the source distibution (`PR #98`_, `PR #100`_).
 
 0.2.10 *2023-11-13*
