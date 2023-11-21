@@ -176,7 +176,5 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - run: pip install mypy
-      - run: pip install -e .
-      - name: Run tests
-        run: stubtest wcwidth
+      - run: pip install tox
+      - run: tox -e typing
