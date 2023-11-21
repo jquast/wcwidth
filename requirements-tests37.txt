@@ -18,6 +18,10 @@ importlib-metadata==6.7.0 ; python_version < "3.8"
     #   pytest
 iniconfig==2.0.0
     # via pytest
+mypy==1.4.1
+    # via -r requirements-tests37.in
+mypy-extensions==1.0.0
+    # via mypy
 packaging==23.2
     # via pytest
 pluggy==1.2.0
@@ -39,7 +43,13 @@ toml==0.10.2
     # via
     #   coverage
     #   pytest
+tomli==2.0.1
+    # via mypy
+typed-ast==1.5.5
+    # via mypy
 typing-extensions==4.7.1
-    # via importlib-metadata
+    # via
+    #   importlib-metadata
+    #   mypy
 zipp==3.15.0
     # via importlib-metadata
