@@ -83,8 +83,23 @@ jobs:
             python -Im pip install tox
           fi
 
+      - name: Prepare sdist and source-dir
+        shell: bash
+        run: |
+          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
+            python -m pip install build
+            python -m build
+          else
+            python -Im pip install build
+            python -Im build
+          fi
+
+          mkdir source-dir
+          tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
+
       - name: Run tests
         shell: bash
+        working-directory: ./source-dir
         run: |
           if [[ ${{ matrix.python-version }} = *2.7 ]]; then
             python -m tox -e ${{ env.TOX_PYTHON }}
@@ -94,9 +109,11 @@ jobs:
 
       - name: Rename coverage data
         shell: bash
+        working-directory: ./source-dir
         run: |
           if test -f .coverage; then
             mv .coverage{,.${{ matrix.os }}.${{ env.TOX_PYTHON }}.$(date +"%Y-%m-%d_%H%M%S")}
+            mv .coverage.* ..
           fi
 
       - name: Upload coverage data
@@ -150,5 +167,3 @@ jobs:
           name: html-report
           path: htmlcov
         if: ${{ failure() }}
-        env:
-          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
