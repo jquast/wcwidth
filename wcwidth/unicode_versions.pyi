@@ -1,2 +1,2 @@
-def list_versions() -> list[str]:
+def list_versions() -> tuple[str, ...]:
     ...
