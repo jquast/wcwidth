@@ -32,7 +32,7 @@ Example
    >>>  text = u'コンニチハ'
 
 Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printible length* of 10 cells, so that when using the `rjust` function, the
+*printable length* of 10 cells, so that when using the `rjust` function, the
 output length is wrong::
 
     >>> print(len('コンニチハ'))
