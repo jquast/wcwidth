@@ -217,7 +217,7 @@ Other Languages
 History
 =======
 0.2.12 *2023-11-21*
-  * re-release to remove .pyi file misplaced in wheel files `Issue #101`.
+  * re-release to remove .pyi file misplaced in wheel files `Issue #101`_.
 
 0.2.11 *2023-11-20*
   * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
