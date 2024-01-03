@@ -112,11 +112,11 @@ class TableEntry:
     properties: tuple[str, ...]
     comment: str
 
-    def filter_by_category(self, category_codes: str, wide: int) -> bool:
+    def filter_by_category_width(self, wide: int) -> bool:
         """
-        Return whether entry matches given category code and displayed width.
+        Return whether entry matches displayed width.
 
-        Categories are described here, https://www.unicode.org/reports/tr44/#GC_Values_Table
+        Parses both DerivedGeneralCategory.txt and EastAsianWidth.txt
         """
         if self.code_range is None:
             return False
@@ -146,13 +146,12 @@ class TableEntry:
         return wide == 1
 
     @staticmethod
-    def parse_category_values(category_codes: str,
-                              table_iter: Iterator[TableEntry],
-                              wide: int) -> set[tuple[int, int]]:
+    def parse_width_category_values(table_iter: Iterator[TableEntry],
+                                    wide: int) -> set[tuple[int, int]]:
         """Parse value ranges of unicode data files, by given category and width."""
         return {n
                 for entry in table_iter
-                if entry.filter_by_category(category_codes, wide)
+                if entry.filter_by_category_width(wide)
                 for n in list(range(entry.code_range[0], entry.code_range[1]))}
 
 
@@ -326,18 +325,16 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         # parse typical 'wide' characters by categories 'W' and 'F',
         table[version] = parse_category(fname=UnicodeDataFile.EastAsianWidth(version),
-                                        category_codes=('W', 'F'),
                                         wide=2)
 
         # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
         # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
-        table[version].values.discard(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                                     category_codes=('Mn', 'Mc'),
-                                                     wide=0).values)
+        table[version].values = table[version].values.difference(parse_category(
+            fname=UnicodeDataFile.DerivedGeneralCategory(version),
+            wide=0).values)
 
         # finally, join with atypical 'wide' characters defined by category 'Sk',
         table[version].values.update(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                                    category_codes=('Sk',),
                                                     wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
@@ -352,7 +349,6 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         # Determine values of zero-width character lookup table by the following category codes
         table[version] = parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                        category_codes=('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp', 'Sk'),
                                         wide=0)
 
         # And, include NULL
@@ -501,9 +497,9 @@ def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
 
 
 @functools.cache
-def parse_category(fname: str, category_codes: Container[str], wide: int) -> TableDef:
+def parse_category(fname: str, wide: int) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
-    print(f'parsing {fname} category_codes={",".join(category_codes)}: ', end='', flush=True)
+    print(f'parsing {fname}, wide={wide}: ', end='', flush=True)
 
     with open(fname, encoding='utf-8') as f:
         table_iter = parse_unicode_table(f)
@@ -512,7 +508,7 @@ def parse_category(fname: str, category_codes: Container[str], wide: int) -> Tab
         version = next(table_iter).comment.strip()
         # and "date string" from second line
         date = next(table_iter).comment.split(':', 1)[1].strip()
-        values = TableEntry.parse_category_values(category_codes, table_iter, wide)
+        values = TableEntry.parse_width_category_values(table_iter, wide)
     print('ok')
     return TableDef(version, date, values)
 
