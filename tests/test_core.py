@@ -222,17 +222,48 @@ def test_balinese_script():
     assert length_phrase == expect_length_phrase
 
 
+def test_kr_jamo():
+    """
+    Test basic combining of HANGUL CHOSEONG and JUNGSEONG
+
+    Example and from Raymond Chen's blog post,
+    https://devblogs.microsoft.com/oldnewthing/20201009-00/?p=104351
+    """
+    # This is an example where both characters are "wide" when displayed alone.
+    #
+    # But JUNGSEONG (vowel) is designed for combination with a CHOSEONG (consonant).
+    #
+    # This wcwidth library understands their width only when combination,
+    # and not by independent display, like other zero-width characters that may
+    # only combine with an appropriate preceding character.
+    phrase = (
+        u"\u1100"  # ᄀ HANGUL CHOSEONG KIYEOK (consonant)
+        u"\u1161"  # ᅡ HANGUL JUNGSEONG A (vowel)
+    )
+    expect_length_each = (2, 0)
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(map(wcwidth.wcwidth, phrase))
+    length_phrase = wcwidth.wcswidth(phrase)
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
 def test_kr_jamo_filler():
     u"""
     Jamo filler is 0 width.
 
-    According to https://www.unicode.org/L2/L2006/06310-hangul-decompose9.pdf this character and others
-    like it, ``\uffa0``, ``\u1160``, ``\u115f``, ``\u1160``, are not commonly viewed with a terminal,
-    seems it doesn't matter whether it is implemented or not, they are not typically used !
+    Example from https://www.unicode.org/L2/L2006/06310-hangul-decompose9.pdf
     """
-    phrase = u"\u1100\u1160"
-    expect_length_each = (2, 1)
-    expect_length_phrase = 3
+    phrase = (
+        u"\u1100"  # HANGUL CHOSEONG KIYEOK (consonant)
+        u"\u1160"  # HANGUL JUNGSEONG FILLER (vowel)
+    )
+    expect_length_each = (2, 0)
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
