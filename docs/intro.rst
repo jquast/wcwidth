@@ -216,6 +216,9 @@ Other Languages
 =======
 History
 =======
+Unreleased
+  * **Bugfix** zero-width support for Hangul Jamo (Korean)
+
 0.2.12 *2023-11-21*
   * re-release to remove .pyi file misplaced in wheel files `Issue #101`.
 
