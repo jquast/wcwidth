@@ -54,6 +54,19 @@ FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '6'))
 BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
 
+# Hangul Jamo is a decomposed form of Hangul Syllables, see
+# see https://www.unicode.org/faq/korean.html#3
+#     https://github.com/ridiculousfish/widecharwidth/pull/17
+#     https://github.com/jquast/ucs-detect/issues/9
+#     https://devblogs.microsoft.com/oldnewthing/20201009-00/?p=104351
+# "Conjoining Jamo are divided into three classes: L, V, T (Leading
+#  consonant, Vowel, Trailing consonant). A Hangul Syllable consists of
+#  <LV> or <LVT> sequences."
+HANGUL_JAMO_ZEROWIDTH = (
+    *range(0x1160, 0x1200),  # Hangul Jungseong Filler .. Hangul Jongseong Ssangnieun
+    *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
+)
+
 
 def _bisearch(ucs, table):
     """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
@@ -112,11 +125,11 @@ class TableEntry:
     properties: tuple[str, ...]
     comment: str
 
-    def filter_by_category(self, category_codes: str, wide: int) -> bool:
+    def filter_by_category_width(self, wide: int) -> bool:
         """
-        Return whether entry matches given category code and displayed width.
+        Return whether entry matches displayed width.
 
-        Categories are described here, https://www.unicode.org/reports/tr44/#GC_Values_Table
+        Parses both DerivedGeneralCategory.txt and EastAsianWidth.txt
         """
         if self.code_range is None:
             return False
@@ -146,13 +159,12 @@ class TableEntry:
         return wide == 1
 
     @staticmethod
-    def parse_category_values(category_codes: str,
-                              table_iter: Iterator[TableEntry],
-                              wide: int) -> set[tuple[int, int]]:
+    def parse_width_category_values(table_iter: Iterator[TableEntry],
+                                    wide: int) -> set[tuple[int, int]]:
         """Parse value ranges of unicode data files, by given category and width."""
         return {n
                 for entry in table_iter
-                if entry.filter_by_category(category_codes, wide)
+                if entry.filter_by_category_width(wide)
                 for n in list(range(entry.code_range[0], entry.code_range[1]))}
 
 
@@ -326,18 +338,19 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         # parse typical 'wide' characters by categories 'W' and 'F',
         table[version] = parse_category(fname=UnicodeDataFile.EastAsianWidth(version),
-                                        category_codes=('W', 'F'),
                                         wide=2)
 
         # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
         # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
-        table[version].values.discard(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                                     category_codes=('Mn', 'Mc'),
-                                                     wide=0).values)
+        table[version].values = table[version].values.difference(parse_category(
+            fname=UnicodeDataFile.DerivedGeneralCategory(version),
+            wide=0).values)
+
+        # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
+        table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
 
         # finally, join with atypical 'wide' characters defined by category 'Sk',
         table[version].values.update(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                                    category_codes=('Sk',),
                                                     wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
@@ -352,11 +365,13 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     for version in fetch_unicode_versions():
         # Determine values of zero-width character lookup table by the following category codes
         table[version] = parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                        category_codes=('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp', 'Sk'),
                                         wide=0)
 
-        # And, include NULL
+        # Include NULL
         table[version].values.add(0)
+
+        # Add Hangul Jamo Vowels and Hangul Trailing Consonants
+        table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
@@ -501,9 +516,9 @@ def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
 
 
 @functools.cache
-def parse_category(fname: str, category_codes: Container[str], wide: int) -> TableDef:
+def parse_category(fname: str, wide: int) -> TableDef:
     """Parse value ranges of unicode data files, by given categories into string tables."""
-    print(f'parsing {fname} category_codes={",".join(category_codes)}: ', end='', flush=True)
+    print(f'parsing {fname}, wide={wide}: ', end='', flush=True)
 
     with open(fname, encoding='utf-8') as f:
         table_iter = parse_unicode_table(f)
@@ -512,7 +527,7 @@ def parse_category(fname: str, category_codes: Container[str], wide: int) -> Tab
         version = next(table_iter).comment.strip()
         # and "date string" from second line
         date = next(table_iter).comment.split(':', 1)[1].strip()
-        values = TableEntry.parse_category_values(category_codes, table_iter, wide)
+        values = TableEntry.parse_width_category_values(table_iter, wide)
     print('ok')
     return TableDef(version, date, values)
 
