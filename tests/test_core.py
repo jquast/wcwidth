@@ -355,3 +355,17 @@ def test_kannada_script_2():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
+
+def test_zero_wide_conflict():
+    # Test characters considered both "wide" and "zero" width
+    # -  (0x03000, 0x0303e,),  # Ideographic Space       ..Ideographic Variation In
+    # +  (0x03000, 0x03029,),  # Ideographic Space       ..Hangzhou Numeral Nine
+    assert wcwidth.wcwidth(unichr(0x03029), unicode_version='4.1.0') == 2
+    assert wcwidth.wcwidth(unichr(0x0302a), unicode_version='4.1.0') == 0
+
+    # - (0x03099, 0x030ff,),  # Combining Katakana-hirag..Katakana Digraph Koto
+    # + (0x0309b, 0x030ff,),  # Katakana-hiragana Voiced..Katakana Digraph Koto
+    assert wcwidth.wcwidth(unichr(0x03099), unicode_version='4.1.0') == 0
+    assert wcwidth.wcwidth(unichr(0x0309a), unicode_version='4.1.0') == 0
+    assert wcwidth.wcwidth(unichr(0x0309b), unicode_version='4.1.0') == 2

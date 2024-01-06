@@ -63,9 +63,30 @@ Category code was changed from 'Mc' to 'Lo':
 import logging
 
 
+def bisearch_pair(ucs, table):
+    """
+    A copy of wcwidth._bisearch() but also returns the range of matched values.
+    """
+    lbound = 0
+    ubound = len(table) - 1
+
+    if ucs < table[0][0] or ucs > table[ubound][1]:
+        return (0, None, None)
+    while ubound >= lbound:
+        mid = (lbound + ubound) // 2
+        if ucs > table[mid][1]:
+            lbound = mid + 1
+        elif ucs < table[mid][0]:
+            ubound = mid - 1
+        else:
+            return (1, table[mid][0], table[mid][1])
+
+    return (0, None, None)
+
+
 def main(log: logging.Logger):
-    # local
-    from wcwidth import ZERO_WIDTH, WIDE_EASTASIAN, _bisearch, list_versions
+    from wcwidth import ZERO_WIDTH, WIDE_EASTASIAN, list_versions
+
     reversed_uni_versions = list(reversed(list_versions()))
     tables = {'ZERO_WIDTH': ZERO_WIDTH,
               'WIDE_EASTASIAN': WIDE_EASTASIAN}
@@ -81,14 +102,21 @@ def main(log: logging.Logger):
             other_table = tables[other_table_name][version]
             for start_range, stop_range in curr_table:
                 for unichar_n in range(start_range, stop_range):
-                    if not _bisearch(unichar_n, next_table):
-                        log.info(f'value {hex(unichar_n)} in table_name={table_name}'
-                                 f' version={version} is not defined in next_version={next_version}'
-                                 f' from inclusive range {hex(start_range)}-{hex(stop_range)}')
-                    if _bisearch(unichar_n, other_table):
-                        log.error(f'value {hex(unichar_n)} in table_name={table_name}'
-                                  f' version={version} is duplicated in other_table_name={other_table_name}'
-                                  f' from inclusive range {hex(start_range)}-{hex(stop_range)}')
+                    result, _, _ = bisearch_pair(unichar_n, next_table)
+                    if not result:
+                        log.info(
+                            f'value 0x{unichar_n:05x} in table_name={table_name}'
+                            f' version={version} is not defined in next_version={next_version}'
+                            f' from inclusive range {hex(start_range)}-{hex(stop_range)}'
+                        )
+                    result, lbound, ubound = bisearch_pair(unichar_n, other_table)
+                    if result:
+                        log.error(
+                            f'value 0x{unichar_n:05x} in table_name={table_name}'
+                            f' version={version} is duplicated in other_table_name={other_table_name}'
+                            f' from inclusive range 0x{start_range:05x}-0x{stop_range:05x} of'
+                            f' {table_name} against 0x{lbound:05x}-0x{ubound:05x} in {other_table_name}'
+                        )
                         errors += 1
     if errors:
         log.error(f'{errors} errors, exit 1')
