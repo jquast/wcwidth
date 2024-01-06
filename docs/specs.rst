@@ -45,7 +45,7 @@ Width of 1
 ----------
 
 String characters are measured width of 1 when they are not
-measured as `Width of 0`_ or `Width of 2`.
+measured as `Width of 0`_ or `Width of 2`_.
 
 Width of 2
 ----------
