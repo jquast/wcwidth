@@ -27,8 +27,8 @@ Any characters defined by category codes in `DerivedGeneralCategory.txt`_ files:
 - 'Mn': Nonspacing Combining Mark, aprox. 1,839 characters.
 - 'Mc': Spacing Mark, aprox. 443 characters.
 - 'Cf': Format control character, aprox. 161 characters.
-- 'Zl': U+2028 LINE SEPARATOR only
-- 'Zp': U+2029 PARAGRAPH SEPARATOR only
+- 'Zl': `U+2028`_ LINE SEPARATOR only
+- 'Zp': `U+2029`_ PARAGRAPH SEPARATOR only
 - 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase
   ``'EMOJI MODIFIER'`` is present in comment of unicode data file.
 
@@ -61,13 +61,16 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 `emoji-variation-sequences.txt`_ as ``emoji style``.
 
 
+.. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F
 .. _`U+007F`: https://codepoints.net/U+007F
 .. _`U+00A0`: https://codepoints.net/U+00A0
-.. _`U+200D`: https://codepoints.net/U+200D
 .. _`U+1160`: https://codepoints.net/U+1160
 .. _`U+11FF`: https://codepoints.net/U+11FF
+.. _`U+200D`: https://codepoints.net/U+200D
+.. _`U+2028`: https://codepoints.net/U+2028
+.. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
 .. _`U+D7FF`: https://codepoints.net/U+D7FF
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
