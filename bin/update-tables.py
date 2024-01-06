@@ -54,6 +54,19 @@ FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '6'))
 BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
 
+# Hangul Jamo is a decomposed form of Hangul Syllables, see
+# see https://www.unicode.org/faq/korean.html#3
+#     https://github.com/ridiculousfish/widecharwidth/pull/17
+#     https://github.com/jquast/ucs-detect/issues/9
+#     https://devblogs.microsoft.com/oldnewthing/20201009-00/?p=104351
+# "Conjoining Jamo are divided into three classes: L, V, T (Leading
+#  consonant, Vowel, Trailing consonant). A Hangul Syllable consists of
+#  <LV> or <LVT> sequences."
+HANGUL_JAMO_ZEROWIDTH = (
+    *range(0x1160, 0x1200),  # Hangul Jungseong Filler .. Hangul Jongseong Ssangnieun
+    *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
+)
+
 
 def _bisearch(ucs, table):
     """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
@@ -333,6 +346,9 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
             fname=UnicodeDataFile.DerivedGeneralCategory(version),
             wide=0).values)
 
+        # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
+        table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
+
         # finally, join with atypical 'wide' characters defined by category 'Sk',
         table[version].values.update(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
                                                     wide=2).values)
@@ -351,8 +367,11 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         table[version] = parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
                                         wide=0)
 
-        # And, include NULL
+        # Include NULL
         table[version].values.add(0)
+
+        # Add Hangul Jamo Vowels and Hangul Trailing Consonants
+        table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
