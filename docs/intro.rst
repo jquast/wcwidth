@@ -216,7 +216,8 @@ Other Languages
 =======
 History
 =======
-Unreleased
+
+0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
 0.2.12 *2023-11-21*

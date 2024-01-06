@@ -12,7 +12,7 @@ Width of -1
 
 The following have a column width of -1 for function :func:`wcwidth.wcwidth`
 
-- ``C0`` control characters (`U+0001`_` through `U+001F`_).
+- ``C0`` control characters (`U+0001`_ through `U+001F`_).
 - ``C1`` control characters and ``DEL`` (`U+007F`_ through `U+00A0`_).
 
 If any character in sequence contains ``C0`` or ``C1`` control characters, the final
