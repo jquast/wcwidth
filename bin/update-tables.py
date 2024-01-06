@@ -346,6 +346,9 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
             fname=UnicodeDataFile.DerivedGeneralCategory(version),
             wide=0).values)
 
+        # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
+        table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
+
         # finally, join with atypical 'wide' characters defined by category 'Sk',
         table[version].values.update(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
                                                     wide=2).values)
