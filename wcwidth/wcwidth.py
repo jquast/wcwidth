@@ -252,12 +252,12 @@ def _wcmatch_version(given_version):
     unicode_versions = list_versions()
     latest_version = unicode_versions[-1]
 
-    if given_version in ('auto', 'auto'):
+    if given_version == 'auto':
         given_version = os.environ.get(
             'UNICODE_VERSION',
             'latest')
 
-    if given_version in ('latest', 'latest'):
+    if given_version == 'latest':
         # default match, when given as 'latest', use the most latest unicode
         # version specification level supported.
         return latest_version
