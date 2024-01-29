@@ -213,8 +213,7 @@ class Screen:
         """Text of a single column heading."""
         delimiter = self.style.attr_minor(self.style.delimiter)
         hint = self.style.header_hint * self.wide
-        heading = ('{delimiter}{hint}{delimiter}'
-                   .format(delimiter=delimiter, hint=hint))
+        heading = f'{delimiter}{hint}{delimiter}'
 
         def alignment(*args):
             if self.style.alignment == 'right':
