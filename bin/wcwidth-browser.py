@@ -43,7 +43,7 @@ flushout = functools.partial(print, end='', flush=True)
 
 #: printable length of highest unicode character description
 LIMIT_UCS = 0x3fffd
-UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
+UCS_PRINTLEN = len(f'{LIMIT_UCS:0x}')
 
 
 def readline(term, width):
@@ -566,10 +566,10 @@ class Pager:
             if idx == self.last_page:
                 last_end = '(END)'
             else:
-                last_end = '/{}'.format(self.last_page)
+                last_end = f'/{self.last_page}'
             txt = ('Page {idx}{last_end} - '
                    '{q} to quit, [keys: {keyset}]'
-                   .format(idx=style.attr_minor('{}'.format(idx)),
+                   .format(idx=style.attr_minor(f'{idx}'),
                            last_end=style.attr_major(last_end),
                            keyset=style.attr_major('kjfbvc12-='),
                            q=style.attr_minor('q')))
