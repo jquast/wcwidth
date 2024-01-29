@@ -58,7 +58,7 @@ def main():
             '': ['LICENSE', '*.rst'],
         },
         zip_safe=True,
-        python_requires='>=3.5',
+        python_requires='>=3.6',
         classifiers=[
             'Intended Audience :: Developers',
             'Natural Language :: English',
@@ -66,7 +66,6 @@ def main():
             'Environment :: Console',
             'License :: OSI Approved :: MIT License',
             'Operating System :: POSIX',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
