@@ -60,7 +60,6 @@ http://www.unicode.org/unicode/reports/tr11/
 
 Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 """
-from __future__ import division
 
 # std imports
 import os
@@ -175,11 +174,11 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     last_measured_char = None
     while idx < end:
         char = pwcs[idx]
-        if char == u'\u200D':
+        if char == '\u200D':
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        if char == u'\uFE0F' and last_measured_char:
+        if char == '\uFE0F' and last_measured_char:
             # on variation selector 16 (VS16) following another character,
             # conditionally add '1' to the measured width if that character is
             # known to be converted from narrow to wide by the VS16 character.
@@ -253,12 +252,12 @@ def _wcmatch_version(given_version):
     unicode_versions = list_versions()
     latest_version = unicode_versions[-1]
 
-    if given_version in (u'auto', 'auto'):
+    if given_version in ('auto', 'auto'):
         given_version = os.environ.get(
             'UNICODE_VERSION',
             'latest')
 
-    if given_version in (u'latest', 'latest'):
+    if given_version in ('latest', 'latest'):
         # default match, when given as 'latest', use the most latest unicode
         # version specification level supported.
         return latest_version

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Manual tests comparing wcwidth.py to libc's wcwidth(3) and wcswidth(3).
 
@@ -18,7 +17,6 @@ level for our library to use when comparing to libc.
 #         Invalid module name "wcwidth-libc-comparator"
 
 # standard imports
-from __future__ import print_function
 
 # std imports
 import sys
@@ -66,7 +64,7 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
            .lstrip('0'))
     url = "http://codepoints.net/U+{}".format(ucp)
     name = unicodedata.name(ucs)
-    return (u"libc,ours={},{} [--o{}o--] name={} val={} {}"
+    return ("libc,ours={},{} [--o{}o--] name={} val={} {}"
             " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
 
 
