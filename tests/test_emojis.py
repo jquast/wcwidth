@@ -5,18 +5,11 @@ import codecs
 # 3rd party
 import pytest
 
-try:
-    # python 2
-    _ = unichr
-except NameError:
-    # python 3
-    unichr = chr
-
 # some tests cannot be done on some builds of python, where the internal
 # unicode structure is limited to 0x10000 for memory conservation,
 # "ValueError: unichr() arg not in range(0x10000) (narrow Python build)"
 try:
-    unichr(0x2fffe)
+    chr(0x2fffe)
     NARROW_ONLY = False
 except ValueError:
     NARROW_ONLY = True
@@ -27,7 +20,7 @@ import wcwidth
 
 def make_sequence_from_line(line):
     # convert '002A FE0F  ; ..' -> (0x2a, 0xfe0f) -> chr(0x2a) + chr(0xfe0f)
-    return ''.join(unichr(int(cp, 16)) for cp in line.split(';', 1)[0].strip().split())
+    return ''.join(chr(int(cp, 16)) for cp in line.split(';', 1)[0].strip().split())
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")

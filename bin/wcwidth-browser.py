@@ -148,9 +148,6 @@ class WcCombinedCharacterGenerator(object):
                 continue
             return (ucs, name)
 
-    # python 2.6 - 3.3 compatibility
-    next = __next__
-
 
 class Style(object):
     """Styling decorator class instance for terminal output."""

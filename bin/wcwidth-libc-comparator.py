@@ -70,19 +70,6 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
             " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
 
 
-# use chr() for py3.x,
-# unichr() for py2.x
-try:
-    _ = unichr(0)
-except NameError as err:
-    if err.args[0] == "name 'unichr' is not defined":
-        # pylint: disable=W0622
-        #         Redefining built-in 'unichr' (col 8)
-
-        unichr = chr
-    else:
-        raise
-
 if sys.maxunicode < 1114111:
     warnings.warn('narrow Python build, only a small subset of '
                   'characters may be tested.')
@@ -108,7 +95,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
     report a detailed AssertionError to stdout.
     """
     all_ucs = (ucs for ucs in
-               [unichr(val) for val in range(sys.maxunicode)]
+               [chr(val) for val in range(sys.maxunicode)]
                if is_named(ucs) and is_not_combining(ucs))
 
     libc_name = ctypes.util.find_library('c')
