@@ -417,19 +417,22 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     """
     table: dict[UnicodeVersion, TableDef] = {}
     unicode_latest = fetch_unicode_versions()[-1]
+    hex_str_vs = 'FE0F'
 
     wide_tables = fetch_table_wide_data().table
     unicode_version = UnicodeVersion.parse('9.0.0')
 
     # parse table formatted by the latest emoji release (developed with
     # 15.1.0) and parse a single file for all individual releases
-    table[unicode_version] = parse_vs16_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
-                                             ubound_unicode_version=unicode_version)
+    table[unicode_version] = parse_vs_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
+                                           ubound_unicode_version=unicode_version,
+                                           hex_str_vs=hex_str_vs)
 
     # parse and join the final emoji release 12.0 of the earlier "type"
     table[unicode_version].values.update(
-        parse_vs16_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
-                        ubound_unicode_version=unicode_version).values)
+        parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
+                      ubound_unicode_version=unicode_version,
+                      hex_str_vs=hex_str_vs).values)
 
     # perform culling on any values that are already understood as 'wide'
     # without the variation-16 selector
@@ -442,14 +445,59 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     return UnicodeTableRenderCtx('VS16_NARROW_TO_WIDE', table)
 
 
-def parse_vs16_data(fname: str, ubound_unicode_version: UnicodeVersion):
+def parse_vs_data(fname: str, ubound_unicode_version: UnicodeVersion, hex_str_vs: str):
     with open(fname, encoding='utf-8') as fin:
-        table_iter = parse_vs16_table(fin)
+        table_iter = parse_vs_table(fin, hex_str_vs)
         # pull "date string"
         date = next(table_iter).comment.split(':', 1)[1].strip()
         # pull values only matching this unicode version and lower
         values = {entry.code_range[0] for entry in table_iter}
     return TableDef(ubound_unicode_version, date, values)
+
+
+def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
+    """
+    Fetch and create a "wide to narrow variation-15" lookup table.
+
+    Characters in this table are wide, but when combined with a variation selector-15 (\uFE0E), they
+    become narrow, for the given versions of unicode.
+
+    UNICODE_VERSION=9.0.0 or greater is required to enable detection of the effect of *any*
+    'variation selector-15' wide emoji becoming narrow.
+
+    Some terminals display U+231a, u+FE0E as a narrow font, but consuming a wide cell (iTerm2),
+    while most others display it as a wide cell, only.
+
+    It is fair to call these ambiguous, see related 'ucs-detect' project.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    unicode_latest = fetch_unicode_versions()[-1]
+    hex_str_vs = 'FE0E'
+
+    wide_tables = fetch_table_wide_data().table
+    unicode_version = UnicodeVersion.parse('9.0.0')
+
+    # parse table formatted by the latest emoji release (developed with
+    # 15.1.0) and parse a single file for all individual releases
+    table[unicode_version] = parse_vs_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
+                                           ubound_unicode_version=unicode_version,
+                                           hex_str_vs=hex_str_vs)
+
+    # parse and join the final emoji release 12.0 of the earlier "type"
+    table[unicode_version].values.update(
+        parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
+                      ubound_unicode_version=unicode_version,
+                      hex_str_vs=hex_str_vs).values)
+
+    # perform culling on any values that are already understood as 'narrow'
+    # without the variation-15 selector
+    wide_table = wide_tables[unicode_version].as_value_ranges()
+    table[unicode_version].values = {
+        ucs for ucs in table[unicode_version].values
+        if _bisearch(ucs, wide_table)
+    }
+
+    return UnicodeTableRenderCtx('VS15_WIDE_TO_NARROW', table)
 
 
 def cite_source_description(filename: str) -> tuple[str, str]:
@@ -496,9 +544,8 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
         yield TableEntry(code_range, tuple(properties), comment)
 
 
-def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
-    """Parse emoji-variation-sequences.txt for codepoints that preceed 0xFE0F."""
-    hex_str_vs16 = 'FE0F'
+def parse_vs_table(fp: Iterable[str], hex_str_vs: str = 'FE0F') -> Iterator[TableEntry]:
+    """Parse emoji-variation-sequences.txt for codepoints that precede `hex_str_vs`"""
     for line in fp:
         data, _, comment = line.partition('#')
         data_fields: Iterator[str] = (field.strip() for field in data.split(';'))
@@ -510,7 +557,7 @@ def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
                 yield TableEntry(None, tuple(properties), comment)
             continue
         code_points = code_points_str.split()
-        if len(code_points) == 2 and code_points[1] == hex_str_vs16:
+        if len(code_points) == 2 and code_points[1] == hex_str_vs:
             # yeild a single "code range" entry for a single value that preceeds FE0F
             yield TableEntry((int(code_points[0], 16), int(code_points[0], 16)), tuple(properties), comment)
 
@@ -663,6 +710,7 @@ def main() -> None:
             UnicodeVersionPyRenderCtx(fetch_unicode_versions())
         )
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
+        yield UnicodeTableRenderDef.new('table_vs15.py', fetch_table_vs15_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())

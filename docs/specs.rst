@@ -47,6 +47,9 @@ Width of 1
 String characters are measured width of 1 when they are not
 measured as `Width of 0`_ or `Width of 2`_.
 
+Any character in sequence with `U+FE0E`_ (variation Selector 15) defined
+by `emoji-variation-sequences.txt`_ as ``text style``.
+
 Width of 2
 ----------
 
@@ -73,6 +76,7 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
 .. _`U+D7FF`: https://codepoints.net/U+D7FF
+.. _`U+FE0E`: https://codepoints.net/U+FE0E
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
 .. _`DerivedGeneralCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
 .. _`EastAsianWidth.txt`: https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
