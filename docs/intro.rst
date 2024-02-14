@@ -218,7 +218,7 @@ History
 =======
 *Unreleased*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0E
-    Variation Selector 15 (VS-15).
+    Variation Selector 15 (`PR #120`_).
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
