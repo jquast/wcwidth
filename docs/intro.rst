@@ -1,21 +1,59 @@
 |pypi_downloads| |codecov| |license|
 
-============
-Introduction
-============
+================
+What is wcwidth?
+================
 
-This library is mainly for CLI programs that carefully produce output for
-Terminals, or make pretend to be an emulator.
+**wcwidth** is a Python package intended for CLI programs that produce output
+for terminals or terminal emulators. The functions within this package
+implement the C functions, `wcwidth(3)`_ and `wcswidth(3)`_, which were defined
+in the POSIX.1-2001 and POSIX.1-2008 standards. These functions return the
+number of cells a unicode string is expected to occupy on the screen.
 
-**Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen ``1 character : 1 cell``.  However,
-there are categories of characters that *occupy 2 cells* (full-wide), and
-others that *occupy 0* cells (zero-width).
+Most unicode characters have a printable length that's equal to the number of
+cells that character occupies on the screen (i.e. 1 character = 1 cell).
+However, there are certain categories of characters that occupy 2 cells
+(full-width), and others that occupy 0 cells (zero-width).
 
-**Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
-`wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a
-unicode string is expected to occupy.*
+
+Example
+-------
+
+To demonstrate, let's assign a string of Japanese unicode characters to the
+variable ``text``.::
+
+    >>> text = u'コンニチハ'
+
+When we use the ``len`` from the standard Python library to check the length
+of our ``text`` variable, it returns the *string length* (5 characters)
+rather than the *printable length* (10 cells) of our unicode string. This
+difference produces unintended results when we attempt to align the output
+from our ``text`` variable within the terminal (example output shown below
+using the ``rjust`` function from the standard Python library).::
+
+    >>> print(len(text))
+    5
+
+    >>> from wcwidth import wcswidth
+    >>> print(wcswidth(text))
+    10
+
+    >>> print(text.rjust(20, '_'))
+    _______________コンニチハ
+
+We can solve this problem by implementing our own ``wc_rjust`` function.::
+
+   >>> def wc_rjust(text, length, padding=' '):
+   ...    from wcwidth import wcswidth
+   ...    return padding * max(0, (length - wcswidth(text))) + text
+   ...
+
+We can see that the new ``wc_rjust`` function produces the expected output
+within the terminal, thanks to ``wcwidth``::
+
+   >>> print(wc_rjust('コンニチハ', 20, '_'))
+   __________コンニチハ
+
 
 Installation
 ------------
@@ -23,39 +61,6 @@ Installation
 The stable version of this package is maintained on pypi, install using pip::
 
     pip install wcwidth
-
-Example
--------
-
-**Problem**: given the following phrase (Japanese),
-
-   >>>  text = u'コンニチハ'
-
-Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printable length* of 10 cells, so that when using the `rjust` function, the
-output length is wrong::
-
-    >>> print(len('コンニチハ'))
-    5
-
-    >>> print('コンニチハ'.rjust(20, '_'))
-    _______________コンニチハ
-
-By defining our own "rjust" function that uses wcwidth, we can correct this::
-
-   >>> def wc_rjust(text, length, padding=' '):
-   ...    from wcwidth import wcswidth
-   ...    return padding * max(0, (length - wcswidth(text))) + text
-   ...
-
-Our **Solution** uses wcswidth to determine the string length correctly::
-
-   >>> from wcwidth import wcswidth
-   >>> print(wcswidth('コンニチハ'))
-   10
-
-   >>> print(wc_rjust('コンニチハ', 20, '_'))
-   __________コンニチハ
 
 
 Choosing a Version
