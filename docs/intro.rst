@@ -55,26 +55,47 @@ within the terminal, thanks to ``wcwidth``::
    __________コンニチハ
 
 
+
+
+===============
+Getting Started
+===============
+
+The source code for this package is currently hosted on GitHub at: 
+https://github.com/jquast/wcwidth
+
+Binary installers for the latest released version are available at:
+https://pypi.org/project/wcwidth/
+
+The complete API documentation for this package can be referenced at:
+https://wcwidth.readthedocs.org
+
+
 Installation
 ------------
 
-The stable version of this package is maintained on pypi, install using pip::
+The stable version of this package is maintained on PyPI and can be installed
+using the following ``pip`` command:::
 
     pip install wcwidth
 
 
-Choosing a Version
-------------------
+Unicode Version Config
+----------------------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be done by
-*terminal emulators* or those developers experimenting with authoring one of
-their own, from shell::
+The unicode version used for your terminal can be set using the 
+``UNICODE_VERSION`` environment variable.
 
-   $ export UNICODE_VERSION=13.0
+Simply export the ``UNICODE_VERSION`` environment variable using the following
+shell command (with variable set to the desired version number):::
 
-If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect`_ utility to
+    $ export UNICODE_VERSION=13.0
+
+If the ``UNICODE_VERSION`` environment variable is missing or unspecified, the
+latest version is used. If your terminal or terminal emulator does not export
+this variable, you can utilize the `jquast/ucs-detect`_ utility to
 automatically detect and export it to your shell.
+
 
 wcwidth, wcswidth
 -----------------
@@ -82,49 +103,62 @@ Use function ``wcwidth()`` to determine the length of a *single unicode
 character*, and ``wcswidth()`` to determine the length of many, a *string
 of unicode characters*.
 
-Briefly, return values of function ``wcwidth()`` are:
+Briefly, return values of function ``wcwidth()`` are:::
 
-``-1``
-  Indeterminate (not printable).
+    -1
+      --  Indeterminate (not printable).
 
-``0``
-  Does not advance the cursor, such as NULL or Combining.
+    0
+      --  Does not advance the cursor, such as NULL or Combining.
 
-``2``
-  Characters of category East Asian Wide (W) or East Asian
-  Full-width (F) which are displayed using two terminal cells.
+    2
+      --  Characters of category East Asian Wide (W) or East Asian
+          Full-width (F) which are displayed using two terminal cells.
 
-``1``
-  All others.
+    1
+      --  All others.
 
 Function ``wcswidth()`` simply returns the sum of all values for each character
-along a string, or ``-1`` when it occurs anywhere along a string.
+within the string, or ``-1`` if there are any indeterminate (non-printable)
+characters within the string.
 
-Full API Documentation at https://wcwidth.readthedocs.org
 
-==========
-Developing
-==========
 
-Install wcwidth in editable mode::
+
+==================================
+Helpful Resources for Contributors
+==================================
+
+Updating source code
+--------------------
+
+Make changes locally by installing ``wcwidth`` in editable mode with ``pip``::
 
    pip install -e .
 
-Execute unit tests using tox_::
+
+Executing unit tests
+--------------------
+
+This project uses tox_ for unit testing. To run all of the unit tests, execute
+the following command within the project directory.::
 
    tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312
 
-Updating Unicode Version
-------------------------
 
-Regenerate python code tables from latest Unicode Specification data files::
+Updating Unicode Data
+----------------------
+
+Execute the following command to regenerate the Python code tables from the
+latest Unicode specification data files:::
 
    tox -e update
 
-The script is located at ``bin/update-tables.py``, requires Python 3.9 or
-later. It is recommended but not necessary to run this script with the newest
-Python, because the newest Python has the latest ``unicodedata`` for generating
-comments.
+The script that performs the update is ``bin/update-tables.py`` and requires
+Python 3.9 or later. It is recommended but not necessary to run this script
+with the latest stable version of Python, because that version will have the
+latest ``unicodedata`` for generating comments.
+
 
 Building Documentation
 ----------------------
@@ -133,34 +167,48 @@ This project is using `sphinx`_ 4.5 to build documentation::
 
    tox -e sphinx
 
-The output will be in ``docs/_build/html/``.
+The output files will be generated in the ``docs/_build/html/`` directory of
+this repository.
+
 
 Updating Requirements
 ---------------------
 
 This project is using `pip-tools`_ to manage requirements.
 
-To upgrade requirements for updating unicode version, run::
+To update the requirements for updating unicode data, run::
 
    tox -e update_requirements_update
 
-To upgrade requirements for testing, run::
+To update the requirements for testing, run::
 
    tox -e update_requirements37,update_requirements39
 
-To upgrade requirements for building documentation, run::
+To update the requirements for building documentation, run::
 
    tox -e update_requirements_docs
+
 
 Utilities
 ---------
 
-Supplementary tools for browsing and testing terminals for wide unicode
-characters are found in the `bin/`_ of this project's source code.  Just ensure
-to first ``pip install -r requirements-develop.txt`` from this projects main
-folder. For example, an interactive browser for testing::
+Supplemental tools for browsing and testing terminals for wide unicode
+characters can be found in the `bin/`_ directory of this project's source
+code. 
+
+Before attempting to use any of the tools within that directory, you must
+first execute the following ``pip`` command from this project's root
+directory:::
+
+    pip install -r requirements-develop.txt
+    
+As an example, the following command will open an interactive browser for
+testing::
 
   python ./bin/wcwidth-browser.py
+
+
+
 
 ====
 Uses
