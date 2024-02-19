@@ -6,11 +6,11 @@
 #
 alabaster==0.7.13
     # via sphinx
-babel==2.12.1
+babel==2.13.1
     # via sphinx
 certifi==2023.7.22
     # via requests
-charset-normalizer==3.3.0
+charset-normalizer==3.3.2
     # via requests
 docutils==0.17.1
     # via

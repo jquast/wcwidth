@@ -3,4 +3,3 @@ pytest<7
 pytest-cov
 coverage[toml]<6
 importlib_metadata; python_version < '3.8'
-pytest-benchmark

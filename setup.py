@@ -58,6 +58,7 @@ def main():
         url='https://github.com/jquast/wcwidth',
         package_data={
             '': ['LICENSE', '*.rst'],
+            'wcwidth': ['py.typed', '*.pyi'],
         },
         zip_safe=True,
         classifiers=[

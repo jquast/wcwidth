@@ -13,3 +13,4 @@ pylint>=2.15
 astroid>=2.11
 wrapt>=1.14
 pytest-benchmark
+mypy
