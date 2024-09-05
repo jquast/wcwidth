@@ -59,6 +59,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ignore certificate verification on python 3.5
+        shell: bash
+        run: |
+          # INSECURE!! But it should be OK for CI tests.
+          echo 'PIP_TRUSTED_HOST=pypi.python.org pypi.org files.pythonhosted.org' >>$GITHUB_ENV
+        if: 'matrix.python-version == 3.5'
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
