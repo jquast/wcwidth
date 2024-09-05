@@ -121,6 +121,7 @@ jobs:
         with:
           name: coverage-data.${{ matrix.os }}-${{ matrix.python-version }}
           path: .coverage.*
+          include-hidden-files: true
           if-no-files-found: ignore
 
   coverage:
@@ -140,6 +141,7 @@ jobs:
         with:
           name: coverage-data
           pattern: coverage-data.*
+          include-hidden-files: true
           delete-merged: true
 
       - name: Download coverage data
