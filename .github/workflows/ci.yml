@@ -48,6 +48,11 @@ jobs:
           - os: ubuntu-20.04
             container: python:2.7-buster
             python-version: "2.7"
+        exclude:
+          - os: macos-latest
+            python-version: "3.7"
+          - os: macos-latest
+            python-version: "pypy-3.7"
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
