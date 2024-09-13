@@ -64,9 +64,7 @@ import logging
 
 
 def bisearch_pair(ucs, table):
-    """
-    A copy of wcwidth._bisearch() but also returns the range of matched values.
-    """
+    """A copy of wcwidth._bisearch() but also returns the range of matched values."""
     lbound = 0
     ubound = len(table) - 1
 
@@ -85,6 +83,7 @@ def bisearch_pair(ucs, table):
 
 
 def main(log: logging.Logger):
+    # local
     from wcwidth import ZERO_WIDTH, WIDE_EASTASIAN, list_versions
 
     reversed_uni_versions = list(reversed(list_versions()))

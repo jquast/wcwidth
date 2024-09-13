@@ -131,7 +131,7 @@ def test_longer_emoji_zwj_sequence():
               u"\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
               u"\U0001F9D1"   # 'So', 'W' -- ADULT
               u"\U0001F3FD"   # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-4
-    ) * 2
+              ) * 2
     # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
     expect_length_each = (2, 0, 0, 1, 0, 0, 2, 0, 2, 0) * 2
     expect_length_phrase = 4
@@ -148,8 +148,8 @@ def test_longer_emoji_zwj_sequence():
 def read_sequences_from_file(filename):
     fp = codecs.open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
     lines = [line.strip()
-                for line in fp.readlines()
-                if not line.startswith('#') and line.strip()]
+             for line in fp.readlines()
+             if not line.startswith('#') and line.strip()]
     fp.close()
     sequences = [make_sequence_from_line(line) for line in lines]
     return lines, sequences
@@ -184,7 +184,7 @@ def test_recommended_emoji_zwj_sequences():
 
 def test_recommended_variation_16_sequences():
     """
-    Test wcswidth of all of the unicode.org-published emoji-variation-sequences.txt
+    Test wcswidth of vs-16 sequences from unicode.org's emoji-variation-sequences.txt
     """
     # given,
     lines, sequences = read_sequences_from_file('emoji-variation-sequences.txt')
@@ -210,12 +210,61 @@ def test_recommended_variation_16_sequences():
     assert num >= 742
 
 
+def test_recommended_variation_15_sequences():
+    """
+    Test wcswidth of vs-15 sequences from unicode.org's emoji-variation-sequences.txt
+    """
+    # given,
+    lines, sequences = read_sequences_from_file('emoji-variation-sequences.txt')
+
+    errors = []
+    num = 0
+    for sequence, line in zip(sequences, lines):
+        num += 1
+        if '\ufe0e' not in sequence:
+            # filter for only \uFE0E (VS-15)
+            continue
+        measured_width = wcwidth.wcswidth(sequence)
+        if measured_width != 1:
+            errors.append({
+                'expected_width': 1,
+                'line': line,
+                'measured_width': wcwidth.wcswidth(sequence),
+                'sequence': sequence,
+            })
+
+    # verify
+    assert errors == []
+    assert num >= 742
+
+
 def test_unicode_9_vs16():
     """Verify effect of VS-16 on unicode_version 9.0 and later"""
     phrase = (u"\u2640"        # FEMALE SIGN
+              u"\uFE0F"        # VARIATION SELECTOR-16
+              u"X"             # ASCII Letter 'X'
               u"\uFE0F")       # VARIATION SELECTOR-16
 
-    expect_length_each = (1, 0)
+    expect_length_each = (1, 0, 1, 0)
+    expect_length_phrase = 3
+
+    # exercise,
+    length_each = tuple(wcwidth.wcwidth(w_char, unicode_version='9.0') for w_char in phrase)
+    length_phrase = wcwidth.wcswidth(phrase, unicode_version='9.0')
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
+def test_unicode_9_vs15():
+    """Verify effect of VS-16 on unicode_version 9.0 and later"""
+    phrase = (u"\U0001f4da"        # BOOKS
+              u"\uFE0E"            # VARIATION SELECTOR-15
+              u"X"                 # ASCII Letter 'X'
+              u"\uFE0E")           # VARIATION SELECTOR-15
+
+    expect_length_each = (2, 0, 1, 0)
     expect_length_phrase = 2
 
     # exercise,
@@ -226,13 +275,35 @@ def test_unicode_9_vs16():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
+
 def test_unicode_8_vs16():
-    """Verify that VS-16 has no effect on unicode_version 8.0 and earler"""
+    """Verify that VS-16 has no effect on unicode_version 8.0 and earlier"""
     phrase = (u"\u2640"        # FEMALE SIGN
+              u"\uFE0F"        # VARIATION SELECTOR-16
+              u"X"             # ASCII Letter 'X'
               u"\uFE0F")       # VARIATION SELECTOR-16
 
-    expect_length_each = (1, 0)
-    expect_length_phrase = 1
+    expect_length_each = (1, 0, 1, 0)
+    expect_length_phrase = 2
+
+    # exercise,
+    length_each = tuple(wcwidth.wcwidth(w_char, unicode_version='8.0') for w_char in phrase)
+    length_phrase = wcwidth.wcswidth(phrase, unicode_version='8.0')
+
+    # verify.
+    assert length_each == expect_length_each
+    assert length_phrase == expect_length_phrase
+
+
+def test_unicode_8_vs15():
+    """Verify that VS-15 has no effect on unicode_version 8.0 and earlier"""
+    phrase = (u"\U0001f4da"        # BOOKS
+              u"\uFE0E"            # VARIATION SELECTOR-15
+              u"X"                 # ASCII Letter 'X'
+              u"\uFE0E")           # VARIATION SELECTOR-15
+
+    expect_length_each = (1, 0, 1, 0)
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(wcwidth.wcwidth(w_char, unicode_version='8.0') for w_char in phrase)

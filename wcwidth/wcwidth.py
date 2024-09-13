@@ -68,6 +68,7 @@ import sys
 import warnings
 
 # local
+from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -198,6 +199,17 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
                 width += _bisearch(ord(last_measured_char), VS16_NARROW_TO_WIDE["9.0.0"])
+                last_measured_char = None
+            idx += 1
+            continue
+        if char == u'\uFE0E' and last_measured_char:
+            # on variation selector 15 (VS15) following another character,
+            # conditionally subtract '1' from the measured width if that
+            # character is known to be converted from wide to narrow by VS15.
+            if _unicode_version is None:
+                _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
+            if _unicode_version >= (9, 0, 0):
+                width -= _bisearch(ord(last_measured_char), VS15_WIDE_TO_NARROW["9.0.0"])
                 last_measured_char = None
             idx += 1
             continue

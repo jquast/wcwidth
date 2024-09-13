@@ -217,6 +217,10 @@ Other Languages
 History
 =======
 
+0.2.14 *2024-02-14*
+  * **Bugfix** accounting of some kinds of emoji sequences using U+FE0E
+    Variation Selector 15 (`PR #120`_).
+
 0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
