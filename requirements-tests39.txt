@@ -10,7 +10,7 @@ astroid==3.0.1
     #   pylint
 autopep8==2.0.4
     # via -r requirements-tests39.in
-charset-normalizer==3.3.0
+charset-normalizer==3.3.2
     # via docformatter
 coverage==7.3.2
     # via pytest-cov
@@ -38,6 +38,10 @@ mccabe==0.7.0
     # via
     #   flake8
     #   pylint
+mypy==1.6.1
+    # via -r requirements-tests39.in
+mypy-extensions==1.0.0
+    # via mypy
 packaging==23.2
     # via pytest
 pbr==5.11.1
@@ -60,9 +64,9 @@ pygments==2.16.1
     # via
     #   -r requirements-tests39.in
     #   doc8
-pylint==3.0.1
+pylint==3.0.2
     # via -r requirements-tests39.in
-pytest==7.4.2
+pytest==7.4.3
     # via
     #   -r requirements-tests39.in
     #   pytest-benchmark
@@ -84,13 +88,15 @@ tomli==2.0.1
     #   autopep8
     #   coverage
     #   doc8
+    #   mypy
     #   pylint
     #   pytest
-tomlkit==0.12.1
+tomlkit==0.12.2
     # via pylint
 typing-extensions==4.8.0
     # via
     #   astroid
+    #   mypy
     #   pylint
 untokenize==0.1.1
     # via docformatter
