@@ -21,7 +21,7 @@ import unicodedata
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
-from typing import Any, Mapping, Iterable, Iterator, Sequence, Container, Collection
+from typing import Any, Mapping, Iterable, Iterator, Sequence, Collection
 
 try:
     from typing import Self
@@ -90,7 +90,7 @@ def _bisearch(ucs, table):
 
 @dataclass(order=True, frozen=True)
 class UnicodeVersion:
-    """A class for camparable unicode version."""
+    """A class for comparable unicode version."""
     major: int
     minor: int
     micro: int | None
@@ -497,7 +497,7 @@ def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
 
 
 def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
-    """Parse emoji-variation-sequences.txt for codepoints that preceed 0xFE0F."""
+    """Parse emoji-variation-sequences.txt for codepoints that precede 0xFE0F."""
     hex_str_vs16 = 'FE0F'
     for line in fp:
         data, _, comment = line.partition('#')
@@ -511,7 +511,7 @@ def parse_vs16_table(fp: Iterable[str]) -> Iterator[TableEntry]:
             continue
         code_points = code_points_str.split()
         if len(code_points) == 2 and code_points[1] == hex_str_vs16:
-            # yeild a single "code range" entry for a single value that preceeds FE0F
+            # yield a single "code range" entry for a single value that precedes FE0F
             yield TableEntry((int(code_points[0], 16), int(code_points[0], 16)), tuple(properties), comment)
 
 
