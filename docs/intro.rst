@@ -1,75 +1,101 @@
 |pypi_downloads| |codecov| |license|
 
-============
-Introduction
-============
+================
+What is wcwidth?
+================
 
-This library is mainly for CLI programs that carefully produce output for
-Terminals, or make pretend to be an emulator.
+**wcwidth** is a Python package intended for CLI programs that produce output
+for terminals or terminal emulators. The functions within this package
+implement the C functions, `wcwidth(3)`_ and `wcswidth(3)`_, which were defined
+in the POSIX.1-2001 and POSIX.1-2008 standards. These functions return the
+number of cells a unicode string is expected to occupy on the screen.
 
-**Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen ``1 character : 1 cell``.  However,
-there are categories of characters that *occupy 2 cells* (full-wide), and
-others that *occupy 0* cells (zero-width).
+Most unicode characters have a printable length that's equal to the number of
+cells that character occupies on the screen (i.e. 1 character = 1 cell).
+However, there are certain categories of characters that occupy 2 cells
+(full-width), and others that occupy 0 cells (zero-width).
 
-**Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
-`wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a
-unicode string is expected to occupy.*
-
-Installation
-------------
-
-The stable version of this package is maintained on pypi, install using pip::
-
-    pip install wcwidth
 
 Example
 -------
 
-**Problem**: given the following phrase (Japanese),
+To demonstrate, let's assign a string of Japanese unicode characters to the
+variable ``text``.::
 
-   >>>  text = u'コンニチハ'
+    >>> text = u'コンニチハ'
 
-Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printable length* of 10 cells, so that when using the `rjust` function, the
-output length is wrong::
+When we use the ``len`` from the standard Python library to check the length
+of our ``text`` variable, it returns the *string length* (5 characters)
+rather than the *printable length* (10 cells) of our unicode string. This
+difference produces unintended results when we attempt to align the output
+from our ``text`` variable within the terminal (example output shown below
+using the ``rjust`` function from the standard Python library).::
 
-    >>> print(len('コンニチハ'))
+    >>> print(len(text))
     5
 
-    >>> print('コンニチハ'.rjust(20, '_'))
+    >>> from wcwidth import wcswidth
+    >>> print(wcswidth(text))
+    10
+
+    >>> print(text.rjust(20, '_'))
     _______________コンニチハ
 
-By defining our own "rjust" function that uses wcwidth, we can correct this::
+We can solve this problem by implementing our own ``wc_rjust`` function.::
 
    >>> def wc_rjust(text, length, padding=' '):
    ...    from wcwidth import wcswidth
    ...    return padding * max(0, (length - wcswidth(text))) + text
    ...
 
-Our **Solution** uses wcswidth to determine the string length correctly::
-
-   >>> from wcwidth import wcswidth
-   >>> print(wcswidth('コンニチハ'))
-   10
+We can see that the new ``wc_rjust`` function produces the expected output
+within the terminal, thanks to ``wcwidth``::
 
    >>> print(wc_rjust('コンニチハ', 20, '_'))
    __________コンニチハ
 
 
-Choosing a Version
-------------------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be done by
-*terminal emulators* or those developers experimenting with authoring one of
-their own, from shell::
 
-   $ export UNICODE_VERSION=13.0
+===============
+Getting Started
+===============
 
-If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect`_ utility to
+The source code for this package is currently hosted on GitHub at: 
+https://github.com/jquast/wcwidth
+
+Binary installers for the latest released version are available at:
+https://pypi.org/project/wcwidth/
+
+The complete API documentation for this package can be referenced at:
+https://wcwidth.readthedocs.org
+
+
+Installation
+------------
+
+The stable version of this package is maintained on PyPI and can be installed
+using the following ``pip`` command:::
+
+    pip install wcwidth
+
+
+Unicode Version Config
+----------------------
+
+The unicode version used for your terminal can be set using the 
+``UNICODE_VERSION`` environment variable.
+
+Simply export the ``UNICODE_VERSION`` environment variable using the following
+shell command (with variable set to the desired version number):::
+
+    $ export UNICODE_VERSION=13.0
+
+If the ``UNICODE_VERSION`` environment variable is missing or unspecified, the
+latest version is used. If your terminal or terminal emulator does not export
+this variable, you can utilize the `jquast/ucs-detect`_ utility to
 automatically detect and export it to your shell.
+
 
 wcwidth, wcswidth
 -----------------
@@ -77,49 +103,62 @@ Use function ``wcwidth()`` to determine the length of a *single unicode
 character*, and ``wcswidth()`` to determine the length of many, a *string
 of unicode characters*.
 
-Briefly, return values of function ``wcwidth()`` are:
+Briefly, return values of function ``wcwidth()`` are:::
 
-``-1``
-  Indeterminate (not printable).
+    -1
+      --  Indeterminate (not printable).
 
-``0``
-  Does not advance the cursor, such as NULL or Combining.
+    0
+      --  Does not advance the cursor, such as NULL or Combining.
 
-``2``
-  Characters of category East Asian Wide (W) or East Asian
-  Full-width (F) which are displayed using two terminal cells.
+    2
+      --  Characters of category East Asian Wide (W) or East Asian
+          Full-width (F) which are displayed using two terminal cells.
 
-``1``
-  All others.
+    1
+      --  All others.
 
 Function ``wcswidth()`` simply returns the sum of all values for each character
-along a string, or ``-1`` when it occurs anywhere along a string.
+within the string, or ``-1`` if there are any indeterminate (non-printable)
+characters within the string.
 
-Full API Documentation at https://wcwidth.readthedocs.org
 
-==========
-Developing
-==========
 
-Install wcwidth in editable mode::
+
+==================================
+Helpful Resources for Contributors
+==================================
+
+Updating source code
+--------------------
+
+Make changes locally by installing ``wcwidth`` in editable mode with ``pip``::
 
    pip install -e .
 
-Execute unit tests using tox_::
+
+Executing unit tests
+--------------------
+
+This project uses tox_ for unit testing. To run all of the unit tests, execute
+the following command within the project directory.::
 
    tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312
 
-Updating Unicode Version
-------------------------
 
-Regenerate python code tables from latest Unicode Specification data files::
+Updating Unicode Data
+----------------------
+
+Execute the following command to regenerate the Python code tables from the
+latest Unicode specification data files:::
 
    tox -e update
 
-The script is located at ``bin/update-tables.py``, requires Python 3.9 or
-later. It is recommended but not necessary to run this script with the newest
-Python, because the newest Python has the latest ``unicodedata`` for generating
-comments.
+The script that performs the update is ``bin/update-tables.py`` and requires
+Python 3.9 or later. It is recommended but not necessary to run this script
+with the latest stable version of Python, because that version will have the
+latest ``unicodedata`` for generating comments.
+
 
 Building Documentation
 ----------------------
@@ -128,34 +167,48 @@ This project is using `sphinx`_ 4.5 to build documentation::
 
    tox -e sphinx
 
-The output will be in ``docs/_build/html/``.
+The output files will be generated in the ``docs/_build/html/`` directory of
+this repository.
+
 
 Updating Requirements
 ---------------------
 
 This project is using `pip-tools`_ to manage requirements.
 
-To upgrade requirements for updating unicode version, run::
+To update the requirements for updating unicode data, run::
 
    tox -e update_requirements_update
 
-To upgrade requirements for testing, run::
+To update the requirements for testing, run::
 
    tox -e update_requirements37,update_requirements39
 
-To upgrade requirements for building documentation, run::
+To update the requirements for building documentation, run::
 
    tox -e update_requirements_docs
+
 
 Utilities
 ---------
 
-Supplementary tools for browsing and testing terminals for wide unicode
-characters are found in the `bin/`_ of this project's source code.  Just ensure
-to first ``pip install -r requirements-develop.txt`` from this projects main
-folder. For example, an interactive browser for testing::
+Supplemental tools for browsing and testing terminals for wide unicode
+characters can be found in the `bin/`_ directory of this project's source
+code. 
+
+Before attempting to use any of the tools within that directory, you must
+first execute the following ``pip`` command from this project's root
+directory:::
+
+    pip install -r requirements-develop.txt
+    
+As an example, the following command will open an interactive browser for
+testing::
 
   python ./bin/wcwidth-browser.py
+
+
+
 
 ====
 Uses
