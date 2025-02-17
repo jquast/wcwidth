@@ -6,6 +6,8 @@ on:
     tags: ["*"]
   pull_request:
     branches: [master]
+  schedule:
+    - cron: "30 16 1 * *"
   workflow_dispatch:
 
 env:
@@ -33,6 +35,7 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
           - "pypy-3.7"
           - "pypy-3.8"
           - "pypy-3.9"
@@ -42,13 +45,26 @@ jobs:
             python-version: "pypy-3.6"
           - os: ubuntu-20.04
             python-version: "3.6"
+        exclude:
+          - os: macos-latest
+            python-version: "3.7"
+          - os: macos-latest
+            python-version: "pypy-3.7"
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - name: Ignore certificate verification on python 3.5
+        shell: bash
+        run: |
+          # INSECURE!! But it should be OK for CI tests.
+          echo 'PIP_TRUSTED_HOST=pypi.python.org pypi.org files.pythonhosted.org' >>$GITHUB_ENV
+        if: 'matrix.python-version == 3.5'
+
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -98,10 +114,11 @@ jobs:
           fi
 
       - name: Upload coverage data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-data
+          name: coverage-data.${{ matrix.os }}-${{ matrix.python-version }}
           path: .coverage.*
+          include-hidden-files: true
           if-no-files-found: ignore
 
   coverage:
@@ -110,14 +127,22 @@ jobs:
     needs: tests
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version-file: .python-version-default
           cache: pip
 
+      - name: Merge coverage data artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: coverage-data
+          pattern: coverage-data.*
+          include-hidden-files: true
+          delete-merged: true
+
       - name: Download coverage data
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: coverage-data
 
@@ -133,7 +158,7 @@ jobs:
           python -Im coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
 
@@ -143,7 +168,7 @@ jobs:
           python -Im coverage report --fail-under=100
 
       - name: Upload HTML report if check failed.
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-report
           path: htmlcov
