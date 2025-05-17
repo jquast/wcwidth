@@ -60,12 +60,14 @@ http://www.unicode.org/unicode/reports/tr11/
 
 Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 """
+
 from __future__ import division
 
 # std imports
 import os
 import sys
 import warnings
+from typing import Literal, Optional, Sequence
 
 # local
 from .table_vs16 import VS16_NARROW_TO_WIDE
@@ -85,7 +87,7 @@ except ImportError:
 _PY3 = sys.version_info[0] >= 3
 
 
-def _bisearch(ucs, table):
+def _bisearch(ucs: int, table: Sequence[tuple[int, int]]) -> Literal[0, 1]:
     """
     Auxiliary function for binary search in interval table.
 
@@ -113,7 +115,7 @@ def _bisearch(ucs, table):
 
 
 @lru_cache(maxsize=1000)
-def wcwidth(wc, unicode_version='auto'):
+def wcwidth(wc: str, unicode_version: str = "auto"):
     r"""
     Given one Unicode character, return its printable length on a terminal.
 
@@ -140,7 +142,7 @@ def wcwidth(wc, unicode_version='auto'):
     # small optimization: early return of 1 for printable ASCII, this provides
     # approximately 40% performance improvement for mostly-ascii documents, with
     # less than 1% impact to others.
-    if 32 <= ucs < 0x7f:
+    if 32 <= ucs < 0x7F:
         return 1
 
     # C0/C1 control characters are -1 for compatibility with POSIX-like calls
@@ -157,7 +159,7 @@ def wcwidth(wc, unicode_version='auto'):
     return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
 
 
-def wcswidth(pwcs, n=None, unicode_version='auto'):
+def wcswidth(pwcs: str, n: Optional[int] = None, unicode_version: str = "auto") -> int:
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -186,11 +188,11 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     last_measured_char = None
     while idx < end:
         char = pwcs[idx]
-        if char == u'\u200D':
+        if char == "\u200d":
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        if char == u'\uFE0F' and last_measured_char:
+        if char == "\ufe0f" and last_measured_char:
             # on variation selector 16 (VS16) following another character,
             # conditionally add '1' to the measured width if that character is
             # known to be converted from narrow to wide by the VS16 character.
@@ -216,7 +218,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
 
 
 @lru_cache(maxsize=128)
-def _wcversion_value(ver_string):
+def _wcversion_value(ver_string: str) -> tuple[int, ...]:
     """
     Integer-mapped value of given dotted version string.
 
@@ -224,12 +226,12 @@ def _wcversion_value(ver_string):
     :rtype: tuple(int)
     :returns: tuple of digit tuples, ``tuple(int, [...])``.
     """
-    retval = tuple(map(int, (ver_string.split('.'))))
+    retval = tuple(map(int, (ver_string.split("."))))
     return retval
 
 
 @lru_cache(maxsize=8)
-def _wcmatch_version(given_version):
+def _wcmatch_version(given_version: str) -> str:
     """
     Return nearest matching supported Unicode version level.
 
@@ -271,12 +273,10 @@ def _wcmatch_version(given_version):
         unicode_versions = list_versions()
     latest_version = unicode_versions[-1]
 
-    if given_version in (u'auto', 'auto'):
-        given_version = os.environ.get(
-            'UNICODE_VERSION',
-            'latest' if not _return_str else latest_version.encode())
+    if given_version in ("auto", "auto"):
+        given_version = os.environ.get("UNICODE_VERSION", "latest" if not _return_str else latest_version.encode())
 
-    if given_version in (u'latest', 'latest'):
+    if given_version in ("latest", "latest"):
         # default match, when given as 'latest', use the most latest unicode
         # version specification level supported.
         return latest_version if not _return_str else latest_version.encode()
@@ -293,11 +293,12 @@ def _wcmatch_version(given_version):
 
     except ValueError:
         # submitted value raises ValueError in int(), warn and use latest.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is invalid. "
-                      "Value should be in form of `integer[.]+', the latest "
-                      "supported unicode version {latest_version!r} has been "
-                      "inferred.".format(given_version=given_version,
-                                         latest_version=latest_version))
+        warnings.warn(
+            "UNICODE_VERSION value, {given_version!r}, is invalid. "
+            "Value should be in form of `integer[.]+', the latest "
+            "supported unicode version {latest_version!r} has been "
+            "inferred.".format(given_version=given_version, latest_version=latest_version)
+        )
         return latest_version if not _return_str else latest_version.encode()
 
     # given version is less than any available version, return earliest
@@ -309,11 +310,11 @@ def _wcmatch_version(given_version):
         # this probably isn't what you wanted, the oldest wcwidth.c you will
         # find in the wild is likely version 5 or 6, which we both support,
         # but it's better than not saying anything at all.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is lower "
-                      "than any available unicode version. Returning lowest "
-                      "version level, {earliest_version!r}".format(
-                          given_version=given_version,
-                          earliest_version=earliest_version))
+        warnings.warn(
+            "UNICODE_VERSION value, {given_version!r}, is lower "
+            "than any available unicode version. Returning lowest "
+            "version level, {earliest_version!r}".format(given_version=given_version, earliest_version=earliest_version)
+        )
         return earliest_version if not _return_str else earliest_version.encode()
 
     # create list of versions which are less than our equal to given version,
@@ -333,7 +334,7 @@ def _wcmatch_version(given_version):
         # Maybe our given version has less parts, as in tuple(8, 0), than the
         # next compare version tuple(8, 0, 0). Test for an exact match by
         # comparison of only the leading dotted piece(s): (8, 0) == (8, 0).
-        if cmp_given == cmp_next_version[:len(cmp_given)]:
+        if cmp_given == cmp_next_version[: len(cmp_given)]:
             return unicode_versions[idx + 1]
 
         # Or, if any next value is greater than our given support level

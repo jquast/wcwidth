@@ -22,10 +22,10 @@ import json
 from wcwidth import WIDE_EASTASIAN, _bisearch
 
 
-def main():
+def main() -> None:
     """List new WIDE characters at each unicode version."""
     versions = list(WIDE_EASTASIAN.keys())
-    results = {}
+    results: dict[str, list[int]] = {}
     for version in versions:
         prev_idx = versions.index(version) - 1
         if prev_idx == -1:
