@@ -36,7 +36,6 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
-          - "pypy-2.7"
           - "pypy-3.7"
           - "pypy-3.8"
           - "pypy-3.9"
@@ -46,11 +45,6 @@ jobs:
             python-version: "pypy-3.6"
           - os: ubuntu-20.04
             python-version: "3.6"
-          - os: ubuntu-20.04
-            python-version: "3.5"
-          - os: ubuntu-20.04
-            container: python:2.7-buster
-            python-version: "2.7"
         exclude:
           - os: macos-latest
             python-version: "3.7"
@@ -93,22 +87,13 @@ jobs:
           echo IS_PYPY=$IS_PYPY >>$GITHUB_ENV
           echo TOX_PYTHON=$V >>$GITHUB_ENV
 
-          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
-            python -m pip install tox
-          else
-            python -Im pip install tox
-          fi
+          python -Im pip install tox
 
       - name: Prepare sdist and source-dir
         shell: bash
         run: |
-          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
-            python -m pip install build
-            python -m build
-          else
-            python -Im pip install build
-            python -Im build
-          fi
+          python -Im pip install build
+          python -Im build
 
           mkdir source-dir
           tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
@@ -117,11 +102,7 @@ jobs:
         shell: bash
         working-directory: ./source-dir
         run: |
-          if [[ ${{ matrix.python-version }} = *2.7 ]]; then
-            python -m tox -e ${{ env.TOX_PYTHON }}
-          else
-            python -Im tox -e ${{ env.TOX_PYTHON }}
-          fi
+          python -Im tox -e ${{ env.TOX_PYTHON }}
 
       - name: Rename coverage data
         shell: bash
