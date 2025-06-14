@@ -35,11 +35,13 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
           - "pypy-2.7"
           - "pypy-3.7"
           - "pypy-3.8"
           - "pypy-3.9"
           - "pypy-3.10"
+          - "pypy-3.11"
         include:
           - os: windows-latest
             python-version: "3.7"
