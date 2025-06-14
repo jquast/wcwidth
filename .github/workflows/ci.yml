@@ -47,11 +47,13 @@ jobs:
             python-version: "3.7"
           - os: ubuntu-22.04
             python-version: "pypy-3.6"
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
+            container: python:3.6
             python-version: "3.6"
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
+            container: python:3.5
             python-version: "3.5"
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             container: python:2.7-buster
             python-version: "2.7"
         exclude:
