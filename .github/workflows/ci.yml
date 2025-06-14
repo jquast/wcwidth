@@ -16,8 +16,6 @@ env:
   # https://pip.pypa.io/en/stable/topics/configuration/#environment-variables
   # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-disable-pip-version-check
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-no-python-version-warning
-  PIP_NO_PYTHON_VERSION_WARNING: "1"
 
 jobs:
   tests:
@@ -74,6 +72,11 @@ jobs:
           # INSECURE!! But it should be OK for CI tests.
           echo 'PIP_TRUSTED_HOST=pypi.python.org pypi.org files.pythonhosted.org' >>$GITHUB_ENV
         if: 'matrix.python-version == 3.5'
+
+      - name: set PIP_NO_PYTHON_VERSION_WARNING environment variable for python 2
+        shell: bash
+        run: echo 'PIP_NO_PYTHON_VERSION_WARNING=1' >>$GITHUB_ENV
+        if: 'matrix.python-version == 2.7 || matrix.python-version == pypy-2.7'
 
       - uses: actions/setup-python@v5
         with:
