@@ -4,7 +4,7 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-tests37.txt --resolver=backtracking --strip-extras requirements-tests37.in
 #
-attrs==23.1.0
+attrs==24.2.0
     # via pytest
 coverage==5.5
     # via
@@ -18,7 +18,7 @@ importlib-metadata==6.7.0 ; python_version < "3.8"
     #   pytest
 iniconfig==2.0.0
     # via pytest
-packaging==23.2
+packaging==24.0
     # via pytest
 pluggy==1.2.0
     # via pytest
