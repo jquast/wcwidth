@@ -76,7 +76,7 @@ jobs:
       - name: set PIP_NO_PYTHON_VERSION_WARNING environment variable for python 2
         shell: bash
         run: echo 'PIP_NO_PYTHON_VERSION_WARNING=1' >>$GITHUB_ENV
-        if: 'matrix.python-version == 2.7 || matrix.python-version == pypy-2.7'
+        if: ${{ matrix.python-version == '2.7' || matrix.python-version == 'pypy-2.7' }}
 
       - uses: actions/setup-python@v5
         with:
