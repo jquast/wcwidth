@@ -217,6 +217,9 @@ Other Languages
 History
 =======
 
+Unreleased
+  * **Updated** tables to include Unicode Specification 16.0.0 and 17.0.0.
+
 0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
