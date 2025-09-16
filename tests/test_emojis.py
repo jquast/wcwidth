@@ -1,6 +1,5 @@
 # std imports
 import os
-import codecs
 
 # 3rd party
 import pytest
@@ -11,6 +10,8 @@ try:
 except NameError:
     # python 3
     unichr = chr
+else:
+    from codecs import open
 
 # some tests cannot be done on some builds of python, where the internal
 # unicode structure is limited to 0x10000 for memory conservation,
@@ -146,7 +147,7 @@ def test_longer_emoji_zwj_sequence():
 
 
 def read_sequences_from_file(filename):
-    fp = codecs.open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
+    fp = open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
     lines = [line.strip()
                 for line in fp.readlines()
                 if not line.startswith('#') and line.strip()]
