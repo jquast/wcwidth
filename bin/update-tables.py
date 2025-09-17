@@ -492,10 +492,18 @@ def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
     # perform culling on any values that are already understood as 'narrow'
     # without the variation-15 selector
     wide_table = wide_tables[unicode_version].as_value_ranges()
+    for ucs in table[unicode_version].values:
+        if _bisearch(ucs, wide_table):
+            print(f'EXCLUDE {hex(ucs)} from VS15: it is wide!')
+
     table[unicode_version].values = {
         ucs for ucs in table[unicode_version].values
-        if _bisearch(ucs, wide_table)
+        if not _bisearch(ucs, wide_table)
     }
+#    assert False
+#    if 0x03297 in table[unicode_version].values:
+#        if 0x03297 in table[unicode_version].values.remove(0x03297)
+#
 
     return UnicodeTableRenderCtx('VS15_WIDE_TO_NARROW', table)
 
