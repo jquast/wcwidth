@@ -107,7 +107,7 @@ Install wcwidth in editable mode::
 
 Execute unit tests using tox_::
 
-   tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312
+   tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312,py313,py314
 
 Updating Unicode Version
 ------------------------
