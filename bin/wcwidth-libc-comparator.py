@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Manual tests comparing wcwidth.py to libc's wcwidth(3) and wcswidth(3).
 
@@ -18,7 +17,6 @@ level for our library to use when comparing to libc.
 #         Invalid module name "wcwidth-libc-comparator"
 
 # standard imports
-from __future__ import print_function
 
 # std imports
 import sys
@@ -64,24 +62,11 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
            .decode('ascii')
            .upper()
            .lstrip('0'))
-    url = "http://codepoints.net/U+{}".format(ucp)
+    url = f"http://codepoints.net/U+{ucp}"
     name = unicodedata.name(ucs)
-    return (u"libc,ours={},{} [--o{}o--] name={} val={} {}"
+    return ("libc,ours={},{} [--o{}o--] name={} val={} {}"
             " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
 
-
-# use chr() for py3.x,
-# unichr() for py2.x
-try:
-    _ = unichr(0)
-except NameError as err:
-    if err.args[0] == "name 'unichr' is not defined":
-        # pylint: disable=W0622
-        #         Redefining built-in 'unichr' (col 8)
-
-        unichr = chr
-    else:
-        raise
 
 if sys.maxunicode < 1114111:
     warnings.warn('narrow Python build, only a small subset of '
@@ -108,7 +93,7 @@ def main(using_locale=('en_US', 'UTF-8',)):
     report a detailed AssertionError to stdout.
     """
     all_ucs = (ucs for ucs in
-               [unichr(val) for val in range(sys.maxunicode)]
+               [chr(val) for val in range(sys.maxunicode)]
                if is_named(ucs) and is_not_combining(ucs))
 
     libc_name = ctypes.util.find_library('c')
