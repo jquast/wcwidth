@@ -372,6 +372,21 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
 
         # Add Hangul Jamo Vowels and Hangul Trailing Consonants
         table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
+
+        # Remove u+00AD categoryCode=Cf name="SOFT HYPHEN",
+        # > https://www.unicode.org/faq/casemap_charprop.html
+        #
+        # > Q: Unicode now treats the SOFT HYPHEN as format control (Cf)
+        # > character when formerly it was a punctuation character (Pd).
+        # > Doesn't this break ISO 8859-1 compatibility?
+        #
+        # > [..] In a terminal emulation environment, particularly in
+        # > ISO-8859-1 contexts, one could display the SOFT HYPHEN as a hyphen
+        # > in all circumstances.
+        #
+        # This value was wrongly measured as a width of '0' in this wcwidth
+        # versions 0.2.9 - 0.2.13. Fixed in 0.2.14
+        table[version].values.discard(0x00AD)  # SOFT HYPHEN
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 

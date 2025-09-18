@@ -400,3 +400,9 @@ def test_zero_wide_conflict():
     assert wcwidth.wcwidth(unichr(0x03099), unicode_version='4.1.0') == 0
     assert wcwidth.wcwidth(unichr(0x0309a), unicode_version='4.1.0') == 0
     assert wcwidth.wcwidth(unichr(0x0309b), unicode_version='4.1.0') == 2
+
+def test_soft_hyphen():
+    # Test SOFT HYPHEN, category 'Cf' usually are zero-width, but most
+    # implementations agree to draw it was '1' cell, visually
+    # indistinguishable from a space, ' ' in Konsole, for example.
+    assert wcwidth.wcwidth(unichr(0x000ad)) == 1
