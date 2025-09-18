@@ -27,25 +27,29 @@ jobs:
           - windows-latest
           - macos-latest
         python-version:
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
           - "pypy-3.7"
           - "pypy-3.8"
           - "pypy-3.9"
           - "pypy-3.10"
+          - "pypy-3.11"
         include:
+          - os: windows-latest
+            python-version: "3.7"
+          - os: ubuntu-22.04
+            python-version: "3.7"
           - os: ubuntu-22.04
             python-version: "pypy-3.6"
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
+            container: python:3.6
             python-version: "3.6"
         exclude:
-          - os: macos-latest
-            python-version: "3.7"
           - os: macos-latest
             python-version: "pypy-3.7"
 
