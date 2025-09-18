@@ -51,8 +51,6 @@ def main():
             _get_here('README.rst'), 'rb', 'utf8').read(),
         author='Jeff Quast',
         author_email='contact@jeffquast.com',
-        install_requires=('backports.functools-lru-cache>=1.2.1;'
-                          'python_version < "3.2"'),
         license='MIT',
         packages=['wcwidth'],
         url='https://github.com/jquast/wcwidth',
@@ -60,6 +58,7 @@ def main():
             '': ['LICENSE', '*.rst'],
         },
         zip_safe=True,
+        python_requires='>=3.6',
         classifiers=[
             'Intended Audience :: Developers',
             'Natural Language :: English',
@@ -67,8 +66,6 @@ def main():
             'Environment :: Console',
             'License :: OSI Approved :: MIT License',
             'Operating System :: POSIX',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',

@@ -22,7 +22,6 @@ Options:
 #         Invalid constant name "echo"
 #         Invalid constant name "flushout" (col 4)
 #         Invalid module name "wcwidth-browser"
-from __future__ import division, print_function
 
 # std imports
 import sys
@@ -44,7 +43,7 @@ flushout = functools.partial(print, end='', flush=True)
 
 #: printable length of highest unicode character description
 LIMIT_UCS = 0x3fffd
-UCS_PRINTLEN = len('{value:0x}'.format(value=LIMIT_UCS))
+UCS_PRINTLEN = len(f'{LIMIT_UCS:0x}')
 
 
 def readline(term, width):
@@ -69,7 +68,7 @@ def readline(term, width):
     return text
 
 
-class WcWideCharacterGenerator(object):
+class WcWideCharacterGenerator:
     """Generator yields unicode characters of the given ``width``."""
 
     # pylint: disable=R0903
@@ -101,7 +100,7 @@ class WcWideCharacterGenerator(object):
             return (ucs, name)
 
 
-class WcCombinedCharacterGenerator(object):
+class WcCombinedCharacterGenerator:
     """Generator yields unicode characters with combining."""
 
     # pylint: disable=R0903
@@ -148,11 +147,8 @@ class WcCombinedCharacterGenerator(object):
                 continue
             return (ucs, name)
 
-    # python 2.6 - 3.3 compatibility
-    next = __next__
 
-
-class Style(object):
+class Style:
     """Styling decorator class instance for terminal output."""
 
     # pylint: disable=R0903
@@ -184,7 +180,7 @@ class Style(object):
             setattr(self, key, val)
 
 
-class Screen(object):
+class Screen:
     """Represents terminal style, data dimensions, and drawables."""
 
     intro_msg_fmt = ('Delimiters ({delim}) should align, '
@@ -217,8 +213,7 @@ class Screen(object):
         """Text of a single column heading."""
         delimiter = self.style.attr_minor(self.style.delimiter)
         hint = self.style.header_hint * self.wide
-        heading = ('{delimiter}{hint}{delimiter}'
-                   .format(delimiter=delimiter, hint=hint))
+        heading = f'{delimiter}{hint}{delimiter}'
 
         def alignment(*args):
             if self.style.alignment == 'right':
@@ -264,7 +259,7 @@ class Screen(object):
         return self.num_rows * self.num_columns
 
 
-class Pager(object):
+class Pager:
     """A less(1)-like browser for browsing unicode characters."""
     # pylint: disable=too-many-instance-attributes
 
@@ -570,10 +565,10 @@ class Pager(object):
             if idx == self.last_page:
                 last_end = '(END)'
             else:
-                last_end = '/{0}'.format(self.last_page)
+                last_end = f'/{self.last_page}'
             txt = ('Page {idx}{last_end} - '
                    '{q} to quit, [keys: {keyset}]'
-                   .format(idx=style.attr_minor('{0}'.format(idx)),
+                   .format(idx=style.attr_minor(f'{idx}'),
                            last_end=style.attr_major(last_end),
                            keyset=style.attr_major('kjfbvc12-='),
                            q=style.attr_minor('q')))
