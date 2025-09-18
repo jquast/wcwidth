@@ -16,8 +16,6 @@ env:
   # https://pip.pypa.io/en/stable/topics/configuration/#environment-variables
   # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-disable-pip-version-check
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  # https://pip.pypa.io/en/stable/cli/pip/#cmdoption-no-python-version-warning
-  PIP_NO_PYTHON_VERSION_WARNING: "1"
 
 jobs:
   tests:
@@ -56,13 +54,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Ignore certificate verification on python 3.5
-        shell: bash
-        run: |
-          # INSECURE!! But it should be OK for CI tests.
-          echo 'PIP_TRUSTED_HOST=pypi.python.org pypi.org files.pythonhosted.org' >>$GITHUB_ENV
-        if: 'matrix.python-version == 3.5'
 
       - uses: actions/setup-python@v5
         with:
