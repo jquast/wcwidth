@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # wcwidth documentation build configuration file, created by
 # sphinx-quickstart on Fri Oct 20 15:18:02 2017.

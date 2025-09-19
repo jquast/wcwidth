@@ -143,7 +143,7 @@ Executing unit tests
 This project uses tox_ for unit testing. To run all of the unit tests, execute
 the following command within the project directory.::
 
-   tox -e py27,py35,py36,py37,py38,py39,py310,py311,py312
+   tox -e py36,py37,py38,py39,py310,py311,py312
 
 
 Updating Unicode Data
@@ -269,6 +269,9 @@ Other Languages
 =======
 History
 =======
+
+Unreleased
+  * **Updated** tables to include Unicode Specification 16.0.0 and 17.0.0.
 
 0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
