@@ -105,9 +105,9 @@ Install wcwidth in editable mode::
 
    pip install -e .
 
-Execute unit tests using tox_::
+Execute unit tests using tox_ for all supported Python versions::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312
+   tox -e py36,py37,py38,py39,py310,py311,py312,py313,py314
 
 Updating Unicode Version
 ------------------------
