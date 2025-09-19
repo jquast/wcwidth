@@ -394,7 +394,6 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     For that reason, and that these values are not expected to change,
     only this single shared table is exported.
 
-
     One example, where v3.2 became v1.1 ("-" 12.0, "+" 15.1)::
 
          -2620 FE0F  ; Basic_Emoji  ; skull and crossbones        #  3.2  [1] (☠️)

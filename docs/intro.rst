@@ -95,7 +95,7 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
-Full API Documentation at https://wcwidth.readthedocs.org
+Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
 Developing
@@ -262,7 +262,7 @@ Unreleased
     Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
     See the `jquast/ucs-detect`_ CLI utility for automatic detection.
   * **Enhancement**:
-    API Documentation is published to readthedocs.org.
+    API Documentation is published to readthedocs.io.
   * **Updated** tables for *all* Unicode Specifications with files
     published in a programmatically consumable format, versions 4.1.0
     through 13.0
