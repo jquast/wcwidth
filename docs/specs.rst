@@ -26,7 +26,7 @@ Any characters defined by category codes in `DerivedGeneralCategory.txt`_ files:
 - 'Me': Enclosing Combining Mark, aprox. 13 characters.
 - 'Mn': Nonspacing Combining Mark, aprox. 1,839 characters.
 - 'Mc': Spacing Mark, aprox. 443 characters.
-- 'Cf': Format control character, aprox. 161 characters.
+- 'Cf': Format control characters excluding `U+00AD` SOFT HYPHEN, aprox. 160 characters.
 - 'Zl': `U+2028`_ LINE SEPARATOR only
 - 'Zp': `U+2029`_ PARAGRAPH SEPARATOR only
 - 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase
@@ -66,6 +66,7 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`U+001F`: https://codepoints.net/U+001F
 .. _`U+007F`: https://codepoints.net/U+007F
 .. _`U+00A0`: https://codepoints.net/U+00A0
+.. _`U+00AD`: https://codepoints.net/U+00AD
 .. _`U+1160`: https://codepoints.net/U+1160
 .. _`U+11FF`: https://codepoints.net/U+11FF
 .. _`U+200D`: https://codepoints.net/U+200D

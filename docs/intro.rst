@@ -217,8 +217,10 @@ Other Languages
 History
 =======
 
-Unreleased
+0.2.14 *2025-09-18*
   * **Updated** tables to include Unicode Specification 16.0.0 and 17.0.0.
+  * **Bugfix** U+00AD SOFT HYPHEN should measure as 1, versions 0.2.9 through
+    0.2.13 measured as 0.
 
 0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)

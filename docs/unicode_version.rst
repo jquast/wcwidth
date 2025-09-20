@@ -136,6 +136,9 @@ release files:
 ``emoji-variation-sequences-12.0.0.txt``
   *Date: 2019-01-15, 12:10:05 GMT*
 
+``emoji-variation-sequences-15.1.0.txt``
+  *Date: 2023-02-01, 02:22:54 GMT*
+
 ``emoji-variation-sequences-17.0.0.txt``
   *Date: 2025-01-30, 21:48:29 GMT*
 
