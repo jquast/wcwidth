@@ -95,7 +95,7 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
-Full API Documentation at https://wcwidth.readthedocs.org
+Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
 Developing
@@ -105,9 +105,9 @@ Install wcwidth in editable mode::
 
    pip install -e .
 
-Execute unit tests using tox_::
+Execute unit tests using tox_ for all supported Python versions::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312
+   tox -e py36,py37,py38,py39,py310,py311,py312,py313,py314
 
 Updating Unicode Version
 ------------------------
@@ -264,7 +264,7 @@ History
     Environment variable ``UNICODE_VERSION``, such as ``13.0``, or ``6.3.0``.
     See the `jquast/ucs-detect`_ CLI utility for automatic detection.
   * **Enhancement**:
-    API Documentation is published to readthedocs.org.
+    API Documentation is published to readthedocs.io.
   * **Updated** tables for *all* Unicode Specifications with files
     published in a programmatically consumable format, versions 4.1.0
     through 13.0

@@ -85,6 +85,7 @@ def bisearch_pair(ucs, table):
 
 
 def main(log: logging.Logger):
+    # local
     from wcwidth import ZERO_WIDTH, WIDE_EASTASIAN, list_versions
 
     reversed_uni_versions = list(reversed(list_versions()))

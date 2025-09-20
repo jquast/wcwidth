@@ -123,7 +123,7 @@ def test_longer_emoji_zwj_sequence():
               "\u200d"       # 'Cf', 'N' -- ZERO WIDTH JOINER
               "\U0001F9D1"   # 'So', 'W' -- ADULT
               "\U0001F3FD"   # 'Sk', 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-4
-    ) * 2
+              ) * 2
     # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
     expect_length_each = (2, 0, 0, 1, 0, 0, 2, 0, 2, 0) * 2
     expect_length_phrase = 4
@@ -140,8 +140,8 @@ def test_longer_emoji_zwj_sequence():
 def read_sequences_from_file(filename):
     fp = open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
     lines = [line.strip()
-                for line in fp.readlines()
-                if not line.startswith('#') and line.strip()]
+             for line in fp.readlines()
+             if not line.startswith('#') and line.strip()]
     fp.close()
     sequences = [make_sequence_from_line(line) for line in lines]
     return lines, sequences
@@ -217,6 +217,7 @@ def test_unicode_9_vs16():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
 
 def test_unicode_8_vs16():
     """Verify that VS-16 has no effect on unicode_version 8.0 and earler"""
