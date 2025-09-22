@@ -218,9 +218,11 @@ History
 =======
 
 0.2.14 *2025-09-22*
-  * **Updated** tables to include Unicode Specification 16.0.0 and 17.0.0.
+  * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
+  * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
+    `PR #146`_.
   * **Bugfix** U+00AD SOFT HYPHEN should measure as 1, versions 0.2.9 through
-    0.2.13 measured as 0.
+    0.2.13 measured as 0. `PR #149`_.
 
 0.2.13 *2024-01-06*
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
@@ -342,6 +344,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #97`: https://github.com/jquast/wcwidth/pull/97
 .. _`PR #98`: https://github.com/jquast/wcwidth/pull/98
 .. _`PR #100`: https://github.com/jquast/wcwidth/pull/100
+.. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
+.. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
+.. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
