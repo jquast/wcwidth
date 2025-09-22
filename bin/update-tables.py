@@ -15,10 +15,10 @@ import os
 import re
 import sys
 import string
+import difflib
 import datetime
 import functools
 import unicodedata
-import difflib
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
@@ -670,36 +670,36 @@ class UnicodeDataFile:
 
 def replace_if_modified(new_filename: str, original_filename: str) -> None:
     """Replace original file with new file only if there are significant changes.
-    
+
     If only the 'This code generated' timestamp line differs, discard the new file.
     If there are other changes or the original doesn't exist, replace it.
     """
     if os.path.exists(original_filename):
         with open(original_filename, 'r', encoding='utf-8') as f1, \
-             open(new_filename, 'r', encoding='utf-8') as f2:
+                open(new_filename, 'r', encoding='utf-8') as f2:
             old_lines = f1.readlines()
             new_lines = f2.readlines()
-        
+
         # Generate diff
-        diff_lines = list(difflib.unified_diff(old_lines, new_lines, 
-                                             fromfile=original_filename,
-                                             tofile=new_filename,
-                                             lineterm=''))
-        
+        diff_lines = list(difflib.unified_diff(old_lines, new_lines,
+                                               fromfile=original_filename,
+                                               tofile=new_filename,
+                                               lineterm=''))
+
         # Check if only the 'This code generated' line is different
         significant_changes = False
         for line in diff_lines:
-            if (line.startswith('@@') or 
+            if (line.startswith('@@') or
                 line.startswith('---') or
                 line.startswith('+++') or
                 (line.startswith('-') and 'This code generated') or
-                (line.startswith('+') and 'This code generated')):
-                    continue
+                    (line.startswith('+') and 'This code generated')):
+                continue
             else:
                 significant_changes = line.startswith('-') or line.startswith('+')
             if significant_changes:
                 break
-       
+
         if not significant_changes:
             # only the code-generated timestamp changed, remove the .new file
             os.remove(new_filename)
@@ -730,7 +730,6 @@ def main() -> None:
             print(f'write {new_filename}: ', flush=True, end='')
             for data in render_def.generate():
                 fout.write(data)
-        
 
         if not replace_if_modified(new_filename, render_def.output_filename):
             print(f'discarded {new_filename} (timestamp-only change)')
