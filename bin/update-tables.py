@@ -18,6 +18,7 @@ import string
 import datetime
 import functools
 import unicodedata
+import difflib
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
@@ -406,8 +407,9 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     match unicode releases 8, 9, and 10, these specifications were mostly
     implemented only in Terminals supporting Unicode 9.0 or later.
 
-    For that reason, and that these values are not expected to change,
-    only this single shared table is exported.
+    For that reason, and that **these values are not expected to change**,
+    If they do, a noticable change will occur in in `wcwidth/table_vs16.py`
+    falsey labelled under version 9.0.
 
     One example, where v3.2 became v1.1 ("-" 12.0, "+" 15.1)::
 
@@ -562,7 +564,7 @@ class UnicodeDataFile:
     URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
     URL_EMOJI_VARIATION = 'https://unicode.org/Public/{version}/ucd/emoji/emoji-variation-sequences.txt'
     URL_LEGACY_VARIATION = 'https://unicode.org/Public/emoji/{version}/emoji-variation-sequences.txt'
-    URL_EMOJI_ZWJ = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
+    URL_EMOJI_ZWJ = 'https://unicode.org/Public/{version}/emoji/emoji-zwj-sequences.txt'
 
     @classmethod
     def DerivedAge(cls) -> str:
@@ -666,6 +668,47 @@ class UnicodeDataFile:
         return [os.path.join(PATH_DATA, match.string) for match in filename_matches]
 
 
+def replace_if_modified(new_filename: str, original_filename: str) -> None:
+    """Replace original file with new file only if there are significant changes.
+    
+    If only the 'This code generated' timestamp line differs, discard the new file.
+    If there are other changes or the original doesn't exist, replace it.
+    """
+    if os.path.exists(original_filename):
+        with open(original_filename, 'r', encoding='utf-8') as f1, \
+             open(new_filename, 'r', encoding='utf-8') as f2:
+            old_lines = f1.readlines()
+            new_lines = f2.readlines()
+        
+        # Generate diff
+        diff_lines = list(difflib.unified_diff(old_lines, new_lines, 
+                                             fromfile=original_filename,
+                                             tofile=new_filename,
+                                             lineterm=''))
+        
+        # Check if only the 'This code generated' line is different
+        significant_changes = False
+        for line in diff_lines:
+            if (line.startswith('@@') or 
+                line.startswith('---') or
+                line.startswith('+++') or
+                (line.startswith('-') and 'This code generated') or
+                (line.startswith('+') and 'This code generated')):
+                    continue
+            else:
+                significant_changes = line.startswith('-') or line.startswith('+')
+            if significant_changes:
+                break
+       
+        if not significant_changes:
+            # only the code-generated timestamp changed, remove the .new file
+            os.remove(new_filename)
+            return False
+    # Significant changes found, replace the original
+    os.replace(new_filename, original_filename)
+    return True
+
+
 def main() -> None:
     """Update east-asian, combining and zero width tables."""
     # This defines which jinja source templates map to which output filenames,
@@ -682,10 +725,17 @@ def main() -> None:
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
 
     for render_def in get_codegen_definitions():
-        with open(render_def.output_filename, 'w', encoding='utf-8', newline='\n') as fout:
-            print(f'write {render_def.output_filename}: ', flush=True, end='')
+        new_filename = render_def.output_filename + '.new'
+        with open(new_filename, 'w', encoding='utf-8', newline='\n') as fout:
+            print(f'write {new_filename}: ', flush=True, end='')
             for data in render_def.generate():
                 fout.write(data)
+        
+
+        if not replace_if_modified(new_filename, render_def.output_filename):
+            print(f'discarded {new_filename} (timestamp-only change)')
+        else:
+            assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
             print('ok')
 
     # fetch latest test data files
