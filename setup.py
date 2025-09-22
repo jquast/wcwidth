@@ -44,7 +44,7 @@ def main():
     setuptools.setup(
         name='wcwidth',
         # NOTE: manually manage __version__ in wcwidth/__init__.py !
-        version='0.2.13',
+        version='0.2.14',
         description=(
             "Measures the displayed width of unicode strings in a terminal"),
         long_description=codecs.open(
