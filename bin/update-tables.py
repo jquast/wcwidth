@@ -408,7 +408,7 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     implemented only in Terminals supporting Unicode 9.0 or later.
 
     For that reason, and that **these values are not expected to change**,
-    If they do, a noticeable change will occur in in `wcwidth/table_vs16.py`
+    If they do, a noticeable change will occur in `wcwidth/table_vs16.py`
     falsey labeled under version 9.0.
 
     One example, where v3.2 became v1.1 ("-" 12.0, "+" 15.1)::
