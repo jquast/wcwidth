@@ -693,7 +693,7 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
                 (line.startswith(('-','+')) and 'This code generated' in line)):
                 continue
             else:
-                significant_changes = line.startswith('-') or line.startswith('+')
+                significant_changes = line.startswith(('-', '+'))
             if significant_changes:
                 break
 
