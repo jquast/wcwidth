@@ -689,11 +689,8 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
         # Check if only the 'This code generated' line is different
         significant_changes = False
         for line in diff_lines:
-            if (line.startswith('@@') or
-                line.startswith('---') or
-                line.startswith('+++') or
-                (line.startswith('-') and 'This code generated' in line) or
-                    (line.startswith('+') and 'This code generated' in line)):
+            if (line.startswith(('@@', '---', '+++')) or
+                (line.startswith(('-','+')) and 'This code generated' in line)):
                 continue
             else:
                 significant_changes = line.startswith('-') or line.startswith('+')
