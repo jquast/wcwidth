@@ -68,6 +68,8 @@ HANGUL_JAMO_ZEROWIDTH = (
     *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
 )
 
+HEX_STR_VS15 = 'FE0E'
+HEX_STR_VS16 = 'FE0F'
 
 def _bisearch(ucs, table):
     """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
@@ -433,7 +435,6 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     """
     table: dict[UnicodeVersion, TableDef] = {}
     unicode_latest = fetch_unicode_versions()[-1]
-    hex_str_vs = 'FE0F'
 
     wide_tables = fetch_table_wide_data().table
     unicode_version = UnicodeVersion.parse('9.0.0')
@@ -442,13 +443,13 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     # 15.1.0) and parse a single file for all individual releases
     table[unicode_version] = parse_vs_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
                                            ubound_unicode_version=unicode_version,
-                                           hex_str_vs=hex_str_vs)
+                                           hex_str_vs=HEX_STR_VS16)
 
     # parse and join the final emoji release 12.0 of the earlier "type"
     table[unicode_version].values.update(
         parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
                       ubound_unicode_version=unicode_version,
-                      hex_str_vs=hex_str_vs).values)
+                      hex_str_vs=HEX_STR_VS16).values)
 
     # perform culling on any values that are already understood as 'wide'
     # without the variation-16 selector
@@ -488,7 +489,6 @@ def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
     """
     table: dict[UnicodeVersion, TableDef] = {}
     unicode_latest = fetch_unicode_versions()[-1]
-    hex_str_vs = 'FE0E'
 
     wide_tables = fetch_table_wide_data().table
     unicode_version = UnicodeVersion.parse('9.0.0')
@@ -497,13 +497,13 @@ def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
     # 15.1.0) and parse a single file for all individual releases
     table[unicode_version] = parse_vs_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
                                            ubound_unicode_version=unicode_version,
-                                           hex_str_vs=hex_str_vs)
+                                           hex_str_vs=HEX_STR_VS15)
 
     # parse and join the final emoji release 12.0 of the earlier "type"
     table[unicode_version].values.update(
         parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
                       ubound_unicode_version=unicode_version,
-                      hex_str_vs=hex_str_vs).values)
+                      hex_str_vs=HEX_STR_VS15).values)
 
     # perform culling on any values that are already understood as 'narrow'
     # without the variation-15 selector
