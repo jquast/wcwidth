@@ -221,6 +221,12 @@ History
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0E
     Variation Selector 15 (`PR #120`_).
 
+0.2.15 *2025-11-09*
+  * **Bugfix** specification and code for Variation Selector 15 (VS-15, U+FE0E)
+    support. `PR #120`_.
+  * **Updated** `bin/wcwidth-browser.py`_ with arguments and modes, ``--vs15``,  ``--vs16``,
+    and ``--without-vs``.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -351,6 +357,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #120`: https://github.com/jquast/wcwidth/pull/149
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
