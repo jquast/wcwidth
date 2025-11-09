@@ -212,6 +212,7 @@ Other Languages
 - `joachimschmidt557/zig-wcwidth`_: Zig
 - `fumiyas/wcwidth-cjk`_: `LD_PRELOAD` override
 - `joshuarubin/wcwidth9`_: Unicode version 9 in C
+- `spectreconsole/wcwidth`_: C#
 
 =======
 History
@@ -375,6 +376,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`joachimschmidt557/zig-wcwidth`: https://github.com/joachimschmidt557/zig-wcwidth
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
+.. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
 .. _`python-cmd2/cmd2`: https://github.com/python-cmd2/cmd2
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
