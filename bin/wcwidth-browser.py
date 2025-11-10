@@ -22,9 +22,42 @@ Options:
   --without-vs        Display base characters without variation selector.
   --help              Display usage
 
+Interactive Keys:
+  Navigation:
+    k, y, UP          Scroll backward 1 line
+    j, e, ENTER, DOWN Scroll forward 1 line
+    f, SPACE, PGDOWN  Scroll forward 1 page
+    b, PGUP           Scroll backward 1 page
+    F, SHIFT-DOWN     Scroll forward 10 pages
+    B, SHIFT-UP       Scroll backward 10 pages
+    HOME              Go to top
+    G, END            Go to bottom
+    Ctrl-L            Refresh screen
+
+  Mode Switching:
+    0                 Exit VS mode (return to normal mode)
+    1                 Narrow width (normal) / Narrow base filter (VS mode)
+    2                 Wide width (normal) / Wide base filter (VS mode)
+    5                 Switch to VS-15 mode (text style)
+    6                 Switch to VS-16 mode (emoji style)
+    c                 Toggle combining character mode
+    w                 Toggle with/without variation selector (VS mode only)
+
+  Display Adjustment:
+    -, _              Decrease character name display length by 2
+    +, =              Increase character name display length by 2
+    v                 Select Unicode version
+
+  Exit:
+    q, Q              Quit browser
+
 Note:
   Only one of --combining, --vs15, or --vs16 can be used at a time.
   The --without-vs option only applies when using --vs15 or --vs16.
+
+  In VS mode, the display shows:
+    - W/VS: Characters displayed with variation selector
+    - WO/VS: Base characters displayed without variation selector
 """
 # pylint: disable=C0103,W0622
 #         Invalid constant name "echo"
@@ -36,11 +69,11 @@ import os
 import sys
 import signal
 import string
+import argparse
 import functools
 import unicodedata
 
 # 3rd party
-import docopt
 import blessed
 
 # local
@@ -564,6 +597,13 @@ class Pager:
                     self.screen.wide = new_width
                     self.initialize_page_data()
                     self.on_resize(None, None)
+        elif inp == '0':
+            # Exit VS mode, return to normal mode
+            if self.variation_selector:
+                self.variation_selector = None
+                # Keep current display width (screen.wide stays as is)
+                self.initialize_page_data()
+                self.on_resize(None, None)
         elif inp == '5':
             # Switch to VS-15 mode
             if self.variation_selector != 'VS15':
@@ -761,7 +801,7 @@ class Pager:
                    .format(idx=style.attr_minor(f'{idx}'),
                            last_end=style.attr_major(last_end),
                            mode=style.attr_major(mode),
-                           keyset=style.attr_major('kjfbvc1256w-='),
+                           keyset=style.attr_major('kjfbvc01256w-='),
                            q=style.attr_minor('q')))
             writer(self.term.center(txt).rstrip())
 
@@ -928,5 +968,89 @@ def main(opts):
     return 0
 
 
+def parse_args():
+    """Parse command-line arguments using argparse."""
+    # Extract description and usage from module docstring
+    doc_lines = __doc__.split('\n')
+    description = []
+    for line in doc_lines:
+        if line.strip() and not line.startswith('Usage:'):
+            description.append(line)
+        if line.startswith('Usage:'):
+            break
+
+    parser = argparse.ArgumentParser(
+        description='A terminal browser for testing printable width of unicode.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Interactive Keys:
+  Navigation:
+    k, y, UP          Scroll backward 1 line
+    j, e, ENTER, DOWN Scroll forward 1 line
+    f, SPACE, PGDOWN  Scroll forward 1 page
+    b, PGUP           Scroll backward 1 page
+    F, SHIFT-DOWN     Scroll forward 10 pages
+    B, SHIFT-UP       Scroll backward 10 pages
+    HOME              Go to top
+    G, END            Go to bottom
+    Ctrl-L            Refresh screen
+
+  Mode Switching:
+    0                 Exit VS mode (return to normal mode)
+    1                 Narrow width (normal) / Narrow base filter (VS mode)
+    2                 Wide width (normal) / Wide base filter (VS mode)
+    5                 Switch to VS-15 mode (text style)
+    6                 Switch to VS-16 mode (emoji style)
+    c                 Toggle combining character mode
+    w                 Toggle with/without variation selector (VS mode only)
+
+  Display Adjustment:
+    -, _              Decrease character name display length by 2
+    +, =              Increase character name display length by 2
+    v                 Select Unicode version
+
+  Exit:
+    q, Q              Quit browser
+
+Notes:
+  Only one of --combining, --vs15, or --vs16 can be used at a time.
+  The --without-vs option only applies when using --vs15 or --vs16.
+
+  In VS mode, the display shows:
+    - W/VS: Characters displayed with variation selector
+    - WO/VS: Base characters displayed without variation selector
+""")
+
+    parser.add_argument('--wide', metavar='<n>', type=str, default=None,
+                        help='Browser 1 or 2 character-wide cells.')
+    parser.add_argument('--alignment', metavar='<str>', type=str, default='left',
+                        help='Choose left or right alignment. (default: left)')
+
+    # Mutually exclusive group for mode selection
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument('--combining', action='store_true',
+                            help='Use combining character generator.')
+    mode_group.add_argument('--vs15', action='store_true',
+                            help='Browse emoji variation sequences with VS-15 (text style).')
+    mode_group.add_argument('--vs16', action='store_true',
+                            help='Browse emoji variation sequences with VS-16 (emoji style).')
+
+    parser.add_argument('--without-vs', action='store_true',
+                        help='Display base characters without variation selector.')
+
+    args = parser.parse_args()
+
+    # Convert to docopt-style dict format for compatibility with validate_args
+    return {
+        '--wide': args.wide,
+        '--alignment': args.alignment,
+        '--combining': args.combining,
+        '--vs15': args.vs15,
+        '--vs16': args.vs16,
+        '--without-vs': args.without_vs,
+        '--help': False,  # argparse handles this automatically
+    }
+
+
 if __name__ == '__main__':
-    sys.exit(main(validate_args(docopt.docopt(__doc__))))
+    sys.exit(main(validate_args(parse_args())))
