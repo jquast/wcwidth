@@ -274,11 +274,10 @@ def _wcmatch_version(given_version):
 
     except ValueError:
         # submitted value raises ValueError in int(), warn and use latest.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is invalid. "
+        warnings.warn(f"UNICODE_VERSION value, {given_version!r}, is invalid. "
                       "Value should be in form of `integer[.]+', the latest "
-                      "supported unicode version {latest_version!r} has been "
-                      "inferred.".format(given_version=given_version,
-                                         latest_version=latest_version))
+                      f"supported unicode version {latest_version!r} has been "
+                      "inferred.")
         return latest_version
 
     # given version is less than any available version, return earliest
@@ -290,11 +289,9 @@ def _wcmatch_version(given_version):
         # this probably isn't what you wanted, the oldest wcwidth.c you will
         # find in the wild is likely version 5 or 6, which we both support,
         # but it's better than not saying anything at all.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is lower "
+        warnings.warn(f"UNICODE_VERSION value, {given_version!r}, is lower "
                       "than any available unicode version. Returning lowest "
-                      "version level, {earliest_version!r}".format(
-                          given_version=given_version,
-                          earliest_version=earliest_version))
+                      f"version level, {earliest_version!r}")
         return earliest_version
 
     # create list of versions which are less than our equal to given version,

@@ -1,0 +1,5 @@
+# for python3.8
+pytest<7
+pytest-cov
+coverage[toml]<6
+pytest-benchmark

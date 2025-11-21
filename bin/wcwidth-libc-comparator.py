@@ -64,8 +64,10 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
            .lstrip('0'))
     url = f"http://codepoints.net/U+{ucp}"
     name = unicodedata.name(ucs)
-    return ("libc,ours={},{} [--o{}o--] name={} val={} {}"
-            " ".format(wcwidth_libc, wcwidth_local, ucs, name, ord(ucs), url))
+    return (
+        f"libc,ours={wcwidth_libc},{wcwidth_local} "
+        f"[--o{ucs}o--] name={name} val={ord(ucs)} {url} ")
+
 
 
 if sys.maxunicode < 1114111:
