@@ -138,7 +138,7 @@ def test_longer_emoji_zwj_sequence():
 
 
 def read_sequences_from_file(filename):
-    fp = open(os.path.join(os.path.dirname(__file__), filename), 'r', encoding='utf-8')
+    fp = open(os.path.join(os.path.dirname(__file__), filename), encoding='utf-8')
     lines = [line.strip()
              for line in fp.readlines()
              if not line.startswith('#') and line.strip()]
