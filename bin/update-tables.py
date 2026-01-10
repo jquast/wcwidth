@@ -69,7 +69,6 @@ HANGUL_JAMO_ZEROWIDTH = (
     *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
 )
 
-HEX_STR_VS15 = 'FE0E'
 HEX_STR_VS16 = 'FE0F'
 
 def _bisearch(ucs, table):
@@ -473,50 +472,6 @@ def parse_vs_data(fname: str, ubound_unicode_version: UnicodeVersion, hex_str_vs
     return TableDef(ubound_unicode_version, date, values)
 
 
-def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
-    """
-    Fetch and create a "wide to narrow variation-15" lookup table.
-
-    Characters in this table are wide, but when combined with a variation selector-15 (\uFE0E), they
-    become narrow, for the given versions of unicode.
-
-    UNICODE_VERSION=9.0.0 or greater is required to enable detection of the effect of *any*
-    'variation selector-15' wide emoji becoming narrow.
-
-    Some terminals display U+231a, u+FE0E as a narrow font, but consuming a wide cell (iTerm2),
-    while most others display it as a wide cell, only.
-
-    It is fair to call these ambiguous, see related 'ucs-detect' project.
-    """
-    table: dict[UnicodeVersion, TableDef] = {}
-    unicode_latest = fetch_unicode_versions()[-1]
-
-    wide_tables = fetch_table_wide_data().table
-    unicode_version = UnicodeVersion.parse('9.0.0')
-
-    # parse table formatted by the latest emoji release (developed with
-    # 15.1.0) and parse a single file for all individual releases
-    table[unicode_version] = parse_vs_data(fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
-                                           ubound_unicode_version=unicode_version,
-                                           hex_str_vs=HEX_STR_VS15)
-
-    # parse and join the final emoji release 12.0 of the earlier "type"
-    table[unicode_version].values.update(
-        parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
-                      ubound_unicode_version=unicode_version,
-                      hex_str_vs=HEX_STR_VS15).values)
-
-    # perform culling on any values that are already understood as 'narrow'
-    # without the variation-15 selector
-    wide_table = wide_tables[unicode_version].as_value_ranges()
-    table[unicode_version].values = {
-        ucs for ucs in table[unicode_version].values
-        if _bisearch(ucs, wide_table)
-    }
-
-    return UnicodeTableRenderCtx('VS15_WIDE_TO_NARROW', table)
-
-
 def cite_source_description(filename: str) -> tuple[str, str]:
     """Return unicode.org source data file's own description as citation."""
     with open(filename, encoding='utf-8') as f:
@@ -829,7 +784,6 @@ def main(fetch_all_versions: bool = False, no_check_last_modified: bool = False)
             UnicodeVersionPyRenderCtx(fetch_unicode_versions())
         )
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
-        yield UnicodeTableRenderDef.new('table_vs15.py', fetch_table_vs15_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())

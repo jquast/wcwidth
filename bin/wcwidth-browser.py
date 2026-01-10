@@ -6,22 +6,6 @@ This displays the full range of unicode points for 1 or 2-character wide
 ideograms, with pipes ('|') that should always align for any terminal that
 supports utf-8.
 
-Usage:
-  ./bin/wcwidth-browser.py [--wide=<n>]
-                           [--alignment=<str>]
-                           [--combining | --vs15 | --vs16]
-                           [--without-vs]
-                           [--help]
-
-Options:
-  --wide=<int>        Browser 1 or 2 character-wide cells.
-  --alignment=<str>   Chose left or right alignment. [default: left]
-  --combining         Use combining character generator.
-  --vs15              Browse emoji variation sequences with VS-15 (text style).
-  --vs16              Browse emoji variation sequences with VS-16 (emoji style).
-  --without-vs        Display base characters without variation selector.
-  --help              Display usage
-
 Interactive Keys:
   Navigation:
     k, y, UP          Scroll backward 1 line
@@ -895,7 +879,7 @@ class Pager:
 
 
 def validate_args(opts):
-    """Validate and return options provided by docopt parsing."""
+    """Validate result of parse_args() and return keyword arguments for main()."""
     if opts['--wide'] is None:
         opts['--wide'] = 2
     else:
