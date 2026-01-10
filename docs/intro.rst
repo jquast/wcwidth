@@ -107,7 +107,7 @@ Install wcwidth in editable mode::
 
 Execute unit tests using tox_ for all supported Python versions::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312,py313,py314
+   tox -e py38,py39,py310,py311,py312,py313,py314
 
 Updating Unicode Version
 ------------------------
@@ -141,7 +141,7 @@ To upgrade requirements for updating unicode version, run::
 
 To upgrade requirements for testing, run::
 
-   tox -e update_requirements37,update_requirements39
+   tox -e update_requirements38,update_requirements39
 
 To upgrade requirements for building documentation, run::
 

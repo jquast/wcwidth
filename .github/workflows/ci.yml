@@ -34,32 +34,18 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-          - "pypy-3.7"
           - "pypy-3.8"
           - "pypy-3.9"
           - "pypy-3.10"
           - "pypy-3.11"
-        include:
-          - os: windows-latest
-            python-version: "3.7"
-          - os: ubuntu-22.04
-            python-version: "3.7"
-          - os: ubuntu-22.04
-            python-version: "pypy-3.6"
-          - os: ubuntu-latest
-            container: python:3.6
-            python-version: "3.6"
-        exclude:
-          - os: macos-latest
-            python-version: "pypy-3.7"
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -109,7 +95,7 @@ jobs:
           fi
 
       - name: Upload coverage data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-data.${{ matrix.os }}-${{ matrix.python-version }}
           path: .coverage.*
@@ -122,8 +108,8 @@ jobs:
     needs: tests
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version-file: .python-version-default
           cache: pip
@@ -137,7 +123,7 @@ jobs:
           delete-merged: true
 
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coverage-data
 
@@ -153,7 +139,7 @@ jobs:
           python -Im coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
 
@@ -163,7 +149,7 @@ jobs:
           python -Im coverage report --fail-under=100
 
       - name: Upload HTML report if check failed.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: html-report
           path: htmlcov
