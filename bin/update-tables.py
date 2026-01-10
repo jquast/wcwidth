@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import string
+import argparse
 import difflib
 import datetime
 import functools
@@ -659,12 +660,12 @@ class UnicodeDataFile:
         return fname
 
     @staticmethod
-    def do_retrieve(url: str, fname: str) -> None:
+    def do_retrieve(url: str, fname: str, no_check_last_modified: bool = False) -> None:
         """Retrieve given url to target filepath fname."""
         folder = os.path.dirname(fname)
         if folder and not os.path.exists(folder):
             os.makedirs(folder)
-        if not UnicodeDataFile.is_url_newer(url, fname):
+        if not UnicodeDataFile.is_url_newer(url, fname, no_check_last_modified):
             return
         session = UnicodeDataFile.get_http_session()
         resp = session.get(url, timeout=CONNECT_TIMEOUT)
@@ -676,10 +677,10 @@ class UnicodeDataFile:
         print('ok')
 
     @staticmethod
-    def is_url_newer(url: str, fname: str) -> bool:
+    def is_url_newer(url: str, fname: str, no_check_last_modified: bool = False) -> bool:
         if not os.path.exists(fname):
             return True
-        if '--no-check-last-modified' not in sys.argv[1:]:
+        if not no_check_last_modified:
             session = UnicodeDataFile.get_http_session()
             resp = session.head(url, timeout=CONNECT_TIMEOUT)
             resp.raise_for_status()
@@ -753,7 +754,71 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
     return True
 
 
-def main() -> None:
+def fetch_all_emoji_files(no_check_last_modified: bool = False) -> None:
+    """Fetch emoji variation sequences and ZWJ sequences for all Unicode versions.
+
+    Note: Legacy emoji files (before Unicode 9.0) used their own versioning scheme
+    and are stored at different URLs. Only certain versions have actual releases:
+    - 5.0: first to include emoji-variation-sequences.txt
+    - 11.0, 12.0, 12.1, 13.0, 13.1: final legacy emoji releases
+    - 14.0+: synchronized with Unicode versioning
+    """
+    unicode_versions = fetch_unicode_versions()
+
+    # Legacy emoji versions that have actual directories at unicode.org/Public/emoji/
+    # Versions before 5.0 don't have emoji-variation-sequences.txt
+    legacy_emoji_versions = ['5.0', '11.0', '12.0', '12.1', '13.0', '13.1']
+
+    for emoji_version in legacy_emoji_versions:
+        fname = os.path.join(PATH_DATA, f'emoji-variation-sequences-emoji-{emoji_version}.txt')
+        UnicodeDataFile.do_retrieve(
+            url=UnicodeDataFile.URL_LEGACY_VARIATION.format(version=emoji_version),
+            fname=fname,
+            no_check_last_modified=no_check_last_modified)
+
+        fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-emoji-{emoji_version}.txt')
+        UnicodeDataFile.do_retrieve(
+            url=f'https://unicode.org/Public/emoji/{emoji_version}/emoji-zwj-sequences.txt',
+            fname=fname,
+            no_check_last_modified=no_check_last_modified)
+
+    for version in unicode_versions:
+        if version >= UnicodeVersion.parse('9.0.0'):
+            fname = os.path.join(PATH_DATA, f'emoji-variation-sequences-{version}.txt')
+            UnicodeDataFile.do_retrieve(
+                url=UnicodeDataFile.URL_EMOJI_VARIATION.format(version=version),
+                fname=fname,
+                no_check_last_modified=no_check_last_modified)
+
+            fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-{version}.txt')
+            UnicodeDataFile.do_retrieve(
+                url=UnicodeDataFile.URL_EMOJI_ZWJ.format(
+                    version=f"{version.major}.{version.minor}"),
+                fname=fname,
+                no_check_last_modified=no_check_last_modified)
+
+
+def parse_args() -> dict[str, Any]:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Update Unicode code tables for wcwidth using jinja2 code generation.',
+        epilog='https://github.com/jquast/wcwidth'
+    )
+    parser.add_argument(
+        '--fetch-all-versions',
+        action='store_true',
+        help='Fetch emoji variation sequences and ZWJ sequences for all Unicode versions '
+             '(for archival/testing purposes)'
+    )
+    parser.add_argument(
+        '--no-check-last-modified',
+        action='store_true',
+        help='Skip checking if remote files are newer than local files'
+    )
+    return vars(parser.parse_args())
+
+
+def main(fetch_all_versions: bool = False, no_check_last_modified: bool = False) -> None:
     """Update east-asian, combining and zero width tables."""
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
@@ -786,6 +851,10 @@ def main() -> None:
     UnicodeDataFile.TestEmojiVariationSequences()
     UnicodeDataFile.TestEmojiZWJSequences()
 
+    # fetch all legacy emoji files if requested
+    if fetch_all_versions:
+        fetch_all_emoji_files(no_check_last_modified=no_check_last_modified)
+
 
 if __name__ == '__main__':
-    main()
+    main(**parse_args())
