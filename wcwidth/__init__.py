@@ -5,8 +5,8 @@ https://github.com/jquast/wcwidth
 """
 # re-export all functions & definitions, even private ones, from top-level
 # module path, to allow for 'from wcwidth import _private_func'.  Of course,
-# user beware that any _private function may disappear or change signature at
-# any future version.
+# user beware that any _private functions or variables not exported by __all__
+# may disappear or change signature at any future version.
 
 # local
 from .wcwidth import ZERO_WIDTH  # noqa
