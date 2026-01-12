@@ -71,6 +71,16 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .unicode_versions import list_versions
+from .terminal_seqs import (
+    ILLEGAL_CTRL,
+    VERTICAL_CTRL,
+    HORIZONTAL_CTRL,
+    ZERO_WIDTH_CTRL,
+    TERM_SEQ_PATTERN,
+    CURSOR_RIGHT_PATTERN,
+    CURSOR_LEFT_PATTERN,
+    INDETERMINATE_SEQ_PATTERN,
+)
 
 
 def _bisearch(ucs, table):
@@ -111,8 +121,18 @@ def wcwidth(wc, unicode_version='auto'):
         is returned by :func:`list_versions`.
 
         Any version string may be specified without error -- the nearest
-        matching version is selected.  When ``latest`` (default), the
-        highest Unicode version level is used.
+        matching version is selected.  When ``'auto'`` (default), the
+        ``UNICODE_VERSION`` environment variable is used if set, otherwise
+        the highest Unicode version level is used.
+
+        .. deprecated::
+
+            This parameter is deprecated. Empirical data shows that Unicode
+            support in terminals varies not only by unicode version, but
+            by capabilities, Emojis, and specific language support.
+
+            The default ``'auto'`` behavior is recommended for all use cases.
+
     :return: The width, in cells, necessary to display the character of
         Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
@@ -155,10 +175,19 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         argument exists only for compatibility with the C POSIX function
         signature. It is suggested instead to use python's string slicing
         capability, ``wcswidth(pwcs[:n])``
-    :param str unicode_version: An explicit definition of the unicode version
-        level to use for determination, may be ``auto`` (default), which uses
-        the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
-        available unicode version, otherwise.
+    :param str unicode_version: A Unicode version number, such as
+        ``'6.0.0'``, or ``'auto'`` (default) which uses the
+        ``UNICODE_VERSION`` environment variable if defined, or the latest
+        available unicode version otherwise.
+
+        .. deprecated::
+
+            This parameter is deprecated. Empirical data shows that Unicode
+            support in terminals varies not only by unicode version, but
+            by capabilities, Emojis, and specific language support.
+
+            The default ``'auto'`` behavior is recommended for all use cases.
+
     :rtype: int
     :returns: The width, in cells, needed to display the first ``n`` characters
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
@@ -324,3 +353,193 @@ def _wcmatch_version(given_version):
         if cmp_next_version > cmp_given:
             return unicode_version
     assert False, ("Code path unreachable", given_version, unicode_versions)  # pragma: no cover
+
+
+def _apply_cursor_movement(col, seq):
+    """
+    Apply cursor movement from an escape sequence.
+
+    :param int col: Current column position.
+    :param str seq: Escape sequence to process.
+    :rtype: int
+    :returns: New column position after applying movement.
+    """
+    match = CURSOR_RIGHT_PATTERN.match(seq)
+    if match:
+        amount = int(match.group(1)) if match.group(1) else 1
+        return col + amount
+    match = CURSOR_LEFT_PATTERN.match(seq)
+    if match:
+        amount = int(match.group(1)) if match.group(1) else 1
+        return max(0, col - amount)
+    return col
+
+
+def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
+    """
+    Return printable width of text, never returns -1.
+
+    Unlike :func:`wcswidth`, this function handles most control
+    characters and many popular terminal output sequences.
+
+    Returns a non-negative integer.
+
+    :param str text: String to measure.
+    :param str control_codes: How to handle control characters and sequences:
+
+        - ``'parse'`` (default): Track horizontal cursor movement from BS
+          ``\\b``, CR ``\\r``, tab ``\\t``, and cursor movement sequences.
+          Vertical movement (LF, VT, FF) and indeterminate sequences are
+          zero-width. Never raises.
+        - ``'strict'``: Like parse, but raises :exc:`ValueError` on illegal
+          control characters, vertical movement, and indeterminate sequences.
+        - ``'ignore'``: Strip all control characters and sequences (zero
+          width). Never raises.
+
+    :param tabstop: Tab stop width. Default is 8. Set to ``None`` for
+        zero-width tabs.
+    :param str measure: What to measure:
+
+        - ``'extent'`` (default): Maximum cursor position reached. This
+          accounts for cursor movement sequences and represents the rightmost
+          column the cursor reaches.
+        - ``'printable'``: Sum of actual printed character widths only,
+          ignoring cursor movement. This represents the total width of
+          visible characters.
+    :type tabstop: int or None
+    :param int column: Starting column position for tab and movement
+        calculation. Default is 0.
+    :rtype: int
+    :returns: Width measurement based on ``measure`` parameter.
+    :raises ValueError: If ``control_codes`` is ``'strict'`` and illegal
+        control characters, vertical movement, or indeterminate sequences
+        are encountered. Also raised if ``control_codes`` or ``measure``
+        is not one of the valid values.
+
+    Example usage::
+
+        >>> width('hello')
+        5
+        >>> width('コンニチハ')
+        10
+        >>> width('\\x1b[31mred\\x1b[0m')
+        3
+        >>> width('abc\\bd')  # backspace moves cursor
+        3
+        >>> width('abc\\t')  # tab to column 8
+        8
+        >>> width('A\\x1b[10C', measure='extent')
+        11
+        >>> width('A\\x1b[10C', measure='printable')
+        1
+    """
+    if control_codes not in ('ignore', 'strict', 'parse'):
+        raise ValueError(
+            f"control_codes must be 'ignore', 'strict', or 'parse', "
+            f"got {control_codes!r}"
+        )
+    if measure not in ('extent', 'printable'):
+        raise ValueError(
+            f"measure must be 'extent' or 'printable', got {measure!r}"
+        )
+
+    current_col = column
+    max_extent = column
+    printable_width = 0
+    idx = 0
+    text_len = len(text)
+
+    while idx < text_len:
+        char = text[idx]
+
+        # 1. Handle ESC sequences
+        if char == '\x1b':
+            match = TERM_SEQ_PATTERN.match(text, idx)
+            if match:
+                seq = match.group()
+                # Check for indeterminate sequences in strict mode
+                if control_codes == 'strict':
+                    if INDETERMINATE_SEQ_PATTERN.match(seq):
+                        raise ValueError(
+                            f"Indeterminate cursor sequence at position {idx}"
+                        )
+                # Apply cursor movement in strict/parse modes
+                if control_codes != 'ignore':
+                    current_col = _apply_cursor_movement(current_col, seq)
+                    max_extent = max(max_extent, current_col)
+                idx = match.end()
+                continue
+            # Lone ESC or incomplete sequence: zero width
+            idx += 1
+            continue
+
+        # 2. Handle illegal control characters
+        if char in ILLEGAL_CTRL:
+            if control_codes == 'strict':
+                raise ValueError(
+                    f"Illegal control character {ord(char):#x} at position {idx}"
+                )
+            # ignore and parse: zero width
+            idx += 1
+            continue
+
+        # 3. Handle vertical movement characters
+        if char in VERTICAL_CTRL:
+            if control_codes == 'strict':
+                raise ValueError(
+                    f"Vertical movement character {ord(char):#x} at position {idx}"
+                )
+            # ignore and parse: zero width
+            idx += 1
+            continue
+
+        # 4. Handle horizontal movement characters
+        if char in HORIZONTAL_CTRL:
+            if control_codes != 'ignore':
+                if char == '\x08':  # BS
+                    current_col = max(0, current_col - 1)
+                elif char == '\x0d':  # CR
+                    current_col = 0
+                elif char == '\x09':  # HT (tab)
+                    if tabstop:
+                        advance = tabstop - (current_col % tabstop)
+                        current_col += advance
+                        max_extent = max(max_extent, current_col)
+            elif tabstop and char == '\x09':
+                # Even in ignore mode, handle tab if tabstop is set
+                advance = tabstop - (current_col % tabstop)
+                current_col += advance
+                max_extent = max(max_extent, current_col)
+            idx += 1
+            continue
+
+        # 5. Handle zero-width control characters
+        if char in ZERO_WIDTH_CTRL:
+            # Zero width in all modes
+            idx += 1
+            continue
+
+        # 6. Handle ZWJ sequences
+        if char == '\u200D':
+            # Zero Width Joiner: skip this and next character
+            idx += 2
+            continue
+
+        # 7. Handle VS-16 (emoji presentation selector)
+        if char == '\uFE0F':
+            # Already handled by wcwidth for wide characters, skip
+            idx += 1
+            continue
+
+        # 8. Normal characters: measure with wcwidth
+        w = wcwidth(char)
+        if w > 0:
+            current_col += w
+            max_extent = max(max_extent, current_col)
+            printable_width += w
+        # w <= 0: combining marks, zero-width chars, etc. - no advancement
+        idx += 1
+
+    if measure == 'printable':
+        return printable_width
+    return max_extent - column

@@ -58,18 +58,21 @@ Our **Solution** uses wcswidth to determine the string length correctly::
    __________コンニチハ
 
 
-Choosing a Version
-------------------
+Choosing a Version (Deprecated)
+-------------------------------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be done by
-*terminal emulators* or those developers experimenting with authoring one of
-their own, from shell::
+.. deprecated::
 
-   $ export UNICODE_VERSION=13.0
+   The ``UNICODE_VERSION`` environment variable and ``unicode_version``
+   parameter are deprecated and should not be used. Empirical data shows that
+   Unicode support in terminals varies not only by version, but also by
+   terminal capability, language settings, and installed fonts. The latest
+   Unicode version is always used by default and is recommended for all use
+   cases.
 
-If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect`_ utility to
-automatically detect and export it to your shell.
+The ``UNICODE_VERSION`` environment variable and ``unicode_version`` function
+parameter are still supported for backwards compatibility, but their use is
+discouraged. If unspecified, the latest version is used.
 
 wcwidth, wcswidth
 -----------------
@@ -217,6 +220,19 @@ Other Languages
 =======
 History
 =======
+
+0.2.15 *unreleased*
+  * **New** function :func:`width` that handles control characters and terminal
+    escape sequences gracefully, always returning a non-negative integer (never
+    ``-1``). Supports three modes: ``'parse'`` (default) tracks horizontal
+    cursor movement, ``'strict'`` raises on problematic input, and ``'ignore'``
+    strips all control characters. The ``measure`` parameter allows choosing
+    between ``'extent'`` (cursor position) and ``'printable'`` (character
+    widths only).
+  * **Deprecated** the ``unicode_version`` parameter and ``UNICODE_VERSION``
+    environment variable. Empirical data shows that Unicode support in
+    terminals varies not only by version, but also by terminal capability,
+    language settings, and installed fonts.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
