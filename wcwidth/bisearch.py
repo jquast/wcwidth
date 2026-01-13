@@ -11,9 +11,6 @@ def bisearch(ucs, table):
         in form of ``((start, end), ...)``.
     :returns: True if ordinal value ucs is found within lookup table, else False.
     """
-    if not table:
-        return False
-
     lbound = 0
     ubound = len(table) - 1
 
