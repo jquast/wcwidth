@@ -500,7 +500,7 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
                     current_col = max(0, current_col - 1)
                 elif char == '\x0d':  # CR
                     current_col = 0
-                elif char == '\x09':  # HT (tab)
+                else:  # HT (tab) - only remaining option in HORIZONTAL_CTRL
                     if tabstop:
                         advance = tabstop - (current_col % tabstop)
                         current_col += advance
