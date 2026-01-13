@@ -896,7 +896,7 @@ def main() -> None:
             assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
             print('ok')
 
-    # fetch latest test data files
+    # fetch latest test data files, used by our automatic tests
     UnicodeDataFile.TestEmojiVariationSequences()
     UnicodeDataFile.TestEmojiZWJSequences()
     UnicodeDataFile.TestGraphemeBreakTest()
