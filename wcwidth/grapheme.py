@@ -290,5 +290,4 @@ def iter_graphemes(
         prev_gcb = curr_gcb
 
     # Yield the final cluster
-    if cluster_start < end:
-        yield unistr[cluster_start:end]
+    yield unistr[cluster_start:end]
