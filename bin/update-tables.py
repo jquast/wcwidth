@@ -177,6 +177,9 @@ class TableDef:
 
     def as_value_ranges(self) -> list[tuple[int, int]]:
         """Return a list of tuple of (start, end) ranges for given set of 'values'."""
+        if not self.values:
+            return []
+
         table: list[tuple[int, int]] = []
         values_iter = iter(sorted(self.values))
         start = end = next(values_iter)
@@ -306,6 +309,26 @@ class UnicodeTableRenderDef(RenderDefinition):
         return cls(
             jinja_filename=jinja_filename,
             output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=context,
+        )
+
+
+@dataclass(frozen=True)
+class GraphemeTableRenderCtx(RenderContext):
+    """Render context for grapheme tables (latest version only)."""
+    unicode_version: str
+    tables: Mapping[str, TableDef]
+
+
+@dataclass
+class GraphemeTableRenderDef(RenderDefinition):
+    render_context: GraphemeTableRenderCtx
+
+    @classmethod
+    def new(cls, context: GraphemeTableRenderCtx) -> Self:
+        return cls(
+            jinja_filename='grapheme_table.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_grapheme.py'),
             render_context=context,
         )
 
@@ -548,6 +571,114 @@ def parse_category(fname: str, wide: int) -> TableDef:
     return TableDef(version, date, values)
 
 
+# Grapheme Break Property values from UAX #29
+GRAPHEME_BREAK_PROPERTIES = (
+    'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
+    'Prepend', 'SpacingMark', 'L', 'V', 'T', 'LV', 'LVT'
+)
+
+
+def parse_grapheme_break_properties(fname: str) -> dict[str, TableDef]:
+    """Parse GraphemeBreakProperty.txt for grapheme break properties needing tables."""
+    print(f'parsing {fname}: ', end='', flush=True)
+    values_by_prop: dict[str, set[int]] = {prop: set() for prop in GRAPHEME_BREAK_PROPERTIES}
+
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_unicode_table(f)
+        version = next(table_iter).comment.strip()
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+
+        for entry in table_iter:
+            if entry.code_range is None:
+                continue
+            if entry.properties and entry.properties[0] in values_by_prop:
+                values_by_prop[entry.properties[0]].update(
+                    range(entry.code_range[0], entry.code_range[1])
+                )
+
+    print('ok')
+    return {
+        f'GRAPHEME_{prop.upper()}': TableDef(version, date, values)
+        for prop, values in values_by_prop.items()
+    }
+
+
+def parse_extended_pictographic(fname: str) -> TableDef:
+    """Parse emoji-data.txt for Extended_Pictographic property."""
+    print(f'parsing {fname} for Extended_Pictographic: ', end='', flush=True)
+    values: set[int] = set()
+
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_unicode_table(f)
+        # pull "version string" from first line of source file
+        version = next(table_iter).comment.strip()
+        # and "date string" from second line
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+
+        for entry in table_iter:
+            if entry.code_range is None:
+                continue
+            if entry.properties and entry.properties[0] == 'Extended_Pictographic':
+                values.update(range(entry.code_range[0], entry.code_range[1]))
+
+    print('ok')
+    return TableDef(version, date, values)
+
+
+INCB_VALUES = ('Linker', 'Consonant', 'Extend')
+
+
+def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
+    """Parse DerivedCoreProperties.txt for all Indic_Conjunct_Break properties."""
+    print(f'parsing {fname} for InCB: ', end='', flush=True)
+    values_by_incb: dict[str, set[int]] = {val: set() for val in INCB_VALUES}
+
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            data, _, comment = line.partition('#')
+            data = data.strip()
+            if not data:
+                continue
+
+            parts = [p.strip() for p in data.split(';')]
+            if len(parts) < 3:
+                continue
+
+            code_points_str, prop_name, prop_value = parts[0], parts[1], parts[2]
+
+            if prop_name == 'InCB' and prop_value in values_by_incb:
+                if '..' in code_points_str:
+                    start, end = code_points_str.split('..')
+                    values_by_incb[prop_value].update(
+                        range(int(start, 16), int(end, 16) + 1)
+                    )
+                else:
+                    values_by_incb[prop_value].add(int(code_points_str, 16))
+
+    print('ok')
+    return {
+        f'INCB_{val.upper()}': TableDef('DerivedCoreProperties', 'see file', values)
+        for val, values in values_by_incb.items()
+    }
+
+
+def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:
+    """Fetch grapheme break property tables for the latest Unicode version only."""
+    latest_version = fetch_unicode_versions()[-1]
+
+    tables = parse_grapheme_break_properties(
+        UnicodeDataFile.GraphemeBreakProperty(latest_version)
+    )
+    tables['EXTENDED_PICTOGRAPHIC'] = parse_extended_pictographic(
+        UnicodeDataFile.EmojiData(latest_version)
+    )
+    tables.update(parse_indic_conjunct_breaks(
+        UnicodeDataFile.DerivedCoreProperties(latest_version)
+    ))
+
+    return GraphemeTableRenderCtx(str(latest_version), tables)
+
+
 class UnicodeDataFile:
     """
     Helper class for fetching Unicode Data Files.
@@ -565,6 +696,10 @@ class UnicodeDataFile:
     URL_EMOJI_VARIATION = 'https://unicode.org/Public/{version}/ucd/emoji/emoji-variation-sequences.txt'
     URL_LEGACY_VARIATION = 'https://unicode.org/Public/emoji/{version}/emoji-variation-sequences.txt'
     URL_EMOJI_ZWJ = 'https://unicode.org/Public/{version}/emoji/emoji-zwj-sequences.txt'
+    URL_GRAPHEME_BREAK = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakProperty.txt'
+    URL_EMOJI_DATA = 'https://www.unicode.org/Public/{version}/ucd/emoji/emoji-data.txt'
+    URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
+    URL_GRAPHEME_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakTest.txt'
 
     @classmethod
     def DerivedAge(cls) -> str:
@@ -609,6 +744,32 @@ class UnicodeDataFile:
         version = fetch_unicode_versions()[-1]
         fname = os.path.join(PATH_TESTS, 'emoji-zwj-sequences.txt')
         cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version=f"{version.major}.{version.minor}"), fname=fname)
+        return fname
+
+    @classmethod
+    def GraphemeBreakProperty(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'GraphemeBreakProperty-{version}.txt')
+        cls.do_retrieve(url=cls.URL_GRAPHEME_BREAK.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def EmojiData(cls, version: UnicodeVersion) -> str:
+        """Fetch emoji-data.txt for Extended_Pictographic property."""
+        fname = os.path.join(PATH_DATA, f'emoji-data-{version}.txt')
+        cls.do_retrieve(url=cls.URL_EMOJI_DATA.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def DerivedCoreProperties(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'DerivedCoreProperties-{version}.txt')
+        cls.do_retrieve(url=cls.URL_DERIVED_CORE_PROPS.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def TestGraphemeBreakTest(cls) -> str:
+        version = fetch_unicode_versions()[-1]
+        fname = os.path.join(PATH_TESTS, 'GraphemeBreakTest.txt')
+        cls.do_retrieve(url=cls.URL_GRAPHEME_BREAK_TEST.format(version=version), fname=fname)
         return fname
 
     @staticmethod
@@ -719,6 +880,7 @@ def main() -> None:
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+        yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
 
     for render_def in get_codegen_definitions():
@@ -737,6 +899,7 @@ def main() -> None:
     # fetch latest test data files
     UnicodeDataFile.TestEmojiVariationSequences()
     UnicodeDataFile.TestEmojiZWJSequences()
+    UnicodeDataFile.TestGraphemeBreakTest()
 
 
 if __name__ == '__main__':

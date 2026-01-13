@@ -1,0 +1,296 @@
+"""
+Grapheme cluster segmentation following Unicode Standard Annex #29.
+
+This module provides pure-Python implementation of the grapheme cluster
+boundary algorithm as defined in UAX #29: Unicode Text Segmentation.
+
+https://www.unicode.org/reports/tr29/
+"""
+from __future__ import annotations
+
+from enum import IntEnum
+from functools import lru_cache
+from typing import Iterator, NamedTuple
+
+from .bisearch import bisearch as _bisearch
+from .table_grapheme import (
+    GRAPHEME_CONTROL,
+    GRAPHEME_EXTEND,
+    GRAPHEME_REGIONAL_INDICATOR,
+    GRAPHEME_PREPEND,
+    GRAPHEME_SPACINGMARK,
+    GRAPHEME_L,
+    GRAPHEME_V,
+    GRAPHEME_T,
+    GRAPHEME_LV,
+    GRAPHEME_LVT,
+    EXTENDED_PICTOGRAPHIC,
+    INCB_LINKER,
+    INCB_CONSONANT,
+    INCB_EXTEND,
+)
+
+
+class GCB(IntEnum):
+    """Grapheme Cluster Break property values."""
+    Other = 0
+    CR = 1
+    LF = 2
+    Control = 3
+    Extend = 4
+    ZWJ = 5
+    Regional_Indicator = 6
+    Prepend = 7
+    SpacingMark = 8
+    L = 9
+    V = 10
+    T = 11
+    LV = 12
+    LVT = 13
+
+
+@lru_cache(maxsize=1000)
+def _grapheme_cluster_break(ucs: int) -> GCB:
+    """Return the Grapheme_Cluster_Break property for a codepoint."""
+    # Single codepoint matches
+    if ucs == 0x000d:
+        return GCB.CR
+    if ucs == 0x000a:
+        return GCB.LF
+    if ucs == 0x200d:
+        return GCB.ZWJ
+    # Matching by codepoint ranges, requiring binary search
+    if _bisearch(ucs, GRAPHEME_CONTROL):
+        return GCB.Control
+    if _bisearch(ucs, GRAPHEME_EXTEND):
+        return GCB.Extend
+    if _bisearch(ucs, GRAPHEME_REGIONAL_INDICATOR):
+        return GCB.Regional_Indicator
+    if _bisearch(ucs, GRAPHEME_PREPEND):
+        return GCB.Prepend
+    if _bisearch(ucs, GRAPHEME_SPACINGMARK):
+        return GCB.SpacingMark
+    if _bisearch(ucs, GRAPHEME_L):
+        return GCB.L
+    if _bisearch(ucs, GRAPHEME_V):
+        return GCB.V
+    if _bisearch(ucs, GRAPHEME_T):
+        return GCB.T
+    if _bisearch(ucs, GRAPHEME_LV):
+        return GCB.LV
+    if _bisearch(ucs, GRAPHEME_LVT):
+        return GCB.LVT
+    return GCB.Other
+
+
+@lru_cache(maxsize=512)
+def _is_extended_pictographic(ucs: int) -> bool:
+    """Check if codepoint has Extended_Pictographic property."""
+    return _bisearch(ucs, EXTENDED_PICTOGRAPHIC)
+
+
+@lru_cache(maxsize=128)
+def _is_incb_linker(ucs: int) -> bool:
+    """Check if codepoint has InCB=Linker property."""
+    return _bisearch(ucs, INCB_LINKER)
+
+
+@lru_cache(maxsize=256)
+def _is_incb_consonant(ucs: int) -> bool:
+    """Check if codepoint has InCB=Consonant property."""
+    return _bisearch(ucs, INCB_CONSONANT)
+
+
+@lru_cache(maxsize=256)
+def _is_incb_extend(ucs: int) -> bool:
+    """Check if codepoint has InCB=Extend property."""
+    return _bisearch(ucs, INCB_EXTEND)
+
+
+class BreakResult(NamedTuple):
+    """Result of grapheme cluster break decision."""
+    should_break: bool
+    ri_count: int
+
+
+@lru_cache(maxsize=196)  # 14 GCB values × 14 = 196 max combinations
+def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> BreakResult | None:
+    """
+    Check simple GCB-pair-based break rules (cacheable).
+
+    Returns BreakResult for rules that can be determined from GCB properties alone,
+    or None if complex lookback rules (GB9c, GB11) need to be checked.
+    """
+    # GB3: CR x LF
+    if prev_gcb == GCB.CR and curr_gcb == GCB.LF:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB4: (Control|CR|LF) ÷
+    if prev_gcb in (GCB.Control, GCB.CR, GCB.LF):
+        return BreakResult(should_break=True, ri_count=0)
+
+    # GB5: ÷ (Control|CR|LF)
+    if curr_gcb in (GCB.Control, GCB.CR, GCB.LF):
+        return BreakResult(should_break=True, ri_count=0)
+
+    # GB6: L x (L|V|LV|LVT)
+    if prev_gcb == GCB.L and curr_gcb in (GCB.L, GCB.V, GCB.LV, GCB.LVT):
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB7: (LV|V) x (V|T)
+    if prev_gcb in (GCB.LV, GCB.V) and curr_gcb in (GCB.V, GCB.T):
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB8: (LVT|T) x T
+    if prev_gcb in (GCB.LVT, GCB.T) and curr_gcb == GCB.T:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB9: x (Extend|ZWJ) - but ZWJ needs GB11 check, so only handle Extend here
+    if curr_gcb == GCB.Extend:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB9a: x SpacingMark
+    if curr_gcb == GCB.SpacingMark:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB9b: Prepend x
+    if prev_gcb == GCB.Prepend:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB9c and GB11 need lookback - return None to signal complex check needed
+    # GB12/13 (RI pairs) need ri_count state - also handled in main function
+    return None
+
+
+def _should_break(
+    prev_gcb: GCB,
+    curr_gcb: GCB,
+    text: str,
+    curr_idx: int,
+    ri_count: int,
+) -> BreakResult:
+    """
+    Determine if there should be a grapheme cluster break between prev and curr.
+
+    Implements UAX #29 grapheme cluster boundary rules.
+    """
+    # Try cached simple rules first
+    result = _simple_break_check(prev_gcb, curr_gcb)
+    if result is not None:
+        return result
+
+    # GB9: x ZWJ (not cached because GB11 needs lookback when prev is ZWJ)
+    if curr_gcb == GCB.ZWJ:
+        return BreakResult(should_break=False, ri_count=0)
+
+    # GB9c: Indic conjunct cluster
+    # \p{InCB=Consonant} [\p{InCB=Extend}\p{InCB=Linker}]* \p{InCB=Linker}
+    #     [\p{InCB=Extend}\p{InCB=Linker}]* x \p{InCB=Consonant}
+    curr_ucs = ord(text[curr_idx])
+    if _is_incb_consonant(curr_ucs):
+        has_linker = False
+        i = curr_idx - 1
+        while i >= 0:
+            prev_ucs = ord(text[i])
+            if _is_incb_linker(prev_ucs):
+                has_linker = True
+                i -= 1
+            elif _is_incb_extend(prev_ucs):
+                i -= 1
+            elif _is_incb_consonant(prev_ucs):
+                if has_linker:
+                    return BreakResult(should_break=False, ri_count=0)
+                break
+            else:
+                break
+
+    # GB11: ExtPict Extend* ZWJ x ExtPict
+    if prev_gcb == GCB.ZWJ and _is_extended_pictographic(curr_ucs):
+        i = curr_idx - 2  # Skip the ZWJ at curr_idx - 1
+        while i >= 0:
+            prev_ucs = ord(text[i])
+            prev_prop = _grapheme_cluster_break(prev_ucs)
+            if prev_prop == GCB.Extend:
+                i -= 1
+            elif _is_extended_pictographic(prev_ucs):
+                return BreakResult(should_break=False, ri_count=0)
+            else:
+                break
+
+    # GB12/GB13: RI x RI (pair matching)
+    if prev_gcb == GCB.Regional_Indicator and curr_gcb == GCB.Regional_Indicator:
+        if ri_count % 2 == 1:
+            return BreakResult(should_break=False, ri_count=ri_count + 1)
+        else:
+            return BreakResult(should_break=True, ri_count=1)
+
+    # GB999: Any ÷ Any
+    ri_count = 1 if curr_gcb == GCB.Regional_Indicator else 0
+    return BreakResult(should_break=True, ri_count=ri_count)
+
+
+def iter_graphemes(
+    unistr: str,
+    start: int = 0,
+    end: int | None = None,
+) -> Iterator[str]:
+    """
+    Iterate over grapheme clusters in a Unicode string.
+
+    Grapheme clusters are "user-perceived characters" - what a user would
+    consider a single character, which may consist of multiple Unicode
+    codepoints (e.g., a base character with combining marks, emoji sequences).
+
+    :param unistr: The Unicode string to segment.
+    :param start: Starting index (default 0).
+    :param end: Ending index (default len(unistr)).
+    :yields: Grapheme cluster substrings.
+
+    Example::
+
+        >>> list(iter_graphemes('cafe\\u0301'))  # 'e' + combining acute accent
+        ['c', 'a', 'f', 'e\\u0301']
+        >>> list(iter_graphemes('\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467'))
+        ['\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467']  # man + ZWJ + woman + ZWJ + girl
+        >>> list(iter_graphemes('\\U0001F1FA\\U0001F1F8'))
+        ['\\U0001F1FA\\U0001F1F8']  # regional indicator U + regional indicator S (flag)
+    """
+    if not unistr:
+        return
+
+    length = len(unistr)
+
+    if end is None:
+        end = length
+
+    if start >= end or start >= length:
+        return
+
+    end = min(end, length)
+
+    # Track state for grapheme cluster boundaries
+    cluster_start = start
+    ri_count = 0
+
+    # Get GCB for first character
+    prev_gcb = _grapheme_cluster_break(ord(unistr[start]))
+
+    # Handle Regional Indicator count initialization
+    if prev_gcb == GCB.Regional_Indicator:
+        ri_count = 1
+
+    for idx in range(start + 1, end):
+        curr_gcb = _grapheme_cluster_break(ord(unistr[idx]))
+
+        result = _should_break(prev_gcb, curr_gcb, unistr, idx, ri_count)
+        ri_count = result.ri_count
+
+        if result.should_break:
+            yield unistr[cluster_start:idx]
+            cluster_start = idx
+
+        prev_gcb = curr_gcb
+
+    # Yield the final cluster
+    if cluster_start < end:
+        yield unistr[cluster_start:end]

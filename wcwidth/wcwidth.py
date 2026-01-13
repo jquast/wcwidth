@@ -67,6 +67,7 @@ import warnings
 from functools import lru_cache
 
 # local
+from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -81,33 +82,6 @@ from .terminal_seqs import (
     CURSOR_LEFT_PATTERN,
     INDETERMINATE_SEQ_PATTERN,
 )
-
-
-def _bisearch(ucs, table):
-    """
-    Auxiliary function for binary search in interval table.
-
-    :arg int ucs: Ordinal value of unicode character.
-    :arg list table: List of starting and ending ranges of ordinal values,
-        in form of ``[(start, end), ...]``.
-    :rtype: int
-    :returns: 1 if ordinal value ucs is found within lookup table, else 0.
-    """
-    lbound = 0
-    ubound = len(table) - 1
-
-    if ucs < table[0][0] or ucs > table[ubound][1]:
-        return 0
-    while ubound >= lbound:
-        mid = (lbound + ubound) // 2
-        if ucs > table[mid][1]:
-            lbound = mid + 1
-        elif ucs < table[mid][0]:
-            ubound = mid - 1
-        else:
-            return 1
-
-    return 0
 
 
 @lru_cache(maxsize=1000)

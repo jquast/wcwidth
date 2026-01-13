@@ -98,6 +98,56 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
+iter_graphemes
+--------------
+Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a
+unicode string. A grapheme cluster is a "user-perceived character" - what a
+user would consider a single character, which may consist of multiple Unicode
+codepoints.
+
+This is useful for correctly handling:
+
+- Combining characters (e.g., ``é`` as ``e`` + combining acute accent)
+- Emoji sequences (e.g., family emoji joined with ZWJ)
+- Regional indicators (e.g., flag emoji as two codepoints)
+- Hangul syllables
+
+Example of a phrase with a flag emoji, which is comprised of two codepoints::
+
+    >>> from wcwidth import iter_graphemes
+    >>> phrase = (
+    ...     'Hi' +
+    ...     '\U0001F1FA' +  # Regional Indicator Symbol Letter U
+    ...     '\U0001F1F8'    # Regional Indicator Symbol Letter S
+    ... )
+    >>> list(iter_graphemes(phrase))
+    ['H', 'i', '\U0001F1FA\U0001F1F8']
+
+Example of a phrase with a combining accent, where ``é`` is represented as
+``e`` followed by a combining acute accent::
+
+    >>> phrase = (
+    ...     'cafe' +
+    ...     '\u0301'  # Combining Acute Accent
+    ... )
+    >>> list(iter_graphemes(phrase))
+    ['c', 'a', 'f', 'e\u0301']
+
+Example of an emoji ZWJ (Zero Width Joiner) sequence::
+
+    >>> family = (
+    ...     '\U0001F468' +  # Man
+    ...     '\u200D' +      # ZWJ
+    ...     '\U0001F469' +  # Woman
+    ...     '\u200D' +      # ZWJ
+    ...     '\U0001F467'    # Girl
+    ... )
+    >>> list(iter_graphemes(family))
+    ['\U0001F468\u200D\U0001F469\u200D\U0001F467']
+
+The function implements Unicode Standard Annex #29 grapheme cluster boundary
+rules.
+
 Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
@@ -222,17 +272,12 @@ History
 =======
 
 0.2.15 *unreleased*
-  * **New** function :func:`width` that handles control characters and terminal
-    escape sequences gracefully, always returning a non-negative integer (never
-    ``-1``). Supports three modes: ``'parse'`` (default) tracks horizontal
-    cursor movement, ``'strict'`` raises on problematic input, and ``'ignore'``
-    strips all control characters. The ``measure`` parameter allows choosing
-    between ``'extent'`` (cursor position) and ``'printable'`` (character
-    widths only).
+  * **New** function :func:`iter_graphemes` to iterate over grapheme clusters
+    (user-perceived characters).
+  * **New** function :func:`width` gracefully handles control characters and
+    terminal escape sequences gracefully.
   * **Deprecated** the ``unicode_version`` parameter and ``UNICODE_VERSION``
-    environment variable. Empirical data shows that Unicode support in
-    terminals varies not only by version, but also by terminal capability,
-    language settings, and installed fonts.
+    environment variable are now marked (by documentation only) as deprecated.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -245,10 +290,10 @@ History
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
 0.2.12 *2023-11-21*
-  * re-release to remove .pyi file misplaced in wheel files `Issue #101`_.
+  * **Bugfix** Re-release to remove `.pyi` files misplaced in wheel `Issue #101`_.
 
 0.2.11 *2023-11-20*
-  * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
+  * **Updated** Include tests files in the source distribution (`PR #98`_, `PR #100`_).
 
 0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
