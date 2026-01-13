@@ -47,7 +47,7 @@ ZERO_WIDTH_CTRL = frozenset({
 ALL_CTRL = ILLEGAL_CTRL | VERTICAL_CTRL | HORIZONTAL_CTRL | ZERO_WIDTH_CTRL | {'\x1b'}
 
 # Pattern to match terminal escape sequences.
-# Matches CSI, OSC, Fe sequences, and character set designations.
+# Matches CSI, OSC, Fe sequences, Fp sequences, and character set designations.
 TERM_SEQ_PATTERN = re.compile(
     r'\x1b\['                               # CSI introducer
     r'[\x30-\x3f]*'                          # Parameter bytes (0-9:;<=>?)
@@ -61,6 +61,8 @@ TERM_SEQ_PATTERN = re.compile(
     r'\x1b[()].'                             # Character set designation
     r'|'
     r'\x1b[\x40-\x5f]'                       # Fe sequences (ESC + 0x40-0x5F)
+    r'|'
+    r'\x1b[78=>]'                            # Fp sequences: DECSC(7), DECRC(8), DECKPAM(=), DECKPNM(>)
 )
 
 # Pattern for cursor right movement: CSI [n] C
