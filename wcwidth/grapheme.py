@@ -248,12 +248,12 @@ def iter_graphemes(
 
     Example::
 
-        >>> list(iter_graphemes('cafe\\u0301'))  # 'e' + combining acute accent
+        >>> list(iter_graphemes('cafe\\u0301'))
         ['c', 'a', 'f', 'e\\u0301']
         >>> list(iter_graphemes('\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467'))
-        ['\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467']  # man + ZWJ + woman + ZWJ + girl
+        ['o', 'k', '\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467']
         >>> list(iter_graphemes('\\U0001F1FA\\U0001F1F8'))
-        ['\\U0001F1FA\\U0001F1F8']  # regional indicator U + regional indicator S (flag)
+        ['o', 'k', '\\U0001F1FA\\U0001F1F8']
     """
     if not unistr:
         return
