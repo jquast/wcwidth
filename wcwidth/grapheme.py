@@ -6,11 +6,9 @@ boundary algorithm as defined in UAX #29: Unicode Text Segmentation.
 
 https://www.unicode.org/reports/tr29/
 """
-from __future__ import annotations
-
 from enum import IntEnum
 from functools import lru_cache
-from typing import Iterator, NamedTuple
+from typing import Iterator, NamedTuple, Optional
 
 from .bisearch import bisearch as _bisearch
 from .table_grapheme import (
@@ -114,7 +112,7 @@ class BreakResult(NamedTuple):
 
 
 @lru_cache(maxsize=196)  # 14 GCB values × 14 = 196 max combinations
-def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> BreakResult | None:
+def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
     """
     Check simple GCB-pair-based break rules (cacheable).
 
@@ -232,7 +230,7 @@ def _should_break(
 def iter_graphemes(
     unistr: str,
     start: int = 0,
-    end: int | None = None,
+    end: Optional[int] = None,
 ) -> Iterator[str]:
     """
     Iterate over grapheme clusters in a Unicode string.
