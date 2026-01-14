@@ -71,14 +71,16 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .terminal_seqs import (ILLEGAL_CTRL,
-                            VERTICAL_CTRL,
-                            HORIZONTAL_CTRL,
-                            ZERO_WIDTH_CTRL,
-                            TERM_SEQ_PATTERN,
-                            CURSOR_LEFT_PATTERN,
-                            CURSOR_RIGHT_PATTERN,
-                            INDETERMINATE_SEQ_PATTERN)
+from .terminal_seqs import (
+    ILLEGAL_CTRL,
+    VERTICAL_CTRL,
+    HORIZONTAL_CTRL,
+    ZERO_WIDTH_CTRL,
+    ZERO_WIDTH_PATTERN,
+    CURSOR_RIGHT_PATTERN,
+    CURSOR_LEFT_PATTERN,
+    INDETERMINATE_SEQ_PATTERN,
+)
 from .unicode_versions import list_versions
 
 
@@ -352,10 +354,15 @@ def _handle_esc_sequence(text, idx, current_col, control_codes):
     """
     Handle ESC sequence at position idx.
 
+    :param str text: The text being processed.
+    :param int idx: Current index position (at ESC character).
+    :param int current_col: Current column position.
+    :param str control_codes: Control code handling mode.
     :returns: Tuple of (new_idx, new_col).
+    :rtype: tuple
     :raises ValueError: If control_codes is 'strict' and sequence is indeterminate.
     """
-    match = TERM_SEQ_PATTERN.match(text, idx)
+    match = ZERO_WIDTH_PATTERN.match(text, idx)
     if match:
         seq = match.group()
         if control_codes == 'strict' and INDETERMINATE_SEQ_PATTERN.match(seq):
