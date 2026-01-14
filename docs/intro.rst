@@ -95,6 +95,38 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
+width()
+-------
+
+Use function ``width()`` to measure the printable width of text that may
+contain terminal escape sequences and control characters. Unlike ``wcswidth()``,
+this function never returns ``-1``.
+
+.. code-block:: python
+
+    >>> from wcwidth import width
+    >>> # Simple text
+    >>> width('hello')
+    5
+
+    >>> # Text with ANSI color escape sequences
+    >>> width('\x1b[31mred\x1b[0m')
+    3
+
+    >>> # Text with tab (advances to next tab stop)
+    >>> width('abc\t')
+    8
+
+    >>> # Text with backspace (moves cursor left)
+    >>> width('abc\bd')
+    3
+
+The ``control_codes`` parameter controls how control characters are handled:
+
+- ``'parse'`` (default): Track horizontal cursor movement
+- ``'strict'``: Raise ``ValueError`` on illegal control characters
+- ``'ignore'``: Strip all control characters (zero width)
+
 Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
