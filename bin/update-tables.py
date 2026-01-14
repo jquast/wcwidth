@@ -678,8 +678,8 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
     If there are other changes or the original doesn't exist, replace it.
     """
     if os.path.exists(original_filename):
-        with open(original_filename, 'r', encoding='utf-8') as f1, \
-                open(new_filename, 'r', encoding='utf-8') as f2:
+        with open(original_filename, encoding='utf-8') as f1, \
+                open(new_filename, encoding='utf-8') as f2:
             old_lines = f1.readlines()
             new_lines = f2.readlines()
 
