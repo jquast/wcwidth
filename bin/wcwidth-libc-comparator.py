@@ -69,7 +69,6 @@ def report_ucs_msg(ucs, wcwidth_libc, wcwidth_local):
         f"[--o{ucs}o--] name={name} val={ord(ucs)} {url} ")
 
 
-
 if sys.maxunicode < 1114111:
     warnings.warn('narrow Python build, only a small subset of '
                   'characters may be tested.')
