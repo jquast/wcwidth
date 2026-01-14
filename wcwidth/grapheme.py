@@ -6,40 +6,41 @@ boundary algorithm as defined in UAX #29: Unicode Text Segmentation.
 
 https://www.unicode.org/reports/tr29/
 """
+# std imports
 from enum import IntEnum
 from functools import lru_cache
-from typing import Iterator, NamedTuple, Optional
 
+from typing import Iterator, Optional, NamedTuple
+
+# local
 from .bisearch import bisearch as _bisearch
-from .table_grapheme import (
-    GRAPHEME_CONTROL,
-    GRAPHEME_EXTEND,
-    GRAPHEME_REGIONAL_INDICATOR,
-    GRAPHEME_PREPEND,
-    GRAPHEME_SPACINGMARK,
-    GRAPHEME_L,
-    GRAPHEME_V,
-    GRAPHEME_T,
-    GRAPHEME_LV,
-    GRAPHEME_LVT,
-    EXTENDED_PICTOGRAPHIC,
-    INCB_LINKER,
-    INCB_CONSONANT,
-    INCB_EXTEND,
-)
+from .table_grapheme import (GRAPHEME_L,
+                             GRAPHEME_T,
+                             GRAPHEME_V,
+                             GRAPHEME_LV,
+                             INCB_EXTEND,
+                             INCB_LINKER,
+                             GRAPHEME_LVT,
+                             INCB_CONSONANT,
+                             GRAPHEME_EXTEND,
+                             GRAPHEME_CONTROL,
+                             GRAPHEME_PREPEND,
+                             GRAPHEME_SPACINGMARK,
+                             EXTENDED_PICTOGRAPHIC,
+                             GRAPHEME_REGIONAL_INDICATOR)
 
 
 class GCB(IntEnum):
     """Grapheme Cluster Break property values."""
-    Other = 0
+    OTHER = 0
     CR = 1
     LF = 2
-    Control = 3
-    Extend = 4
+    CONTROL = 3
+    EXTEND = 4
     ZWJ = 5
-    Regional_Indicator = 6
-    Prepend = 7
-    SpacingMark = 8
+    REGIONAL_INDICATOR = 6
+    PREPEND = 7
+    SPACING_MARK = 8
     L = 9
     V = 10
     T = 11
@@ -49,6 +50,7 @@ class GCB(IntEnum):
 
 @lru_cache(maxsize=1000)
 def _grapheme_cluster_break(ucs: int) -> GCB:
+    # pylint: disable=too-many-branches,too-complex
     """Return the Grapheme_Cluster_Break property for a codepoint."""
     # Single codepoint matches
     if ucs == 0x000d:
@@ -59,15 +61,15 @@ def _grapheme_cluster_break(ucs: int) -> GCB:
         return GCB.ZWJ
     # Matching by codepoint ranges, requiring binary search
     if _bisearch(ucs, GRAPHEME_CONTROL):
-        return GCB.Control
+        return GCB.CONTROL
     if _bisearch(ucs, GRAPHEME_EXTEND):
-        return GCB.Extend
+        return GCB.EXTEND
     if _bisearch(ucs, GRAPHEME_REGIONAL_INDICATOR):
-        return GCB.Regional_Indicator
+        return GCB.REGIONAL_INDICATOR
     if _bisearch(ucs, GRAPHEME_PREPEND):
-        return GCB.Prepend
+        return GCB.PREPEND
     if _bisearch(ucs, GRAPHEME_SPACINGMARK):
-        return GCB.SpacingMark
+        return GCB.SPACING_MARK
     if _bisearch(ucs, GRAPHEME_L):
         return GCB.L
     if _bisearch(ucs, GRAPHEME_V):
@@ -78,7 +80,7 @@ def _grapheme_cluster_break(ucs: int) -> GCB:
         return GCB.LV
     if _bisearch(ucs, GRAPHEME_LVT):
         return GCB.LVT
-    return GCB.Other
+    return GCB.OTHER
 
 
 @lru_cache(maxsize=512)
@@ -124,11 +126,11 @@ def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
         return BreakResult(should_break=False, ri_count=0)
 
     # GB4: (Control|CR|LF) ÷
-    if prev_gcb in (GCB.Control, GCB.CR, GCB.LF):
+    if prev_gcb in (GCB.CONTROL, GCB.CR, GCB.LF):
         return BreakResult(should_break=True, ri_count=0)
 
     # GB5: ÷ (Control|CR|LF)
-    if curr_gcb in (GCB.Control, GCB.CR, GCB.LF):
+    if curr_gcb in (GCB.CONTROL, GCB.CR, GCB.LF):
         return BreakResult(should_break=True, ri_count=0)
 
     # GB6: L x (L|V|LV|LVT)
@@ -144,15 +146,15 @@ def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
         return BreakResult(should_break=False, ri_count=0)
 
     # GB9: x (Extend|ZWJ) - but ZWJ needs GB11 check, so only handle Extend here
-    if curr_gcb == GCB.Extend:
+    if curr_gcb == GCB.EXTEND:
         return BreakResult(should_break=False, ri_count=0)
 
     # GB9a: x SpacingMark
-    if curr_gcb == GCB.SpacingMark:
+    if curr_gcb == GCB.SPACING_MARK:
         return BreakResult(should_break=False, ri_count=0)
 
     # GB9b: Prepend x
-    if prev_gcb == GCB.Prepend:
+    if prev_gcb == GCB.PREPEND:
         return BreakResult(should_break=False, ri_count=0)
 
     # GB9c and GB11 need lookback - return None to signal complex check needed
@@ -167,6 +169,7 @@ def _should_break(
     curr_idx: int,
     ri_count: int,
 ) -> BreakResult:
+    # pylint: disable=too-many-branches,too-complex
     """
     Determine if there should be a grapheme cluster break between prev and curr.
 
@@ -208,7 +211,7 @@ def _should_break(
         while i >= 0:
             prev_ucs = ord(text[i])
             prev_prop = _grapheme_cluster_break(prev_ucs)
-            if prev_prop == GCB.Extend:
+            if prev_prop == GCB.EXTEND:
                 i -= 1
             elif _is_extended_pictographic(prev_ucs):
                 return BreakResult(should_break=False, ri_count=0)
@@ -216,14 +219,13 @@ def _should_break(
                 break
 
     # GB12/GB13: RI x RI (pair matching)
-    if prev_gcb == GCB.Regional_Indicator and curr_gcb == GCB.Regional_Indicator:
+    if prev_gcb == GCB.REGIONAL_INDICATOR and curr_gcb == GCB.REGIONAL_INDICATOR:
         if ri_count % 2 == 1:
             return BreakResult(should_break=False, ri_count=ri_count + 1)
-        else:
-            return BreakResult(should_break=True, ri_count=1)
+        return BreakResult(should_break=True, ri_count=1)
 
     # GB999: Any ÷ Any
-    ri_count = 1 if curr_gcb == GCB.Regional_Indicator else 0
+    ri_count = 1 if curr_gcb == GCB.REGIONAL_INDICATOR else 0
     return BreakResult(should_break=True, ri_count=ri_count)
 
 
@@ -274,7 +276,7 @@ def iter_graphemes(
     prev_gcb = _grapheme_cluster_break(ord(unistr[start]))
 
     # Handle Regional Indicator count initialization
-    if prev_gcb == GCB.Regional_Indicator:
+    if prev_gcb == GCB.REGIONAL_INDICATOR:
         ri_count = 1
 
     for idx in range(start + 1, end):

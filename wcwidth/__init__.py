@@ -9,16 +9,16 @@ https://github.com/jquast/wcwidth
 # any future version.
 
 # local
-from .bisearch import bisearch as _bisearch
 from .wcwidth import ZERO_WIDTH  # noqa
 from .wcwidth import (WIDE_EASTASIAN,
                       VS16_NARROW_TO_WIDE,
+                      width,
                       wcwidth,
                       wcswidth,
-                      width,
                       list_versions,
                       _wcmatch_version,
                       _wcversion_value)
+from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
 
 # The __all__ attribute defines the items exported from statement,

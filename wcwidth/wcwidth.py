@@ -71,17 +71,15 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .terminal_seqs import (ILLEGAL_CTRL,
+                            VERTICAL_CTRL,
+                            HORIZONTAL_CTRL,
+                            ZERO_WIDTH_CTRL,
+                            TERM_SEQ_PATTERN,
+                            CURSOR_LEFT_PATTERN,
+                            CURSOR_RIGHT_PATTERN,
+                            INDETERMINATE_SEQ_PATTERN)
 from .unicode_versions import list_versions
-from .terminal_seqs import (
-    ILLEGAL_CTRL,
-    VERTICAL_CTRL,
-    HORIZONTAL_CTRL,
-    ZERO_WIDTH_CTRL,
-    TERM_SEQ_PATTERN,
-    CURSOR_RIGHT_PATTERN,
-    CURSOR_LEFT_PATTERN,
-    INDETERMINATE_SEQ_PATTERN,
-)
 
 
 @lru_cache(maxsize=1000)
@@ -172,7 +170,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     # this 'n' argument is a holdover for POSIX function
     _unicode_version = None
     end = len(pwcs) if n is None else n
-    width = 0
+    total_width = 0
     idx = 0
     last_measured_char = None
     while idx < end:
@@ -188,7 +186,8 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             if _unicode_version is None:
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
-                width += _bisearch(ord(last_measured_char), VS16_NARROW_TO_WIDE["9.0.0"])
+                total_width += _bisearch(ord(last_measured_char),
+                                         VS16_NARROW_TO_WIDE["9.0.0"])
                 last_measured_char = None
             idx += 1
             continue
@@ -201,9 +200,9 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # track last character measured to contain a cell, so that
             # subsequent VS-16 modifiers may be understood
             last_measured_char = char
-        width += wcw
+        total_width += wcw
         idx += 1
-    return width
+    return total_width
 
 
 @lru_cache(maxsize=128)
@@ -349,6 +348,43 @@ def _apply_cursor_movement(col, seq):
     return col
 
 
+def _handle_esc_sequence(text, idx, current_col, control_codes):
+    """
+    Handle ESC sequence at position idx.
+
+    :returns: Tuple of (new_idx, new_col).
+    :raises ValueError: If control_codes is 'strict' and sequence is indeterminate.
+    """
+    match = TERM_SEQ_PATTERN.match(text, idx)
+    if match:
+        seq = match.group()
+        if control_codes == 'strict' and INDETERMINATE_SEQ_PATTERN.match(seq):
+            raise ValueError(f"Indeterminate cursor sequence at position {idx}")
+        if control_codes != 'ignore':
+            current_col = _apply_cursor_movement(current_col, seq)
+        return match.end(), current_col
+    # Lone ESC or incomplete sequence: zero width
+    return idx + 1, current_col
+
+
+def _handle_horizontal_ctrl(char, current_col, control_codes, tabstop):
+    """
+    Handle horizontal movement character.
+
+    :returns: New column position.
+    """
+    # Tab is handled in all modes if tabstop is set
+    if char == '\x09' and tabstop:
+        return current_col + tabstop - (current_col % tabstop)
+    # BS and CR only in parse/strict modes
+    if control_codes != 'ignore':
+        if char == '\x08':
+            return max(0, current_col - 1)
+        if char == '\x0d':
+            return 0
+    return current_col
+
+
 def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
     """
     Return printable width of text, never returns -1.
@@ -428,84 +464,36 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
 
         # 1. Handle ESC sequences
         if char == '\x1b':
-            match = TERM_SEQ_PATTERN.match(text, idx)
-            if match:
-                seq = match.group()
-                # Check for indeterminate sequences in strict mode
-                if control_codes == 'strict':
-                    if INDETERMINATE_SEQ_PATTERN.match(seq):
-                        raise ValueError(
-                            f"Indeterminate cursor sequence at position {idx}"
-                        )
-                # Apply cursor movement in strict/parse modes
-                if control_codes != 'ignore':
-                    current_col = _apply_cursor_movement(current_col, seq)
-                    max_extent = max(max_extent, current_col)
-                idx = match.end()
-                continue
-            # Lone ESC or incomplete sequence: zero width
-            idx += 1
+            idx, current_col = _handle_esc_sequence(text, idx, current_col, control_codes)
+            max_extent = max(max_extent, current_col)
             continue
 
-        # 2. Handle illegal control characters
-        if char in ILLEGAL_CTRL:
+        # 2. Handle illegal and vertical control characters (zero width, error in strict)
+        if char in ILLEGAL_CTRL or char in VERTICAL_CTRL:
             if control_codes == 'strict':
-                raise ValueError(
-                    f"Illegal control character {ord(char):#x} at position {idx}"
-                )
-            # ignore and parse: zero width
+                kind = "Illegal control" if char in ILLEGAL_CTRL else "Vertical movement"
+                raise ValueError(f"{kind} character {ord(char):#x} at position {idx}")
             idx += 1
             continue
 
-        # 3. Handle vertical movement characters
-        if char in VERTICAL_CTRL:
-            if control_codes == 'strict':
-                raise ValueError(
-                    f"Vertical movement character {ord(char):#x} at position {idx}"
-                )
-            # ignore and parse: zero width
-            idx += 1
-            continue
-
-        # 4. Handle horizontal movement characters
+        # 3. Handle horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            if control_codes != 'ignore':
-                if char == '\x08':  # BS
-                    current_col = max(0, current_col - 1)
-                elif char == '\x0d':  # CR
-                    current_col = 0
-                else:  # HT (tab) - only remaining option in HORIZONTAL_CTRL
-                    if tabstop:
-                        advance = tabstop - (current_col % tabstop)
-                        current_col += advance
-                        max_extent = max(max_extent, current_col)
-            elif tabstop and char == '\x09':
-                # Even in ignore mode, handle tab if tabstop is set
-                advance = tabstop - (current_col % tabstop)
-                current_col += advance
-                max_extent = max(max_extent, current_col)
+            current_col = _handle_horizontal_ctrl(char, current_col, control_codes, tabstop)
+            max_extent = max(max_extent, current_col)
             idx += 1
             continue
 
-        # 5. Handle zero-width control characters
-        if char in ZERO_WIDTH_CTRL:
-            # Zero width in all modes
-            idx += 1
-            continue
-
-        # 6. Handle ZWJ sequences
+        # 4. Handle ZWJ (skip this and next character)
         if char == '\u200D':
-            # Zero Width Joiner: skip this and next character
             idx += 2
             continue
 
-        # 7. Handle VS-16 (emoji presentation selector)
-        if char == '\uFE0F':
-            # Already handled by wcwidth for wide characters, skip
+        # 5. Handle other zero-width characters (control chars and VS-16)
+        if char in ZERO_WIDTH_CTRL or char == '\uFE0F':
             idx += 1
             continue
 
-        # 8. Normal characters: measure with wcwidth
+        # 6. Normal characters: measure with wcwidth
         w = wcwidth(char)
         if w > 0:
             current_col += w
