@@ -172,7 +172,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     # this 'n' argument is a holdover for POSIX function
     _unicode_version = None
     end = len(pwcs) if n is None else n
-    width = 0
+    total_width = 0
     idx = 0
     last_measured_char = None
     while idx < end:
@@ -188,7 +188,8 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             if _unicode_version is None:
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
-                width += _bisearch(ord(last_measured_char), VS16_NARROW_TO_WIDE["9.0.0"])
+                total_width += _bisearch(ord(last_measured_char),
+                                         VS16_NARROW_TO_WIDE["9.0.0"])
                 last_measured_char = None
             idx += 1
             continue
@@ -201,9 +202,9 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # track last character measured to contain a cell, so that
             # subsequent VS-16 modifiers may be understood
             last_measured_char = char
-        width += wcw
+        total_width += wcw
         idx += 1
-    return width
+    return total_width
 
 
 @lru_cache(maxsize=128)
