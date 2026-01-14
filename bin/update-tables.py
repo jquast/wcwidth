@@ -70,6 +70,12 @@ HANGUL_JAMO_ZEROWIDTH = (
 )
 
 HEX_STR_VS16 = 'FE0F'
+# Grapheme Break Property values from UAX #29
+GRAPHEME_BREAK_PROPERTIES = (
+    'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
+    'Prepend', 'SpacingMark', 'L', 'V', 'T', 'LV', 'LVT'
+)
+INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
 
 def _bisearch(ucs, table):
@@ -572,13 +578,6 @@ def parse_category(fname: str, wide: int) -> TableDef:
     return TableDef(version, date, values)
 
 
-# Grapheme Break Property values from UAX #29
-GRAPHEME_BREAK_PROPERTIES = (
-    'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
-    'Prepend', 'SpacingMark', 'L', 'V', 'T', 'LV', 'LVT'
-)
-
-
 def parse_grapheme_break_properties(fname: str) -> dict[str, TableDef]:
     """Parse GraphemeBreakProperty.txt for grapheme break properties needing tables."""
     print(f'parsing {fname}: ', end='', flush=True)
@@ -626,9 +625,6 @@ def parse_extended_pictographic(fname: str) -> TableDef:
     return TableDef(version, date, values)
 
 
-INCB_VALUES = ('Linker', 'Consonant', 'Extend')
-
-
 def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     """Parse DerivedCoreProperties.txt for all Indic_Conjunct_Break properties."""
     print(f'parsing {fname} for InCB: ', end='', flush=True)
@@ -667,6 +663,7 @@ def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:
     """Fetch grapheme break property tables for the latest Unicode version only."""
     latest_version = fetch_unicode_versions()[-1]
 
+    # makes a table definition for each break property
     tables = parse_grapheme_break_properties(
         UnicodeDataFile.GraphemeBreakProperty(latest_version)
     )
