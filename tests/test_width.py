@@ -99,6 +99,27 @@ def test_width_control_codes_strict():
     assert wcwidth.width("abcd\x1b[2De", control_codes="strict") == 4
 
 
+STRICT_INDETERMINATE_SEQUENCES = [
+    ('\x1b[?1049h', 'enter_fullscreen'),
+    ('\x1b[?1049l', 'exit_fullscreen'),
+    ('\x1bD', 'scroll_forward'),
+    ('\x1bM', 'scroll_reverse'),
+    ('\x1b8', 'restore_cursor'),
+    ('\x1b[1P', 'parm_dch'),
+    ('\x1b[1M', 'parm_delete_line'),
+    ('\x1b[1L', 'parm_insert_line'),
+    ('\x1b[1X', 'erase_chars'),
+    ('\x1b[1S', 'parm_index'),
+    ('\x1b[1T', 'parm_rindex'),
+]
+
+
+@pytest.mark.parametrize('seq,cap_name', STRICT_INDETERMINATE_SEQUENCES)
+def test_width_strict_indeterminate_raises(seq, cap_name):
+    with pytest.raises(ValueError):
+        wcwidth.width(f"hello{seq}world", control_codes="strict")
+
+
 def test_width_control_codes_parse():
     """Tests for control_codes='parse' (default)."""
     # illegal control code has zero width
@@ -232,3 +253,140 @@ def test_vs16_selector():
 def test_tab_ignore_with_tabstop():
     """Test tab with ignore mode and tabstop."""
     assert wcwidth.width("abc\t", control_codes="ignore", tabstop=8) == 8
+
+
+def test_cursor_right_unparameterized():
+    """Test unparameterized cursor_right sequence is handled correctly."""
+    seq = '\x1b[C'
+    # sequence is recognized as a sequence
+    segments = list(wcwidth.iter_sequences(seq))
+    assert segments == [(seq, True)]
+    # sequence alone moves cursor right by 1 (default), extent is 1
+    assert wcwidth.width(seq) == 1
+    # cursor moves right by 1: 'a'(1) + right(1) + 'b'(1) = 3
+    assert wcwidth.width('a' + seq + 'b') == 3
+    # strict mode allows cursor_right
+    assert wcwidth.width('a' + seq + 'b', control_codes='strict') == 3
+    # printable counts only printed characters
+    assert wcwidth.width('a' + seq + 'b', measure='printable') == 2
+
+
+INDETERMINATE_CAP_SAMPLES = [
+    ('\x1b[1;1r', 'change_scroll_region'),
+    ('\x1b[H\x1b[2J', 'clear_screen'),
+    ('\x1b[1K', 'clr_bol'),
+    ('\x1b[K', 'clr_eol'),
+    ('\x1b[J', 'clr_eos'),
+    ('\x1b[1G', 'column_address'),
+    ('\x1b[1;1H', 'cursor_address'),
+    ('\x1b[B', 'cursor_down'),
+    ('\x1b[H', 'cursor_home'),
+    ('\x1b[A', 'cursor_up'),
+    ('\x1b[P', 'delete_character'),
+    ('\x1b[M', 'delete_line'),
+    ('\x1b[?1049h', 'enter_fullscreen'),
+    ('\x1b[1X', 'erase_chars'),
+    ('\x1b[J', 'erase_display'),
+    ('\x1b[?1049l', 'exit_fullscreen'),
+    ('\x1b[L', 'insert_line'),
+    ('\x1b[1P', 'parm_dch'),
+    ('\x1b[1M', 'parm_delete_line'),
+    ('\x1b[1B', 'parm_down_cursor'),
+    ('\x1b[1@', 'parm_ich'),
+    ('\x1b[1S', 'parm_index'),
+    ('\x1b[1L', 'parm_insert_line'),
+    ('\x1b[1T', 'parm_rindex'),
+    ('\x1b[1A', 'parm_up_cursor'),
+    ('\x1b8', 'restore_cursor'),
+    ('\x1b[1d', 'row_address'),
+    ('\x1bD', 'scroll_forward'),
+    ('\x1bM', 'scroll_reverse'),
+]
+
+
+@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_CAP_SAMPLES)
+def test_indeterminate_caps_covered_by_term_seq_pattern(seq, cap_name):
+    """Verify all INDETERMINATE_CAPS sequences are matched by ZERO_WIDTH_PATTERN."""
+    from wcwidth.terminal_seqs import ZERO_WIDTH_PATTERN
+    assert ZERO_WIDTH_PATTERN.match(seq)
+    assert wcwidth.width(seq) == 0
+
+
+ZERO_WIDTH_CAP_SAMPLES = [
+    ('\x1b[3g', 'clear_all_tabs'),
+    ('\x1b[?25l', 'cursor_invisible'),
+    ('\x1b[?25h', 'cursor_normal'),
+    ('\x1b[?12;25h', 'cursor_visible'),
+    ('\x1b(0', 'enter_alt_charset_mode'),
+    ('\x1b[5m', 'enter_blink_mode'),
+    ('\x1b[1m', 'enter_bold_mode'),
+    ('\x1b[2m', 'enter_dim_mode'),
+    ('\x1b[3m', 'enter_italics_mode'),
+    ('\x1b[7m', 'enter_reverse_mode'),
+    ('\x1b[3m', 'enter_standout_mode'),
+    ('\x1b[4m', 'enter_underline_mode'),
+    ('\x1b(B', 'exit_alt_charset_mode'),
+    ('\x1b[m', 'exit_attribute_mode'),
+    ('\x1b[4l', 'exit_insert_mode'),
+    ('\x1b[23m', 'exit_italics_mode'),
+    ('\x1b[27m', 'exit_standout_mode'),
+    ('\x1b[24m', 'exit_underline_mode'),
+    ('\x1b[?5h\x1b[?5l', 'flash_screen_csi'),
+    ('\x1bg', 'flash_screen_visual_bell'),
+    ('\x1b>', 'keypad_local'),
+    ('\x1b=', 'keypad_xmit'),
+    ('\x1b[39;49m', 'orig_pair'),
+    ('\x1b7', 'save_cursor'),
+    ('\x1bH', 'set_tab'),
+]
+
+
+@pytest.mark.parametrize('seq,cap_name', ZERO_WIDTH_CAP_SAMPLES)
+def test_zero_width_sequences_matched_by_pattern(seq, cap_name):
+    """Verify zero-width terminfo sequences are matched by ZERO_WIDTH_PATTERN."""
+    for part, is_seq in wcwidth.iter_sequences(seq):
+        assert is_seq, f"{cap_name}: {repr(part)} not matched as sequence"
+    assert wcwidth.width(seq) == 0
+
+
+MODERN_TERMINAL_SEQUENCES = [
+    ('\x1b_Gf=100,i=1;base64data\x1b\\hello', 5, 'kitty_graphics_with_text'),
+    ('\x1b_Ga=d\x07', 0, 'kitty_graphics_delete'),
+    ('\x1bP0;1;0q#0~-\x1b\\test', 4, 'sixel_graphics_with_text'),
+    ('\x1bP$q"p\x1b\\', 0, 'decrqss_query'),
+    ('\x1b^private\x1b\\text', 4, 'pm_with_text'),
+    ('\x1b]1337;SetMark\x07test', 4, 'iterm2_setmark'),
+    ('\x1b]1337;File=inline=1:base64\x07img', 3, 'iterm2_inline_image'),
+    ('\x1b]1337;CursorShape=1\x07', 0, 'iterm2_cursor_shape'),
+    ('\x1b]1337;CurrentDir=/home\x07', 0, 'iterm2_currentdir'),
+    ('\x1b]133;A\x07$ ', 2, 'shell_prompt_start'),
+    ('\x1b]133;B\x07ls', 2, 'shell_command_start'),
+    ('\x1b]133;C\x07', 0, 'shell_command_executed'),
+    ('\x1b]133;D;0\x07', 0, 'shell_command_finished'),
+    ('\x1b]99;i=1:d=0;Hello\x1b\\', 0, 'kitty_notification'),
+    ('\x1b]5522;type=read\x07', 0, 'kitty_clipboard_read'),
+    ('\x1b]22;pointer\x07', 0, 'kitty_pointer_shape'),
+    ('\x1b]21;fg=?\x07', 0, 'kitty_color_query'),
+    ('\x1b]30001\x1b\\', 0, 'kitty_color_push'),
+    ('\x1b]30101\x1b\\', 0, 'kitty_color_pop'),
+]
+
+
+@pytest.mark.parametrize('seq,expected_width,name', MODERN_TERMINAL_SEQUENCES)
+def test_modern_sequences(seq, expected_width, name):
+    """Modern terminal sequences are recognized as zero-width."""
+    assert wcwidth.width(seq) == expected_width
+
+
+MODERN_SEQUENCES_STRICT = [
+    '\x1b_Gf=100;data\x1b\\',
+    '\x1bP0q~-\x1b\\',
+    '\x1b]1337;SetMark\x07',
+    '\x1b]133;A\x07',
+]
+
+
+@pytest.mark.parametrize('seq', MODERN_SEQUENCES_STRICT)
+def test_modern_sequences_strict_mode(seq):
+    """Modern sequences do not raise in strict mode."""
+    assert wcwidth.width(seq, control_codes='strict') == 0

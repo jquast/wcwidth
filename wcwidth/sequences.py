@@ -12,8 +12,7 @@ from typing import Iterator, List, Optional, Tuple
 
 from .grapheme import iter_graphemes
 from .terminal_seqs import (
-    TERM_SEQ_PATTERN,
-    SGR_PATTERN,
+    ZERO_WIDTH_PATTERN,
     CURSOR_RIGHT_PATTERN,
     CURSOR_LEFT_PATTERN,
     INDETERMINATE_SEQ_PATTERN,
@@ -46,7 +45,7 @@ def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
     while idx < text_len:
         char = text[idx]
         if char == '\x1b':
-            match = TERM_SEQ_PATTERN.match(text, idx)
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
             if match:
                 yield (match.group(), True)
                 idx = match.end()
@@ -54,7 +53,7 @@ def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
         # Collect non-sequence characters into a single run
         start = idx
         while idx < text_len:
-            if text[idx] == '\x1b' and TERM_SEQ_PATTERN.match(text, idx):
+            if text[idx] == '\x1b' and ZERO_WIDTH_PATTERN.match(text, idx):
                 break
             idx += 1
         yield (text[start:idx], False)
@@ -148,15 +147,6 @@ def center(text: str, width: int, fillchar: str = ' ',
     left_count = left_cells // fillchar_width
     right_count = right_cells // fillchar_width
     return fillchar * left_count + text + fillchar * right_count
-
-
-def _is_movement_sequence(seq: str) -> bool:
-    """Check if sequence causes cursor movement."""
-    return bool(
-        CURSOR_RIGHT_PATTERN.match(seq) or
-        CURSOR_LEFT_PATTERN.match(seq) or
-        INDETERMINATE_SEQ_PATTERN.match(seq)
-    )
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):
@@ -399,7 +389,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # Skip escape sequences (they don't add width)
             if char == '\x1b':
-                match = TERM_SEQ_PATTERN.match(text, idx)
+                match = ZERO_WIDTH_PATTERN.match(text, idx)
                 if match:
                     idx = match.end()
                     continue
@@ -424,7 +414,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # Skip escape sequences
             if char == '\x1b':
-                match = TERM_SEQ_PATTERN.match(text, idx)
+                match = ZERO_WIDTH_PATTERN.match(text, idx)
                 if match:
                     idx = match.end()
                     continue

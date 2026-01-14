@@ -77,7 +77,7 @@ from .terminal_seqs import (
     VERTICAL_CTRL,
     HORIZONTAL_CTRL,
     ZERO_WIDTH_CTRL,
-    TERM_SEQ_PATTERN,
+    ZERO_WIDTH_PATTERN,
     CURSOR_RIGHT_PATTERN,
     CURSOR_LEFT_PATTERN,
     INDETERMINATE_SEQ_PATTERN,
@@ -428,7 +428,7 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
 
         # 1. Handle ESC sequences
         if char == '\x1b':
-            match = TERM_SEQ_PATTERN.match(text, idx)
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
             if match:
                 seq = match.group()
                 # Check for indeterminate sequences in strict mode

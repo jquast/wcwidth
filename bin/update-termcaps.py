@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """
-Update terminal capability patterns for wcwidth. This is code generation using jinja2.
+Code generation of terminal capability wcwidth. This is code generation using jinja2.
 
-Uses subprocesses because curses.setupterm() can only be called once per process.
-See blessed/terminal.py lines 2751-2770 for details on this Python/curses limitation.
+Uses 'subprocesses', because curses.setupterm() can only be called once per process.  See bottom of
+file 'blessed' project, file blessed/terminal.py for details on this Python/curses limitation.
 
-This is typically executed through tox,
+This code is almost entirely unnecessary -- modern terminals use "classical codes" for cursor
+movement precisely for its high compatibility with legacy terminal applications. Would somebody
+someday invent a new terminal type that is popularly used with a new capability for "cursor up"?
 
-$ tox -e update
-
-https://github.com/jquast/wcwidth
+Probably not.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import datetime
 import difflib
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field, fields
@@ -26,8 +27,7 @@ from typing import Any, Dict, Iterator, List, Tuple
 import jinja2
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-THIS_FILEPATH = ('wcwidth/' +
-                 Path(__file__).resolve().relative_to(Path(PATH_UP).resolve()).as_posix())
+THIS_FILEPATH = ('wcwidth/' + Path(__file__).resolve().relative_to(Path(PATH_UP).resolve()).as_posix())
 
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
@@ -53,19 +53,11 @@ TERMINALS = [
 ]
 
 # Capabilities to extract from terminfo, organized by semantic category.
-# Format: 'name': ('terminfo_cap', {'nparams': N, 'match_grouped': bool, 'match_any': bool})
-
-# Horizontal movement - tracked in 'parse' mode
-HORIZONTAL_MOVEMENT_TERMINFO: Dict[str, Tuple[str, Dict[str, Any]]] = {
-    'parm_right_cursor': ('cuf', {'nparams': 1, 'match_grouped': True}),
-    'cursor_right': ('cuf1', {}),
-    'parm_left_cursor': ('cub', {'nparams': 1, 'match_grouped': True}),
-    'cursor_left': ('cub1', {}),
-}
+# Format: 'name': ('terminfo_cap', {'nparams': N, 'match_any': bool})
 
 # Indeterminate/vertical - raise in 'strict' mode
 INDETERMINATE_TERMINFO: Dict[str, Tuple[str, Dict[str, Any]]] = {
-    'cursor_address': ('cup', {'nparams': 2, 'match_grouped': True}),
+    'cursor_address': ('cup', {'nparams': 2}),
     'cursor_home': ('home', {}),
     'parm_up_cursor': ('cuu', {'nparams': 1}),
     'cursor_up': ('cuu1', {}),
@@ -96,44 +88,97 @@ INDETERMINATE_TERMINFO: Dict[str, Tuple[str, Dict[str, Any]]] = {
     'parm_rindex': ('rin', {'nparams': 1}),
 }
 
-# Zero-width sequences from terminfo - no cursor movement
-ZERO_WIDTH_TERMINFO: Dict[str, Tuple[str, Dict[str, Any]]] = {
-    # Text attributes
-    'enter_bold_mode': ('bold', {}),
-    'enter_dim_mode': ('dim', {}),
-    'enter_blink_mode': ('blink', {}),
-    'enter_underline_mode': ('smul', {}),
-    'exit_underline_mode': ('rmul', {}),
-    'enter_standout_mode': ('smso', {}),
-    'exit_standout_mode': ('rmso', {}),
-    'enter_reverse_mode': ('rev', {}),
-    'exit_attribute_mode': ('sgr0', {}),
-    'enter_italics_mode': ('sitm', {}),
-    'exit_italics_mode': ('ritm', {}),
-    # Colors (using match_any because color numbers vary)
-    'set_a_foreground': ('setaf', {'nparams': 1, 'match_any': True, 'numeric': 1}),
-    'set_a_background': ('setab', {'nparams': 1, 'match_any': True, 'numeric': 1}),
-    'orig_pair': ('op', {}),
-    # Cursor visibility
-    'cursor_invisible': ('civis', {}),
-    'cursor_visible': ('cvvis', {}),
-    'cursor_normal': ('cnorm', {}),
-    # Cursor save (does not move cursor, only saves position)
-    'save_cursor': ('sc', {}),
-    # Character sets
-    'enter_alt_charset_mode': ('smacs', {}),
-    'exit_alt_charset_mode': ('rmacs', {}),
-    # Misc
-    'bell': ('bel', {}),
-    'flash_screen': ('flash', {}),
-    'keypad_xmit': ('smkx', {}),
-    'keypad_local': ('rmkx', {}),
-    # Tab control (from blessed)
-    'clear_all_tabs': ('tbc', {}),
-    'set_tab': ('hts', {}),
-    # Insert mode (from blessed)
-    'exit_insert_mode': ('rmir', {}),
-}
+
+def split_alternatives(pattern: str) -> List[str]:
+    """
+    Split a pattern like 'A|B|C' into ['A', 'B', 'C'].
+
+    Handles nested groups, so '(?:X|Y)|Z' splits into ['(?:X|Y)', 'Z'].
+    """
+    alternatives = []
+    current = []
+    depth = 0
+
+    for char in pattern:
+        if char == '(' and depth >= 0:
+            depth += 1
+            current.append(char)
+        elif char == ')' and depth > 0:
+            depth -= 1
+            current.append(char)
+        elif char == '|' and depth == 0:
+            alternatives.append(''.join(current))
+            current = []
+        else:
+            current.append(char)
+
+    if current:
+        alternatives.append(''.join(current))
+
+    return alternatives
+
+
+def is_covered_by_concatenation(seq: str, patterns: Dict[str, str], exclude: str) -> bool:
+    """
+    Check if seq can be formed by concatenating matches from patterns.
+
+    :param seq: The literal sequence to check (e.g., '\\x1b[H\\x1b[2J').
+    :param patterns: Dict of pattern_name -> regex_pattern.
+    :param exclude: Pattern name to exclude from matching.
+    :returns: True if seq is covered by concatenating other patterns.
+    """
+    if not seq:
+        return True
+
+    for name, pattern in patterns.items():
+        if name == exclude:
+            continue
+
+        try:
+            compiled = re.compile(pattern)
+            match = compiled.match(seq)
+            if match and match.group():
+                remainder = seq[match.end():]
+                if is_covered_by_concatenation(remainder, patterns, exclude):
+                    return True
+        except re.error:
+            continue
+
+    return False
+
+
+def reduce_redundant_patterns(caps: Dict[str, str]) -> Dict[str, str]:
+    """
+    Remove compound patterns that are covered by concatenation of other patterns.
+
+    For example, if clear_screen is '(?:\\x1b[H\\x1b[2J|\\x1b[H\\x1b[J)' and both
+    alternatives can be formed by cursor_home + erase_display/clr_eos, then
+    clear_screen is redundant and removed.
+    """
+    reduced = {}
+
+    for name, pattern in caps.items():
+        if not pattern.startswith('(?:'):
+            reduced[name] = pattern
+            continue
+
+        inner = pattern[3:-1]
+        alternatives = split_alternatives(inner)
+
+        kept = []
+        for alt in alternatives:
+            if not is_covered_by_concatenation(alt, caps, name):
+                kept.append(alt)
+
+        if not kept:
+            continue
+        elif len(kept) == 1:
+            reduced[name] = kept[0]
+        else:
+            reduced[name] = '(?:' + '|'.join(kept) + ')'
+
+    return reduced
+
 
 @dataclass(frozen=True)
 class RenderContext:
@@ -147,9 +192,7 @@ class RenderContext:
 class TerminalCapsRenderCtx(RenderContext):
     """Render context for terminal capabilities."""
     terminals: List[str]
-    horizontal_caps: Dict[str, str]
     indeterminate_caps: Dict[str, str]
-    zero_width_caps: Dict[str, str]
 
 
 @dataclass
@@ -243,15 +286,32 @@ def extract_all_terminals(terminals: List[str],
     return merged
 
 
+# ANSI standard patterns not fully covered by terminfo.
+# These are added to indeterminate caps after terminfo extraction.
+# Terminfo cud1 is typically '\n', but ANSI CUD (CSI B) should also be caught.
+# Terminfo clr_eos is '\x1b[J' only, but ANSI ED accepts parameters.
+ANSI_INDETERMINATE_FALLBACKS: Dict[str, str] = {
+    'cursor_down': r'\x1b\[\d*B',      # ANSI CUD - terminfo cud1 is \n
+    'erase_display': r'\x1b\[\d*J',    # ANSI ED - terminfo ed is \x1b[J only
+}
+
+
 def fetch_terminal_caps_data() -> TerminalCapsRenderCtx:
     """Fetch and process terminal capability patterns from terminfo."""
     print('extracting terminal capabilities: ', end='', flush=True)
 
-    # Extract from terminfo only - modern patterns are in terminal_seqs.py
-    horizontal = extract_all_terminals(TERMINALS, HORIZONTAL_MOVEMENT_TERMINFO)
     indeterminate = extract_all_terminals(TERMINALS, INDETERMINATE_TERMINFO)
-    zero_width = extract_all_terminals(TERMINALS, ZERO_WIDTH_TERMINFO)
 
+    print('ok')
+
+    # Add ANSI fallback patterns not fully covered by terminfo
+    for name, pattern in ANSI_INDETERMINATE_FALLBACKS.items():
+        if name not in indeterminate:
+            indeterminate[name] = pattern
+
+    # Second pass: reduce redundant compound patterns
+    print('reducing redundant patterns: ', end='', flush=True)
+    indeterminate = reduce_redundant_patterns(indeterminate)
     print('ok')
 
     # Convert patterns to repr() form for valid Python source
@@ -260,9 +320,7 @@ def fetch_terminal_caps_data() -> TerminalCapsRenderCtx:
 
     return TerminalCapsRenderCtx(
         terminals=TERMINALS,
-        horizontal_caps=repr_values(horizontal),
         indeterminate_caps=repr_values(indeterminate),
-        zero_width_caps=repr_values(zero_width),
     )
 
 

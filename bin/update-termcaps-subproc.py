@@ -43,7 +43,7 @@ def is_raw_control_char(capability: str) -> bool:
     return False
 
 
-def build_pattern(capability: str, nparams: int = 0, match_grouped: bool = False,
+def build_pattern(capability: str, nparams: int = 0,
                   match_any: bool = False, numeric: int = 99) -> str:
     """Convert a terminfo capability string to a regex pattern."""
     # Strip delay markers before processing
@@ -63,7 +63,7 @@ def build_pattern(capability: str, nparams: int = 0, match_grouped: bool = False
         return re.escape(capability)
 
     output = re.escape(output)
-    pattern = r'(\d+)' if match_grouped else r'\d+'
+    pattern = r'\d+'
 
     # Replace each test value with regex pattern
     # Check for value and value+1 (for %i increment)
