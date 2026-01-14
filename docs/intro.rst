@@ -259,7 +259,7 @@ History
 =======
 *next version*
 
-  * **New** Function `iter_graphemes()`_. `PR #XXX`_.
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -391,6 +391,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
