@@ -15,8 +15,8 @@ import os
 import re
 import sys
 import string
-import argparse
 import difflib
+import argparse
 import datetime
 import functools
 import unicodedata
@@ -53,8 +53,8 @@ UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
-MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '6'))
-BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
+MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
+BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '1.0'))
 
 # Hangul Jamo is a decomposed form of Hangul Syllables, see
 # see https://www.unicode.org/faq/korean.html#3
@@ -70,6 +70,7 @@ HANGUL_JAMO_ZEROWIDTH = (
 )
 
 HEX_STR_VS16 = 'FE0F'
+
 
 def _bisearch(ucs, table):
     """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
@@ -611,7 +612,7 @@ class UnicodeDataFile:
     def TestEmojiZWJSequences(cls) -> str:
         version = fetch_unicode_versions()[-1]
         fname = os.path.join(PATH_TESTS, 'emoji-zwj-sequences.txt')
-        cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version=f"{version.major}.{version.minor}"), fname=fname)
+        cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version=version), fname=fname)
         return fname
 
     @staticmethod
@@ -649,7 +650,7 @@ class UnicodeDataFile:
         session = requests.Session()
         retries = urllib3.util.Retry(total=MAX_RETRIES,
                                      backoff_factor=BACKOFF_FACTOR,
-                                     status_forcelist=[500, 502, 503, 504])
+                                     status_forcelist=[500, 502, 503, 504, 520])
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
         return session
 
@@ -747,8 +748,7 @@ def fetch_all_emoji_files(no_check_last_modified: bool = False) -> None:
 
             fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-{version}.txt')
             UnicodeDataFile.do_retrieve(
-                url=UnicodeDataFile.URL_EMOJI_ZWJ.format(
-                    version=f"{version.major}.{version.minor}"),
+                url=UnicodeDataFile.URL_EMOJI_ZWJ.format(version=version),
                 fname=fname,
                 no_check_last_modified=no_check_last_modified)
 
