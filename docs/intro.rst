@@ -32,13 +32,18 @@ Some examples of **incorrect results**:
     >>> 'café'.center(6, 'X')
     'caféX'
 
-    >>> # result consumes 4 total cells, 2 expected
-    >>> '🇿🇼'.ljust(2, 'X')
-    '🇿🇼  '
+Solution
+--------
 
-    >>> # result consumes 2 total cells, 4 expected.
-    >>> print('👨‍👩‍👧'.center(4, 'X'))
-    👨‍👩‍👧
+This library provides a collection of functions to solve these problems.
+
+- `wcwidth()`_ and `wcswidth()`_ are Python implementations of the POSIX.1-2001
+  and POSIX.1-2008 `wcwidth(3)`_ and `wcswidth(3)`_ C functions.
+- `width()`_ measures text that may contain terminal escape sequences.
+- `iter_graphemes()`_ iterates over user-perceived characters.
+- `ljust()`_, `rjust()`_, and `center()`_ are sequence-aware replacements for
+  `str.ljust()`_, `str.rjust()`_, and `str.center()`_.
+- `wrap()`_ is a sequence-aware replacement for `textwrap.wrap()`_.
 
 Solution
 --------
@@ -69,6 +74,12 @@ as a `General Tabulated Summary`_ by terminal emulator software and version.
 ========
 Overview
 ========
+
+wcwidth()
+---------
+
+Use function ``wcwidth()`` to determine the length of a *single unicode
+codepoint*.
 
 A brief overview, through examples, for all of the public API functions.
 
@@ -205,7 +216,84 @@ Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a strin
 
     >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
     >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
-    ['o', 'k', '👨‍👩‍👧']
+    ['o', 'k', '👨\u200d👩\u200d👧']
+
+ljust()
+-------
+
+Use function ``ljust()`` to left-justify text, similar to `str.ljust()`_ but
+with proper handling of terminal sequences and wide characters.
+
+.. code-block:: python
+
+    >>> from wcwidth import ljust
+    >>> # Left-justify CJK text (each character is 2 cells wide)
+    >>> ljust('コンニチハ', 20, '_')
+    'コンニチハ__________'
+
+    >>> # Left-justify text with ANSI color sequences
+    >>> ljust('\x1b[31mred\x1b[0m', 10, '_')
+    '\x1b[31mred\x1b[0m_______'
+
+rjust()
+-------
+
+Use function ``rjust()`` to right-justify text, similar to `str.rjust()`_ but
+with proper handling of terminal sequences and wide characters.
+
+.. code-block:: python
+
+    >>> from wcwidth import rjust
+    >>> # Right-justify CJK text (each character is 2 cells wide)
+    >>> rjust('コンニチハ', 20, '_')
+    '__________コンニチハ'
+
+    >>> # Right-justify text with ANSI color sequences
+    >>> rjust('\x1b[31mred\x1b[0m', 10, '_')
+    '_______\x1b[31mred\x1b[0m'
+
+center()
+--------
+
+Use function ``center()`` to center text, similar to `str.center()`_ but
+with proper handling of terminal sequences and wide characters.
+
+.. code-block:: python
+
+    >>> from wcwidth import center
+    >>> # Center CJK text (each character is 2 cells wide)
+    >>> center('コンニチハ', 20, '_')
+    '_____コンニチハ_____'
+
+    >>> # Center text with ANSI color sequences
+    >>> center('\x1b[31mred\x1b[0m', 10, '_')
+    '___\x1b[31mred\x1b[0m____'
+
+wrap()
+------
+
+Use function ``wrap()`` to wrap text containing terminal sequences, Unicode grapheme
+clusters, and wide characters to a given display width.
+
+.. code-block:: python
+
+    >>> from wcwidth import wrap
+    >>> # Basic wrapping
+    >>> wrap('hello world', 5)
+    ['hello', 'world']
+
+    >>> # Wrapping CJK text (each character is 2 cells wide)
+    >>> wrap('コンニチハ', 4)
+    ['コン', 'ニチ', 'ハ']
+
+    >>> # Text with ANSI color sequences
+    >>> wrap('\x1b[31mhello world\x1b[0m', 5)
+    ['\x1b[31mhello', 'world\x1b[0m']
+
+The ``SequenceTextWrapper`` class extends :class:`textwrap.TextWrapper` for
+sequence-aware wrapping with full control over wrapping behavior.
+
+Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
 Developing
@@ -511,16 +599,15 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html#tabulated-results
 .. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
 .. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
-.. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
 .. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
 .. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
 .. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center
-.. _`Annex #29`: https://www.unicode.org/reports/tr29/
-.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
+.. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
