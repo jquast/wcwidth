@@ -1,6 +1,8 @@
 """Tests for width() function."""
+# 3rd party
 import pytest
 
+# local
 import wcwidth
 
 

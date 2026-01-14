@@ -4,6 +4,7 @@ Terminal sequence patterns and control character sets.
 This module provides the constants and patterns used by the width() function
 to handle terminal control characters and escape sequences.
 """
+# std imports
 import re
 
 from ._generated_caps import INDETERMINATE_CAPS

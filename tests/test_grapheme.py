@@ -1,11 +1,12 @@
 """Tests for grapheme cluster segmentation."""
+# std imports
 import os
 
+# 3rd party
 import pytest
 
-import wcwidth
-from wcwidth.grapheme import iter_graphemes
-
+# local
+from wcwidth import iter_graphemes
 
 try:
     chr(0x2fffe)
@@ -30,7 +31,6 @@ def parse_grapheme_break_test_line(line):
     # The line starts and ends with ÷
     parts = []
     current_cluster = []
-    in_cluster = False
 
     tokens = data.split()
     for token in tokens:
