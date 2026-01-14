@@ -95,6 +95,29 @@ Briefly, return values of function ``wcwidth()`` are:
 Function ``wcswidth()`` simply returns the sum of all values for each character
 along a string, or ``-1`` when it occurs anywhere along a string.
 
+iter_graphemes()
+----------------
+
+Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a string.
+A grapheme cluster is what a user perceives as a single character, even if it is
+composed of multiple Unicode codepoints. This function implements Unicode Standard
+`Annex #29`_ grapheme cluster boundary rules.
+
+.. code-block:: python
+
+    >>> from wcwidth import iter_graphemes
+    >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
+    >>> list(iter_graphemes('ok\U0001F1FF\U0001F1FC'))
+    ['o', 'k', '🇿🇼']
+
+    >>> # cafe + combining acute accent
+    >>> list(iter_graphemes('cafe\u0301'))
+    ['c', 'a', 'f', 'é']
+
+    >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
+    >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+    ['o', 'k', '👨\u200d👩\u200d👧']
+
 Full API Documentation at https://wcwidth.readthedocs.io
 
 ==========
@@ -374,6 +397,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
+.. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`python-cmd2/cmd2`: https://github.com/python-cmd2/cmd2
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
