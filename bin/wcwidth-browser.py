@@ -197,57 +197,52 @@ class WcVariationSequenceGenerator:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         filepath = os.path.join(script_dir, '..', 'tests', 'emoji-variation-sequences.txt')
 
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    # Skip comments and empty lines
-                    if line.startswith('#') or not line.strip():
-                        continue
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                # Skip comments and empty lines
+                if line.startswith('#') or not line.strip():
+                    continue
 
-                    # Only process lines with our target variation selector
-                    if vs_hex not in line:
-                        continue
+                # Only process lines with our target variation selector
+                if vs_hex not in line:
+                    continue
 
-                    # Parse line format: "0023 FE0E  ; text style;  # (1.1) NUMBER SIGN"
-                    parts = line.split(';')
-                    if len(parts) < 2:
-                        continue
+                # Parse line format: "0023 FE0E  ; text style;  # (1.1) NUMBER SIGN"
+                parts = line.split(';')
+                if len(parts) < 2:
+                    continue
 
-                    codepoints = parts[0].strip().split()
-                    if len(codepoints) < 2:
-                        continue
+                codepoints = parts[0].strip().split()
+                if len(codepoints) < 2:
+                    continue
 
-                    try:
-                        base_cp = int(codepoints[0], 16)
-                        vs_cp = int(codepoints[1], 16)
-                    except ValueError:
-                        continue
+                try:
+                    base_cp = int(codepoints[0], 16)
+                    vs_cp = int(codepoints[1], 16)
+                except ValueError:
+                    continue
 
-                    # Check base character width matches our filter
-                    if wcwidth(chr(base_cp), unicode_version=unicode_version) != base_width:
-                        continue
+                # Check base character width matches our filter
+                if wcwidth(chr(base_cp), unicode_version=unicode_version) != base_width:
+                    continue
 
-                    # Extract name from comment
-                    comment_parts = line.split('#')
-                    if len(comment_parts) >= 2:
-                        # Format: "# (1.1) NUMBER SIGN"
-                        name_part = comment_parts[1].strip()
-                        # Remove version info like "(1.1) "
-                        if ')' in name_part:
-                            name = name_part.split(')', 1)[1].strip()
-                        else:
-                            name = name_part
-                        name = string.capwords(name)
+                # Extract name from comment
+                comment_parts = line.split('#')
+                if len(comment_parts) >= 2:
+                    # Format: "# (1.1) NUMBER SIGN"
+                    name_part = comment_parts[1].strip()
+                    # Remove version info like "(1.1) "
+                    if ')' in name_part:
+                        name = name_part.split(')', 1)[1].strip()
                     else:
-                        name = "UNKNOWN"
+                        name = name_part
+                    name = string.capwords(name)
+                else:
+                    name = "UNKNOWN"
 
-                    # Create the variation sequence
-                    sequence = chr(base_cp) + chr(vs_cp)
-                    self.sequences.append((sequence, name))
-
-        except FileNotFoundError:
-            # If file not found, just have empty sequences
-            pass
+                # Create the variation sequence
+                sequence = chr(base_cp) + chr(vs_cp)
+                self.sequences.append((sequence, name))
 
         self.sequences.reverse()
 
