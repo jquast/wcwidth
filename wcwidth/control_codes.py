@@ -7,7 +7,7 @@ to handle terminal control characters and escape sequences.
 # std imports
 import re
 
-from ._generated_caps import INDETERMINATE_CAPS
+from .indeterminate_seqs import INDETERMINATE_CAPS
 
 # Illegal C0/C1 control characters.
 # These raise ValueError in 'strict' mode.

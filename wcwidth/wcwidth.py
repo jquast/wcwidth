@@ -71,7 +71,7 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .terminal_seqs import (
+from .control_codes import (
     ILLEGAL_CTRL,
     VERTICAL_CTRL,
     HORIZONTAL_CTRL,
@@ -387,6 +387,57 @@ def _handle_horizontal_ctrl(char, current_col, control_codes, tabstop):
         if char == '\x0d':
             return 0
     return current_col
+
+
+def iter_sequences(text):
+    """
+    Iterate through text, yielding segments with sequence identification.
+
+    This generator yields tuples of ``(segment, is_sequence)`` for each part
+    of the input text, where ``is_sequence`` is ``True`` if the segment is
+    a recognized terminal escape sequence.
+
+    :param str text: String to iterate through.
+    :rtype: Iterator[tuple[str, bool]]
+    :returns: Iterator of (segment, is_sequence) tuples.
+
+    Example::
+
+        >>> list(iter_sequences('hello'))
+        [('hello', False)]
+        >>> list(iter_sequences('\\x1b[31mred'))
+        [('\\x1b[31m', True), ('red', False)]
+        >>> list(iter_sequences('\\x1b[1m\\x1b[31m'))
+        [('\\x1b[1m', True), ('\\x1b[31m', True)]
+    """
+    idx = 0
+    text_len = len(text)
+    segment_start = 0
+
+    while idx < text_len:
+        char = text[idx]
+
+        if char == '\x1b':
+            # Yield any accumulated non-sequence text
+            if idx > segment_start:
+                yield (text[segment_start:idx], False)
+
+            # Try to match an escape sequence
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match:
+                yield (match.group(), True)
+                idx = match.end()
+            else:
+                # Lone ESC or unrecognized - yield as sequence anyway
+                yield (char, True)
+                idx += 1
+            segment_start = idx
+        else:
+            idx += 1
+
+    # Yield any remaining text
+    if segment_start < text_len:
+        yield (text[segment_start:], False)
 
 
 def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):

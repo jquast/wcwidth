@@ -19,34 +19,19 @@ import os
 import re
 import sys
 
+from wcwidth.control_codes import ALL_CTRL
+
 
 def strip_delay_markers(capability: str) -> str:
     """Strip terminfo delay markers like $<2>, $<50/>, $<5*> from capability string."""
-    # Pattern matches $<number> with optional * and/or / modifiers
     return re.sub(r'\$<\d+[*/]*>', '', capability)
-
-
-def is_raw_control_char(capability: str) -> bool:
-    """Check if capability is a raw C0/C1 control character (not an escape sequence).
-
-    These are handled separately in HORIZONTAL_CTRL, VERTICAL_CTRL, ZERO_WIDTH_CTRL
-    and should not be in the generated escape sequence patterns.
-    """
-    if not capability:
-        return True
-    # Raw control chars are single bytes in C0 (0x00-0x1F) or DEL (0x7F) or C1 (0x80-0x9F)
-    # Escape sequences start with ESC (\x1b) followed by more characters
-    if len(capability) == 1:
-        code = ord(capability)
-        return code < 0x20 or code == 0x7F or 0x80 <= code < 0xA0
-    # Multi-char starting with ESC is an escape sequence, not a raw control
-    return False
 
 
 def build_pattern(capability: str, nparams: int = 0,
                   match_any: bool = False, numeric: int = 99) -> str:
     """Convert a terminfo capability string to a regex pattern."""
-    # Strip delay markers before processing
+    # The technique here is copied from the 'blessed' library
+    # strip delay markers before processing
     capability = strip_delay_markers(capability)
 
     if nparams == 0:
@@ -108,8 +93,8 @@ def main() -> None:
                 decoded = cap.decode('latin1')
                 # Strip delay markers first, then check if it's a raw control char
                 decoded = strip_delay_markers(decoded)
-                if is_raw_control_char(decoded):
-                    # Skip raw control chars - handled separately in terminal_seqs.py
+                if not decoded or (len(decoded) == 1 and decoded in ALL_CTRL):
+                    # Skip raw control chars - handled separately in control_codes.py
                     continue
                 patterns[name] = build_pattern(decoded, **opts)
         except Exception:

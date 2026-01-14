@@ -11,7 +11,7 @@ INDETERMINATE_CAPS: Patterns that raise ValueError in 'strict' mode.
 # Indeterminate/vertical sequences - raise in 'strict' mode
 INDETERMINATE_CAPS = {
     'change_scroll_region': '\x1b\\[\\d+;\\d+r',
-    'clear_screen': '(?:\x1b\\[H\x1b\\[2J|\x1b\\[H\x1b\\[J)',
+    'clear_screen': '\x1b\\[H\x1b\\[2J|\x1b\\[H\x1b\\[J',
     'clr_bol': '\x1b\\[1K',
     'clr_eol': '\x1b\\[K',
     'clr_eos': '\x1b\\[J',
@@ -22,10 +22,10 @@ INDETERMINATE_CAPS = {
     'cursor_up': '\x1b\\[A',
     'delete_character': '\x1b\\[P',
     'delete_line': '\x1b\\[M',
-    'enter_fullscreen': '(?:\x1b7\x1b\\[\\?47h|\x1b\\[\\?1049h|\x1b\\[\\?1049h\x1b\\[22;0;0t)',
+    'enter_fullscreen': '\x1b\\[\\?1049h|\x1b\\[\\?47h',
     'erase_chars': '\x1b\\[\\d+X',
     'erase_display': '\\x1b\\[\\d*J',
-    'exit_fullscreen': '(?:\x1b\\[2J\x1b\\[\\?47l\x1b8|\x1b\\[\\?1049l|\x1b\\[\\?1049l\x1b\\[23;0;0t|\x1b\\[r\x1b\\[\\?1049l)',
+    'exit_fullscreen': '\x1b8|\x1b\\[\\?1049l|\x1b\\[\\?47l',
     'insert_line': '\x1b\\[L',
     'parm_dch': '\x1b\\[\\d+P',
     'parm_delete_line': '\x1b\\[\\d+M',
