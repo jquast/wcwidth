@@ -6,7 +6,6 @@ from wcwidth import (
     ljust,
     rjust,
     center,
-    truncate,
     wrap,
     width,
     SequenceTextWrapper,
@@ -182,115 +181,6 @@ def test_center_unicode():
     assert '\u4e2d' in center('x', 5, fillchar='\u4e2d')  # wide fillchar
 
 
-def test_truncate_basic():
-    assert truncate('abcde', 1, 4) == 'bcd'
-    assert truncate('abcde', 0, 5) == 'abcde'  # full string
-    assert truncate('abcde', 5, 5) == ''  # empty result
-    assert truncate('abcde', 0, 3) == 'abc'  # from start
-    assert truncate('', 0, 10) == ''  # empty string
-
-
-def test_truncate_wide_chars():
-    # wide char fully inside
-    assert truncate('a\u4e2db', 1, 3) == '\u4e2d'
-    # wide char cut on left - pad visible portion
-    assert truncate('a\u4e2db', 2, 4) == ' b'
-    # wide char cut on right - pad visible portion
-    assert truncate('a\u4e2db', 0, 2) == 'a '
-    # custom padding char
-    assert truncate('a\u4e2db', 2, 4, cutwide_padding='X') == 'Xb'
-    # no padding
-    assert truncate('a\u4e2db', 2, 4, cutwide_padding='') == 'b'
-    assert truncate('a\u4e2d', 0, 2, cutwide_padding='') == 'a'
-    # wide char at exact boundary
-    assert truncate('a\u4e2d', 0, 3) == 'a\u4e2d'
-    # start at wide char middle
-    assert truncate('\u4e2d\u6587', 1, 4).startswith(' ')
-    # multiple wide chars at boundary
-    assert truncate('AB\uff23', 0, 3) == 'AB '
-
-
-def test_truncate_sequences_parse():
-    # SGR preserved
-    assert truncate('\x1b[31mred\x1b[0m', 0, 2, control_codes='parse') == '\x1b[31mre\x1b[0m'
-    # sequence before start preserved
-    assert truncate('\x1b[31mabcd', 2, 4, control_codes='parse') == '\x1b[31mcd'
-    # sequence after end preserved
-    assert truncate('ab\x1b[31mcd', 0, 2, control_codes='parse') == 'ab\x1b[31m'
-    # sequence at end after range
-    assert truncate('abc\x1b[31m', 0, 2, control_codes='parse') == 'ab\x1b[31m'
-    # multiple sequences
-    text = f'{SGR_BOLD}{SGR_RED}hello{SGR_RESET}'
-    result = truncate(text, 0, 3, control_codes='parse')
-    assert SGR_BOLD in result and SGR_RED in result and SGR_RESET in result
-    # hyperlink preserved
-    hyperlink = '\x1b]8;;https://example.com\x07link\x1b]8;;\x07'
-    result = truncate(hyperlink, 0, 4, control_codes='parse')
-    assert '\x1b]8;;https://example.com\x07' in result and '\x1b]8;;\x07' in result
-    # cursor movement NOT preserved
-    assert CSI_RIGHT_2 not in truncate(f'ab{CSI_RIGHT_2}cd', 0, 4, control_codes='parse')
-
-
-def test_truncate_sequences_ignore():
-    assert truncate('\x1b[31mred\x1b[0m', 0, 2, control_codes='ignore') == 're'
-    assert truncate('\x1b[31mabcd\x1b[0m', 1, 3, control_codes='ignore') == 'bc'
-
-
-def test_truncate_strict_mode():
-    # illegal control
-    with pytest.raises(ValueError):
-        truncate('ab\x01cd', 0, 4, control_codes='strict')
-    # vertical control
-    with pytest.raises(ValueError):
-        truncate('ab\ncd', 0, 4, control_codes='strict')
-    # indeterminate sequence
-    with pytest.raises(ValueError):
-        truncate('ab\x1b[Hcd', 0, 4, control_codes='strict')
-
-
-def test_truncate_control_chars_non_strict():
-    # illegal ctrl in parse mode - skipped
-    result = truncate('ab\x01cd', 0, 4, control_codes='parse')
-    assert 'ab' in result and 'cd' in result
-    # illegal ctrl in ignore mode - skipped
-    assert truncate('ab\x01cd', 0, 4, control_codes='ignore') == 'abcd'
-    # vertical ctrl in parse/ignore - skipped
-    assert 'ab' in truncate('ab\ncd', 0, 4, control_codes='parse')
-    assert 'ab' in truncate('ab\ncd', 0, 4, control_codes='ignore')
-    # horizontal ctrl
-    assert 'a' in truncate('a\tb', 0, 2, control_codes='parse')
-    # unmatched escape
-    assert 'ab' in truncate('ab\x1bcd', 0, 4, control_codes='parse')
-
-
-def test_truncate_errors():
-    with pytest.raises(ValueError):
-        truncate('abcde', -1, 3)
-    with pytest.raises(ValueError):
-        truncate('abcde', 3, 2)
-
-
-def test_truncate_unicode():
-    # combining mark kept with base
-    assert truncate(CAFE_COMBINING, 0, 4) == CAFE_COMBINING
-    assert width(truncate(CAFE_COMBINING, 0, 3)) <= 3  # partial
-    # ZWJ emoji
-    assert truncate('a' + EMOJI_FAMILY + 'b', 1, 3) == EMOJI_FAMILY
-    # CJK string
-    assert truncate(CJK_HELLO, 0, 10) == CJK_HELLO
-    assert width(truncate(CJK_HELLO, 0, 4)) <= 4
-    # emoji trio
-    assert width(truncate(EMOJI_TRIO, 0, 4)) <= 4
-    # hangul
-    assert width(truncate(HANGUL_GA, 0, 2)) <= 2
-
-
-def test_truncate_sequence_in_middle():
-    text = f'ab{SGR_RED}cd{SGR_RESET}ef'
-    result = truncate(text, 1, 5, control_codes='parse')
-    assert 'b' in result and SGR_RED in result and 'cd' in result
-
-
 def test_wrap_basic():
     assert wrap('hello world', 5) == ['hello', 'world']
     assert wrap('', 10) == []  # empty string
@@ -311,9 +201,15 @@ def test_wrap_long_words():
         assert width(line) <= 5
 
 
+def _strip(text):
+    return ''.join(seg for seg, is_seq in iter_sequences(text) if not is_seq)
+
+
 def test_wrap_sequences():
     result = wrap('\x1b[31mhello world\x1b[0m', 5)
-    assert len(result) == 2 and '\x1b[31m' in result[0]
+    assert len(result) == 2
+    assert _strip(result[0]) == 'hello'
+    assert _strip(result[1]) == 'world'
     # long word with sequences
     result = wrap(f'x{SGR_RED}abcdefghij{SGR_RESET}', 3, break_on_graphemes=True)
     assert len(result) >= 2 and SGR_RED in ''.join(result)
@@ -365,10 +261,74 @@ def test_wrap_unicode():
 
 
 def test_wrap_hyphenation():
-    assert len(wrap('self-contained-word', 10, break_on_hyphens=True)) >= 1
-    assert len(wrap('hello-world', 6, break_on_hyphens=True)) >= 1
-    assert len(wrap('super-long-hyphenated-word', 10, break_on_hyphens=True)) >= 1
-    assert len(wrap('a-b-c-d', 3, break_on_hyphens=True)) >= 1
+    import textwrap
+
+    # Test that behavior matches stdlib exactly for various cases
+    test_cases = [
+        ('hello-world', 6),
+        ('hello-world', 8),
+        ('super-long-hyphenated-word', 10),
+        ('a-b-c-d', 3),
+    ]
+    for text, w in test_cases:
+        for break_hyphens in [True, False]:
+            expected = textwrap.wrap(text, width=w, break_on_hyphens=break_hyphens)
+            result = wrap(text, w, break_on_hyphens=break_hyphens)
+            assert result == expected
+
+    # With sequences: content should match when stripped
+    text_colored = '\x1b[31mhello-world\x1b[0m'
+    result = wrap(text_colored, 6, break_on_hyphens=True)
+    assert len(result) == 2
+    assert _strip(result[0]) == 'hello-'
+    assert _strip(result[1]) == 'world'
+
+
+def test_wrap_break_on_hyphens_in_handle_long_word():
+    import textwrap
+
+    text = 'a-b-c-d'
+    w = 3
+
+    result = wrap(text, width=w, break_on_hyphens=True)
+    expected = textwrap.wrap(text, width=w, break_on_hyphens=True)
+    assert result == expected
+
+    result = wrap(text, width=w, break_on_hyphens=False)
+    expected = textwrap.wrap(text, width=w, break_on_hyphens=False)
+    assert result == expected
+
+
+def test_wrap_break_on_hyphens_colored():
+    import textwrap
+
+    ATTRS = ('\x1b[31m', '\x1b[34m', '\x1b[4m')
+
+    test_cases = [
+        ('hello-world', 8),
+        ('super-long-hyphenated-word', 10),
+        ('a-b-c-d', 3),
+    ]
+
+    for text, w in test_cases:
+        # Create colored version: each character (except hyphen) gets a color
+        text_colored = ''
+        attr_idx = 0
+        for char in text:
+            if char == '-':
+                text_colored += char
+            else:
+                text_colored += ATTRS[attr_idx % len(ATTRS)] + char + '\x1b[0m'
+                attr_idx += 1
+
+        for break_hyphens in [True, False]:
+            expected = textwrap.wrap(text, width=w, break_on_hyphens=break_hyphens)
+            result_plain = wrap(text, w, break_on_hyphens=break_hyphens)
+            result_colored = wrap(text_colored, w, break_on_hyphens=break_hyphens)
+            result_stripped = [_strip(line) for line in result_colored]
+
+            assert result_plain == expected
+            assert result_stripped == expected
 
 
 def test_wrap_whitespace():
@@ -398,3 +358,60 @@ def test_sequence_text_wrapper():
     assert SequenceTextWrapper(width=20, control_codes='ignore').control_codes == 'ignore'
     # drop_whitespace=False
     assert len(SequenceTextWrapper(width=10, drop_whitespace=False).wrap('hello   world')) >= 1
+
+
+TEXTWRAP_KEYWORD_COMBINATIONS = [
+    {'break_long_words': False, 'drop_whitespace': False, 'subsequent_indent': ''},
+    {'break_long_words': False, 'drop_whitespace': True, 'subsequent_indent': ''},
+    {'break_long_words': False, 'drop_whitespace': False, 'subsequent_indent': ' '},
+    {'break_long_words': False, 'drop_whitespace': True, 'subsequent_indent': ' '},
+    {'break_long_words': True, 'drop_whitespace': False, 'subsequent_indent': ''},
+    {'break_long_words': True, 'drop_whitespace': True, 'subsequent_indent': ''},
+    {'break_long_words': True, 'drop_whitespace': False, 'subsequent_indent': ' '},
+    {'break_long_words': True, 'drop_whitespace': True, 'subsequent_indent': ' '},
+    {'break_long_words': True, 'drop_whitespace': True, 'break_on_hyphens': True},
+    {'break_long_words': True, 'drop_whitespace': True, 'break_on_hyphens': False},
+]
+
+
+@pytest.mark.parametrize("kwargs", TEXTWRAP_KEYWORD_COMBINATIONS)
+@pytest.mark.parametrize("many_columns", [10, 20, 40])
+def test_wrap_matches_stdlib(kwargs, many_columns):
+    import textwrap
+
+    ATTRS = ('\x1b[31m', '\x1b[34m', '\x1b[4m', '\x1b[7m', '\x1b[41m', '\x1b[37m', '\x1b[107m')
+    pgraph = ' Z! a bc defghij klmnopqrstuvw<<>>xyz012345678900 ' * 2
+
+    pgraph_colored = ''.join(
+        ATTRS[idx % len(ATTRS)] + char + '\x1b[0m' if char != ' ' else ' '
+        for idx, char in enumerate(pgraph))
+
+    internal_wrapped = textwrap.wrap(pgraph, width=many_columns, **kwargs)
+    wrapper = SequenceTextWrapper(width=many_columns, **kwargs)
+    my_wrapped = wrapper.wrap(pgraph)
+    my_wrapped_colored = wrapper.wrap(pgraph_colored)
+
+    assert internal_wrapped == my_wrapped
+
+    for left, right in zip(internal_wrapped, my_wrapped_colored):
+        assert left == _strip(right)
+
+    assert len(internal_wrapped) == len(my_wrapped_colored)
+
+
+def test_wrap_emojis_width_2_and_greater():
+    given = '\U0001F469\U0001F467\U0001F466'  # woman, girl, boy
+    assert wrap(given, 2) == list(given)
+    assert wrap(given, 3) == list(given)
+    assert wrap(given, 4) == ['\U0001F469\U0001F467', '\U0001F466']
+    assert wrap(given, 5) == ['\U0001F469\U0001F467', '\U0001F466']
+    assert wrap(given, 6) == ['\U0001F469\U0001F467\U0001F466']
+    assert wrap(given, 7) == ['\U0001F469\U0001F467\U0001F466']
+
+
+def test_wrap_combining_characters():
+    given = 'cafe\u0301-latte'
+    assert wrap(given, 5, break_on_hyphens=False) == ['cafe\u0301-', 'latte']
+    assert wrap(given, 4, break_on_hyphens=False) == ['cafe\u0301', '-lat', 'te']
+    assert wrap(given, 3, break_on_hyphens=False) == ['caf', 'e\u0301-l', 'att', 'e']
+    assert wrap(given, 2, break_on_hyphens=False) == ['ca', 'fe\u0301', '-l', 'at', 'te']

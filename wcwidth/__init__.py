@@ -24,14 +24,13 @@ from .sequences import (iter_sequences,
                         ljust,
                         rjust,
                         center,
-                        truncate,
                         wrap,
                         SequenceTextWrapper)
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'width', 'list_versions', 'iter_graphemes',
-           'iter_sequences', 'ljust', 'rjust', 'center', 'truncate', 'wrap',
+           'iter_sequences', 'ljust', 'rjust', 'center', 'wrap',
            'SequenceTextWrapper')
 
 # We also used pkg_resources to load unicode version tables from version.json,

@@ -159,144 +159,19 @@ def _is_movement_sequence(seq: str) -> bool:
     )
 
 
-def truncate(text: str, start: int, end: int,
-             control_codes: str = 'parse',
-             cutwide_padding: str = ' ') -> str:
-    """
-    Truncate text to display positions [start, end).
-
-    :param text: String to truncate, may contain terminal sequences.
-    :param start: Starting cell position (inclusive, 0-indexed).
-    :param end: Ending cell position (exclusive).
-    :param control_codes: How to handle control sequences:
-
-        - ``'parse'``: Re-emit non-movement sequences outside the range.
-        - ``'ignore'``: Strip all sequences.
-        - ``'strict'``: Raise on problematic sequences.
-
-    :param cutwide_padding: When a wide character is partially cut,
-        use this character as padding. Empty string ``''`` to omit padding.
-    :returns: Text truncated to the specified cell range.
-
-    Wide characters (CJK, emoji) occupy 2 cells. If truncation cuts
-    through a wide character, it is removed and replaced with
-    ``cutwide_padding`` (if provided).
-
-    Example::
-
-        >>> truncate('abcde', 1, 4)
-        'bcd'
-        >>> truncate('a\u4e2d\u6587b', 1, 3)  # 中文 are wide chars
-        '\u4e2d'
-        >>> truncate('a\u4e2db', 2, 4)  # Cut through 中
-        ' b'
-    """
-    if start < 0:
-        raise ValueError(f"start must be non-negative, got {start}")
-    if end < start:
-        raise ValueError(f"end must be >= start, got start={start}, end={end}")
-
-    prefix_seqs: List[str] = []
-    result_chars: List[str] = []
-    suffix_seqs: List[str] = []
-
-    current_col = 0
-    past_end = False
-
-    idx = 0
-    text_len = len(text)
-
-    while idx < text_len:
-        char = text[idx]
-
-        # Check for escape sequence
-        if char == '\x1b':
-            match = TERM_SEQ_PATTERN.match(text, idx)
-            if match:
-                seq = match.group()
-                idx = match.end()
-
-                if control_codes == 'ignore':
-                    continue
-                if control_codes == 'strict' and INDETERMINATE_SEQ_PATTERN.match(seq):
-                    raise ValueError(f"indeterminate cursor position: {seq!r}")
-
-                # Categorize sequence by position
-                is_movement = _is_movement_sequence(seq)
-                if not is_movement:
-                    if current_col < start:
-                        prefix_seqs.append(seq)
-                    elif past_end:
-                        suffix_seqs.append(seq)
-                    else:
-                        result_chars.append(seq)
-                continue
-
-        # Check for control characters
-        if char in ILLEGAL_CTRL:
-            if control_codes == 'strict':
-                raise ValueError(f"illegal control character: {ord(char):#x}")
-            idx += 1
-            continue
-        if char in VERTICAL_CTRL:
-            if control_codes == 'strict':
-                raise ValueError(f"vertical control character: {ord(char):#x}")
-            idx += 1
-            continue
-
-        # Handle regular character - get full grapheme from this position
-        # For proper grapheme handling, we need to find the grapheme boundary
-        remaining = text[idx:]
-        grapheme = next(iter_graphemes(remaining), '')
-        if not grapheme:  # pragma: no cover
-            idx += 1
-            continue
-
-        # Use _width for proper ZWJ sequence handling
-        grapheme_width = _width(grapheme, control_codes='ignore')
-
-        char_start = current_col
-        char_end = current_col + grapheme_width
-
-        # Check if grapheme falls within [start, end)
-        if char_end <= start:
-            # Entirely before visible range
-            pass
-        elif char_start >= end:
-            # Entirely after visible range
-            past_end = True
-        elif char_start < start:
-            # Left edge cut through grapheme (wide char partially visible)
-            if cutwide_padding:
-                # Pad for the portion that would be visible
-                visible_portion = char_end - start
-                result_chars.append(cutwide_padding * visible_portion)
-        elif char_end > end:
-            # Right edge cut through grapheme (wide char partially visible)
-            if cutwide_padding:
-                # Pad for the portion that would be visible
-                visible_portion = end - char_start
-                result_chars.append(cutwide_padding * visible_portion)
-            past_end = True
-        else:
-            # Fully within visible range
-            result_chars.append(grapheme)
-
-        current_col = char_end
-        idx += len(grapheme)
-
-    if control_codes == 'parse':
-        return ''.join(prefix_seqs + result_chars + suffix_seqs)
-    else:
-        return ''.join(result_chars)
-
-
 class SequenceTextWrapper(textwrap.TextWrapper):
     """
     Sequence-aware text wrapper extending :class:`textwrap.TextWrapper`.
 
-    This wrapper properly handles terminal escape sequences and Unicode
-    grapheme clusters when calculating text width for wrapping.
+    This wrapper properly handles terminal escape sequences and Unicode grapheme clusters when
+    calculating text width for wrapping.
+
+    This implementation is based on the SequenceTextWrapper from the 'blessed' library, with
+    contributions from Avram Lubkin and grayjk.
+
+    The key difference from the blessed implementation is the addition of grapheme cluster support
+    via :func:`~.iter_graphemes`, providing width calculation for ZWJ emoji sequences, VS-16 emojis
+    and variations, regional indicator flags, and combining characters.
     """
 
     def __init__(self, width: int = 70,
@@ -337,187 +212,228 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _split(self, text: str) -> List[str]:
         """
-        Split text into chunks, preserving sequences.
+        Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
 
-        Override TextWrapper._split to handle sequences properly.
+        This method ensures that terminal escape sequences don't interfere
+        with the text splitting logic, particularly for hyphen-based word
+        breaking. It builds a position mapping from stripped text to original
+        text, calls the parent's _split on stripped text, then maps chunks back.
         """
-        # Build mapping from stripped text positions to original positions
-        stripped = []
-        pos_map = []  # Maps stripped position to original position
+        # Build a mapping from stripped text positions to original text positions
+        # and extract the stripped (sequence-free) text
+        stripped_to_original: List[int] = []
+        stripped_text = ''
+        original_pos = 0
 
         for segment, is_seq in iter_sequences(text):
-            if is_seq:
-                # Sequences get zero length in stripped, but we need to track them
-                continue
-            for char in segment:
-                pos_map.append(len(''.join(stripped)))
-                stripped.append(char)
-
-        stripped_text = ''.join(stripped)
-
-        # Use parent's _split on stripped text
-        # But we need to preserve sequences, so we'll do a custom split
-        # that maintains sequence associations
-
-        # Split on whitespace while preserving sequences
-        chunks = []
-        current_chunk = []
-        in_word = False
-
-        for segment, is_seq in iter_sequences(text):
-            if is_seq:
-                current_chunk.append(segment)
-            else:
+            if not is_seq:
+                # This is regular text, not a sequence
                 for char in segment:
-                    if char.isspace():
-                        if in_word:
-                            # End of word
-                            chunks.append(''.join(current_chunk))
-                            current_chunk = [char]
-                            in_word = False
-                        else:
-                            current_chunk.append(char)
-                    else:
-                        if not in_word and current_chunk:
-                            # End of whitespace run
-                            chunks.append(''.join(current_chunk))
-                            current_chunk = []
-                        current_chunk.append(char)
-                        in_word = True
+                    stripped_to_original.append(original_pos)
+                    stripped_text += char
+                    original_pos += 1
+            else:
+                # This is an escape sequence, skip it in stripped text
+                original_pos += len(segment)
 
-        if current_chunk:
-            chunks.append(''.join(current_chunk))
+        # Add sentinel for end position
+        stripped_to_original.append(original_pos)
 
-        return chunks
+        # Use parent's _split on the stripped text
+        stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
+
+        # Map the chunks back to the original text with sequences
+        result: List[str] = []
+        stripped_pos = 0
+
+        for chunk in stripped_chunks:
+            chunk_len = len(chunk)
+
+            # Find the start and end positions in the original text
+            start_orig = stripped_to_original[stripped_pos]
+            end_orig = stripped_to_original[stripped_pos + chunk_len]
+
+            # Extract the corresponding portion from the original text
+            result.append(text[start_orig:end_orig])
+            stripped_pos += chunk_len
+
+        return result
 
     def _wrap_chunks(self, chunks: List[str]) -> List[str]:
         """
         Wrap chunks into lines using sequence-aware width.
 
         Override TextWrapper._wrap_chunks to use _width instead of len.
+        Follows stdlib's algorithm: greedily fill lines, handle long words.
         """
         if not chunks:
             return []
 
         lines = []
-        current_line = []
-        current_width = 0
         is_first_line = True
 
-        # Get the indent for current line
-        def get_indent():
-            return self.initial_indent if is_first_line else self.subsequent_indent
+        # Arrange in reverse order so items can be efficiently popped
+        chunks = list(reversed(chunks))
 
-        # Calculate available width after indent
-        def get_available_width():
-            return self.width - self._width(get_indent())
+        while chunks:
+            current_line: List[str] = []
+            current_width = 0
 
-        for chunk in chunks:
-            chunk_width = self._width(chunk)
-            stripped_chunk = chunk.strip()
+            # Get the indent and available width for current line
+            indent = self.initial_indent if is_first_line else self.subsequent_indent
+            line_width = self.width - self._width(indent)
 
-            if not stripped_chunk:
-                # Whitespace-only chunk
-                if current_line:
-                    # Add space between words if room
-                    if current_width + chunk_width <= get_available_width():
-                        current_line.append(chunk)
-                        current_width += chunk_width
-                continue
+            # Drop leading whitespace (except at very start)
+            # Use _strip_sequences to properly detect whitespace in sequenced text
+            if self.drop_whitespace and lines and not self._strip_sequences(chunks[-1]).strip():
+                del chunks[-1]
 
-            # Check if chunk fits
-            if current_width + chunk_width <= get_available_width():
-                current_line.append(chunk)
-                current_width += chunk_width
-            elif not current_line:
-                # First word on line and it's too long
-                self._handle_long_word(chunk, lines, current_line, is_first_line)
+            # Greedily add chunks that fit
+            while chunks:
+                chunk = chunks[-1]
+                chunk_width = self._width(chunk)
+
+                if current_width + chunk_width <= line_width:
+                    current_line.append(chunks.pop())
+                    current_width += chunk_width
+                else:
+                    break
+
+            # Handle chunk that's too long for any line
+            if chunks and self._width(chunks[-1]) > line_width:
+                self._handle_long_word(
+                    chunks, current_line, current_width, line_width
+                )
                 current_width = self._width(''.join(current_line))
-            else:
-                # Start new line
-                lines.append(get_indent() + ''.join(current_line).rstrip())
-                is_first_line = False
-                current_line = [chunk]
-                current_width = chunk_width
 
-        if current_line:
-            lines.append(get_indent() + ''.join(current_line).rstrip())
+            # Drop trailing whitespace
+            # Use _strip_sequences to properly detect whitespace in sequenced text
+            if (self.drop_whitespace and current_line and
+                    not self._strip_sequences(current_line[-1]).strip()):
+                current_width -= self._width(current_line[-1])
+                del current_line[-1]
+
+            if current_line:
+                lines.append(indent + ''.join(current_line))
+                is_first_line = False
 
         return lines
 
-    def _handle_long_word(self, word: str, lines: List[str],
-                          current_line: List[str],
-                          is_first_line: bool = True) -> None:
+    def _handle_long_word(self, reversed_chunks: List[str],
+                          cur_line: List[str], cur_len: int,
+                          width: int) -> None:
         """
-        Handle a word that exceeds the line width.
+        Sequence-aware :meth:`textwrap.TextWrapper._handle_long_word`.
 
-        If break_on_graphemes is True, break the word at grapheme boundaries.
+        This method ensures that word boundaries are not broken mid-sequence,
+        and respects grapheme cluster boundaries when breaking long words.
         """
-        if not self.break_long_words:
-            current_line.append(word)
-            return
+        if width < 1:
+            space_left = 1
+        else:
+            space_left = width - cur_len
 
-        def get_indent(first_line: bool) -> str:
-            return self.initial_indent if first_line else self.subsequent_indent
+        if self.break_long_words:
+            chunk = reversed_chunks[-1]
+            break_at_hyphen = False
+            hyphen_end = 0
 
-        def get_available_width(first_line: bool) -> int:
-            return self.width - self._width(get_indent(first_line))
+            # Handle break_on_hyphens: find last hyphen within space_left
+            if self.break_on_hyphens:
+                # Strip sequences to find hyphen in logical text
+                stripped = self._strip_sequences(chunk)
+                if len(stripped) > space_left:
+                    # Find last hyphen in the portion that fits
+                    hyphen_pos = stripped.rfind('-', 0, space_left)
+                    if hyphen_pos > 0 and any(c != '-' for c in stripped[:hyphen_pos]):
+                        # Map back to original position including sequences
+                        hyphen_end = self._map_stripped_pos_to_original(chunk, hyphen_pos + 1)
+                        break_at_hyphen = True
 
-        if self.break_on_graphemes:
-            # Break at grapheme boundaries
-            remaining = word
-            line_chars = []
-            line_width = 0
-            first_line = is_first_line
+            # For sequence-aware breaking, we need to break at grapheme boundaries
+            if self.break_on_graphemes:
+                if break_at_hyphen:
+                    # Use the hyphen break position
+                    actual_end = hyphen_end
+                else:
+                    # Find the break position respecting graphemes and sequences
+                    actual_end = self._find_break_position(chunk, space_left)
+                    # If no progress possible (e.g., wide char exceeds line width),
+                    # force at least one grapheme to avoid infinite loop
+                    if actual_end == 0:
+                        actual_end = self._find_first_grapheme_end(chunk)
+                cur_line.append(chunk[:actual_end])
+                reversed_chunks[-1] = chunk[actual_end:]
+            else:
+                end = hyphen_end if break_at_hyphen else space_left
+                cur_line.append(chunk[:end])
+                reversed_chunks[-1] = chunk[end:]
 
-            # Iterate through sequences and graphemes
-            idx = 0
-            word_len = len(remaining)
+        elif not cur_line:
+            cur_line.append(reversed_chunks.pop())
 
-            while idx < word_len:
-                char = remaining[idx]
+    def _map_stripped_pos_to_original(self, text: str, stripped_pos: int) -> int:
+        """Map a position in stripped text back to original text position."""
+        stripped_idx = 0
+        original_idx = 0
 
-                # Check for escape sequence
-                if char == '\x1b':
-                    match = TERM_SEQ_PATTERN.match(remaining, idx)
-                    if match:
-                        seq = match.group()
-                        line_chars.append(seq)
-                        idx = match.end()
-                        continue
+        for segment, is_seq in iter_sequences(text):
+            if is_seq:
+                original_idx += len(segment)
+            else:
+                for _ in segment:
+                    if stripped_idx >= stripped_pos:
+                        return original_idx
+                    stripped_idx += 1
+                    original_idx += 1
 
-                # Get grapheme starting at this position
-                grapheme = next(iter_graphemes(remaining[idx:]), '')
-                if not grapheme:  # pragma: no cover
-                    idx += 1
+        return original_idx
+
+    def _find_break_position(self, text: str, max_width: int) -> int:
+        """Find string index in text that fits within max_width cells."""
+        idx = 0
+        width_so_far = 0
+
+        while idx < len(text):
+            char = text[idx]
+
+            # Skip escape sequences (they don't add width)
+            if char == '\x1b':
+                match = TERM_SEQ_PATTERN.match(text, idx)
+                if match:
+                    idx = match.end()
                     continue
 
-                grapheme_width = self._width(grapheme)
-                available = get_available_width(first_line and not lines)
+            # Get grapheme
+            grapheme = next(iter_graphemes(text[idx:]))
 
-                if line_width + grapheme_width > available and line_chars:
-                    # Line is full, start new line
-                    indent = get_indent(first_line and not lines)
-                    if current_line:
-                        lines.append(indent + ''.join(current_line))
-                        current_line.clear()
-                        first_line = False
-                    else:
-                        lines.append(indent + ''.join(line_chars))
-                        first_line = False
-                    line_chars = []
-                    line_width = 0
+            grapheme_width = self._width(grapheme)
+            if width_so_far + grapheme_width > max_width:
+                break
 
-                line_chars.append(grapheme)
-                line_width += grapheme_width
-                idx += len(grapheme)
+            width_so_far += grapheme_width
+            idx += len(grapheme)
 
-            if line_chars:
-                current_line.extend(line_chars)
-        else:
-            # Simple character-by-character break (original behavior)
-            current_line.append(word)
+        return idx
 
+    def _find_first_grapheme_end(self, text: str) -> int:
+        """Find the end position of the first grapheme (skipping leading sequences)."""
+        idx = 0
+        while idx < len(text):
+            char = text[idx]
+
+            # Skip escape sequences
+            if char == '\x1b':
+                match = TERM_SEQ_PATTERN.match(text, idx)
+                if match:
+                    idx = match.end()
+                    continue
+
+            # Found first non-sequence character, get its grapheme
+            grapheme = next(iter_graphemes(text[idx:]))
+            return idx + len(grapheme)
+
+        return len(text)
 
 def wrap(text: str, width: int,
          control_codes: str = 'parse',

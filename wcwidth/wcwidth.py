@@ -87,7 +87,7 @@ from .terminal_seqs import (
 @lru_cache(maxsize=1000)
 def wcwidth(wc, unicode_version='auto'):
     r"""
-    Given one Unicode character, return its printable length on a terminal.
+    Given one Unicode codepoint, return its printable length on a terminal.
 
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as

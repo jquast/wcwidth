@@ -6,6 +6,12 @@ to handle terminal control characters and escape sequences.
 """
 import re
 
+from ._generated_caps import (
+    HORIZONTAL_MOVEMENT_CAPS,
+    INDETERMINATE_CAPS,
+    ZERO_WIDTH_CAPS,
+)
+
 # Illegal C0/C1 control characters.
 # These raise ValueError in 'strict' mode.
 ILLEGAL_CTRL = frozenset(
@@ -89,4 +95,31 @@ SGR_PATTERN = re.compile(r'\x1b\[[\d;]*m')
 # - r: Set scrolling region
 INDETERMINATE_SEQ_PATTERN = re.compile(
     r'\x1b\[[\d;]*[HfABJKSTsuGdEFr]'
+)
+
+# Compiled patterns from generated terminal capabilities.
+# These are used to match specific terminfo-derived sequences.
+
+# Pattern matching any horizontal movement sequence from terminfo.
+GENERATED_HORIZONTAL_PATTERN = re.compile(
+    '|'.join(f'(?:{pattern})' for pattern in HORIZONTAL_MOVEMENT_CAPS.values())
+)
+
+# Pattern matching any indeterminate sequence from terminfo.
+GENERATED_INDETERMINATE_PATTERN = re.compile(
+    '|'.join(f'(?:{pattern})' for pattern in INDETERMINATE_CAPS.values())
+)
+
+# Pattern matching any zero-width sequence from terminfo.
+GENERATED_ZERO_WIDTH_PATTERN = re.compile(
+    '|'.join(f'(?:{pattern})' for pattern in ZERO_WIDTH_CAPS.values())
+)
+
+# Combined pattern for all generated caps (for sequence detection).
+GENERATED_ALL_CAPS_PATTERN = re.compile(
+    '|'.join(
+        f'(?:{pattern})'
+        for caps in (HORIZONTAL_MOVEMENT_CAPS, INDETERMINATE_CAPS, ZERO_WIDTH_CAPS)
+        for pattern in caps.values()
+    )
 )
