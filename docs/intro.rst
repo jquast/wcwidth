@@ -119,10 +119,9 @@ Install wcwidth in editable mode::
 
 Execute all code generation, autoformatters, linters and unit tests using tox::
 
-
    tox
 
-Or select individual items for testing, see ``tox -lv`` for all available targets::
+Or execute individual tasks, see ``tox -lv`` for all available targets::
 
    tox -e pylint,py36,py314
 
@@ -158,7 +157,7 @@ To upgrade requirements for updating unicode version, run::
 
 To upgrade requirements for testing, run::
 
-   tox -e update_requirements37,update_requirements39
+   tox -e update_requirements38,update_requirements39
 
 To upgrade requirements for building documentation, run::
 
