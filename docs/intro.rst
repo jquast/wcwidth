@@ -4,83 +4,82 @@
 Introduction
 ============
 
-This library is mainly for CLI programs that carefully produce output for
-Terminals, or make pretend to be an emulator.
-
-**Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen ``1 character : 1 cell``.  However,
-there are categories of characters that *occupy 2 cells* (full-wide), and
-others that *occupy 0* cells (zero-width).
-
-**Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
-`wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a
-unicode string is expected to occupy.*
+This library is mainly for CLI programs that carefully produce output for Terminals.
 
 Installation
 ------------
 
-The stable version of this package is maintained on pypi, install using pip::
+The stable version of this package is maintained on pypi, install or upgrade, using pip::
 
-    pip install wcwidth
+    pip install --upgrade wcwidth
 
-Example
+Problem
 -------
 
-**Problem**: given the following phrase (Japanese),
+As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_, ``rjust()``,
+and ``center`` incorrectly presume that the displayed length of a string is equal to the number of
+codepoints.
 
-   >>>  text = u'コンニチハ'
+Some examples:
 
-Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printable length* of 10 cells, so that when using the `rjust` function, the
-output length is wrong::
+.. code-block:: python
 
-    >>> print(len('コンニチハ'))
-    5
+    >>> # result consumes 16 total cells, 11 expected,
+    >>> 'コンニチハ'.rjust(11, 'X')
+    'XXXXXXコンニチハ'
 
-    >>> print('コンニチハ'.rjust(20, '_'))
-    _______________コンニチハ
+    >>> # result consumes 5 total cells, 6 expected,
+    >>> 'café'.center(6, 'X')
+    'caféX'
 
-By defining our own "rjust" function that uses wcwidth, we can correct this::
+    >>> # result consumes 4 total cells, 2 expected
+    >>> '🇿🇼'.ljust(2, 'X')
+    '🇿🇼  '
 
-   >>> def wc_rjust(text, length, padding=' '):
-   ...    from wcwidth import wcswidth
-   ...    return padding * max(0, (length - wcswidth(text))) + text
-   ...
-
-Our **Solution** uses wcswidth to determine the string length correctly::
-
-   >>> from wcwidth import wcswidth
-   >>> print(wcswidth('コンニチハ'))
-   10
-
-   >>> print(wc_rjust('コンニチハ', 20, '_'))
-   __________コンニチハ
+    >>> # result consumes 2 total cells, 4 expected.
+    >>> '👨\u200d👩\u200d👧'.center(4, 'X')
+    '👨\u200d👩\u200d👧'
 
 
-Choosing a Version
-------------------
+Solution
+--------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be done by
-*terminal emulators* or those developers experimenting with authoring one of
-their own, from shell::
+The base of this library is POSIX.1-2001 and POSIX.1-2008 functions `wcwidth(3)`_ and `wcswidth(3)`_
+which this python module's functions precisely copy by interface as ``wcwidth()`` and ``wcswidth()``,
+and are brought up-to-date to support the latest unicode releases.
 
-   $ export UNICODE_VERSION=13.0
+Discrepancies
+-------------
 
-If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect`_ utility to
-automatically detect and export it to your shell.
+You may find that some terminal support *varies* for more complex unicode sequences or codepoints. A
+companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
+character support and version level, language support, zero-width joiner, and variation-16 support
+as a `General Tabulated Summary`_ by terminal emulator software and version.
 
-wcwidth, wcswidth
------------------
-Use function ``wcwidth()`` to determine the length of a *single unicode
-character*, and ``wcswidth()`` to determine the length of many, a *string
-of unicode characters*.
+========
+Overview
+========
+
+
+A quick overview of all functions follows, by example.
+
+wcwidth()
+---------
+
+Measures width of a single codepoint,
+
+.. code-block:: python
+
+    >>> # '♀' narrow emoji
+    >>> wcwidth.wcwidth('\u2640')
+    1
+
+Use function ``wcwidth()`` to determine the length of a *single unicode character*.
 
 Briefly, return values of function ``wcwidth()`` are:
 
 ``-1``
-  Indeterminate (not printable).
+  Indeterminate (not printable) control codes (C0 and C1).
 
 ``0``
   Does not advance the cursor, such as NULL or Combining.
@@ -92,8 +91,21 @@ Briefly, return values of function ``wcwidth()`` are:
 ``1``
   All others.
 
-Function ``wcswidth()`` simply returns the sum of all values for each character
-along a string, or ``-1`` when it occurs anywhere along a string.
+wcswidth()
+----------
+
+Measures width of a string, returns -1 for control codes.
+
+.. code-block:: python
+
+    >>> # '♀️' emoji w/vs-16
+    >>> wcwidth.wcswidth('♀️')
+    2
+
+Use function ``wcswidth()`` to determine the length of many, a *string of unicode characters*
+
+Function ``wcswidth()`` sums the length of each character with some additional account for some
+kinds of sequences. ``-1`` is returned if a control code occurs anywhere in the string.
 
 Full API Documentation at https://wcwidth.readthedocs.io
 
@@ -105,9 +117,14 @@ Install wcwidth in editable mode::
 
    pip install -e .
 
-Execute unit tests using tox_ for all supported Python versions::
+Execute all code generation, autoformatters, linters and unit tests using tox::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312,py313,py314
+
+   tox
+
+Or select individual items for testing, see ``tox -lv`` for all available targets::
+
+   tox -e pylint,py36,py314
 
 Updating Unicode Version
 ------------------------
@@ -197,6 +214,8 @@ This library is used in:
 - `saulpw/visidata`_: Terminal spreadsheet multitool for discovering and
   arranging data
 
+- `jquast/ucs-detect`_: Utility for unicode support detection.
+
 ===============
 Other Languages
 ===============
@@ -229,10 +248,10 @@ History
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
 0.2.12 *2023-11-21*
-  * re-release to remove .pyi file misplaced in wheel files `Issue #101`_.
+  * **Bugfix** Re-release to remove `.pyi` files misplaced in wheel `Issue #101`_.
 
 0.2.11 *2023-11-20*
-  * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
+  * **Updated** Include tests files in the source distribution (`PR #98`_, `PR #100`_).
 
 0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
@@ -380,6 +399,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
+.. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
+.. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
+.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
