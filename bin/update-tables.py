@@ -180,9 +180,6 @@ class TableDef:
 
     def as_value_ranges(self) -> list[tuple[int, int]]:
         """Return a list of tuple of (start, end) ranges for given set of 'values'."""
-        if not self.values:
-            return []
-
         table: list[tuple[int, int]] = []
         values_iter = iter(sorted(self.values))
         start = end = next(values_iter)
