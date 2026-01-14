@@ -6,17 +6,42 @@ This displays the full range of unicode points for 1 or 2-character wide
 ideograms, with pipes ('|') that should always align for any terminal that
 supports utf-8.
 
-Usage:
-  ./bin/wcwidth-browser.py [--wide=<n>]
-                           [--alignment=<str>]
-                           [--combining]
-                           [--help]
+Interactive Keys:
+  Navigation:
+    k, y, UP          Scroll backward 1 line
+    j, e, ENTER, DOWN Scroll forward 1 line
+    f, SPACE, PGDOWN  Scroll forward 1 page
+    b, PGUP           Scroll backward 1 page
+    F, SHIFT-DOWN     Scroll forward 10 pages
+    B, SHIFT-UP       Scroll backward 10 pages
+    HOME              Go to top
+    G, END            Go to bottom
+    Ctrl-L            Refresh screen
 
-Options:
-  --wide=<int>        Browser 1 or 2 character-wide cells.
-  --alignment=<str>   Chose left or right alignment. [default: left]
-  --combining         Use combining character generator. [default: 2]
-  --help              Display usage
+  Mode Switching:
+    0                 Exit VS mode (return to normal mode)
+    1                 Narrow width (normal) / Narrow base filter (VS mode)
+    2                 Wide width (normal) / Wide base filter (VS mode)
+    5                 Switch to VS-15 mode (text style)
+    6                 Switch to VS-16 mode (emoji style)
+    c                 Toggle combining character mode
+    w                 Toggle with/without variation selector (VS mode only)
+
+  Display Adjustment:
+    -, _              Decrease character name display length by 2
+    +, =              Increase character name display length by 2
+    v                 Select Unicode version
+
+  Exit:
+    q, Q              Quit browser
+
+Note:
+  Only one of --combining, --vs15, or --vs16 can be used at a time.
+  The --without-vs option only applies when using --vs15 or --vs16.
+
+  In VS mode, the display shows:
+    - W/VS: Characters displayed with variation selector
+    - WO/VS: Base characters displayed without variation selector
 """
 # pylint: disable=C0103,W0622
 #         Invalid constant name "echo"
@@ -24,14 +49,15 @@ Options:
 #         Invalid module name "wcwidth-browser"
 
 # std imports
+import os
 import sys
 import signal
 import string
+import argparse
 import functools
 import unicodedata
 
 # 3rd party
-import docopt
 import blessed
 
 # local
@@ -146,6 +172,95 @@ class WcCombinedCharacterGenerator:
             except ValueError:
                 continue
             return (ucs, name)
+
+
+class WcVariationSequenceGenerator:
+    """Generator yields emoji variation sequences from emoji-variation-sequences.txt."""
+
+    # pylint: disable=R0903
+    #         Too few public methods (0/2)
+
+    def __init__(self, base_width, unicode_version, variation_selector='VS15'):
+        """
+        Class constructor.
+
+        :param int base_width: filter by base character width (1 or 2).
+        :param str unicode_version: Unicode version.
+        :param str variation_selector: 'VS15' or 'VS16'.
+        """
+        self.sequences = []
+
+        # Determine which variation selector we're looking for
+        vs_hex = 'FE0E' if variation_selector == 'VS15' else 'FE0F'
+
+        # Find the emoji-variation-sequences.txt file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        filepath = os.path.join(script_dir, '..', 'tests', 'emoji-variation-sequences.txt')
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                # Skip comments and empty lines
+                if line.startswith('#') or not line.strip():
+                    continue
+
+                # Only process lines with our target variation selector
+                if vs_hex not in line:
+                    continue
+
+                # Parse line format: "0023 FE0E  ; text style;  # (1.1) NUMBER SIGN"
+                parts = line.split(';')
+                if len(parts) < 2:
+                    continue
+
+                codepoints = parts[0].strip().split()
+                if len(codepoints) < 2:
+                    continue
+
+                try:
+                    base_cp = int(codepoints[0], 16)
+                    vs_cp = int(codepoints[1], 16)
+                except ValueError:
+                    continue
+
+                # Check base character width matches our filter
+                if wcwidth(chr(base_cp), unicode_version=unicode_version) != base_width:
+                    continue
+
+                # Extract name from comment
+                comment_parts = line.split('#')
+                if len(comment_parts) >= 2:
+                    # Format: "# (1.1) NUMBER SIGN"
+                    name_part = comment_parts[1].strip()
+                    # Remove version info like "(1.1) "
+                    if ')' in name_part:
+                        name = name_part.split(')', 1)[1].strip()
+                    else:
+                        name = name_part
+                    name = string.capwords(name)
+                else:
+                    name = "UNKNOWN"
+
+                # Create the variation sequence
+                sequence = chr(base_cp) + chr(vs_cp)
+                self.sequences.append((sequence, name))
+
+        self.sequences.reverse()
+
+    def __iter__(self):
+        """Special method called by iter()."""
+        return self
+
+    def __next__(self):
+        """
+        Special method called by next().
+
+        :return: variation sequence and name, as tuple.
+        :rtype: tuple[str, str]
+        :raises StopIteration: no more sequences
+        """
+        if not self.sequences:
+            raise StopIteration
+        return self.sequences.pop()
 
 
 class Style:
@@ -266,7 +381,8 @@ class Pager:
     #: screen state for next draw method(s).
     STATE_CLEAN, STATE_DIRTY, STATE_REFRESH = 0, 1, 2
 
-    def __init__(self, term, screen, character_factory):
+    def __init__(self, term, screen, character_factory, variation_selector=None,
+                 show_variation_selector=True):
         """
         Class constructor.
 
@@ -276,10 +392,17 @@ class Pager:
         :type screen: Screen
         :param character_factory: Character factory generator.
         :type character_factory: callable returning iterable.
+        :param variation_selector: Variation selector mode ('VS15', 'VS16', or None).
+        :type variation_selector: str or None
+        :param show_variation_selector: Whether to display variation selector in VS mode.
+        :type show_variation_selector: bool
         """
         self.term = term
         self.screen = screen
         self.character_factory = character_factory
+        self.variation_selector = variation_selector
+        self.show_variation_selector = show_variation_selector
+        self.base_width_filter = screen.wide  # For VS mode filtering
         self.unicode_version = 'auto'
         self.dirty = self.STATE_REFRESH
         self.last_page = 0
@@ -290,8 +413,7 @@ class Pager:
         # pylint: disable=W0613
         #         Unused argument 'args'
         assert self.term.width >= self.screen.hint_width, (
-            'Screen to small {}, must be at least {}'.format(
-                self.term.width, self.screen.hint_width))
+            f'Screen to small {self.term.width}, must be at least {self.screen.hint_width}')
         self._set_lastpage()
         self.dirty = self.STATE_REFRESH
 
@@ -311,8 +433,15 @@ class Pager:
         # pylint: disable=attribute-defined-outside-init
         if self.term.is_a_tty:
             self.display_initialize()
-        self.character_generator = self.character_factory(
-            self.screen.wide, self.unicode_version)
+
+        # Use variation sequence generator if in VS mode
+        if self.variation_selector:
+            self.character_generator = WcVariationSequenceGenerator(
+                self.base_width_filter, self.unicode_version, self.variation_selector)
+        else:
+            self.character_generator = self.character_factory(
+                self.screen.wide, self.unicode_version)
+
         self._page_data = list()
         while True:
             try:
@@ -429,19 +558,75 @@ class Pager:
 
     def _process_keystroke_commands(self, inp):
         """Process keystrokes that issue commands (side effects)."""
-        if inp in ('1', '2') and self.screen.wide != int(inp):
-            # change between 1 or 2-character wide mode.
-            self.screen.wide = int(inp)
-            self.initialize_page_data()
-            self.on_resize(None, None)
+        if inp in ('1', '2'):
+            new_width = int(inp)
+            if self.variation_selector:
+                # In VS mode, change base width filter
+                if self.base_width_filter != new_width:
+                    self.base_width_filter = new_width
+                    # If showing without VS, also update display width
+                    if not self.show_variation_selector:
+                        self.screen.wide = new_width
+                    self.initialize_page_data()
+                    self.on_resize(None, None)
+            else:
+                # In normal mode, change display width
+                if self.screen.wide != new_width:
+                    self.screen.wide = new_width
+                    self.initialize_page_data()
+                    self.on_resize(None, None)
+        elif inp == '0':
+            # Exit VS mode, return to normal mode
+            if self.variation_selector:
+                self.variation_selector = None
+                # Keep current display width (screen.wide stays as is)
+                self.initialize_page_data()
+                self.on_resize(None, None)
+        elif inp == '5':
+            # Switch to VS-15 mode
+            if self.variation_selector != 'VS15':
+                self.variation_selector = 'VS15'
+                self.base_width_filter = 1  # Default to narrow base
+                # Display width depends on whether showing with or without VS
+                if self.show_variation_selector:
+                    self.screen.wide = 1  # VS-15 displays at width 1
+                else:
+                    self.screen.wide = self.base_width_filter  # Use base width
+                self.initialize_page_data()
+                self.on_resize(None, None)
+        elif inp == '6':
+            # Switch to VS-16 mode
+            if self.variation_selector != 'VS16':
+                self.variation_selector = 'VS16'
+                self.base_width_filter = 1  # Default to narrow base
+                # Display width depends on whether showing with or without VS
+                if self.show_variation_selector:
+                    self.screen.wide = 2  # VS-16 displays at width 2
+                else:
+                    self.screen.wide = self.base_width_filter  # Use base width
+                self.initialize_page_data()
+                self.on_resize(None, None)
         elif inp == 'c':
-            # switch on/off combining characters
+            # Switch on/off combining characters, clear VS mode
+            self.variation_selector = None
             self.character_factory = (
                 WcWideCharacterGenerator
                 if self.character_factory != WcWideCharacterGenerator
                 else WcCombinedCharacterGenerator)
             self.initialize_page_data()
             self.on_resize(None, None)
+        elif inp == 'w':
+            # Toggle showing variation selector (only in VS mode)
+            if self.variation_selector:
+                self.show_variation_selector = not self.show_variation_selector
+                # Update display width based on whether we're showing VS or not
+                if self.show_variation_selector:
+                    # Showing with VS: use VS-determined width
+                    self.screen.wide = 1 if self.variation_selector == 'VS15' else 2
+                else:
+                    # Showing without VS: use base character width
+                    self.screen.wide = self.base_width_filter
+                self.on_resize(None, None)
         elif inp in ('_', '-'):
             # adjust name length -2
             nlen = max(1, self.screen.style.name_len - 2)
@@ -550,6 +735,25 @@ class Pager:
             return True
         return False
 
+    def mode_label(self):
+        """
+        Return a label describing the current browsing mode.
+
+        :return: Mode label string.
+        :rtype: str
+        """
+        if self.variation_selector:
+            # VS mode: show base width + VS type + with/without VS
+            width_label = "NARROW" if self.base_width_filter == 1 else "WIDE"
+            vs_display = "W/VS" if self.show_variation_selector else "WO/VS"
+            return f"{width_label}+{self.variation_selector}+{vs_display}"
+        elif self.character_factory == WcCombinedCharacterGenerator:
+            # Combining mode
+            return "COMBINING"
+        else:
+            # Normal mode: show display width
+            return "NARROW" if self.screen.wide == 1 else "WIDE"
+
     def draw_status(self, writer, idx):
         """
         Conditionally draw status bar when output terminal is a tty.
@@ -566,11 +770,16 @@ class Pager:
                 last_end = '(END)'
             else:
                 last_end = f'/{self.last_page}'
-            txt = ('Page {idx}{last_end} - '
+
+            # Get current mode label
+            mode = self.mode_label()
+
+            txt = ('Page {idx}{last_end} - [{mode}] - '
                    '{q} to quit, [keys: {keyset}]'
                    .format(idx=style.attr_minor(f'{idx}'),
                            last_end=style.attr_major(last_end),
-                           keyset=style.attr_major('kjfbvc12-='),
+                           mode=style.attr_major(mode),
+                           keyset=style.attr_major('kjfbvc01256w-='),
                            q=style.attr_minor('q')))
             writer(self.term.center(txt).rstrip())
 
@@ -636,14 +845,20 @@ class Pager:
                             '{name:<{name_len}s}'))
         delimiter = style.attr_minor(style.delimiter)
         if len(ucs) != 1:
-            # determine display of combining characters
-            val = ord(ucs[1])
-            # a combining character displayed of any fg color
-            # will reset the foreground character of the cell
-            # combined with (iTerm2, OSX).
-            disp_ucs = style.attr_major(ucs[0:2])
-            if len(ucs) > 2:
-                disp_ucs += ucs[2]
+            # Variation sequence or combining character
+            if self.variation_selector and not self.show_variation_selector:
+                # VS mode, showing without variation selector - display only base
+                val = ord(ucs[0])
+                disp_ucs = style.attr_major(ucs[0])
+            else:
+                # Combining character or VS mode with variation selector shown
+                val = ord(ucs[1])
+                # a combining character displayed of any fg color
+                # will reset the foreground character of the cell
+                # combined with (iTerm2, OSX).
+                disp_ucs = style.attr_major(ucs[0:2])
+                if len(ucs) > 2:
+                    disp_ucs += ucs[2]
         else:
             # non-combining
             val = ord(ucs)
@@ -658,7 +873,7 @@ class Pager:
 
 
 def validate_args(opts):
-    """Validate and return options provided by docopt parsing."""
+    """Validate result of parse_args() and return keyword arguments for main()."""
     if opts['--wide'] is None:
         opts['--wide'] = 2
     else:
@@ -668,9 +883,38 @@ def validate_args(opts):
     else:
         assert opts['--alignment'] in ('left', 'right'), opts['--alignment']
     opts['--wide'] = int(opts['--wide'])
+
+    # Ensure mutual exclusivity of --combining, --vs15, and --vs16
+    exclusive_opts = [opts.get('--combining', False),
+                      opts.get('--vs15', False),
+                      opts.get('--vs16', False)]
+    assert sum(bool(opt) for opt in exclusive_opts) <= 1, \
+        "Only one of --combining, --vs15, or --vs16 can be used"
+
+    # Set character factory and variation selector
     opts['character_factory'] = WcWideCharacterGenerator
-    if opts['--combining']:
+    opts['variation_selector'] = None
+    opts['base_width_filter'] = opts['--wide']  # Save base width filter
+    opts['display_width'] = opts['--wide']  # Default display width
+    opts['show_variation_selector'] = not opts.get('--without-vs', False)
+
+    if opts.get('--combining'):
         opts['character_factory'] = WcCombinedCharacterGenerator
+    elif opts.get('--vs15'):
+        opts['variation_selector'] = 'VS15'
+        # Display width depends on whether showing with or without VS
+        if opts['show_variation_selector']:
+            opts['display_width'] = 1  # VS-15 displays at width 1
+        else:
+            opts['display_width'] = opts['base_width_filter']  # Use base width
+    elif opts.get('--vs16'):
+        opts['variation_selector'] = 'VS16'
+        # Display width depends on whether showing with or without VS
+        if opts['show_variation_selector']:
+            opts['display_width'] = 2  # VS-16 displays at width 2
+        else:
+            opts['display_width'] = opts['base_width_filter']  # Use base width
+
     return opts
 
 
@@ -687,8 +931,14 @@ def main(opts):
                       alignment=opts['--alignment'])
     style.name_len = 10
 
-    screen = Screen(term, style, wide=opts['--wide'])
-    pager = Pager(term, screen, opts['character_factory'])
+    screen = Screen(term, style, wide=opts['display_width'])
+    pager = Pager(term, screen, opts['character_factory'],
+                  variation_selector=opts['variation_selector'],
+                  show_variation_selector=opts['show_variation_selector'])
+
+    # Set base width filter from command-line argument
+    if opts['variation_selector']:
+        pager.base_width_filter = opts['base_width_filter']
 
     with term.location(), term.cbreak(), \
             term.fullscreen(), term.hidden_cursor():
@@ -696,5 +946,89 @@ def main(opts):
     return 0
 
 
+def parse_args():
+    """Parse command-line arguments using argparse."""
+    # Extract description and usage from module docstring
+    doc_lines = __doc__.split('\n')
+    description = []
+    for line in doc_lines:
+        if line.strip() and not line.startswith('Usage:'):
+            description.append(line)
+        if line.startswith('Usage:'):
+            break
+
+    parser = argparse.ArgumentParser(
+        description='A terminal browser for testing printable width of unicode.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Interactive Keys:
+  Navigation:
+    k, y, UP          Scroll backward 1 line
+    j, e, ENTER, DOWN Scroll forward 1 line
+    f, SPACE, PGDOWN  Scroll forward 1 page
+    b, PGUP           Scroll backward 1 page
+    F, SHIFT-DOWN     Scroll forward 10 pages
+    B, SHIFT-UP       Scroll backward 10 pages
+    HOME              Go to top
+    G, END            Go to bottom
+    Ctrl-L            Refresh screen
+
+  Mode Switching:
+    0                 Exit VS mode (return to normal mode)
+    1                 Narrow width (normal) / Narrow base filter (VS mode)
+    2                 Wide width (normal) / Wide base filter (VS mode)
+    5                 Switch to VS-15 mode (text style)
+    6                 Switch to VS-16 mode (emoji style)
+    c                 Toggle combining character mode
+    w                 Toggle with/without variation selector (VS mode only)
+
+  Display Adjustment:
+    -, _              Decrease character name display length by 2
+    +, =              Increase character name display length by 2
+    v                 Select Unicode version
+
+  Exit:
+    q, Q              Quit browser
+
+Notes:
+  Only one of --combining, --vs15, or --vs16 can be used at a time.
+  The --without-vs option only applies when using --vs15 or --vs16.
+
+  In VS mode, the display shows:
+    - W/VS: Characters displayed with variation selector
+    - WO/VS: Base characters displayed without variation selector
+""")
+
+    parser.add_argument('--wide', metavar='<n>', type=str, default=None,
+                        help='Browser 1 or 2 character-wide cells.')
+    parser.add_argument('--alignment', metavar='<str>', type=str, default='left',
+                        help='Choose left or right alignment. (default: left)')
+
+    # Mutually exclusive group for mode selection
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument('--combining', action='store_true',
+                            help='Use combining character generator.')
+    mode_group.add_argument('--vs15', action='store_true',
+                            help='Browse emoji variation sequences with VS-15 (text style).')
+    mode_group.add_argument('--vs16', action='store_true',
+                            help='Browse emoji variation sequences with VS-16 (emoji style).')
+
+    parser.add_argument('--without-vs', action='store_true',
+                        help='Display base characters without variation selector.')
+
+    args = parser.parse_args()
+
+    # Convert to docopt-style dict format for compatibility with validate_args
+    return {
+        '--wide': args.wide,
+        '--alignment': args.alignment,
+        '--combining': args.combining,
+        '--vs15': args.vs15,
+        '--vs16': args.vs16,
+        '--without-vs': args.without_vs,
+        '--help': False,  # argparse handles this automatically
+    }
+
+
 if __name__ == '__main__':
-    sys.exit(main(validate_args(docopt.docopt(__doc__))))
+    sys.exit(main(validate_args(parse_args())))

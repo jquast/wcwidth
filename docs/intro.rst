@@ -16,11 +16,11 @@ The stable version of this package is maintained on pypi, install or upgrade, us
 Problem
 -------
 
-As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_, ``rjust()``,
-and ``center`` incorrectly presume that the displayed length of a string is equal to the number of
-codepoints.
+As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_,
+`str.rjust()`_, and `str.center()`_ **incorrectly** measure the displayed width of a string as
+equal to the number of codepoints.
 
-Some examples:
+Some examples of **incorrect results**:
 
 .. code-block:: python
 
@@ -32,13 +32,9 @@ Some examples:
     >>> 'café'.center(6, 'X')
     'caféX'
 
-    >>> # result consumes 4 total cells, 2 expected
-    >>> '🇿🇼'.ljust(2, 'X')
-    '🇿🇼  '
-
     >>> # result consumes 2 total cells, 4 expected.
-    >>> '👨\u200d👩\u200d👧'.center(4, 'X')
-    '👨\u200d👩\u200d👧'
+    >>> print('👨‍👩‍👧'.center(4, 'X'))
+    👨‍👩‍👧
 
 
 Solution
@@ -53,8 +49,9 @@ A ``iter_graphemes()`` iterator function is provided to help format strings for 
 Discrepancies
 -------------
 
-You may find that some terminal support *varies* for more complex unicode sequences or codepoints. A
-companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
+You may find that support *varies* for complex unicode sequences or codepoints.
+
+A companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
 character support and version level, language support, zero-width joiner, and variation-16 support
 as a `General Tabulated Summary`_ by terminal emulator software and version.
 
@@ -62,8 +59,9 @@ as a `General Tabulated Summary`_ by terminal emulator software and version.
 Overview
 ========
 
+A brief overview, through examples, for all of the public API functions.
 
-A quick overview of all functions follows, by example.
+Full API Documentation at https://wcwidth.readthedocs.io
 
 wcwidth()
 ---------
@@ -78,7 +76,8 @@ Measures width of a single codepoint,
 
 Use function ``wcwidth()`` to determine the length of a *single unicode character*.
 
-Briefly, return values of function ``wcwidth()`` are:
+See `Specification <Specification_from_pypi_>`_ of character measurements. More
+briefly, return values of function ``wcwidth()`` are:
 
 ``-1``
   Indeterminate (not printable) control codes (C0 and C1).
@@ -106,8 +105,9 @@ Measures width of a string, returns -1 for control codes.
 
 Use function ``wcswidth()`` to determine the length of many, a *string of unicode characters*
 
-Function ``wcswidth()`` sums the length of each character with some additional account for some
-kinds of sequences. ``-1`` is returned if a control code occurs anywhere in the string.
+See `Specification <Specification_from_pypi_>`_ of character measurements. More briefly, return
+values of function ``wcswidth()`` is the sum of ``wcwidth()`` with some additional account for some
+kinds of sequences.  Similarly, ``-1`` is returned if control codes occurs anywhere in the string.
 
 iter_graphemes()
 ----------------
@@ -128,8 +128,6 @@ Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a strin
     >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
     ['o', 'k', '👨‍👩‍👧']
 
-Full API Documentation at https://wcwidth.readthedocs.io
-
 ==========
 Developing
 ==========
@@ -140,10 +138,9 @@ Install wcwidth in editable mode::
 
 Execute all code generation, autoformatters, linters and unit tests using tox::
 
-
    tox
 
-Or select individual items for testing, see ``tox -lv`` for all available targets::
+Or execute individual tasks, see ``tox -lv`` for all available targets::
 
    tox -e pylint,py36,py314
 
@@ -179,7 +176,7 @@ To upgrade requirements for updating unicode version, run::
 
 To upgrade requirements for testing, run::
 
-   tox -e update_requirements37,update_requirements39
+   tox -e update_requirements38,update_requirements39
 
 To upgrade requirements for building documentation, run::
 
@@ -240,6 +237,9 @@ This library is used in:
 ===============
 Other Languages
 ===============
+
+There are similar implementations of the `wcwidth()`_ and `wcswidth()`_ functions in other
+languages.
 
 - `timoxley/wcwidth`_: JavaScript
 - `janlelis/unicode-display_width`_: Ruby
@@ -422,6 +422,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`sphinx`: https://www.sphinx-doc.org/
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
+.. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
+.. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
 .. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
