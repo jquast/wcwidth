@@ -257,8 +257,8 @@ languages.
 =======
 History
 =======
-*next version*
 
+0.2.15 **next version**
   * **New** Function `iter_graphemes()`_. `PR #165`_.
 
 0.2.14 *2025-09-22*

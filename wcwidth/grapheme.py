@@ -254,6 +254,8 @@ def iter_graphemes(
         ['o', 'k', '\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467']
         >>> list(iter_graphemes('\\U0001F1FA\\U0001F1F8'))
         ['o', 'k', '\\U0001F1FA\\U0001F1F8']
+
+    .. versionadded:: 0.2.15
     """
     if not unistr:
         return
