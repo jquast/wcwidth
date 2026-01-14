@@ -4,83 +4,90 @@
 Introduction
 ============
 
-This library is mainly for CLI programs that carefully produce output for
-Terminals, or make pretend to be an emulator.
-
-**Problem Statement**: The printable length of *most* strings are equal to the
-number of cells they occupy on the screen ``1 character : 1 cell``.  However,
-there are categories of characters that *occupy 2 cells* (full-wide), and
-others that *occupy 0* cells (zero-width).
-
-**Solution**: POSIX.1-2001 and POSIX.1-2008 conforming systems provide
-`wcwidth(3)`_ and `wcswidth(3)`_ C functions of which this python module's
-functions precisely copy.  *These functions return the number of cells a
-unicode string is expected to occupy.*
+This library is mainly for CLI programs that carefully produce output for Terminals.
 
 Installation
 ------------
 
-The stable version of this package is maintained on pypi, install using pip::
+The stable version of this package is maintained on pypi, install or upgrade, using pip::
 
-    pip install wcwidth
+    pip install --upgrade wcwidth
 
-Example
+Problem
 -------
 
-**Problem**: given the following phrase (Japanese),
+As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_, ``rjust()``,
+and ``center`` incorrectly presume that the displayed length of a string is equal to the number of
+codepoints.
 
-   >>>  text = u'コンニチハ'
+Some examples:
 
-Python **incorrectly** uses the *string length* of 5 codepoints rather than the
-*printable length* of 10 cells, so that when using the `rjust` function, the
-output length is wrong::
+.. code-block:: python
 
-    >>> print(len('コンニチハ'))
-    5
+    >>> # result consumes 16 total cells, 11 expected,
+    >>> 'コンニチハ'.rjust(11, 'X')
+    'XXXXXXコンニチハ'
 
-    >>> print('コンニチハ'.rjust(20, '_'))
-    _______________コンニチハ
+    >>> # result consumes 5 total cells, 6 expected,
+    >>> 'café'.center(6, 'X')
+    'caféX'
 
-By defining our own "rjust" function that uses wcwidth, we can correct this::
+    >>> # result consumes 4 total cells, 2 expected
+    >>> '🇿🇼'.ljust(2, 'X')
+    '🇿🇼  '
 
-   >>> def wc_rjust(text, length, padding=' '):
-   ...    from wcwidth import wcswidth
-   ...    return padding * max(0, (length - wcswidth(text))) + text
-   ...
-
-Our **Solution** uses wcswidth to determine the string length correctly::
-
-   >>> from wcwidth import wcswidth
-   >>> print(wcswidth('コンニチハ'))
-   10
-
-   >>> print(wc_rjust('コンニチハ', 20, '_'))
-   __________コンニチハ
+    >>> # result consumes 2 total cells, 4 expected.
+    >>> '👨\u200d👩\u200d👧'.center(4, 'X')
+    '👨\u200d👩\u200d👧'
 
 
-Choosing a Version
-------------------
+Solution
+--------
 
-Export an environment variable, ``UNICODE_VERSION``. This should be done by
-*terminal emulators* or those developers experimenting with authoring one of
-their own, from shell::
+The base of this library is POSIX.1-2001 and POSIX.1-2008 functions `wcwidth(3)`_ and `wcswidth(3)`_
+which this python module's functions precisely copy by interface as ``wcwidth()`` and ``wcswidth()``,
+and are brought up-to-date to support the latest unicode releases.
 
-   $ export UNICODE_VERSION=13.0
+This library also provides an easy-to-use ``width()`` function, which is also capable of
+measuring the displayed width of most kinds of terminal sequences.
 
-If unspecified, the latest version is used. If your Terminal Emulator does not
-export this variable, you can use the `jquast/ucs-detect`_ utility to
-automatically detect and export it to your shell.
+A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal, and, the
+appropriate function interfaces ``ljust()``, ``center()``, ``rjust()`` all doing their best to
+correctly handle terminal output sequences like color, all kinds of emojis, combining characters,
+and many popular world languages.
 
-wcwidth, wcswidth
------------------
-Use function ``wcwidth()`` to determine the length of a *single unicode
-character*, and ``wcswidth()`` to determine the length of many, a *string
-of unicode characters*.
+Discrepancies
+-------------
+
+You may find that some terminal support *varies* for more complex unicode sequences or codepoints. A
+companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
+character support and version level, language support, zero-width joiner, and variation-16 support
+as a `General Tabulated Summary`_ by terminal emulator software and version.
+
+========
+Overview
+========
+
+
+A quick overview of all functions follows, by example.
+
+wcwidth()
+---------
+
+Measures width of a single codepoint,
+
+.. code-block:: python
+
+    >>> # '♀' narrow emoji
+    >>> wcwidth.wcwidth('\u2640')
+    1
+
+Use function ``wcwidth()`` to determine the length of a *single unicode character*.
 
 Briefly, return values of function ``wcwidth()`` are:
 
 ``-1``
-  Indeterminate (not printable).
+  Indeterminate (not printable) control codes (C0 and C1).
 
 ``0``
   Does not advance the cursor, such as NULL or Combining.
@@ -92,63 +99,108 @@ Briefly, return values of function ``wcwidth()`` are:
 ``1``
   All others.
 
-Function ``wcswidth()`` simply returns the sum of all values for each character
-along a string, or ``-1`` when it occurs anywhere along a string.
+wcswidth()
+----------
+
+Measures width of a string, returns -1 for control codes.
+
+.. code-block:: python
+
+    >>> # '♀️' emoji w/vs-16
+    >>> wcwidth.wcswidth('♀️')
+    2
+
+Use function ``wcswidth()`` to determine the length of many, a *string of unicode characters*
+
+Function ``wcswidth()`` sums the length of each character with some additional account for some
+kinds of sequences. ``-1`` is returned if a control code occurs anywhere in the string.
 
 width()
 -------
 
-Use function ``width()`` to measure the printable width of text that may
-contain terminal escape sequences and control characters. Unlike ``wcswidth()``,
-this function never returns ``-1``.
+Measures width of a string with improved handling of ``control_codes``
 
 .. code-block:: python
 
-    >>> from wcwidth import width
-    >>> # Simple text
-    >>> width('hello')
-    5
-
-    >>> # Text with ANSI color escape sequences
-    >>> width('\x1b[31mred\x1b[0m')
+    >>> # same support as wcwidth, eg. regional indicator flag:
+    >>> wcwidth.width('\U0001F1FF\U0001F1FC')
+    2
+    >>> # SGR colored text, 'WARN', followed by SGR reset
+    >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
+    4
+    >>> # tabs,
+    >>> wcwidth.width('\t', tabstop=4, column=1)
     3
-
-    >>> # Text with tab (advances to next tab stop)
-    >>> width('abc\t')
-    8
-
-    >>> # Text with backspace (moves cursor left)
-    >>> width('abc\bd')
-    3
-
-The ``control_codes`` parameter controls how control characters are handled:
-
-- ``'parse'`` (default): Track horizontal cursor movement
-- ``'strict'``: Raise ``ValueError`` on illegal control characters
-- ``'ignore'``: Strip all control characters (zero width)
+    >>> # "vertical" control characters are ignored
+    >>> wcwidth.width('\n')
+    0
+    >>> # as well as sequences with "indeterminate" effects like Home + Clear
+    >>> wcwidth.width('\x1b[H\x1b[2J')
+    0
+    >>> # *unless* control_codes='strict' is used, then ValueError is raised
+    >>> wcwidth.width('\n', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Vertical movement character 0xa at position 0
+    >>> wcwidth.width('\x1b[H\x1b[2J', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Indeterminate cursor sequence at position 0
 
 iter_graphemes()
 ----------------
 
 Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a string.
-A grapheme cluster is what a user perceives as a single character, even if it is
-composed of multiple Unicode codepoints. This function implements Unicode Standard
-`Annex #29`_ grapheme cluster boundary rules.
 
 .. code-block:: python
 
-    >>> from wcwidth import iter_graphemes
     >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
     >>> list(iter_graphemes('ok\U0001F1FF\U0001F1FC'))
     ['o', 'k', '🇿🇼']
 
-    >>> # cafe + combining acute accent
+    >>> # cafe + combining cute accent
     >>> list(iter_graphemes('cafe\u0301'))
     ['c', 'a', 'f', 'é']
 
     >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
     >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
-    ['o', 'k', '👨\u200d👩\u200d👧']
+    ['o', 'k', '👨‍👩‍👧']
+
+ljust()
+-------
+
+Use as replacement of `str.ljust()`_:
+
+.. code-block:: python
+
+    >>> 'コンニチハ'.ljust(11, '*')             # don't do this
+    'コンニチハ******'
+    >>> wcwidth.ljust('コンニチハ', 11, '*')    # do this!
+    'コンニチハ*'
+
+rjust()
+-------
+
+Use as replacement of `str.rjust()`_:
+
+.. code-block:: python
+
+    >>> 'コンニチハ'.rjust(11, '*')             # don't do this
+    '******コンニチハ'
+    >>> wcwidth.rjust('コンニチハ', 11, '*')    # do this!
+    '*コンニチハ'
+
+center()
+--------
+
+Use as replacement of `str.center()`_:
+
+.. code-block:: python
+
+    >>> 'cafe\u0301'.center(6, '*')             # don't do this
+    'café*'
+    >>> wcwidth.center('cafe\u0301', 6, '*')
+    '*café*'                                    # do this!
 
 Full API Documentation at https://wcwidth.readthedocs.io
 
@@ -160,9 +212,14 @@ Install wcwidth in editable mode::
 
    pip install -e .
 
-Execute unit tests using tox_ for all supported Python versions::
+Execute all code generation, autoformatters, linters and unit tests using tox::
 
-   tox -e py36,py37,py38,py39,py310,py311,py312,py313,py314
+
+   tox
+
+Or select individual items for testing, see ``tox -lv`` for all available targets::
+
+   tox -e pylint,py36,py314
 
 Updating Unicode Version
 ------------------------
@@ -252,6 +309,8 @@ This library is used in:
 - `saulpw/visidata`_: Terminal spreadsheet multitool for discovering and
   arranging data
 
+- `jquast/ucs-detect`_: Utility for unicode support detection.
+
 ===============
 Other Languages
 ===============
@@ -284,10 +343,10 @@ History
   * **Bugfix** zero-width support for Hangul Jamo (Korean)
 
 0.2.12 *2023-11-21*
-  * re-release to remove .pyi file misplaced in wheel files `Issue #101`_.
+  * **Bugfix** Re-release to remove `.pyi` files misplaced in wheel `Issue #101`_.
 
 0.2.11 *2023-11-20*
-  * Include tests files in the source distribution (`PR #98`_, `PR #100`_).
+  * **Updated** Include tests files in the source distribution (`PR #98`_, `PR #100`_).
 
 0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
@@ -429,13 +488,18 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
-.. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`python-cmd2/cmd2`: https://github.com/python-cmd2/cmd2
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
+.. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
+.. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
+.. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
+.. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
