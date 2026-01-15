@@ -71,20 +71,12 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .control_codes import (
-    ILLEGAL_CTRL,
-    VERTICAL_CTRL,
-    HORIZONTAL_CTRL,
-    ZERO_WIDTH_CTRL,
-)
-from .escape_sequences import (
-    ZERO_WIDTH_PATTERN,
-    CURSOR_RIGHT_SEQUENCE,
-    CURSOR_LEFT_SEQUENCE,
-    INDETERMINATE_EFFECT_SEQUENCE,
-)
+from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
+from .escape_sequences import (ZERO_WIDTH_PATTERN,
+                               CURSOR_LEFT_SEQUENCE,
+                               CURSOR_RIGHT_SEQUENCE,
+                               INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
-
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -92,18 +84,6 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
     '\x7f' +                                       # DEL
     ''.join(chr(c) for c in range(0x80, 0xa0))     # C1: U+0080-U+009F
 ))
-
-
-def _width_ignore(text):
-    """
-    Fast path for width() with control_codes='ignore'.
-
-    Strips escape sequences and control characters, then measures remaining text.
-    """
-    return wcswidth(
-        ''.join([seg for seg, is_seq in iter_sequences(text) if not is_seq])
-        .translate(_CONTROL_CHAR_TABLE)
-    )
 
 
 @lru_cache(maxsize=1000)
@@ -361,6 +341,8 @@ def iter_sequences(text):
     :rtype: Iterator[tuple[str, bool]]
     :returns: Iterator of (segment, is_sequence) tuples.
 
+    .. versionadded:: 0.2.15
+ 
     Example::
 
         >>> list(iter_sequences('hello'))
@@ -400,6 +382,18 @@ def iter_sequences(text):
         yield (text[segment_start:], False)
 
 
+def _width_ignored_codes(text):
+    """
+    Fast path for width() with control_codes='ignore'.
+
+    Strips escape sequences and control characters, then measures remaining text.
+    """
+    return wcswidth(
+        ''.join([seg for seg, is_seq in iter_sequences(text) if not is_seq])
+        .translate(_CONTROL_CHAR_TABLE)
+    )
+
+
 def width(text, control_codes='parse', tabstop=8, column=0):
     """
     Return printable width of text containing many kinds of control codes and sequences.
@@ -433,6 +427,8 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         C0 or C1 control code.
         ``control_codes`` cannot be parsed not one of the valid values.
 
+    .. versionadded:: 0.2.15
+ 
     Examples::
 
         >>> width('hello')
@@ -464,7 +460,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
     # Fast path for ignore mode
     if control_codes == 'ignore':
-        return _width_ignore(text)
+        return _width_ignored_codes(text)
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.

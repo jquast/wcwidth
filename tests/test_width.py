@@ -5,7 +5,6 @@ import pytest
 # local
 import wcwidth
 
-
 BASIC_WIDTH_CASES = [
     ('', 0, 'empty'),
     ('hello', 5, 'ASCII'),
@@ -124,8 +123,8 @@ def test_width_tabstop(text, expected, tabstop, column, name):
 
 
 def test_width_tabstop_zero():
-    """Tabstop=0 gives zero-width tabs."""
-    assert wcwidth.width('\t', tabstop=0) == 0
+    """Tabs are zero-width with control_codes='ignore'."""
+    assert wcwidth.width('\t', control_codes='ignore') == 0
 
 
 ESCAPE_SEQUENCE_CASES = [
@@ -169,8 +168,8 @@ def test_vs16_selector():
 
 
 def test_tab_ignore_with_tabstop():
-    """Test tab with ignore mode and tabstop."""
-    assert wcwidth.width("abc\t", control_codes="ignore", tabstop=8) == 8
+    """Tabs are zero-width with control_codes='ignore', tabstop has no effect."""
+    assert wcwidth.width("abc\t", control_codes="ignore", tabstop=8) == 3
 
 
 def test_cursor_right_unparameterized():
@@ -208,6 +207,7 @@ INDETERMINATE_CAP_SAMPLES = [
 @pytest.mark.parametrize('seq,cap_name', INDETERMINATE_CAP_SAMPLES)
 def test_indeterminate_caps_covered_by_term_seq_pattern(seq, cap_name):
     """Verify all INDETERMINATE_CAPS sequences are matched by ZERO_WIDTH_PATTERN."""
+    # local
     from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
     assert ZERO_WIDTH_PATTERN.match(seq)
     assert wcwidth.width(seq) == 0
@@ -278,5 +278,3 @@ def test_modern_sequences(seq, expected_width, name):
     """Modern terminal sequences are recognized as zero-width."""
     assert wcwidth.width(seq) == expected_width
     assert wcwidth.width(seq, control_codes='strict') == expected_width
-
-

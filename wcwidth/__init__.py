@@ -15,8 +15,8 @@ from .wcwidth import (WIDE_EASTASIAN,
                       width,
                       wcwidth,
                       wcswidth,
-                      iter_sequences,
                       list_versions,
+                      iter_sequences,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch
