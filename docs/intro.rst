@@ -118,7 +118,7 @@ Measures width of a string with improved handling of ``control_codes``
 
 .. code-block:: python
 
-    >>> # same support as wcwidth, eg. regional indicator flag:
+    >>> # same support as wcswidth(), eg. regional indicator flag:
     >>> wcwidth.width('\U0001F1FF\U0001F1FC')
     2
     >>> # SGR colored text, 'WARN', followed by SGR reset
