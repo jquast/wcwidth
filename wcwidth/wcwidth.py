@@ -176,23 +176,22 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     end = len(pwcs) if n is None else n
     total_width = 0
     idx = 0
-    last_measured_char = None
+    last_measured_idx = -2  # Track index of last measured char for VS16
     while idx < end:
         char = pwcs[idx]
         if char == '\u200D':
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        if char == '\uFE0F' and last_measured_char:
-            # on variation selector 16 (VS16) following another character,
-            # conditionally add '1' to the measured width if that character is
-            # known to be converted from narrow to wide by the VS16 character.
+        if char == '\uFE0F' and last_measured_idx >= 0:
+            # VS16 following a measured character: add 1 if that character is
+            # known to be converted from narrow to wide by VS16.
             if _unicode_version is None:
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
-                total_width += _bisearch(ord(last_measured_char),
+                total_width += _bisearch(ord(pwcs[last_measured_idx]),
                                          VS16_NARROW_TO_WIDE["9.0.0"])
-                last_measured_char = None
+            last_measured_idx = -2  # Prevent double application
             idx += 1
             continue
         # measure character at current index
@@ -201,9 +200,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # early return -1 on C0 and C1 control characters
             return wcw
         if wcw > 0:
-            # track last character measured to contain a cell, so that
-            # subsequent VS-16 modifiers may be understood
-            last_measured_char = char
+            last_measured_idx = idx
         total_width += wcw
         idx += 1
     return total_width
@@ -465,7 +462,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
     current_col = column
     max_extent = column
     idx = 0
-    last_measured_char = None  # Track for VS16 handling
+    last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
 
     while idx < len(text):
         char = text[idx]
@@ -529,11 +526,10 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
         # 6. Handle VS16: converts preceding narrow character to wide
         if char == '\uFE0F':
-            if last_measured_char and _bisearch(ord(last_measured_char),
-                                                VS16_NARROW_TO_WIDE["9.0.0"]):
-                current_col += 1
-                max_extent = max(max_extent, current_col)
-            last_measured_char = None
+            if last_measured_idx == idx - 1:
+                if _bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
+                    current_col += 1
+                    max_extent = max(max_extent, current_col)
             idx += 1
             continue
 
@@ -542,9 +538,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
-            last_measured_char = char
-        else:
-            last_measured_char = None
+            last_measured_idx = idx
         idx += 1
 
     return max_extent - column

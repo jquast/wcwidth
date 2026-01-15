@@ -165,10 +165,10 @@ def test_width_edge_cases(text, expected, name):
     assert wcwidth.width(text) == expected
 
 
-def test_width_invalid_control_codes():
-    """Tests for invalid control_codes parameter."""
-    with pytest.raises(ValueError):
-        wcwidth.width("hello", control_codes="invalid")
+def test_width_unknown_control_codes():
+    """Unknown control_codes defaults to parse mode."""
+    assert wcwidth.width("hello", control_codes="invalid") == 5
+    assert wcwidth.width("abc\bd", control_codes="unknown") == 3
 
 
 def test_vs16_selector():
@@ -182,6 +182,17 @@ def test_vs16_selector():
     assert wcwidth.width("\uFE0F") == 0
     # Character not in VS16 table followed by VS16 stays narrow
     assert wcwidth.width("A\uFE0F") == 1
+
+
+def test_vs16_after_control_chars():
+    """VS16 after control characters should not add width."""
+    # Emoji, then control char, then VS16 - VS16 should NOT apply to emoji
+    # width() returns max extent, so BS/CR don't reduce it
+    assert wcwidth.width("\u263A\x07\uFE0F") == 1  # smiley(1) + BEL(0) + VS16(0)
+    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(back) + VS16(0), extent=1
+    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
+    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 1  # smiley(1) + SGR(0) + VS16(0)
+    assert wcwidth.width("\u263A\u200Da\uFE0F") == 1  # smiley(1) + ZWJ+a(0) + VS16(0)
 
 
 def test_backspace_at_column_zero():
