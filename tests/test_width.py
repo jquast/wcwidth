@@ -123,9 +123,9 @@ def test_width_tabstop(text, expected, tabstop, column, name):
     assert wcwidth.width(text, tabstop=tabstop, column=column) == expected
 
 
-def test_width_tabstop_none():
-    """Tabstop=None ignores tabs."""
-    assert wcwidth.width('\t', tabstop=None) == 0
+def test_width_tabstop_zero():
+    """Tabstop=0 gives zero-width tabs."""
+    assert wcwidth.width('\t', tabstop=0) == 0
 
 
 ESCAPE_SEQUENCE_CASES = [
@@ -163,35 +163,6 @@ def test_width_invalid_control_codes():
         wcwidth.width("hello", control_codes="invalid")
 
 
-def test_width_measure():
-    """Tests for measure parameter."""
-    # extent is default
-    assert wcwidth.width("A\x1b[10C") == 11
-    # explicit extent
-    assert wcwidth.width("A\x1b[10C", measure="extent") == 11
-    # printable simple
-    assert wcwidth.width("hello", measure="printable") == 5
-    # printable with cursor right
-    assert wcwidth.width("A\x1b[10C", measure="printable") == 1
-    # printable with cursor right and char
-    assert wcwidth.width("A\x1b[10CA", measure="printable") == 2
-    # printable with cursor right no leading char
-    assert wcwidth.width("\x1b[10CA", measure="printable") == 1
-    # printable with cursor left
-    assert wcwidth.width("abcd\x1b[2De", measure="printable") == 5
-    # printable with backspace
-    assert wcwidth.width("abc\bd", measure="printable") == 4
-    # printable with CR
-    assert wcwidth.width("abc\rxy", measure="printable") == 5
-    # printable with wide chars
-    assert wcwidth.width("コンニチハ", measure="printable") == 10
-    # printable with escape sequence
-    assert wcwidth.width("\x1b[31mred\x1b[0m", measure="printable") == 3
-    # invalid measure value
-    with pytest.raises(ValueError):
-        wcwidth.width("hello", measure="invalid")
-
-
 def test_vs16_selector():
     """Test VS16 emoji selector."""
     assert wcwidth.width("\u263A\uFE0F") == 1
@@ -214,8 +185,6 @@ def test_cursor_right_unparameterized():
     assert wcwidth.width('a' + seq + 'b') == 3
     # strict mode allows cursor_right
     assert wcwidth.width('a' + seq + 'b', control_codes='strict') == 3
-    # printable counts only printed characters
-    assert wcwidth.width('a' + seq + 'b', measure='printable') == 2
 
 
 INDETERMINATE_CAP_SAMPLES = [

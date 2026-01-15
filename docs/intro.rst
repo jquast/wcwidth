@@ -4,7 +4,7 @@
 Introduction
 ============
 
-This library is mainly for CLI programs that carefully produce output for Terminals.
+This library is mainly for CLI/TUI programs that carefully produce output for Terminals.
 
 Installation
 ------------

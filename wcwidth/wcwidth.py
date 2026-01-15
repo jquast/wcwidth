@@ -442,7 +442,7 @@ def iter_sequences(text):
         yield (text[segment_start:], False)
 
 
-def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
+def width(text, control_codes='parse', tabstop=8, column=0):
     """
     Return printable width of text, never returns -1.
 
@@ -454,34 +454,22 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
     :param str text: String to measure.
     :param str control_codes: How to handle control characters and sequences:
 
-        - ``'parse'`` (default): Track horizontal cursor movement from BS
-          ``\\b``, CR ``\\r``, tab ``\\t``, and cursor movement sequences.
-          Vertical movement (LF, VT, FF) and indeterminate sequences are
-          zero-width. Never raises.
-        - ``'strict'``: Like parse, but raises :exc:`ValueError` on illegal
-          control characters, vertical movement, and indeterminate sequences.
-        - ``'ignore'``: Strip all control characters and sequences (zero
-          width). Never raises.
+        - ``'parse'`` (default): Track horizontal cursor movement from BS ``\\b``, CR ``\\r``, tab
+          ``\\t``, and cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
+          indeterminate sequences are zero-width. Never raises.
+        - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters with
+          indeterminate results of the screen or cursor, like clear or vertical movement.
+        - ``'ignore'``: Strip all control characters and sequences, C0 and C1 control codes and all
+          terminal sequences are ignored and their width is measured as 0. Never raises.
 
-    :param tabstop: Tab stop width. Default is 8. Set to ``None`` for
-        zero-width tabs.
-    :param str measure: What to measure:
-
-        - ``'extent'`` (default): Maximum cursor position reached. This
-          accounts for cursor movement sequences and represents the rightmost
-          column the cursor reaches.
-        - ``'printable'``: Sum of actual printed character widths only,
-          ignoring cursor movement. This represents the total width of
-          visible characters.
-    :type tabstop: int or None
-    :param int column: Starting column position for tab and movement
-        calculation. Default is 0.
+    :param int tabstop: Tab stop width. Default is 8.
+    :param int column: Starting column position for tabstop and movement calculations.
     :rtype: int
-    :returns: Width measurement based on ``measure`` parameter.
-    :raises ValueError: If ``control_codes`` is ``'strict'`` and illegal
-        control characters, vertical movement, or indeterminate sequences
-        are encountered. Also raised if ``control_codes`` or ``measure``
-        is not one of the valid values.
+    :returns: Maximum cursor position reached, accounting for cursor movement sequences. This
+        represents the rightmost column the cursor reaches.
+    :raises ValueError: If ``control_codes`` is ``'strict'`` and illegal control characters,
+        vertical movement, or indeterminate sequences are encountered. Also raised if
+        ``control_codes`` is not one of the valid values.
 
     Example usage::
 
@@ -495,24 +483,17 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
         3
         >>> width('abc\\t')  # tab to column 8
         8
-        >>> width('A\\x1b[10C', measure='extent')
+        >>> width('A\\x1b[10C')  # cursor right 10
         11
-        >>> width('A\\x1b[10C', measure='printable')
-        1
     """
     if control_codes not in ('ignore', 'strict', 'parse'):
         raise ValueError(
             f"control_codes must be 'ignore', 'strict', or 'parse', "
             f"got {control_codes!r}"
         )
-    if measure not in ('extent', 'printable'):
-        raise ValueError(
-            f"measure must be 'extent' or 'printable', got {measure!r}"
-        )
 
     current_col = column
     max_extent = column
-    printable_width = 0
     idx = 0
     text_len = len(text)
 
@@ -555,10 +536,7 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
-            printable_width += w
         # w <= 0: combining marks, zero-width chars, etc. - no advancement
         idx += 1
 
-    if measure == 'printable':
-        return printable_width
     return max_extent - column
