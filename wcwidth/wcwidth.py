@@ -71,17 +71,19 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .terminal_seqs import (
-    ILLEGAL_CTRL,
-    VERTICAL_CTRL,
-    HORIZONTAL_CTRL,
-    ZERO_WIDTH_CTRL,
-    ZERO_WIDTH_PATTERN,
-    CURSOR_RIGHT_PATTERN,
-    CURSOR_LEFT_PATTERN,
-    INDETERMINATE_SEQ_PATTERN,
-)
+from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
+from .escape_sequences import (ZERO_WIDTH_PATTERN,
+                               CURSOR_LEFT_SEQUENCE,
+                               CURSOR_RIGHT_SEQUENCE,
+                               INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+
+# Translation table to strip C0/C1 control characters for fast 'ignore' mode.
+_CONTROL_CHAR_TABLE = str.maketrans('', '', (
+    ''.join(chr(c) for c in range(0x00, 0x20)) +   # C0: NUL through US (including tab)
+    '\x7f' +                                       # DEL
+    ''.join(chr(c) for c in range(0x80, 0xa0))     # C1: U+0080-U+009F
+))
 
 
 @lru_cache(maxsize=1000)
@@ -99,7 +101,7 @@ def wcwidth(wc, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable is used if set, otherwise
         the highest Unicode version level is used.
 
-        .. deprecated::
+        .. deprecated:: 0.2.14
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but
@@ -154,7 +156,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable if defined, or the latest
         available unicode version otherwise.
 
-        .. deprecated::
+        .. deprecated:: 0.2.14
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but
@@ -327,110 +329,108 @@ def _wcmatch_version(given_version):
     assert False, ("Code path unreachable", given_version, unicode_versions)  # pragma: no cover
 
 
-def _apply_cursor_movement(col, seq):
+def iter_sequences(text):
     """
-    Apply cursor movement from an escape sequence.
+    Iterate through text, yielding segments with sequence identification.
 
-    :param int col: Current column position.
-    :param str seq: Escape sequence to process.
-    :rtype: int
-    :returns: New column position after applying movement.
+    This generator yields tuples of ``(segment, is_sequence)`` for each part
+    of the input text, where ``is_sequence`` is ``True`` if the segment is
+    a recognized terminal escape sequence.
+
+    :param str text: String to iterate through.
+    :rtype: Iterator[tuple[str, bool]]
+    :returns: Iterator of (segment, is_sequence) tuples.
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> list(iter_sequences('hello'))
+        [('hello', False)]
+        >>> list(iter_sequences('\\x1b[31mred'))
+        [('\\x1b[31m', True), ('red', False)]
+        >>> list(iter_sequences('\\x1b[1m\\x1b[31m'))
+        [('\\x1b[1m', True), ('\\x1b[31m', True)]
     """
-    match = CURSOR_RIGHT_PATTERN.match(seq)
-    if match:
-        amount = int(match.group(1)) if match.group(1) else 1
-        return col + amount
-    match = CURSOR_LEFT_PATTERN.match(seq)
-    if match:
-        amount = int(match.group(1)) if match.group(1) else 1
-        return max(0, col - amount)
-    return col
+    idx = 0
+    text_len = len(text)
+    segment_start = 0
+
+    while idx < text_len:
+        char = text[idx]
+
+        if char == '\x1b':
+            # Yield any accumulated non-sequence text
+            if idx > segment_start:
+                yield (text[segment_start:idx], False)
+
+            # Try to match an escape sequence
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match:
+                yield (match.group(), True)
+                idx = match.end()
+            else:
+                # Lone ESC or unrecognized - yield as sequence anyway
+                yield (char, True)
+                idx += 1
+            segment_start = idx
+        else:
+            idx += 1
+
+    # Yield any remaining text
+    if segment_start < text_len:
+        yield (text[segment_start:], False)
 
 
-def _handle_esc_sequence(text, idx, current_col, control_codes):
+def _width_ignored_codes(text):
     """
-    Handle ESC sequence at position idx.
+    Fast path for width() with control_codes='ignore'.
 
-    :param str text: The text being processed.
-    :param int idx: Current index position (at ESC character).
-    :param int current_col: Current column position.
-    :param str control_codes: Control code handling mode.
-    :returns: Tuple of (new_idx, new_col).
-    :rtype: tuple
-    :raises ValueError: If control_codes is 'strict' and sequence is indeterminate.
+    Strips escape sequences and control characters, then measures remaining text.
     """
-    match = ZERO_WIDTH_PATTERN.match(text, idx)
-    if match:
-        seq = match.group()
-        if control_codes == 'strict' and INDETERMINATE_SEQ_PATTERN.match(seq):
-            raise ValueError(f"Indeterminate cursor sequence at position {idx}")
-        if control_codes != 'ignore':
-            current_col = _apply_cursor_movement(current_col, seq)
-        return match.end(), current_col
-    # Lone ESC or incomplete sequence: zero width
-    return idx + 1, current_col
+    return wcswidth(
+        ''.join([seg for seg, is_seq in iter_sequences(text) if not is_seq])
+        .translate(_CONTROL_CHAR_TABLE)
+    )
 
 
-def _handle_horizontal_ctrl(char, current_col, control_codes, tabstop):
+def width(text, control_codes='parse', tabstop=8, column=0):
     """
-    Handle horizontal movement character.
+    Return printable width of text containing many kinds of control codes and sequences.
 
-    :returns: New column position.
-    """
-    # Tab is handled in all modes if tabstop is set
-    if char == '\x09' and tabstop:
-        return current_col + tabstop - (current_col % tabstop)
-    # BS and CR only in parse/strict modes
-    if control_codes != 'ignore':
-        if char == '\x08':
-            return max(0, current_col - 1)
-        if char == '\x0d':
-            return 0
-    return current_col
-
-
-def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
-    """
-    Return printable width of text, never returns -1.
-
-    Unlike :func:`wcswidth`, this function handles most control
-    characters and many popular terminal output sequences.
-
-    Returns a non-negative integer.
+    Unlike :func:`wcswidth`, this function handles most control characters and many popular terminal
+    output sequences.  Never returns -1.
 
     :param str text: String to measure.
     :param str control_codes: How to handle control characters and sequences:
 
-        - ``'parse'`` (default): Track horizontal cursor movement from BS
-          ``\\b``, CR ``\\r``, tab ``\\t``, and cursor movement sequences.
-          Vertical movement (LF, VT, FF) and indeterminate sequences are
-          zero-width. Never raises.
-        - ``'strict'``: Like parse, but raises :exc:`ValueError` on illegal
-          control characters, vertical movement, and indeterminate sequences.
-        - ``'ignore'``: Strip all control characters and sequences (zero
-          width). Never raises.
+        - ``'parse'`` (default): Track horizontal cursor movement from BS ``\\b``, CR ``\\r``, TAB
+          ``\\t``, and cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
+          indeterminate sequences are zero-width. Never raises.
+        - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters with
+          indeterminate results of the screen or cursor, like clear or vertical movement. Generally,
+          these should be handled with a virtual terminal emulator (like 'pyte').
+        - ``'ignore'``: All C0 and C1 control characters and escape sequences are measured as
+          width 0. This is the fastest measurement for text already filtered or known not to contain
+          any kinds of control codes or sequences. TAB ``\\t`` is zero-width; for tab expansion,
+          pre-process: ``text.replace('\\t', ' ' * 8)``.
 
-    :param tabstop: Tab stop width. Default is 8. Set to ``None`` for
-        zero-width tabs.
-    :param str measure: What to measure:
-
-        - ``'extent'`` (default): Maximum cursor position reached. This
-          accounts for cursor movement sequences and represents the rightmost
-          column the cursor reaches.
-        - ``'printable'``: Sum of actual printed character widths only,
-          ignoring cursor movement. This represents the total width of
-          visible characters.
-    :type tabstop: int or None
-    :param int column: Starting column position for tab and movement
-        calculation. Default is 0.
+    :param int tabstop: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
+        Must be positive. Has no effect when ``control_codes='ignore'``.
+    :param int column: Starting column position for tabstop and movement calculations. Has no effect
+        when ``control_codes='ignore'``.
     :rtype: int
-    :returns: Width measurement based on ``measure`` parameter.
-    :raises ValueError: If ``control_codes`` is ``'strict'`` and illegal
-        control characters, vertical movement, or indeterminate sequences
-        are encountered. Also raised if ``control_codes`` or ``measure``
-        is not one of the valid values.
+    :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
+        present in ``text`` according to given parameters.  This represents the rightmost column the
+        cursor reaches.  Always a non-negative integer.
 
-    Example usage::
+    :raises ValueError: If ``control_codes='strict'`` and control characters with indeterminate
+        effects, such as vertical movement or clear sequences are encountered, or on unexpected
+        C0 or C1 control code. Also raised when ``control_codes`` is not one of the valid values.
+
+    .. versionadded:: 0.2.15
+
+    Examples::
 
         >>> width('hello')
         5
@@ -438,51 +438,85 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
         10
         >>> width('\\x1b[31mred\\x1b[0m')
         3
-        >>> width('abc\\bd')  # backspace moves cursor
+        >>> width('\\x1b[31mred\\x1b[0m', control_codes='ignore')  # same result (ignored)
         3
-        >>> width('abc\\t')  # tab to column 8
+        >>> width('123\\b4')     # backspace overwrites previous cell (outputs '124')
+        3
+        >>> width('abc\\t')      # tab caused cursor to move to column 8
         8
-        >>> width('A\\x1b[10C', measure='extent')
+        >>> width('1\\x1b[10C')  # '1' + cursor right 10, cursor ends on column 11
         11
-        >>> width('A\\x1b[10C', measure='printable')
+        >>> width('1\\x1b[10C', control_codes='ignore')   # faster but wrong in this case
         1
     """
+    # pylint: disable=too-complex,too-many-branches,too-many-statements
+    # This could be broken into sub-functions (#1 and #3), but for reduced overhead considering this
+    # function is a likely "hot path", they are inlined, breaking our many complexity rules.  Fear
+    # not, there are many tests!
     if control_codes not in ('ignore', 'strict', 'parse'):
         raise ValueError(
             f"control_codes must be 'ignore', 'strict', or 'parse', "
             f"got {control_codes!r}"
         )
-    if measure not in ('extent', 'printable'):
-        raise ValueError(
-            f"measure must be 'extent' or 'printable', got {measure!r}"
-        )
 
+    # Fast path for ignore mode
+    if control_codes == 'ignore':
+        return _width_ignored_codes(text)
+
+    strict = control_codes == 'strict'
+    # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
+    # Initialize max_extent to column so backward movement (CR, BS) won't yield negative width.
+    # Subtract column at return to convert absolute max position to relative width.
     current_col = column
     max_extent = column
-    printable_width = 0
     idx = 0
-    text_len = len(text)
 
-    while idx < text_len:
+    while idx < len(text):
         char = text[idx]
 
         # 1. Handle ESC sequences
         if char == '\x1b':
-            idx, current_col = _handle_esc_sequence(text, idx, current_col, control_codes)
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match:
+                seq = match.group()
+                if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+                    raise ValueError(f"Indeterminate cursor sequence at position {idx}")
+                # Apply cursor movement
+                right = CURSOR_RIGHT_SEQUENCE.match(seq)
+                if right:
+                    current_col += int(right.group(1) or 1)
+                else:
+                    left = CURSOR_LEFT_SEQUENCE.match(seq)
+                    if left:
+                        current_col = max(0, current_col - int(left.group(1) or 1))
+                idx = match.end()
+            else:
+                idx += 1
             max_extent = max(max_extent, current_col)
             continue
 
         # 2. Handle illegal and vertical control characters (zero width, error in strict)
-        if char in ILLEGAL_CTRL or char in VERTICAL_CTRL:
-            if control_codes == 'strict':
-                kind = "Illegal control" if char in ILLEGAL_CTRL else "Vertical movement"
-                raise ValueError(f"{kind} character {ord(char):#x} at position {idx}")
+        if char in ILLEGAL_CTRL:
+            if strict:
+                raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
+            idx += 1
+            continue
+
+        if char in VERTICAL_CTRL:
+            if strict:
+                raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
             idx += 1
             continue
 
         # 3. Handle horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            current_col = _handle_horizontal_ctrl(char, current_col, control_codes, tabstop)
+            if char == '\x09' and tabstop > 0:  # Tab
+                current_col += tabstop - (current_col % tabstop)
+            elif char == '\x08':  # Backspace
+                if current_col > 0:
+                    current_col -= 1
+            elif char == '\x0d':  # Carriage return
+                current_col = 0
             max_extent = max(max_extent, current_col)
             idx += 1
             continue
@@ -502,10 +536,6 @@ def width(text, control_codes='parse', measure='extent', tabstop=8, column=0):
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
-            printable_width += w
-        # w <= 0: combining marks, zero-width chars, etc. - no advancement
         idx += 1
 
-    if measure == 'printable':
-        return printable_width
     return max_extent - column

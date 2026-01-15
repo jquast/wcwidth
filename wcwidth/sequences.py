@@ -7,7 +7,7 @@ clusters and character display widths.
 """
 from typing import Iterator, Tuple
 
-from .terminal_seqs import ZERO_WIDTH_PATTERN
+from .escape_sequences import ZERO_WIDTH_PATTERN
 # Import width() as _width to avoid collision with 'width' parameter in function signatures
 from .wcwidth import width as _width
 
