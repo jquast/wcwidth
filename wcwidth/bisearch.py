@@ -2,20 +2,20 @@
 
 
 def bisearch(ucs, table):
-    # type: (int, tuple) -> bool
+    # type: (int, tuple) -> int
     """
     Binary search in interval table.
 
     :param ucs: Ordinal value of unicode character.
     :param table: Tuple of starting and ending ranges of ordinal values,
         in form of ``((start, end), ...)``.
-    :returns: True if ordinal value ucs is found within lookup table, else False.
+    :returns: 1 if ordinal value ucs is found within lookup table, else 0.
     """
     lbound = 0
     ubound = len(table) - 1
 
     if ucs < table[0][0] or ucs > table[ubound][1]:
-        return False
+        return 0
 
     while ubound >= lbound:
         mid = (lbound + ubound) // 2
@@ -24,6 +24,6 @@ def bisearch(ucs, table):
         elif ucs < table[mid][0]:
             ubound = mid - 1
         else:
-            return True
+            return 1
 
-    return False
+    return 0
