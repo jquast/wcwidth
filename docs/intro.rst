@@ -85,23 +85,8 @@ Measures width of a single codepoint,
     >>> wcwidth.wcwidth('\u2640')
     1
 
-Use function ``wcwidth()`` to determine the length of a *single unicode character*.
-
-See `Specification <Specification_from_pypi_>`_ of character measurements. More
-briefly, return values of function ``wcwidth()`` are:
-
-``-1``
-  Indeterminate (not printable) control codes (C0 and C1).
-
-``0``
-  Does not advance the cursor, such as NULL or Combining.
-
-``2``
-  Characters of category East Asian Wide (W) or East Asian
-  Full-width (F) which are displayed using two terminal cells.
-
-``1``
-  All others.
+Use function `wcwidth()`_ to determine the length of a *single unicode character*.
+See `Specification <Specification_from_pypi_>`_ of character measurements.
 
 wcswidth()
 ----------
@@ -114,11 +99,10 @@ Measures width of a string, returns -1 for control codes.
     >>> wcwidth.wcswidth('♀️')
     2
 
-Use function ``wcswidth()`` to determine the length of many, a *string of unicode characters*
+Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*
 
-See `Specification <Specification_from_pypi_>`_ of character measurements. More briefly, return
-values of function ``wcswidth()`` is the sum of ``wcwidth()`` with some additional account for some
-kinds of sequences.  Similarly, ``-1`` is returned if control codes occurs anywhere in the string.
+See `Specification <Specification_from_pypi_>`_ of character measurements. Note that
+``-1`` is returned if control codes occurs anywhere in the string.
 
 width()
 -------
@@ -133,16 +117,19 @@ Measures width of a string with improved handling of ``control_codes``
     >>> # SGR colored text, 'WARN', followed by SGR reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
-    >>> # tabs,
+    >>> # customized tabstop and location
     >>> wcwidth.width('\t', tabstop=4, column=1)
     3
-    >>> # "vertical" control characters are ignored
+    >>> # tab and all other control characters ignored
+    >>> wcwidth.width('\t', control_codes='ignore')
+    0
+    >>> # "vertical" movement and control characters are always ignored
     >>> wcwidth.width('\n')
     0
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
     >>> wcwidth.width('\x1b[H\x1b[2J')
     0
-    >>> # *unless* control_codes='strict' is used, then ValueError is raised
+    >>> # ValueError may rais when control_codes='strict'
     >>> wcwidth.width('\n', control_codes='strict')
     Traceback (most recent call last):
     ...
@@ -164,14 +151,14 @@ Iterates through text, yielding segments with escape sequence identification.
     >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
     [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
 
-Use ``iter_sequences()`` to split text into segments of plain text and escape sequences. Each tuple
+Use `iter_sequences()`_ to split text into segments of plain text and escape sequences. Each tuple
 contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
 plain text (``False``).
 
 iter_graphemes()
 ----------------
 
-Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a string.
+Use function `iter_graphemes()`_ to iterate over *grapheme clusters* of a string.
 
 .. code-block:: python
 
@@ -190,7 +177,7 @@ Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a strin
 ljust()
 -------
 
-Use as replacement of `str.ljust()`_:
+Use `ljust()`_ as replacement of `str.ljust()`_:
 
 .. code-block:: python
 
@@ -202,7 +189,7 @@ Use as replacement of `str.ljust()`_:
 rjust()
 -------
 
-Use as replacement of `str.rjust()`_:
+Use `rjust()`_ as replacement of `str.rjust()`_:
 
 .. code-block:: python
 
@@ -214,7 +201,7 @@ Use as replacement of `str.rjust()`_:
 center()
 --------
 
-Use as replacement of `str.center()`_:
+Use `center()`_ as replacement of `str.center()`_:
 
 .. code-block:: python
 
