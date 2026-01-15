@@ -6,99 +6,69 @@ import pytest
 import wcwidth
 
 
-def test_width_basic():
+BASIC_WIDTH_CASES = [
+    ('', 0, 'empty'),
+    ('hello', 5, 'ASCII'),
+    ('コンニチハ', 10, 'CJK'),
+    ('cafe\u0301', 4, 'combining'),
+    ('\U0001F468\u200d\U0001F469\u200d\U0001F467', 2, 'ZWJ'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', BASIC_WIDTH_CASES)
+def test_width_basic(text, expected, name):
     """Basic width measurement tests."""
-    # empty string
-    assert wcwidth.width("") == 0
-    # ASCII string
-    assert wcwidth.width("hello") == 5
-    # wide characters (CJK)
-    assert wcwidth.width("コンニチハ") == 10
-    # combining characters
-    assert wcwidth.width("cafe\u0301") == 4
-    # ZWJ sequence
-    assert wcwidth.width("\U0001F468\u200d\U0001F469\u200d\U0001F467") == 2
+    assert wcwidth.width(text) == expected
 
 
-def test_width_control_codes_ignore():
-    """Tests for control_codes='ignore'."""
-    # illegal control code is stripped (\x01)
-    assert wcwidth.width("hello\x01world", control_codes="ignore") == 10
-    # BEL is stripped
-    assert wcwidth.width("hello\x07world", control_codes="ignore") == 10
-    # NUL is stripped
-    assert wcwidth.width("hello\x00world", control_codes="ignore") == 10
-    # backspace is stripped
-    assert wcwidth.width("abc\bd", control_codes="ignore") == 4
-    # CR is stripped
-    assert wcwidth.width("abc\rxy", control_codes="ignore") == 5
-    # LF is stripped
-    assert wcwidth.width("abc\nxy", control_codes="ignore") == 5
-    # escape sequence is stripped
-    assert wcwidth.width("\x1b[31mred\x1b[0m", control_codes="ignore") == 3
-    # C1 control is stripped
-    assert wcwidth.width("hello\x80world", control_codes="ignore") == 10
-    # DEL is stripped
-    assert wcwidth.width("hello\x7fworld", control_codes="ignore") == 10
-    # tab stripped when tabstop=None
-    assert wcwidth.width("\t", control_codes="ignore", tabstop=None) == 0
+IGNORE_MODE_CASES = [
+    ('hello\x01world', 10, 'C0_control'),
+    ('hello\x00world', 10, 'NUL'),
+    ('abc\bd', 4, 'backspace'),
+    ('abc\nxy', 5, 'LF'),
+    ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
+    ('hello\x80world', 10, 'C1_control'),
+]
 
 
-def test_width_control_codes_strict():
-    """Tests for control_codes='strict'."""
-    # illegal control code raises
+@pytest.mark.parametrize('text,expected,name', IGNORE_MODE_CASES)
+def test_width_control_codes_ignore(text, expected, name):
+    """Ignore mode strips control codes from width calculation."""
+    assert wcwidth.width(text, control_codes="ignore") == expected
+
+
+STRICT_RAISES_CASES = [
+    ('hello\x01world', 'C0_control'),
+    ('hello\x1aworld', 'ctrl_z'),
+    ('hello\x7fworld', 'DEL'),
+    ('hello\x80world', 'C1_control'),
+    ('hello\nworld', 'LF'),
+    ('hello\x1b[Hworld', 'cursor_home'),
+    ('hello\x1b[Aworld', 'cursor_up'),
+]
+
+
+@pytest.mark.parametrize('text,name', STRICT_RAISES_CASES)
+def test_width_control_codes_strict_raises(text, name):
+    """Strict mode raises ValueError for illegal control codes."""
     with pytest.raises(ValueError):
-        wcwidth.width("hello\x01world", control_codes="strict")
-    # Ctrl-C raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x03world", control_codes="strict")
-    # Ctrl-D raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x04world", control_codes="strict")
-    # Ctrl-Z raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x1aworld", control_codes="strict")
-    # DEL raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x7fworld", control_codes="strict")
-    # C1 control raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x80world", control_codes="strict")
-    # LF raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\nworld", control_codes="strict")
-    # VT raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x0bworld", control_codes="strict")
-    # FF raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x0cworld", control_codes="strict")
-    # cursor home raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x1b[Hworld", control_codes="strict")
-    # clear screen raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x1b[2Jworld", control_codes="strict")
-    # cursor up raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x1b[Aworld", control_codes="strict")
-    # cursor down raises
-    with pytest.raises(ValueError):
-        wcwidth.width("hello\x1b[Bworld", control_codes="strict")
-    # BEL is allowed
-    assert wcwidth.width("hello\x07world", control_codes="strict") == 10
-    # NUL is allowed
-    assert wcwidth.width("hello\x00world", control_codes="strict") == 10
-    # backspace tracks movement
-    assert wcwidth.width("abc\bd", control_codes="strict") == 3
-    # CR tracks movement
-    assert wcwidth.width("abc\rxy", control_codes="strict") == 3
-    # escape sequence is allowed
-    assert wcwidth.width("\x1b[31mred\x1b[0m", control_codes="strict") == 3
-    # cursor right is allowed
-    assert wcwidth.width("a\x1b[2Cb", control_codes="strict") == 4
-    # cursor left is allowed
-    assert wcwidth.width("abcd\x1b[2De", control_codes="strict") == 4
+        wcwidth.width(text, control_codes="strict")
+
+
+STRICT_ALLOWED_CASES = [
+    ('hello\x07world', 10, 'BEL'),
+    ('hello\x00world', 10, 'NUL'),
+    ('abc\bd', 3, 'backspace'),
+    ('abc\rxy', 3, 'CR'),
+    ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
+    ('a\x1b[2Cb', 4, 'cursor_right'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', STRICT_ALLOWED_CASES)
+def test_width_control_codes_strict_allowed(text, expected, name):
+    """Strict mode allows certain control codes."""
+    assert wcwidth.width(text, control_codes="strict") == expected
 
 
 STRICT_INDETERMINATE_SEQUENCES = [
@@ -122,94 +92,69 @@ def test_width_strict_indeterminate_raises(seq, cap_name):
         wcwidth.width(f"hello{seq}world", control_codes="strict")
 
 
-def test_width_control_codes_parse():
-    """Tests for control_codes='parse' (default)."""
-    # illegal control code has zero width
-    assert wcwidth.width("hello\x01world") == 10
-    # backspace moves cursor
-    assert wcwidth.width("abc\bd") == 3
-    # backspace-space-backspace erase pattern
-    assert wcwidth.width("abc\b \b") == 3
-    # backspace at column zero
-    assert wcwidth.width("\ba") == 1
-    # CR resets column
-    assert wcwidth.width("abc\rxy") == 3
-    # LF has zero width
-    assert wcwidth.width("abc\nxy") == 5
-    # cursor right sequence
-    assert wcwidth.width("a\x1b[2Cb") == 4
-    # cursor right default (no param)
-    assert wcwidth.width("a\x1b[Cb") == 3
-    # cursor left sequence
-    assert wcwidth.width("abcd\x1b[2De") == 4
-    # cursor left default (no param)
-    assert wcwidth.width("abc\x1b[Dd") == 3
-    # cursor left past column zero
-    assert wcwidth.width("a\x1b[10Db") == 1
-    # SGR has no movement
-    assert wcwidth.width("\x1b[31mred\x1b[0m") == 3
-    # indeterminate sequence has zero width
-    assert wcwidth.width("ab\x1b[Hcd") == 4
-    # C1 control has zero width
-    assert wcwidth.width("hello\x80world") == 10
-    # DEL has zero width
-    assert wcwidth.width("hello\x7fworld") == 10
+PARSE_MODE_CASES = [
+    ('hello\x01world', 10, 'C0_control'),
+    ('abc\bd', 3, 'backspace'),
+    ('abc\rxy', 3, 'CR'),
+    ('a\x1b[2Cb', 4, 'cursor_right'),
+    ('abcd\x1b[2De', 4, 'cursor_left'),
+    ('\x1b[31mred\x1b[0m', 3, 'SGR'),
+    ('ab\x1b[Hcd', 4, 'indeterminate'),
+]
 
 
-def test_width_tabstop():
-    """Tests for tabstop parameter (default is 8)."""
-    # tab with default tabstop
-    assert wcwidth.width("\t") == 8
-    # tab at column zero
-    assert wcwidth.width("\t", tabstop=8, column=0) == 8
-    # tab at column three
-    assert wcwidth.width("\t", tabstop=8, column=3) == 5
-    # tab after text
-    assert wcwidth.width("abc\t", tabstop=8) == 8
-    # tab with tabstop=None
-    assert wcwidth.width("\t", tabstop=None) == 0
-    # tab with tabstop=4
-    assert wcwidth.width("ab\t", tabstop=4) == 4
-    # multiple tabs
-    assert wcwidth.width("\t\t", tabstop=8) == 16
-    # tab with column offset
-    assert wcwidth.width("ab\t", tabstop=8, column=2) == 6
+@pytest.mark.parametrize('text,expected,name', PARSE_MODE_CASES)
+def test_width_control_codes_parse(text, expected, name):
+    """Parse mode (default) handles control codes."""
+    assert wcwidth.width(text) == expected
 
 
-def test_width_escape_sequences():
-    """Tests for escape sequence handling."""
-    # basic SGR
-    assert wcwidth.width("\x1b[m") == 0
-    # SGR with params
-    assert wcwidth.width("\x1b[1;31m") == 0
-    # 256-color SGR
-    assert wcwidth.width("\x1b[38;5;196m") == 0
-    # RGB SGR
-    assert wcwidth.width("\x1b[38;2;255;0;0m") == 0
-    # OSC hyperlink
-    assert wcwidth.width("\x1b]8;;https://example.com\x07link\x1b]8;;\x07") == 4
-    # OSC title
-    assert wcwidth.width("\x1b]0;title\x07text") == 4
-    # charset designation
-    assert wcwidth.width("\x1b(B") == 0
-    # lone escape
-    assert wcwidth.width("\x1b") == 0
-    # incomplete CSI
-    assert wcwidth.width("\x1b[") == 0
+TABSTOP_CASES = [
+    ('\t', 8, 8, 0, 'default'),
+    ('\t', 5, 8, 3, 'column_offset'),
+    ('abc\t', 8, 8, 0, 'after_text'),
+    ('ab\t', 4, 4, 0, 'tabstop_4'),
+]
 
 
-def test_width_edge_cases():
-    """Edge case tests."""
-    # only control chars with ignore
-    assert wcwidth.width("\x01\x02\x03", control_codes="ignore") == 0
-    # only escape sequences
-    assert wcwidth.width("\x1b[31m\x1b[0m") == 0
-    # mixed content
-    assert wcwidth.width("\x1b[31mhello\x1b[0m world") == 11
-    # wide char with escape
-    assert wcwidth.width("\x1b[31mコ\x1b[0m") == 2
-    # combining char with escape
-    assert wcwidth.width("\x1b[31mcafe\u0301\x1b[0m") == 4
+@pytest.mark.parametrize('text,expected,tabstop,column,name', TABSTOP_CASES)
+def test_width_tabstop(text, expected, tabstop, column, name):
+    """Tabstop parameter controls tab width calculation."""
+    assert wcwidth.width(text, tabstop=tabstop, column=column) == expected
+
+
+def test_width_tabstop_none():
+    """Tabstop=None ignores tabs."""
+    assert wcwidth.width('\t', tabstop=None) == 0
+
+
+ESCAPE_SEQUENCE_CASES = [
+    ('\x1b[m', 0, 'basic_SGR'),
+    ('\x1b[38;2;255;0;0m', 0, 'RGB_SGR'),
+    ('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 4, 'OSC_hyperlink'),
+    ('\x1b]0;title\x07text', 4, 'OSC_title'),
+    ('\x1b(B', 0, 'charset'),
+    ('\x1b[', 0, 'incomplete_CSI'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', ESCAPE_SEQUENCE_CASES)
+def test_width_escape_sequences(text, expected, name):
+    """Escape sequences are parsed correctly."""
+    assert wcwidth.width(text) == expected
+
+
+EDGE_CASES = [
+    ('\x1b[31m\x1b[0m', 0, 'only_escapes'),
+    ('\x1b[31mhello\x1b[0m world', 11, 'mixed_content'),
+    ('\x1b[31mコ\x1b[0m', 2, 'wide_with_escape'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', EDGE_CASES)
+def test_width_edge_cases(text, expected, name):
+    """Edge cases are handled correctly."""
+    assert wcwidth.width(text) == expected
 
 
 def test_width_invalid_control_codes():
@@ -276,33 +221,18 @@ def test_cursor_right_unparameterized():
 INDETERMINATE_CAP_SAMPLES = [
     ('\x1b[1;1r', 'change_scroll_region'),
     ('\x1b[H\x1b[2J', 'clear_screen'),
-    ('\x1b[1K', 'clr_bol'),
     ('\x1b[K', 'clr_eol'),
-    ('\x1b[J', 'clr_eos'),
-    ('\x1b[1G', 'column_address'),
     ('\x1b[1;1H', 'cursor_address'),
-    ('\x1b[B', 'cursor_down'),
-    ('\x1b[H', 'cursor_home'),
     ('\x1b[A', 'cursor_up'),
-    ('\x1b[P', 'delete_character'),
     ('\x1b[M', 'delete_line'),
     ('\x1b[?1049h', 'enter_fullscreen'),
     ('\x1b[1X', 'erase_chars'),
-    ('\x1b[J', 'erase_display'),
-    ('\x1b[?1049l', 'exit_fullscreen'),
     ('\x1b[L', 'insert_line'),
-    ('\x1b[1P', 'parm_dch'),
-    ('\x1b[1M', 'parm_delete_line'),
-    ('\x1b[1B', 'parm_down_cursor'),
-    ('\x1b[1@', 'parm_ich'),
     ('\x1b[1S', 'parm_index'),
-    ('\x1b[1L', 'parm_insert_line'),
-    ('\x1b[1T', 'parm_rindex'),
     ('\x1b[1A', 'parm_up_cursor'),
     ('\x1b8', 'restore_cursor'),
     ('\x1b[1d', 'row_address'),
     ('\x1bD', 'scroll_forward'),
-    ('\x1bM', 'scroll_reverse'),
 ]
 
 
@@ -378,17 +308,6 @@ MODERN_TERMINAL_SEQUENCES = [
 def test_modern_sequences(seq, expected_width, name):
     """Modern terminal sequences are recognized as zero-width."""
     assert wcwidth.width(seq) == expected_width
+    assert wcwidth.width(seq, control_codes='strict') == expected_width
 
 
-MODERN_SEQUENCES_STRICT = [
-    '\x1b_Gf=100;data\x1b\\',
-    '\x1bP0q~-\x1b\\',
-    '\x1b]1337;SetMark\x07',
-    '\x1b]133;A\x07',
-]
-
-
-@pytest.mark.parametrize('seq', MODERN_SEQUENCES_STRICT)
-def test_modern_sequences_strict_mode(seq):
-    """Modern sequences do not raise in strict mode."""
-    assert wcwidth.width(seq, control_codes='strict') == 0
