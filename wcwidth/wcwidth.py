@@ -470,6 +470,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
     current_col = column
     max_extent = column
     idx = 0
+    last_measured_char = None  # Track for VS16 handling
 
     while idx < len(text):
         char = text[idx]
@@ -526,16 +527,29 @@ def width(text, control_codes='parse', tabstop=8, column=0):
             idx += 2
             continue
 
-        # 5. Handle other zero-width characters (control chars and VS-16)
-        if char in ZERO_WIDTH_CTRL or char == '\uFE0F':
+        # 5. Handle other zero-width characters (control chars)
+        if char in ZERO_WIDTH_CTRL:
             idx += 1
             continue
 
-        # 6. Normal characters: measure with wcwidth
+        # 6. Handle VS16: converts preceding narrow character to wide
+        if char == '\uFE0F':
+            if last_measured_char and _bisearch(ord(last_measured_char),
+                                                VS16_NARROW_TO_WIDE["9.0.0"]):
+                current_col += 1
+                max_extent = max(max_extent, current_col)
+            last_measured_char = None
+            idx += 1
+            continue
+
+        # 7. Normal characters: measure with wcwidth
         w = wcwidth(char)
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
+            last_measured_char = char
+        else:
+            last_measured_char = None
         idx += 1
 
     return max_extent - column

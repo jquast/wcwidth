@@ -172,8 +172,16 @@ def test_width_invalid_control_codes():
 
 
 def test_vs16_selector():
-    """Test VS16 emoji selector."""
-    assert wcwidth.width("\u263A\uFE0F") == 1
+    """VS16 converts narrow character to wide (width 2)."""
+    # Smiley face with VS16 should be width 2 (same as wcswidth)
+    assert wcwidth.width("\u263A\uFE0F") == 2
+    assert wcwidth.width("\u263A\uFE0F") == wcwidth.wcswidth("\u263A\uFE0F")
+    # Heart with VS16
+    assert wcwidth.width("\u2764\uFE0F") == 2
+    # VS16 without valid preceding char is zero-width
+    assert wcwidth.width("\uFE0F") == 0
+    # Character not in VS16 table followed by VS16 stays narrow
+    assert wcwidth.width("A\uFE0F") == 1
 
 
 def test_backspace_at_column_zero():
