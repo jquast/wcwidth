@@ -353,6 +353,12 @@ languages.
 History
 =======
 
+0.2.15 **next version**
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
+  * **New** Function `width()`_. `PR #166`_.
+  * **New** Function `iter_sequences()`_. `PR #166`_.
+  * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #167`_.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -483,7 +489,16 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
+.. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
+.. _`PR #167`: https://github.com/jquast/wcwidth/pull/167
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
+.. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
+.. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
+.. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
+.. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
+.. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
+.. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
