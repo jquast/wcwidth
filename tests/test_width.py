@@ -208,7 +208,7 @@ INDETERMINATE_CAP_SAMPLES = [
 @pytest.mark.parametrize('seq,cap_name', INDETERMINATE_CAP_SAMPLES)
 def test_indeterminate_caps_covered_by_term_seq_pattern(seq, cap_name):
     """Verify all INDETERMINATE_CAPS sequences are matched by ZERO_WIDTH_PATTERN."""
-    from wcwidth.sequences import ZERO_WIDTH_PATTERN
+    from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
     assert ZERO_WIDTH_PATTERN.match(seq)
     assert wcwidth.width(seq) == 0
 
