@@ -566,7 +566,7 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
     text_width = width(text, control_codes=control_codes)
     fillchar_width = width(fillchar, control_codes='ignore')
     if fillchar_width < 1:
-        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+        raise ValueError(f"fillchar must have positive display width, got {fillchar_width}")
     padding_cells = max(0, dest_width - text_width)
     fill_count = padding_cells // fillchar_width
     return text + fillchar * fill_count
@@ -597,7 +597,7 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
     text_width = width(text, control_codes=control_codes)
     fillchar_width = width(fillchar, control_codes='ignore')
     if fillchar_width < 1:
-        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+        raise ValueError(f"fillchar must have positive display width, got {fillchar_width}")
     padding_cells = max(0, dest_width - text_width)
     fill_count = padding_cells // fillchar_width
     return fillchar * fill_count + text
@@ -631,7 +631,7 @@ def center(text, dest_width, fillchar=' ', control_codes='parse'):
     text_width = width(text, control_codes=control_codes)
     fillchar_width = width(fillchar, control_codes='ignore')
     if fillchar_width < 1:
-        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+        raise ValueError(f"fillchar must have positive display width, got {fillchar_width}")
     total_padding = max(0, dest_width - text_width)
     left_cells = total_padding // 2
     right_cells = total_padding - left_cells
