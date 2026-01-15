@@ -95,6 +95,7 @@ PARSE_MODE_CASES = [
     ('hello\x01world', 10, 'C0_control'),
     ('abc\bd', 3, 'backspace'),
     ('abc\rxy', 3, 'CR'),
+    ('abc\nxy', 5, 'LF_vertical'),
     ('a\x1b[2Cb', 4, 'cursor_right'),
     ('abcd\x1b[2De', 4, 'cursor_left'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR'),
@@ -127,6 +128,11 @@ def test_width_tabstop_zero():
     assert wcwidth.width('\t', control_codes='ignore') == 0
 
 
+def test_width_tabstop_zero_parse():
+    """Tab with tabstop=0 in parse mode is zero-width."""
+    assert wcwidth.width('ab\tc', tabstop=0) == 3
+
+
 ESCAPE_SEQUENCE_CASES = [
     ('\x1b[m', 0, 'basic_SGR'),
     ('\x1b[38;2;255;0;0m', 0, 'RGB_SGR'),
@@ -147,6 +153,9 @@ EDGE_CASES = [
     ('\x1b[31m\x1b[0m', 0, 'only_escapes'),
     ('\x1b[31mhello\x1b[0m world', 11, 'mixed_content'),
     ('\x1b[31mコ\x1b[0m', 2, 'wide_with_escape'),
+    ('\x1b', 0, 'lone_ESC'),
+    ('\x1b!', 1, 'ESC_unrecognized'),
+    ('*\x1b*', 2, 'lone_ESC_between_text'),
 ]
 
 
@@ -165,6 +174,24 @@ def test_width_invalid_control_codes():
 def test_vs16_selector():
     """Test VS16 emoji selector."""
     assert wcwidth.width("\u263A\uFE0F") == 1
+
+
+def test_backspace_at_column_zero():
+    """Backspace at column 0 does not go negative."""
+    assert wcwidth.width('\b') == 0
+    assert wcwidth.width('\ba') == 1
+
+
+def test_carriage_return_resets_column():
+    """CR resets column, max extent is preserved."""
+    assert wcwidth.width('abc\rd') == 3
+    assert wcwidth.width('abc\rde') == 3
+
+
+def test_iter_sequences_lone_esc():
+    """Lone ESC is yielded as a sequence."""
+    assert list(wcwidth.iter_sequences('\x1b')) == [('\x1b', True)]
+    assert list(wcwidth.iter_sequences('*\x1b*')) == [('*', False), ('\x1b', True), ('*', False)]
 
 
 def test_tab_ignore_with_tabstop():
