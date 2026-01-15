@@ -342,7 +342,7 @@ def iter_sequences(text):
     :returns: Iterator of (segment, is_sequence) tuples.
 
     .. versionadded:: 0.2.15
- 
+
     Example::
 
         >>> list(iter_sequences('hello'))
@@ -412,9 +412,11 @@ def width(text, control_codes='parse', tabstop=8, column=0):
           these should be handled with a virtual terminal emulator (like 'pyte').
         - ``'ignore'``: All C0 and C1 control characters and escape sequences are measured as
           width 0. This is the fastest measurement for text already filtered or known not to contain
-          any kinds of control codes or sequences. TAB ``\t`` is zero-width.
+          any kinds of control codes or sequences. TAB ``\\t`` is zero-width; for tab expansion,
+          pre-process: ``text.replace('\\t', ' ' * 8)``.
 
-    :param int tabstop: Tab stop width. Default is 8. Has no effect when ``control_codes='ignore'``.
+    :param int tabstop: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
+        Must be positive. Has no effect when ``control_codes='ignore'``.
     :param int column: Starting column position for tabstop and movement calculations. Has no effect
         when ``control_codes='ignore'``.
     :rtype: int
@@ -422,13 +424,12 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         present in ``text`` according to given parameters.  This represents the rightmost column the
         cursor reaches.  Always a non-negative integer.
 
-    :raises ValueError: If ``control_codes='strict'`` and control characters with indeterminate,
+    :raises ValueError: If ``control_codes='strict'`` and control characters with indeterminate
         effects, such as vertical movement or clear sequences are encountered, or on unexpected
-        C0 or C1 control code.
-        ``control_codes`` cannot be parsed not one of the valid values.
+        C0 or C1 control code. Also raised when ``control_codes`` is not one of the valid values.
 
     .. versionadded:: 0.2.15
- 
+
     Examples::
 
         >>> width('hello')
@@ -509,7 +510,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
         # 3. Handle horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            if char == '\x09':  # Tab
+            if char == '\x09' and tabstop > 0:  # Tab
                 current_col += tabstop - (current_col % tabstop)
             elif char == '\x08':  # Backspace
                 if current_col > 0:

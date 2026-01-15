@@ -16,9 +16,9 @@ The stable version of this package is maintained on pypi, install or upgrade, us
 Problem
 -------
 
-As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_,
-`str.rjust()`_, and `str.center()`_ **incorrectly** measure the displayed width of a string as equal
-to the number of their codepoints.
+All Python string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_, `str.rjust()`_, and
+`str.center()`_ **incorrectly** measure the displayed width of a string as equal to the number of
+their codepoints.
 
 Some examples of **incorrect results**:
 
