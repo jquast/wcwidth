@@ -87,7 +87,7 @@ from .unicode_versions import list_versions
 @lru_cache(maxsize=1000)
 def wcwidth(wc, unicode_version='auto'):
     r"""
-    Given one Unicode character, return its printable length on a terminal.
+    Given one Unicode codepoint, return its printable length on a terminal.
 
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as
@@ -95,8 +95,18 @@ def wcwidth(wc, unicode_version='auto'):
         is returned by :func:`list_versions`.
 
         Any version string may be specified without error -- the nearest
-        matching version is selected.  When ``latest`` (default), the
-        highest Unicode version level is used.
+        matching version is selected.  When ``'auto'`` (default), the
+        ``UNICODE_VERSION`` environment variable is used if set, otherwise
+        the highest Unicode version level is used.
+
+        .. deprecated::
+
+            This parameter is deprecated. Empirical data shows that Unicode
+            support in terminals varies not only by unicode version, but
+            by capabilities, Emojis, and specific language support.
+
+            The default ``'auto'`` behavior is recommended for all use cases.
+
     :return: The width, in cells, necessary to display the character of
         Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
@@ -139,10 +149,19 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         argument exists only for compatibility with the C POSIX function
         signature. It is suggested instead to use python's string slicing
         capability, ``wcswidth(pwcs[:n])``
-    :param str unicode_version: An explicit definition of the unicode version
-        level to use for determination, may be ``auto`` (default), which uses
-        the Environment Variable, ``UNICODE_VERSION`` if defined, or the latest
-        available unicode version, otherwise.
+    :param str unicode_version: A Unicode version number, such as
+        ``'6.0.0'``, or ``'auto'`` (default) which uses the
+        ``UNICODE_VERSION`` environment variable if defined, or the latest
+        available unicode version otherwise.
+
+        .. deprecated::
+
+            This parameter is deprecated. Empirical data shows that Unicode
+            support in terminals varies not only by unicode version, but
+            by capabilities, Emojis, and specific language support.
+
+            The default ``'auto'`` behavior is recommended for all use cases.
+
     :rtype: int
     :returns: The width, in cells, needed to display the first ``n`` characters
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
@@ -153,7 +172,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     # this 'n' argument is a holdover for POSIX function
     _unicode_version = None
     end = len(pwcs) if n is None else n
-    width = 0
+    total_width = 0
     idx = 0
     last_measured_char = None
     while idx < end:
@@ -169,7 +188,8 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             if _unicode_version is None:
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
-                width += _bisearch(ord(last_measured_char), VS16_NARROW_TO_WIDE["9.0.0"])
+                total_width += _bisearch(ord(last_measured_char),
+                                         VS16_NARROW_TO_WIDE["9.0.0"])
                 last_measured_char = None
             idx += 1
             continue
@@ -182,9 +202,9 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # track last character measured to contain a cell, so that
             # subsequent VS-16 modifiers may be understood
             last_measured_char = char
-        width += wcw
+        total_width += wcw
         idx += 1
-    return width
+    return total_width
 
 
 @lru_cache(maxsize=128)
@@ -258,11 +278,10 @@ def _wcmatch_version(given_version):
 
     except ValueError:
         # submitted value raises ValueError in int(), warn and use latest.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is invalid. "
+        warnings.warn(f"UNICODE_VERSION value, {given_version!r}, is invalid. "
                       "Value should be in form of `integer[.]+', the latest "
-                      "supported unicode version {latest_version!r} has been "
-                      "inferred.".format(given_version=given_version,
-                                         latest_version=latest_version))
+                      f"supported unicode version {latest_version!r} has been "
+                      "inferred.")
         return latest_version
 
     # given version is less than any available version, return earliest
@@ -274,11 +293,9 @@ def _wcmatch_version(given_version):
         # this probably isn't what you wanted, the oldest wcwidth.c you will
         # find in the wild is likely version 5 or 6, which we both support,
         # but it's better than not saying anything at all.
-        warnings.warn("UNICODE_VERSION value, {given_version!r}, is lower "
+        warnings.warn(f"UNICODE_VERSION value, {given_version!r}, is lower "
                       "than any available unicode version. Returning lowest "
-                      "version level, {earliest_version!r}".format(
-                          given_version=given_version,
-                          earliest_version=earliest_version))
+                      f"version level, {earliest_version!r}")
         return earliest_version
 
     # create list of versions which are less than our equal to given version,
