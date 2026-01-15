@@ -17,8 +17,8 @@ Problem
 -------
 
 As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_,
-`str.rjust()`_, and `str.center()`_ **incorrectly** measure the displayed width of a string as
-equal to the number of codepoints.
+`str.rjust()`_, and `str.center()`_ **incorrectly** measure the displayed width of a string as equal
+to the number of their codepoints.
 
 Some examples of **incorrect results**:
 
@@ -36,16 +36,17 @@ Some examples of **incorrect results**:
     >>> print('👨‍👩‍👧'.center(4, 'X'))
     👨‍👩‍👧
 
-
 Solution
 --------
 
-The base of this library is POSIX.1-2001 and POSIX.1-2008 functions `wcwidth(3)`_ and `wcswidth(3)`_
-which this python module's functions precisely copy by interface as ``wcwidth()`` and ``wcswidth()``,
-and are brought up-to-date to support the latest unicode releases.
+The base functions of this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
+`wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
+These functions return -1 when C0 and C1 control codes are present.
 
-This library also provides an easy-to-use ``width()`` function, which is also capable of
-measuring the displayed width of most kinds of terminal sequences.
+This library also provides an easy-to-use ``width()`` function, which is also capable of measuring
+the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
+like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
+`iter_sequences()`_ function that provides an iterator over terminal sequences.
 
 Discrepancies
 -------------
@@ -141,6 +142,22 @@ Measures width of a string with improved handling of ``control_codes``
     Traceback (most recent call last):
     ...
     ValueError: Indeterminate cursor sequence at position 0
+
+iter_sequences()
+----------------
+
+Iterates through text, yielding segments with escape sequence identification.
+
+.. code-block:: python
+
+    >>> list(wcwidth.iter_sequences('hello'))
+    [('hello', False)]
+    >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
+    [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
+
+Use ``iter_sequences()`` to split text into segments of plain text and escape sequences. Each tuple
+contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
+plain text (``False``).
 
 ==========
 Developing
