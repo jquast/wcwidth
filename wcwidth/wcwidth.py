@@ -450,16 +450,11 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         1
     """
     # pylint: disable=too-complex,too-many-branches,too-many-statements
-    # This could be broken into sub-functions (#1 and #3), but for reduced overhead considering this
-    # function is a likely "hot path", they are inlined, breaking our many complexity rules.  Fear
-    # not, there are many tests!
-    if control_codes not in ('ignore', 'strict', 'parse'):
-        raise ValueError(
-            f"control_codes must be 'ignore', 'strict', or 'parse', "
-            f"got {control_codes!r}"
-        )
+    # This could be broken into sub-functions (#1, #3, and 6 especially), but for reduced overhead
+    # considering this function is a likely "hot path", they are inlined, breaking many of our
+    # complexity rules.
 
-    # Fast path for ignore mode
+    # Fast path for ignore mode -- this is useful if you know the text is already "clean"
     if control_codes == 'ignore':
         return _width_ignored_codes(text)
 
