@@ -76,10 +76,12 @@ from .control_codes import (
     VERTICAL_CTRL,
     HORIZONTAL_CTRL,
     ZERO_WIDTH_CTRL,
+)
+from .sequences import (
     ZERO_WIDTH_PATTERN,
-    CURSOR_RIGHT_PATTERN,
-    CURSOR_LEFT_PATTERN,
-    INDETERMINATE_SEQ_PATTERN,
+    CURSOR_RIGHT_SEQUENCE,
+    CURSOR_LEFT_SEQUENCE,
+    INDETERMINATE_EFFECT_SEQUENCE,
 )
 from .unicode_versions import list_versions
 
@@ -336,11 +338,11 @@ def _apply_cursor_movement(col, seq):
     :rtype: int
     :returns: New column position after applying movement.
     """
-    match = CURSOR_RIGHT_PATTERN.match(seq)
+    match = CURSOR_RIGHT_SEQUENCE.match(seq)
     if match:
         amount = int(match.group(1)) if match.group(1) else 1
         return col + amount
-    match = CURSOR_LEFT_PATTERN.match(seq)
+    match = CURSOR_LEFT_SEQUENCE.match(seq)
     if match:
         amount = int(match.group(1)) if match.group(1) else 1
         return max(0, col - amount)
@@ -362,7 +364,7 @@ def _handle_esc_sequence(text, idx, current_col, control_codes):
     match = ZERO_WIDTH_PATTERN.match(text, idx)
     if match:
         seq = match.group()
-        if control_codes == 'strict' and INDETERMINATE_SEQ_PATTERN.match(seq):
+        if control_codes == 'strict' and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
             raise ValueError(f"Indeterminate cursor sequence at position {idx}")
         if control_codes != 'ignore':
             current_col = _apply_cursor_movement(current_col, seq)
