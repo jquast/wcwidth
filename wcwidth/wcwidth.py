@@ -101,7 +101,7 @@ def wcwidth(wc, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable is used if set, otherwise
         the highest Unicode version level is used.
 
-        .. deprecated::
+        .. deprecated:: 0.2.14
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but
@@ -156,7 +156,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable if defined, or the latest
         available unicode version otherwise.
 
-        .. deprecated::
+        .. deprecated:: 0.2.14
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but

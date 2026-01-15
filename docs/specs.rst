@@ -38,7 +38,7 @@ Any character following ZWJ (`U+200D`_) when in sequence by
 function :func:`wcwidth.wcswidth`.
 
 Hangul Jamo Jungseong and "Extended-B" code blocks, `U+1160`_ through
-`U+11FF`_ and `U+D7B0`_ through `U+D7FF`_.
+`U+11FF`_ and `U+D7B0`_ through U+D7FF.
 
 
 Width of 1
@@ -73,7 +73,6 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`U+2028`: https://codepoints.net/U+2028
 .. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
-.. _`U+D7FF`: https://codepoints.net/U+D7FF
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
 .. _`DerivedGeneralCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
 .. _`EastAsianWidth.txt`: https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
