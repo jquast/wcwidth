@@ -4,7 +4,7 @@
 Introduction
 ============
 
-This library is mainly for CLI programs that carefully produce output for Terminals.
+This library is mainly for CLI/TUI programs that carefully produce output for Terminals.
 
 Installation
 ------------
@@ -16,9 +16,9 @@ The stable version of this package is maintained on pypi, install or upgrade, us
 Problem
 -------
 
-As of Python 3.15, all string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_,
-`str.rjust()`_, and `str.center()`_ **incorrectly** measure the displayed width of a string as
-equal to the number of codepoints.
+All Python string-formatting functions, `textwrap.wrap()`_, `str.ljust()`_, `str.rjust()`_, and
+`str.center()`_ **incorrectly** measure the displayed width of a string as equal to the number of
+their codepoints.
 
 Some examples of **incorrect results**:
 
@@ -36,13 +36,17 @@ Some examples of **incorrect results**:
     >>> print('👨‍👩‍👧'.center(4, 'X'))
     👨‍👩‍👧
 
-
 Solution
 --------
 
-The base of this library is POSIX.1-2001 and POSIX.1-2008 functions `wcwidth(3)`_ and `wcswidth(3)`_
-which this python module's functions precisely copy by interface as ``wcwidth()`` and ``wcswidth()``,
-and are brought up-to-date to support the latest unicode releases.
+The base functions of this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
+`wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
+These functions return -1 when C0 and C1 control codes are present.
+
+This library also provides an easy-to-use ``width()`` function, which is also capable of measuring
+the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
+like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
+`iter_sequences()`_ function that provides an iterator over terminal sequences.
 
 A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal.
 
@@ -127,6 +131,54 @@ Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a strin
     >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
     >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
     ['o', 'k', '👨‍👩‍👧']
+
+width()
+-------
+
+Measures width of a string with improved handling of ``control_codes``
+
+.. code-block:: python
+
+    >>> # same support as wcswidth(), eg. regional indicator flag:
+    >>> wcwidth.width('\U0001F1FF\U0001F1FC')
+    2
+    >>> # SGR colored text, 'WARN', followed by SGR reset
+    >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
+    4
+    >>> # tabs,
+    >>> wcwidth.width('\t', tabstop=4, column=1)
+    3
+    >>> # "vertical" control characters are ignored
+    >>> wcwidth.width('\n')
+    0
+    >>> # as well as sequences with "indeterminate" effects like Home + Clear
+    >>> wcwidth.width('\x1b[H\x1b[2J')
+    0
+    >>> # *unless* control_codes='strict' is used, then ValueError is raised
+    >>> wcwidth.width('\n', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Vertical movement character 0xa at position 0
+    >>> wcwidth.width('\x1b[H\x1b[2J', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Indeterminate cursor sequence at position 0
+
+iter_sequences()
+----------------
+
+Iterates through text, yielding segments with escape sequence identification.
+
+.. code-block:: python
+
+    >>> list(wcwidth.iter_sequences('hello'))
+    [('hello', False)]
+    >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
+    [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
+
+Use ``iter_sequences()`` to split text into segments of plain text and escape sequences. Each tuple
+contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
+plain text (``False``).
 
 ==========
 Developing
