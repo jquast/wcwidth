@@ -320,8 +320,7 @@ History
 =======
 
 0.2.15 **next version**
-  * **New** Function `width()`_. `PR #166`_.
-  * **New** Function `iter_sequences()`_. `PR #166`_.
+  * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #167`_.
 
 0.2.14 *2025-09-22*
