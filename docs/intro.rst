@@ -55,6 +55,8 @@ like colors, bold, tabstops, and horizontal cursor movement. This is aided by th
 To solve the justification problem, this library provides `ljust()`_, `rjust()`_, and `center()`_
 functions that properly handle Unicode character widths and terminal escape sequences.
 
+A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal.
+
 Discrepancies
 -------------
 
@@ -189,6 +191,25 @@ Use `center()`_ as replacement of `str.center()`_:
     >>> wcwidth.center('cafe\u0301', 6, '*')
     '*café*'                                    # do this!
 
+iter_graphemes()
+----------------
+
+Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a string.
+
+.. code-block:: python
+
+    >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
+    >>> list(iter_graphemes('ok\U0001F1FF\U0001F1FC'))
+    ['o', 'k', '🇿🇼']
+
+    >>> # cafe + combining cute accent
+    >>> list(iter_graphemes('cafe\u0301'))
+    ['c', 'a', 'f', 'é']
+
+    >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
+    >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+    ['o', 'k', '👨‍👩‍👧']
+
 ==========
 Developing
 ==========
@@ -320,6 +341,7 @@ History
 =======
 
 0.2.15 **next version**
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
 
@@ -453,6 +475,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
 .. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
@@ -493,10 +516,13 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
 .. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
+.. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
+.. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
 .. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
 .. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
 .. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center
+.. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads

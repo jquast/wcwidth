@@ -23,10 +23,11 @@ from .wcwidth import (WIDE_EASTASIAN,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch
+from .grapheme import iter_graphemes
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
-__all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences',
+__all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
            'ljust', 'rjust', 'center', 'list_versions')
 
 # We also used pkg_resources to load unicode version tables from version.json,
