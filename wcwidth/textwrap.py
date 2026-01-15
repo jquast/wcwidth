@@ -6,47 +6,12 @@ terminal escape sequences, with proper handling of Unicode grapheme
 clusters and character display widths.
 """
 import textwrap
-from typing import Iterator, List, Tuple
+from typing import List
 
 from .grapheme import iter_graphemes
 from .escape_sequences import ZERO_WIDTH_PATTERN
 # Import width() as _width to avoid collision with 'width' parameter in function signatures
-from .wcwidth import width as _width
-
-
-def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
-    """
-    Iterate over text, yielding (segment, is_sequence) tuples.
-
-    :param text: String that may contain terminal escape sequences.
-    :yields: Tuples of ``(segment_text, is_sequence)`` where ``is_sequence``
-        is ``True`` for escape sequences, ``False`` for plain text runs.
-
-    This function separates terminal escape sequences from printable text,
-    yielding whole runs of non-sequence content for efficiency.
-
-    Example::
-
-        >>> list(iter_sequences('\\x1b[31mred\\x1b[0m'))
-        [('\\x1b[31m', True), ('red', False), ('\\x1b[0m', True)]
-    """
-    idx = 0
-    text_len = len(text)
-    while idx < text_len:
-        char = text[idx]
-        if char == '\x1b':
-            match = ZERO_WIDTH_PATTERN.match(text, idx)
-            if match:
-                yield (match.group(), True)
-                idx = match.end()
-                continue
-        # Collect non-sequence characters into a single run
-        start = idx
-        while idx < text_len:
-            if text[idx] == '\x1b' and ZERO_WIDTH_PATTERN.match(text, idx):
-                break
-            idx += 1
-        yield (text[start:idx], False)
+from .wcwidth import width as _width, iter_sequences
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):
