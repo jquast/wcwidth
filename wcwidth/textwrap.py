@@ -5,13 +5,16 @@ This module provides functions for wrapping text that may contain
 terminal escape sequences, with proper handling of Unicode grapheme
 clusters and character display widths.
 """
+# std imports
 import textwrap
+
 from typing import List
 
+# local
+from .wcwidth import width as _width
+from .wcwidth import iter_sequences
 from .grapheme import iter_graphemes
 from .escape_sequences import ZERO_WIDTH_PATTERN
-# Import width() as _width to avoid collision with 'width' parameter in function signatures
-from .wcwidth import width as _width, iter_sequences
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):
@@ -55,7 +58,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
         return _width(text, control_codes=self.control_codes,
-                            tabstop=self.tabstop, column=self.column)
+                      tabstop=self.tabstop, column=self.column)
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""
@@ -289,6 +292,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             return idx + len(grapheme)
 
         return len(text)
+
 
 def wrap(text: str, width: int,
          control_codes: str = 'parse',

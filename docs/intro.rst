@@ -35,32 +35,20 @@ Some examples of **incorrect results**:
 Solution
 --------
 
-This library provides a collection of functions to solve these problems.
-
-- `wcwidth()`_ and `wcswidth()`_ are Python implementations of the POSIX.1-2001
-  and POSIX.1-2008 `wcwidth(3)`_ and `wcswidth(3)`_ C functions.
-- `width()`_ measures text that may contain terminal escape sequences.
-- `iter_graphemes()`_ iterates over user-perceived characters.
-- `ljust()`_, `rjust()`_, and `center()`_ are sequence-aware replacements for
-  `str.ljust()`_, `str.rjust()`_, and `str.center()`_.
-- `wrap()`_ is a sequence-aware replacement for `textwrap.wrap()`_.
-
-Solution
---------
-
 The lowest-level functions in this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
 `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
 These functions return -1 when C0 and C1 control codes are present.
 
-This library also provides an easy-to-use `width()`_ function, which is also capable of measuring
-the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
-like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
-`iter_sequences()`_ function that provides an iterator over terminal sequences.
+The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation
+of grapheme and terminal control sequence boundaries.
 
-To solve the justification problem, this library provides `ljust()`_, `rjust()`_, and `center()`_
-functions that properly handle Unicode character widths and terminal escape sequences.
+An easy-to-use `width()`_ function is provided as a wrapper of `wcswidth()`_ that is also capable of
+measuring most terminal control codes and sequences, like colors, bold, tabstops, and horizontal
+cursor movement.
 
-A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal.
+Finally, text-justification is solved by the grapheme and sequence-aware functions `ljust()`_,
+`rjust()`_, `center()`_, and `wrap()`_, serving as drop-in replacements to python standard functions
+of the same names.
 
 Discrepancies
 -------------
@@ -83,7 +71,7 @@ codepoint*.
 
 A brief overview, through examples, for all of the public API functions.
 
-Full API Documentation at https://wcwidth.readthedocs.io
+Full API Documentation at https://wcwidth.readthedocs.io/en/latest/api.html
 
 wcwidth()
 ---------
@@ -97,7 +85,9 @@ Measures width of a single codepoint,
     1
 
 Use function `wcwidth()`_ to determine the length of a *single unicode character*.
-See `Specification <Specification_from_pypi_>`_ of character measurements.
+See `Specification <Specification_from_pypi_>`_ of character measurements. Note that ``-1`` is
+returned for control codes.
+
 
 wcswidth()
 ----------
@@ -110,7 +100,7 @@ Measures width of a string, returns -1 for control codes.
     >>> wcwidth.wcswidth('♀️')
     2
 
-Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*
+Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*.
 
 See `Specification <Specification_from_pypi_>`_ of character measurements. Note that
 ``-1`` is returned if control codes occurs anywhere in the string.
@@ -118,39 +108,38 @@ See `Specification <Specification_from_pypi_>`_ of character measurements. Note 
 width()
 -------
 
-Measures width of a string with improved handling of ``control_codes``
+Measures width of a string, with improved handling of ``control_codes``
 
 .. code-block:: python
 
     >>> # same support as wcswidth(), eg. regional indicator flag:
     >>> wcwidth.width('\U0001F1FF\U0001F1FC')
     2
-    >>> # SGR colored text, 'WARN', followed by SGR reset
+    >>> # but also supports SGR colored text, 'WARN', followed by SGR reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
     >>> # tabs,
     >>> wcwidth.width('\t', tabsize=4)
     4
+    >>> # or, tab and all other control characters can be ignored
+    >>> wcwidth.width('\t', control_codes='ignore')
+    0
     >>> # "vertical" control characters are ignored
     >>> wcwidth.width('\n')
     0
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
     >>> wcwidth.width('\x1b[H\x1b[2J')
     0
-    >>> # ValueError may raise when control_codes='strict'
+    >>> # or, raise ValueError for "indeterminate" effects using control_codes='strict'
     >>> wcwidth.width('\n', control_codes='strict')
     Traceback (most recent call last):
     ...
     ValueError: Vertical movement character 0xa at position 0
-    >>> wcwidth.width('\x1b[H\x1b[2J', control_codes='strict')
-    Traceback (most recent call last):
-    ...
-    ValueError: Indeterminate cursor sequence at position 0
 
 iter_sequences()
 ----------------
 
-Iterates through text, yielding segments with escape sequence identification.
+Iterates through text, segmented by terminal sequence,
 
 .. code-block:: python
 
@@ -161,7 +150,31 @@ Iterates through text, yielding segments with escape sequence identification.
 
 Use `iter_sequences()`_ to split text into segments of plain text and escape sequences. Each tuple
 contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
-plain text (``False``).
+text (``False``).
+
+iter_graphemes()
+----------------
+
+Use `iter_graphemes()`_ to iterate over *grapheme clusters* of a string.
+
+.. code-block:: python
+
+    >>> from wcwidth import iter_graphemes
+    >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
+    >>> list(wcwidth.iter_graphemes('ok\U0001F1FF\U0001F1FC'))
+    ['o', 'k', '🇿🇼']
+
+    >>> # cafe + combining acute accent
+    >>> list(wcwidth.iter_graphemes('cafe\u0301'))
+    ['c', 'a', 'f', 'é']
+
+    >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
+    >>> list(wcwidth.iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+    ['o', 'k', '👨\u200d👩\u200d👧']
+
+A grapheme cluster is what a user perceives as a single character, even if it is composed of
+multiple Unicode codepoints. This function implements Unicode Standard `Annex #29`_ grapheme cluster
+boundary rules.
 
 ljust()
 -------
@@ -429,6 +442,7 @@ History
   * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
+  * **New** Function `wrap()`_. `PR #169`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -563,6 +577,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
 .. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
+.. _`PR #169`: https://github.com/jquast/wcwidth/pull/169
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte

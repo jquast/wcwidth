@@ -1,5 +1,6 @@
 """Tests for text justification functions."""
-from wcwidth import ljust, rjust, center, width
+# local
+from wcwidth import ljust, rjust, width, center
 
 SGR_RED = '\x1b[31m'
 SGR_RESET = '\x1b[0m'
