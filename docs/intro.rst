@@ -321,7 +321,7 @@ History
 
 0.2.15 **next version**
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
-  * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #167`_.
+  * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -454,7 +454,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
 .. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
-.. _`PR #167`: https://github.com/jquast/wcwidth/pull/167
+.. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
