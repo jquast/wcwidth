@@ -189,7 +189,9 @@ def test_carriage_return_resets_column():
 
 
 def test_iter_sequences_lone_esc():
-    """Lone ESC is yielded as a sequence."""
+    """Lone ESC is yielded as sequence (filtered out for width measurement)."""
+    # you could also consider an unsupported or unknown sequence to be detected as a "lone escape",
+    # followed by text that was not meant for printing.
     assert list(wcwidth.iter_sequences('\x1b')) == [('\x1b', True)]
     assert list(wcwidth.iter_sequences('*\x1b*')) == [('*', False), ('\x1b', True), ('*', False)]
 

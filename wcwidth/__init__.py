@@ -17,11 +17,13 @@ from .wcwidth import (WIDE_EASTASIAN,
                       wcswidth,
                       list_versions,
                       iter_sequences,
+                      ljust,
+                      rjust,
+                      center,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
-from .sequences import ljust, rjust, center
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".

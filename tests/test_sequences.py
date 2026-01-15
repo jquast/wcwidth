@@ -55,11 +55,11 @@ def test_iter_sequences_basic():
 
 
 def test_iter_sequences_edge_cases():
-    # escape alone at end - not a sequence
-    assert list(iter_sequences('abc\x1b')) == [('abc\x1b', False)]
+    # escape alone at end - yielded as sequence (for filtering)
+    assert list(iter_sequences('abc\x1b')) == [('abc', False), ('\x1b', True)]
     # unmatched escape followed by sequence
     assert list(iter_sequences('\x1b\x1b[31mred')) == [
-        ('\x1b', False), ('\x1b[31m', True), ('red', False)]
+        ('\x1b', True), ('\x1b[31m', True), ('red', False)]
     # Fe sequence with trailing text
     assert list(iter_sequences('\x1bXYZ')) == [('\x1bX', True), ('YZ', False)]
 

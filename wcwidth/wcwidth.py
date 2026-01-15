@@ -539,3 +539,102 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         idx += 1
 
     return max_extent - column
+
+
+def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text left-justified in a string of given display width.
+
+    :param str text: String to justify, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Character for padding (default space). May be multi-cell.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on the right to reach width.
+    :rtype: str
+    :raises ValueError: If fillchar has no positive display width.
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> ljust('hi', 5)
+        'hi   '
+        >>> ljust('\\x1b[31mhi\\x1b[0m', 5)
+        '\\x1b[31mhi\\x1b[0m   '
+    """
+    text_width = width(text, control_codes=control_codes)
+    fillchar_width = width(fillchar, control_codes='ignore')
+    if fillchar_width < 1:
+        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+    padding_cells = max(0, dest_width - text_width)
+    fill_count = padding_cells // fillchar_width
+    return text + fillchar * fill_count
+
+
+def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text right-justified in a string of given display width.
+
+    :param str text: String to justify, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Character for padding (default space). May be multi-cell.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on the left to reach width.
+    :rtype: str
+    :raises ValueError: If fillchar has no positive display width.
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> rjust('hi', 5)
+        '   hi'
+        >>> rjust('\\x1b[31mhi\\x1b[0m', 5)
+        '   \\x1b[31mhi\\x1b[0m'
+    """
+    text_width = width(text, control_codes=control_codes)
+    fillchar_width = width(fillchar, control_codes='ignore')
+    if fillchar_width < 1:
+        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+    padding_cells = max(0, dest_width - text_width)
+    fill_count = padding_cells // fillchar_width
+    return fillchar * fill_count + text
+
+
+def center(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text centered in a string of given display width.
+
+    :param str text: String to center, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Character for padding (default space). May be multi-cell.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on both sides to reach width.
+    :rtype: str
+    :raises ValueError: If fillchar has no positive display width.
+
+    For odd-width padding, the extra cell goes on the right (matching
+    Python's :meth:`str.center` behavior).
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> center('hi', 6)
+        '  hi  '
+        >>> center('hi', 5)
+        ' hi  '
+    """
+    text_width = width(text, control_codes=control_codes)
+    fillchar_width = width(fillchar, control_codes='ignore')
+    if fillchar_width < 1:
+        raise ValueError(f"fillchar must have positive display width, got '{fillchar}'")
+    total_padding = max(0, dest_width - text_width)
+    left_cells = total_padding // 2
+    right_cells = total_padding - left_cells
+    left_count = left_cells // fillchar_width
+    right_count = right_cells // fillchar_width
+    return fillchar * left_count + text + fillchar * right_count
