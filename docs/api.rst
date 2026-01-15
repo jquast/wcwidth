@@ -12,6 +12,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.width
 
+.. autofunction:: wcwidth.iter_sequences
+
 .. autofunction:: wcwidth.list_versions
 
 .. _SEMVER: https://semver.org
