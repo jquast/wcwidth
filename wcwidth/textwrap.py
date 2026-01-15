@@ -9,9 +9,7 @@ import textwrap
 from typing import Iterator, List, Tuple
 
 from .grapheme import iter_graphemes
-from .terminal_seqs import (
-    ZERO_WIDTH_PATTERN,
-)
+from .escape_sequences import ZERO_WIDTH_PATTERN
 # Import width() as _width to avoid collision with 'width' parameter in function signatures
 from .wcwidth import width as _width
 
