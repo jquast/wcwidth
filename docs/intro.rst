@@ -32,6 +32,10 @@ Some examples of **incorrect results**:
     >>> 'café'.center(6, 'X')
     'caféX'
 
+    >>> # result consumes 4 total cells, 2 expected
+    >>> '🇿🇼'.ljust(2, 'X')
+    '🇿🇼  '
+
     >>> # result consumes 2 total cells, 4 expected.
     >>> print('👨‍👩‍👧'.center(4, 'X'))
     👨‍👩‍👧
@@ -39,14 +43,17 @@ Some examples of **incorrect results**:
 Solution
 --------
 
-The base functions of this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
+The lowest-level functions in this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
 `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
 These functions return -1 when C0 and C1 control codes are present.
 
-This library also provides an easy-to-use ``width()`` function, which is also capable of measuring
+This library also provides an easy-to-use `width()`_ function, which is also capable of measuring
 the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
 like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
 `iter_sequences()`_ function that provides an iterator over terminal sequences.
+
+To solve the justification problem, this library provides `ljust()`_, `rjust()`_, and `center()`_
+functions that properly handle Unicode character widths and terminal escape sequences.
 
 Discrepancies
 -------------
@@ -76,23 +83,8 @@ Measures width of a single codepoint,
     >>> wcwidth.wcwidth('\u2640')
     1
 
-Use function ``wcwidth()`` to determine the length of a *single unicode character*.
-
-See `Specification <Specification_from_pypi_>`_ of character measurements. More
-briefly, return values of function ``wcwidth()`` are:
-
-``-1``
-  Indeterminate (not printable) control codes (C0 and C1).
-
-``0``
-  Does not advance the cursor, such as NULL or Combining.
-
-``2``
-  Characters of category East Asian Wide (W) or East Asian
-  Full-width (F) which are displayed using two terminal cells.
-
-``1``
-  All others.
+Use function `wcwidth()`_ to determine the length of a *single unicode character*.
+See `Specification <Specification_from_pypi_>`_ of character measurements.
 
 wcswidth()
 ----------
@@ -105,11 +97,10 @@ Measures width of a string, returns -1 for control codes.
     >>> wcwidth.wcswidth('♀️')
     2
 
-Use function ``wcswidth()`` to determine the length of many, a *string of unicode characters*
+Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*
 
-See `Specification <Specification_from_pypi_>`_ of character measurements. More briefly, return
-values of function ``wcswidth()`` is the sum of ``wcwidth()`` with some additional account for some
-kinds of sequences.  Similarly, ``-1`` is returned if control codes occurs anywhere in the string.
+See `Specification <Specification_from_pypi_>`_ of character measurements. Note that
+``-1`` is returned if control codes occurs anywhere in the string.
 
 width()
 -------
@@ -124,16 +115,19 @@ Measures width of a string with improved handling of ``control_codes``
     >>> # SGR colored text, 'WARN', followed by SGR reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
-    >>> # tabs,
+    >>> # customized tabstop and location
     >>> wcwidth.width('\t', tabstop=4, column=1)
     3
-    >>> # "vertical" control characters are ignored
+    >>> # tab and all other control characters ignored
+    >>> wcwidth.width('\t', control_codes='ignore')
+    0
+    >>> # "vertical" movement and control characters are always ignored
     >>> wcwidth.width('\n')
     0
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
     >>> wcwidth.width('\x1b[H\x1b[2J')
     0
-    >>> # *unless* control_codes='strict' is used, then ValueError is raised
+    >>> # ValueError may raise when control_codes='strict'
     >>> wcwidth.width('\n', control_codes='strict')
     Traceback (most recent call last):
     ...
@@ -155,9 +149,45 @@ Iterates through text, yielding segments with escape sequence identification.
     >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
     [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
 
-Use ``iter_sequences()`` to split text into segments of plain text and escape sequences. Each tuple
+Use `iter_sequences()`_ to split text into segments of plain text and escape sequences. Each tuple
 contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
 plain text (``False``).
+
+ljust()
+-------
+
+Use `ljust()`_ as replacement of `str.ljust()`_:
+
+.. code-block:: python
+
+    >>> 'コンニチハ'.ljust(11, '*')             # don't do this
+    'コンニチハ******'
+    >>> wcwidth.ljust('コンニチハ', 11, '*')    # do this!
+    'コンニチハ*'
+
+rjust()
+-------
+
+Use `rjust()`_ as replacement of `str.rjust()`_:
+
+.. code-block:: python
+
+    >>> 'コンニチハ'.rjust(11, '*')             # don't do this
+    '******コンニチハ'
+    >>> wcwidth.rjust('コンニチハ', 11, '*')    # do this!
+    '*コンニチハ'
+
+center()
+--------
+
+Use `center()`_ as replacement of `str.center()`_:
+
+.. code-block:: python
+
+    >>> 'cafe\u0301'.center(6, '*')             # don't do this
+    'café*'
+    >>> wcwidth.center('cafe\u0301', 6, '*')
+    '*café*'                                    # do this!
 
 ==========
 Developing
@@ -289,6 +319,11 @@ languages.
 History
 =======
 
+0.2.15 **next version**
+  * **New** Function `width()`_. `PR #166`_.
+  * **New** Function `iter_sequences()`_. `PR #166`_.
+  * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #167`_.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -419,6 +454,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
+.. _`PR #167`: https://github.com/jquast/wcwidth/pull/167
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
@@ -455,6 +492,12 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
+.. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
+.. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
+.. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
+.. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
+.. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
