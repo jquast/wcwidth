@@ -47,15 +47,15 @@ The base functions of this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidt
 `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
 These functions return -1 when C0 and C1 control codes are present.
 
-This library also provides an easy-to-use ``width()`` function, which is also capable of measuring
+This library also provides an easy-to-use `width()`_ function, which is also capable of measuring
 the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
 like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
 `iter_sequences()`_ function that provides an iterator over terminal sequences.
 
-A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal, and, the
-appropriate function interfaces ``ljust()``, ``center()``, ``rjust()`` all doing their best to
-correctly handle terminal output sequences like color, all kinds of emojis, combining characters,
-and many popular world languages.
+A `iter_graphemes()`_ iterator function is provided to help format strings for a terminal, and, the
+appropriate function interfaces `ljust()`_, `center()`_, `rjust()`_ try best to correctly handle
+terminal output sequences like color, all kinds of emojis, combining characters, and many popular
+world languages.
 
 Discrepancies
 -------------
