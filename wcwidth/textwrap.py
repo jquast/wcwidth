@@ -342,6 +342,17 @@ def wrap(text: str, width: int = 70, *,
     :returns: List of wrapped lines without trailing newlines.
     :rtype: list[str]
 
+    Like :func:`textwrap.wrap`, newlines in the input text are treated as
+    whitespace and collapsed. To preserve paragraph breaks, wrap each
+    paragraph separately::
+
+        >>> text = 'First line.\\nSecond line.'
+        >>> wrap(text, 40)  # newline collapsed to space
+        ['First line. Second line.']
+        >>> [line for para in text.split('\\n')
+        ...  for line in (wrap(para, 40) if para else [''])]
+        ['First line.', 'Second line.']
+
     .. seealso::
 
        :func:`textwrap.wrap`, :class:`textwrap.TextWrapper`
