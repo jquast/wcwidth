@@ -68,6 +68,14 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 result.append(segment)
         return ''.join(result)
 
+    def _extract_sequences(self, text: str) -> str:
+        """Extract only terminal sequences from text."""
+        result = []
+        for segment, is_seq in iter_sequences(text):
+            if is_seq:
+                result.append(segment)
+        return ''.join(result)
+
     def _split(self, text: str) -> List[str]:
         """
         Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
@@ -77,39 +85,54 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         breaking. It builds a position mapping from stripped text to original
         text, calls the parent's _split on stripped text, then maps chunks back.
         """
-        # Build a mapping from stripped text positions to original text positions
-        # and extract the stripped (sequence-free) text
-        stripped_to_original: List[int] = []
+        # Build a mapping from stripped text positions to original text positions.
+        # We track where each character ENDS so that sequences between characters
+        # attach to the following text (not preceding text). This ensures sequences
+        # aren't lost when whitespace is dropped.
+        #
+        # char_end[i] = position in original text right after the i-th stripped char
+        char_end: List[int] = []
         stripped_text = ''
         original_pos = 0
 
         for segment, is_seq in iter_sequences(text):
             if not is_seq:
-                # This is regular text, not a sequence
                 for char in segment:
-                    stripped_to_original.append(original_pos)
-                    stripped_text += char
                     original_pos += 1
+                    char_end.append(original_pos)
+                    stripped_text += char
             else:
-                # This is an escape sequence, skip it in stripped text
+                # Escape sequences advance position but don't add to stripped text
                 original_pos += len(segment)
 
-        # Add sentinel for end position
-        stripped_to_original.append(original_pos)
+        # Add sentinel for final position
+        char_end.append(original_pos)
 
         # Use parent's _split on the stripped text
         stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
 
+        # Handle text that contains only sequences (no visible characters).
+        # Return the sequences as a single chunk to preserve them.
+        if not stripped_chunks and text:
+            return [text]
+
         # Map the chunks back to the original text with sequences
         result: List[str] = []
         stripped_pos = 0
+        num_chunks = len(stripped_chunks)
 
-        for chunk in stripped_chunks:
+        for idx, chunk in enumerate(stripped_chunks):
             chunk_len = len(chunk)
 
-            # Find the start and end positions in the original text
-            start_orig = stripped_to_original[stripped_pos]
-            end_orig = stripped_to_original[stripped_pos + chunk_len]
+            # Start is where previous character ended (or 0 for first chunk)
+            start_orig = 0 if stripped_pos == 0 else char_end[stripped_pos - 1]
+
+            # End is where next character starts. For last chunk, use sentinel
+            # to include any trailing sequences.
+            if idx == num_chunks - 1:
+                end_orig = char_end[-1]  # sentinel includes trailing sequences
+            else:
+                end_orig = char_end[stripped_pos + chunk_len - 1]
 
             # Extract the corresponding portion from the original text
             result.append(text[start_orig:end_orig])
@@ -142,9 +165,14 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             line_width = self.width - self._width(indent)
 
             # Drop leading whitespace (except at very start)
-            # Use _strip_sequences to properly detect whitespace in sequenced text
-            if self.drop_whitespace and lines and not self._strip_sequences(chunks[-1]).strip():
+            # When dropping, transfer any sequences to the next chunk.
+            # Only drop if there's actual whitespace text, not if it's only sequences.
+            stripped = self._strip_sequences(chunks[-1])
+            if self.drop_whitespace and lines and stripped and not stripped.strip():
+                sequences = self._extract_sequences(chunks[-1])
                 del chunks[-1]
+                if sequences and chunks:
+                    chunks[-1] = sequences + chunks[-1]
 
             # Greedily add chunks that fit
             while chunks:
@@ -163,13 +191,21 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     chunks, current_line, current_width, line_width
                 )
                 current_width = self._width(''.join(current_line))
+                # Remove any empty chunks left by _handle_long_word
+                while chunks and not chunks[-1]:
+                    del chunks[-1]
 
             # Drop trailing whitespace
-            # Use _strip_sequences to properly detect whitespace in sequenced text
+            # When dropping, transfer any sequences to the previous chunk.
+            # Only drop if there's actual whitespace text, not if it's only sequences.
+            stripped_last = self._strip_sequences(current_line[-1]) if current_line else ''
             if (self.drop_whitespace and current_line and
-                    not self._strip_sequences(current_line[-1]).strip()):
+                    stripped_last and not stripped_last.strip()):
+                sequences = self._extract_sequences(current_line[-1])
                 current_width -= self._width(current_line[-1])
                 del current_line[-1]
+                if sequences and current_line:
+                    current_line[-1] = current_line[-1] + sequences
 
             if current_line:
                 lines.append(indent + ''.join(current_line))
@@ -217,8 +253,10 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     # Find the break position respecting graphemes and sequences
                     actual_end = self._find_break_position(chunk, space_left)
                     # If no progress possible (e.g., wide char exceeds line width),
-                    # force at least one grapheme to avoid infinite loop
-                    if actual_end == 0:
+                    # force at least one grapheme to avoid infinite loop.
+                    # Only force when cur_line is empty; if line has content,
+                    # appending nothing is safe and the line will be committed.
+                    if actual_end == 0 and not cur_line:
                         actual_end = self._find_first_grapheme_end(chunk)
                 cur_line.append(chunk[:actual_end])
                 reversed_chunks[-1] = chunk[actual_end:]
@@ -321,10 +359,14 @@ def wrap(text: str, width: int,
 
     Example::
 
-        >>> wrap('hello world', 5)
+        >>> wcwidth.wrap('hello world', 5)
         ['hello', 'world']
-        >>> wrap('abcdefghij', 3, break_on_graphemes=True)
+        >>> wcwidth.wrap('abcdefghij', 3)
         ['abc', 'def', 'ghi', 'j']
+        >>> wcwidth.wrap('中文字符', 4)
+        ['中文', '字符']
+        >>> wcwidth.wrap('\x1b[31mred\x1b[0m blue', 4)
+        ['\x1b[31mred\x1b[0m', 'blue']
     """
     wrapper = SequenceTextWrapper(
         width=width,
