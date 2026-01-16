@@ -109,28 +109,27 @@ def test_width_control_codes_parse(text, expected, name):
     assert wcwidth.width(text) == expected
 
 
-TABSTOP_CASES = [
-    ('\t', 8, 8, 0, 'default'),
-    ('\t', 5, 8, 3, 'column_offset'),
-    ('abc\t', 8, 8, 0, 'after_text'),
-    ('ab\t', 4, 4, 0, 'tabstop_4'),
+TABSIZE_CASES = [
+    ('\t', 8, 8, 'default'),
+    ('abc\t', 8, 8, 'after_text'),
+    ('ab\t', 4, 4, 'tabsize_4'),
 ]
 
 
-@pytest.mark.parametrize('text,expected,tabstop,column,name', TABSTOP_CASES)
-def test_width_tabstop(text, expected, tabstop, column, name):
-    """Tabstop parameter controls tab width calculation."""
-    assert wcwidth.width(text, tabstop=tabstop, column=column) == expected
+@pytest.mark.parametrize('text,expected,tabsize,name', TABSIZE_CASES)
+def test_width_tabsize(text, expected, tabsize, name):
+    """Tabsize parameter controls tab width calculation."""
+    assert wcwidth.width(text, tabsize=tabsize) == expected
 
 
-def test_width_tabstop_zero():
+def test_width_tabsize_zero():
     """Tabs are zero-width with control_codes='ignore'."""
     assert wcwidth.width('\t', control_codes='ignore') == 0
 
 
-def test_width_tabstop_zero_parse():
-    """Tab with tabstop=0 in parse mode is zero-width."""
-    assert wcwidth.width('ab\tc', tabstop=0) == 3
+def test_width_tabsize_zero_parse():
+    """Tab with tabsize=0 in parse mode is zero-width."""
+    assert wcwidth.width('ab\tc', tabsize=0) == 3
 
 
 ESCAPE_SEQUENCE_CASES = [
@@ -213,9 +212,9 @@ def test_iter_sequences_lone_esc():
     assert list(wcwidth.iter_sequences('*\x1b*')) == [('*', False), ('\x1b', True), ('*', False)]
 
 
-def test_tab_ignore_with_tabstop():
-    """Tabs are zero-width with control_codes='ignore', tabstop has no effect."""
-    assert wcwidth.width("abc\t", control_codes="ignore", tabstop=8) == 3
+def test_tab_ignore_with_tabsize():
+    """Tabs are zero-width with control_codes='ignore', tabsize has no effect."""
+    assert wcwidth.width("abc\t", control_codes="ignore", tabsize=8) == 3
 
 
 def test_cursor_right_unparameterized():

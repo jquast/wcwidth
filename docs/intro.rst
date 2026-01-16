@@ -125,8 +125,8 @@ Measures width of a string with improved handling of ``control_codes``
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
     >>> # tabs,
-    >>> wcwidth.width('\t', tabstop=4, column=1)
-    3
+    >>> wcwidth.width('\t', tabsize=4)
+    4
     >>> # "vertical" control characters are ignored
     >>> wcwidth.width('\n')
     0
