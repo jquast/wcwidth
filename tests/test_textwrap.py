@@ -31,7 +31,7 @@ def _strip(text):
 
 def _colorize(text):
     return ''.join(
-        ATTRS[idx % len(ATTRS)] + char + SGR_RESET if char not in ' -' else char
+        ATTRS[idx % len(ATTRS)] + char + SGR_RESET if char not in ' -\t' else char
         for idx, char in enumerate(text)
     )
 
@@ -99,6 +99,17 @@ def test_wrap_matches_stdlib(kwargs, width):
     wrapper = SequenceTextWrapper(width=width, **kwargs)
     assert wrapper.wrap(pgraph) == expected
     assert [_strip(line) for line in wrapper.wrap(pgraph_colored)] == expected
+
+
+@pytest.mark.parametrize('kwargs', TEXTWRAP_KWARGS)
+@pytest.mark.parametrize('width', [8, 10, 16, 20, 40])
+@pytest.mark.parametrize('tabsize', [4, 5, 8])
+def test_wrap_tabsize_matches_stdlib(kwargs, width, tabsize):
+    tabsize = min(tabsize, width)
+    pgraph = ' Z! a bc\t defghij\t kl mnopqrs\ttuvw<<>>xyz012345678900 ' * 2
+    expected = textwrap.wrap(pgraph, width=width, tabsize=tabsize, **kwargs)
+    wrapper = SequenceTextWrapper(width=width, tabsize=tabsize, **kwargs)
+    assert wrapper.wrap(pgraph) == expected
 
 
 def test_wrap_multiline_matches_stdlib():
@@ -180,3 +191,24 @@ MIXED_CASES = [
 @pytest.mark.parametrize('text,w,expected', MIXED_CASES)
 def test_wrap_mixed(text, w, expected):
     assert wrap(text, w) == expected
+
+
+# Tabsize with wide characters - tests column alignment with different cell widths
+TABSIZE_WIDE_CASES = [
+    # CJK (2 cells) + tab: tabsize=4, '\u4e2d' is 2 cols, tab expands to col 4
+    ('\u4e2d\ta b', 6, 4, ['\u4e2d   a', 'b']),
+    # CJK + tab with tabsize=8: '\u4e2d' is 2 cols, tab expands to col 8
+    ('\u4e2d\ta b', 10, 8, ['\u4e2d       a', 'b']),
+    # Emoji + tab (emoji width=2): similar column alignment
+    (f'{SMILEY_VS16}\ta b', 6, 4, [f'{SMILEY_VS16}  a', 'b']),
+    # Multiple CJK + tab: 4 cols, tab to 4 adds 0, but expand_tabs adds min 1
+    ('\u4e2d\u6587\ta', 8, 4, ['\u4e2d\u6587  a']),
+    # ASCII + tab + CJK: 'a' is 1 col, tab to 4 (3 spaces), CJK is 2 cols
+    ('a\t\u4e2d b', 8, 4, ['a   \u4e2d b']),
+]
+
+
+@pytest.mark.parametrize('text,w,tabsize,expected', TABSIZE_WIDE_CASES)
+def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
+    """Verify tabsize respects wide character column positions."""
+    assert wrap(text, w, tabsize=tabsize) == expected

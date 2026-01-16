@@ -50,7 +50,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
-        return _width(text, control_codes=self.control_codes, tabstop=self.tabsize)
+        return _width(text, control_codes=self.control_codes, tabsize=self.tabsize)
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""
