@@ -391,7 +391,7 @@ def _width_ignored_codes(text):
     )
 
 
-def width(text, control_codes='parse', tabstop=8, column=0):
+def width(text, control_codes='parse', tabsize=8):
     """
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -412,10 +412,8 @@ def width(text, control_codes='parse', tabstop=8, column=0):
           any kinds of control codes or sequences. TAB ``\\t`` is zero-width; for tab expansion,
           pre-process: ``text.replace('\\t', ' ' * 8)``.
 
-    :param int tabstop: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
+    :param int tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
         Must be positive. Has no effect when ``control_codes='ignore'``.
-    :param int column: Starting column position for tabstop and movement calculations. Has no effect
-        when ``control_codes='ignore'``.
     :rtype: int
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
@@ -457,10 +455,9 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
-    # Initialize max_extent to column so backward movement (CR, BS) won't yield negative width.
-    # Subtract column at return to convert absolute max position to relative width.
-    current_col = column
-    max_extent = column
+    # Initialize max_extent to 0 so backward movement (CR, BS) won't yield negative width.
+    current_col = 0
+    max_extent = 0
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
 
@@ -503,8 +500,8 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
         # 3. Handle horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            if char == '\x09' and tabstop > 0:  # Tab
-                current_col += tabstop - (current_col % tabstop)
+            if char == '\x09' and tabsize > 0:  # Tab
+                current_col += tabsize - (current_col % tabsize)
             elif char == '\x08':  # Backspace
                 if current_col > 0:
                     current_col -= 1
@@ -541,7 +538,7 @@ def width(text, control_codes='parse', tabstop=8, column=0):
             last_measured_idx = idx
         idx += 1
 
-    return max_extent - column
+    return max_extent
 
 
 def ljust(text, dest_width, fillchar=' ', control_codes='parse'):

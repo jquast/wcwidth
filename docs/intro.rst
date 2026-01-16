@@ -117,13 +117,10 @@ Measures width of a string with improved handling of ``control_codes``
     >>> # SGR colored text, 'WARN', followed by SGR reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
-    >>> # customized tabstop and location
-    >>> wcwidth.width('\t', tabstop=4, column=1)
-    3
-    >>> # tab and all other control characters ignored
-    >>> wcwidth.width('\t', control_codes='ignore')
-    0
-    >>> # "vertical" movement and control characters are always ignored
+    >>> # tabs,
+    >>> wcwidth.width('\t', tabsize=4)
+    4
+    >>> # "vertical" control characters are ignored
     >>> wcwidth.width('\n')
     0
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
