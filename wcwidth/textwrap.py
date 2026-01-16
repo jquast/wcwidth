@@ -32,33 +32,25 @@ class SequenceTextWrapper(textwrap.TextWrapper):
     and variations, regional indicator flags, and combining characters.
     """
 
-    def __init__(self, width: int = 70,
+    def __init__(self, width: int = 70, *,
                  control_codes: str = 'parse',
-                 break_on_graphemes: bool = True,
-                 tabstop: int = 8,
-                 column: int = 0,
+                 tabsize: int = 8,
                  **kwargs):
         """
         Initialize the wrapper.
 
         :param width: Maximum line width in display cells.
-        :param control_codes: How to handle control sequences.
-        :param break_on_graphemes: If True, break words at grapheme
-            boundaries when they exceed width.
-        :param tabstop: Tab stop width for tab expansion.
-        :param column: Starting column for width calculation.
-        :param kwargs: Additional arguments passed to TextWrapper.
+        :param control_codes: How to handle control sequences (see :func:`~.width`).
+        :param tabsize: Tab stop width for tab expansion.
+        :param kwargs: Additional arguments passed to :class:`textwrap.TextWrapper`.
         """
         super().__init__(width=width, **kwargs)
         self.control_codes = control_codes
-        self.break_on_graphemes = break_on_graphemes
-        self.tabstop = tabstop
-        self.column = column
+        self.tabsize = tabsize
 
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
-        return _width(text, control_codes=self.control_codes,
-                      tabstop=self.tabstop, column=self.column)
+        return _width(text, control_codes=self.control_codes, tabstop=self.tabsize)
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""
@@ -244,26 +236,19 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                         hyphen_end = self._map_stripped_pos_to_original(chunk, hyphen_pos + 1)
                         break_at_hyphen = True
 
-            # For sequence-aware breaking, we need to break at grapheme boundaries
-            if self.break_on_graphemes:
-                if break_at_hyphen:
-                    # Use the hyphen break position
-                    actual_end = hyphen_end
-                else:
-                    # Find the break position respecting graphemes and sequences
-                    actual_end = self._find_break_position(chunk, space_left)
-                    # If no progress possible (e.g., wide char exceeds line width),
-                    # force at least one grapheme to avoid infinite loop.
-                    # Only force when cur_line is empty; if line has content,
-                    # appending nothing is safe and the line will be committed.
-                    if actual_end == 0 and not cur_line:
-                        actual_end = self._find_first_grapheme_end(chunk)
-                cur_line.append(chunk[:actual_end])
-                reversed_chunks[-1] = chunk[actual_end:]
+            # Break at grapheme boundaries to avoid splitting multi-codepoint characters
+            if break_at_hyphen:
+                actual_end = hyphen_end
             else:
-                end = hyphen_end if break_at_hyphen else space_left
-                cur_line.append(chunk[:end])
-                reversed_chunks[-1] = chunk[end:]
+                actual_end = self._find_break_position(chunk, space_left)
+                # If no progress possible (e.g., wide char exceeds line width),
+                # force at least one grapheme to avoid infinite loop.
+                # Only force when cur_line is empty; if line has content,
+                # appending nothing is safe and the line will be committed.
+                if actual_end == 0 and not cur_line:
+                    actual_end = self._find_first_grapheme_end(chunk)
+            cur_line.append(chunk[:actual_end])
+            reversed_chunks[-1] = chunk[actual_end:]
 
         elif not cur_line:
             cur_line.append(reversed_chunks.pop())
@@ -332,48 +317,51 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         return len(text)
 
 
-def wrap(text: str, width: int,
+def wrap(text: str, width: int = 70, *,
          control_codes: str = 'parse',
-         break_on_graphemes: bool = True,
-         tabstop: int = 8,
-         column: int = 0,
+         tabsize: int = 8,
          initial_indent: str = '',
          subsequent_indent: str = '',
          break_long_words: bool = True,
          break_on_hyphens: bool = True) -> List[str]:
     """
-    Wrap text to fit within given width.
+    Wrap text to fit within given width, returning a list of wrapped lines.
 
-    :param text: Text to wrap, may contain terminal sequences.
-    :param width: Maximum line width in display cells.
-    :param control_codes: How to handle control sequences.
-    :param break_on_graphemes: If True, break words at grapheme
-        boundaries when they exceed width.
-    :param tabstop: Tab stop width for tab expansion.
-    :param column: Starting column for first line.
-    :param initial_indent: Prefix for first line.
-    :param subsequent_indent: Prefix for subsequent lines.
-    :param break_long_words: Break words that exceed width.
-    :param break_on_hyphens: Break on hyphens in words.
-    :returns: List of wrapped lines.
+    Like :func:`textwrap.wrap`, but measures width in display cells rather than
+    characters, correctly handling wide characters, combining marks, and terminal
+    escape sequences.
+
+    :param str text: Text to wrap, may contain terminal sequences.
+    :param int width: Maximum line width in display cells.
+    :param str control_codes: How to handle terminal sequences (see :func:`~.width`).
+    :param int tabsize: Tab stop width for tab expansion.
+    :param str initial_indent: String prepended to first line.
+    :param str subsequent_indent: String prepended to subsequent lines.
+    :param bool break_long_words: If True, break words longer than width.
+    :param bool break_on_hyphens: If True, allow breaking at hyphens.
+    :returns: List of wrapped lines without trailing newlines.
+    :rtype: list[str]
+
+    .. seealso::
+
+       :func:`textwrap.wrap`, :class:`textwrap.TextWrapper`
+           Standard library text wrapping (character-based).
+
+       :class:`.SequenceTextWrapper`
+           Class interface for advanced wrapping options.
 
     Example::
 
-        >>> wcwidth.wrap('hello world', 5)
+        >>> from wcwidth import wrap
+        >>> wrap('hello world', 5)
         ['hello', 'world']
-        >>> wcwidth.wrap('abcdefghij', 3)
-        ['abc', 'def', 'ghi', 'j']
-        >>> wcwidth.wrap('中文字符', 4)
+        >>> wrap('中文字符', 4)  # CJK characters (2 cells each)
         ['中文', '字符']
-        >>> wcwidth.wrap('\x1b[31mred\x1b[0m blue', 4)
-        ['\x1b[31mred\x1b[0m', 'blue']
     """
     wrapper = SequenceTextWrapper(
         width=width,
         control_codes=control_codes,
-        break_on_graphemes=break_on_graphemes,
-        tabstop=tabstop,
-        column=column,
+        tabsize=tabsize,
         initial_indent=initial_indent,
         subsequent_indent=subsequent_indent,
         break_long_words=break_long_words,

@@ -162,7 +162,7 @@ SEQUENCE_CASES = [
 
 @pytest.mark.parametrize('text,w,expected', SEQUENCE_CASES)
 def test_wrap_sequences(text, w, expected):
-    result = wrap(text, w, break_on_graphemes=True)
+    result = wrap(text, w)
     if any('\x1b' in e or '\x00' <= e[0] < '\x20' for e in expected if e):
         assert result == expected
     else:
