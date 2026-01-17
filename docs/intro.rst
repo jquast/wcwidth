@@ -85,9 +85,9 @@ Measures width of a single codepoint,
     1
 
 Use function `wcwidth()`_ to determine the length of a *single unicode character*.
+
 See `Specification <Specification_from_pypi_>`_ of character measurements. Note that ``-1`` is
 returned for control codes.
-
 
 wcswidth()
 ----------

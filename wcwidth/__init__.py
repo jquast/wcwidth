@@ -10,6 +10,7 @@ https://github.com/jquast/wcwidth
 
 # local
 from .wcwidth import ZERO_WIDTH  # noqa
+from .grapheme import iter_graphemes  # noqa
 from .wcwidth import (WIDE_EASTASIAN,
                       VS16_NARROW_TO_WIDE,
                       width,
