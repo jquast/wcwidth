@@ -101,7 +101,7 @@ def wcwidth(wc, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable is used if set, otherwise
         the highest Unicode version level is used.
 
-        .. deprecated:: 0.2.14
+        .. deprecated:: 0.3.0
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but
@@ -156,7 +156,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
         ``UNICODE_VERSION`` environment variable if defined, or the latest
         available unicode version otherwise.
 
-        .. deprecated:: 0.2.14
+        .. deprecated:: 0.3.0
 
             This parameter is deprecated. Empirical data shows that Unicode
             support in terminals varies not only by unicode version, but
@@ -338,7 +338,7 @@ def iter_sequences(text):
     :rtype: Iterator[tuple[str, bool]]
     :returns: Iterator of (segment, is_sequence) tuples.
 
-    .. versionadded:: 0.2.15
+    .. versionadded:: 0.3.0
 
     Example::
 
@@ -423,7 +423,7 @@ def width(text, control_codes='parse', tabsize=8):
         effects, such as vertical movement or clear sequences are encountered, or on unexpected
         C0 or C1 control code. Also raised when ``control_codes`` is not one of the valid values.
 
-    .. versionadded:: 0.2.15
+    .. versionadded:: 0.3.0
 
     Examples::
 
@@ -555,7 +555,7 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
     :returns: Text padded on the right to reach ``dest_width``.
     :rtype: str
 
-    .. versionadded:: 0.2.15
+    .. versionadded:: 0.3.0
 
     Example::
 
@@ -588,7 +588,7 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
     :returns: Text padded on the left to reach ``dest_width``.
     :rtype: str
 
-    .. versionadded:: 0.2.15
+    .. versionadded:: 0.3.0
 
     Example::
 
@@ -624,7 +624,7 @@ def center(text, dest_width, fillchar=' ', control_codes='parse'):
     For odd-width padding, the extra cell goes on the right (matching
     Python's :meth:`str.center` behavior).
 
-    .. versionadded:: 0.2.15
+    .. versionadded:: 0.3.0
 
     Example::
 

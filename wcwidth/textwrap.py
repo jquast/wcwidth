@@ -361,6 +361,8 @@ def wrap(text: str, width: int = 70, *,
        :class:`.SequenceTextWrapper`
            Class interface for advanced wrapping options.
 
+    .. versionadded:: 0.3.0
+
     Example::
 
         >>> from wcwidth import wrap
