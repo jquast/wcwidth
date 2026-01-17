@@ -43,11 +43,12 @@ Some examples of **incorrect results**:
 Solution
 --------
 
-The lowest-level functions in this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
+
+The base functions of this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
 `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
 These functions return -1 when C0 and C1 control codes are present.
 
-This library also provides an easy-to-use `width()`_ function, which is also capable of measuring
+This library also provides an easy-to-use ``width()`` function, which is also capable of measuring
 the displayed width of most C0 and C1 control codes, and measuring many kinds of terminal sequences,
 like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
 `iter_sequences()`_ function that provides an iterator over terminal sequences.
@@ -115,8 +116,8 @@ Measures width of a string with improved handling of ``control_codes``
     >>> # SGR colored text, 'WARN', followed by SGR reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
-    >>> # customized tabstop and location
-    >>> wcwidth.width('\t', tabstop=4, column=1)
+    >>> # customized tabsize and location
+    >>> wcwidth.width('\t', tabsize=4, column=1)
     3
     >>> # tab and all other control characters ignored
     >>> wcwidth.width('\t', control_codes='ignore')
@@ -188,6 +189,54 @@ Use `center()`_ as replacement of `str.center()`_:
     'café*'
     >>> wcwidth.center('cafe\u0301', 6, '*')
     '*café*'                                    # do this!
+
+width()
+-------
+
+Measures width of a string with improved handling of ``control_codes``
+
+.. code-block:: python
+
+    >>> # same support as wcswidth(), eg. regional indicator flag:
+    >>> wcwidth.width('\U0001F1FF\U0001F1FC')
+    2
+    >>> # SGR colored text, 'WARN', followed by SGR reset
+    >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
+    4
+    >>> # tabs,
+    >>> wcwidth.width('\t', tabsize=4)
+    4
+    >>> # "vertical" control characters are ignored
+    >>> wcwidth.width('\n')
+    0
+    >>> # as well as sequences with "indeterminate" effects like Home + Clear
+    >>> wcwidth.width('\x1b[H\x1b[2J')
+    0
+    >>> # *unless* control_codes='strict' is used, then ValueError is raised
+    >>> wcwidth.width('\n', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Vertical movement character 0xa at position 0
+    >>> wcwidth.width('\x1b[H\x1b[2J', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Indeterminate cursor sequence at position 0
+
+iter_sequences()
+----------------
+
+Iterates through text, yielding segments with escape sequence identification.
+
+.. code-block:: python
+
+    >>> list(wcwidth.iter_sequences('hello'))
+    [('hello', False)]
+    >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
+    [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
+
+Use ``iter_sequences()`` to split text into segments of plain text and escape sequences. Each tuple
+contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
+plain text (``False``).
 
 ==========
 Developing
@@ -320,6 +369,7 @@ History
 =======
 
 0.2.15 **next version**
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
 
@@ -453,6 +503,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
 .. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101

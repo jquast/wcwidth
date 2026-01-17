@@ -176,23 +176,22 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     end = len(pwcs) if n is None else n
     total_width = 0
     idx = 0
-    last_measured_char = None
+    last_measured_idx = -2  # Track index of last measured char for VS16
     while idx < end:
         char = pwcs[idx]
         if char == '\u200D':
             # Zero Width Joiner, do not measure this or next character
             idx += 2
             continue
-        if char == '\uFE0F' and last_measured_char:
-            # on variation selector 16 (VS16) following another character,
-            # conditionally add '1' to the measured width if that character is
-            # known to be converted from narrow to wide by the VS16 character.
+        if char == '\uFE0F' and last_measured_idx >= 0:
+            # VS16 following a measured character: add 1 if that character is
+            # known to be converted from narrow to wide by VS16.
             if _unicode_version is None:
                 _unicode_version = _wcversion_value(_wcmatch_version(unicode_version))
             if _unicode_version >= (9, 0, 0):
-                total_width += _bisearch(ord(last_measured_char),
+                total_width += _bisearch(ord(pwcs[last_measured_idx]),
                                          VS16_NARROW_TO_WIDE["9.0.0"])
-                last_measured_char = None
+            last_measured_idx = -2  # Prevent double application
             idx += 1
             continue
         # measure character at current index
@@ -201,9 +200,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             # early return -1 on C0 and C1 control characters
             return wcw
         if wcw > 0:
-            # track last character measured to contain a cell, so that
-            # subsequent VS-16 modifiers may be understood
-            last_measured_char = char
+            last_measured_idx = idx
         total_width += wcw
         idx += 1
     return total_width
@@ -394,7 +391,7 @@ def _width_ignored_codes(text):
     )
 
 
-def width(text, control_codes='parse', tabstop=8, column=0):
+def width(text, control_codes='parse', tabsize=8):
     """
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -415,10 +412,8 @@ def width(text, control_codes='parse', tabstop=8, column=0):
           any kinds of control codes or sequences. TAB ``\\t`` is zero-width; for tab expansion,
           pre-process: ``text.replace('\\t', ' ' * 8)``.
 
-    :param int tabstop: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
+    :param int tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
         Must be positive. Has no effect when ``control_codes='ignore'``.
-    :param int column: Starting column position for tabstop and movement calculations. Has no effect
-        when ``control_codes='ignore'``.
     :rtype: int
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
@@ -450,26 +445,21 @@ def width(text, control_codes='parse', tabstop=8, column=0):
         1
     """
     # pylint: disable=too-complex,too-many-branches,too-many-statements
-    # This could be broken into sub-functions (#1 and #3), but for reduced overhead considering this
-    # function is a likely "hot path", they are inlined, breaking our many complexity rules.  Fear
-    # not, there are many tests!
-    if control_codes not in ('ignore', 'strict', 'parse'):
-        raise ValueError(
-            f"control_codes must be 'ignore', 'strict', or 'parse', "
-            f"got {control_codes!r}"
-        )
+    # This could be broken into sub-functions (#1, #3, and 6 especially), but for reduced overhead
+    # considering this function is a likely "hot path", they are inlined, breaking many of our
+    # complexity rules.
 
-    # Fast path for ignore mode
+    # Fast path for ignore mode -- this is useful if you know the text is already "clean"
     if control_codes == 'ignore':
         return _width_ignored_codes(text)
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
-    # Initialize max_extent to column so backward movement (CR, BS) won't yield negative width.
-    # Subtract column at return to convert absolute max position to relative width.
-    current_col = column
-    max_extent = column
+    # Initialize max_extent to 0 so backward movement (CR, BS) won't yield negative width.
+    current_col = 0
+    max_extent = 0
     idx = 0
+    last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
 
     while idx < len(text):
         char = text[idx]
@@ -510,8 +500,8 @@ def width(text, control_codes='parse', tabstop=8, column=0):
 
         # 3. Handle horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            if char == '\x09' and tabstop > 0:  # Tab
-                current_col += tabstop - (current_col % tabstop)
+            if char == '\x09' and tabsize > 0:  # Tab
+                current_col += tabsize - (current_col % tabsize)
             elif char == '\x08':  # Backspace
                 if current_col > 0:
                     current_col -= 1
@@ -526,19 +516,29 @@ def width(text, control_codes='parse', tabstop=8, column=0):
             idx += 2
             continue
 
-        # 5. Handle other zero-width characters (control chars and VS-16)
-        if char in ZERO_WIDTH_CTRL or char == '\uFE0F':
+        # 5. Handle other zero-width characters (control chars)
+        if char in ZERO_WIDTH_CTRL:
             idx += 1
             continue
 
-        # 6. Normal characters: measure with wcwidth
+        # 6. Handle VS16: converts preceding narrow character to wide
+        if char == '\uFE0F':
+            if last_measured_idx == idx - 1:
+                if _bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
+                    current_col += 1
+                    max_extent = max(max_extent, current_col)
+            idx += 1
+            continue
+
+        # 7. Normal characters: measure with wcwidth
         w = wcwidth(char)
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
+            last_measured_idx = idx
         idx += 1
 
-    return max_extent - column
+    return max_extent
 
 
 def ljust(text, dest_width, fillchar=' ', control_codes='parse'):

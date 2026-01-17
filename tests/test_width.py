@@ -109,28 +109,27 @@ def test_width_control_codes_parse(text, expected, name):
     assert wcwidth.width(text) == expected
 
 
-TABSTOP_CASES = [
-    ('\t', 8, 8, 0, 'default'),
-    ('\t', 5, 8, 3, 'column_offset'),
-    ('abc\t', 8, 8, 0, 'after_text'),
-    ('ab\t', 4, 4, 0, 'tabstop_4'),
+TABSIZE_CASES = [
+    ('\t', 8, 8, 'default'),
+    ('abc\t', 8, 8, 'after_text'),
+    ('ab\t', 4, 4, 'tabsize_4'),
 ]
 
 
-@pytest.mark.parametrize('text,expected,tabstop,column,name', TABSTOP_CASES)
-def test_width_tabstop(text, expected, tabstop, column, name):
-    """Tabstop parameter controls tab width calculation."""
-    assert wcwidth.width(text, tabstop=tabstop, column=column) == expected
+@pytest.mark.parametrize('text,expected,tabsize,name', TABSIZE_CASES)
+def test_width_tabsize(text, expected, tabsize, name):
+    """Tabsize parameter controls tab width calculation."""
+    assert wcwidth.width(text, tabsize=tabsize) == expected
 
 
-def test_width_tabstop_zero():
+def test_width_tabsize_zero():
     """Tabs are zero-width with control_codes='ignore'."""
     assert wcwidth.width('\t', control_codes='ignore') == 0
 
 
-def test_width_tabstop_zero_parse():
-    """Tab with tabstop=0 in parse mode is zero-width."""
-    assert wcwidth.width('ab\tc', tabstop=0) == 3
+def test_width_tabsize_zero_parse():
+    """Tab with tabsize=0 in parse mode is zero-width."""
+    assert wcwidth.width('ab\tc', tabsize=0) == 3
 
 
 ESCAPE_SEQUENCE_CASES = [
@@ -165,15 +164,34 @@ def test_width_edge_cases(text, expected, name):
     assert wcwidth.width(text) == expected
 
 
-def test_width_invalid_control_codes():
-    """Tests for invalid control_codes parameter."""
-    with pytest.raises(ValueError):
-        wcwidth.width("hello", control_codes="invalid")
+def test_width_unknown_control_codes():
+    """Unknown control_codes defaults to parse mode."""
+    assert wcwidth.width("hello", control_codes="invalid") == 5
+    assert wcwidth.width("abc\bd", control_codes="unknown") == 3
 
 
 def test_vs16_selector():
-    """Test VS16 emoji selector."""
-    assert wcwidth.width("\u263A\uFE0F") == 1
+    """VS16 converts narrow character to wide (width 2)."""
+    # Smiley face with VS16 should be width 2 (same as wcswidth)
+    assert wcwidth.width("\u263A\uFE0F") == 2
+    assert wcwidth.width("\u263A\uFE0F") == wcwidth.wcswidth("\u263A\uFE0F")
+    # Heart with VS16
+    assert wcwidth.width("\u2764\uFE0F") == 2
+    # VS16 without valid preceding char is zero-width
+    assert wcwidth.width("\uFE0F") == 0
+    # Character not in VS16 table followed by VS16 stays narrow
+    assert wcwidth.width("A\uFE0F") == 1
+
+
+def test_vs16_after_control_chars():
+    """VS16 after control characters should not add width."""
+    # Emoji, then control char, then VS16 - VS16 should NOT apply to emoji
+    # width() returns max extent, so BS/CR don't reduce it
+    assert wcwidth.width("\u263A\x07\uFE0F") == 1  # smiley(1) + BEL(0) + VS16(0)
+    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(back) + VS16(0), extent=1
+    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
+    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 1  # smiley(1) + SGR(0) + VS16(0)
+    assert wcwidth.width("\u263A\u200Da\uFE0F") == 1  # smiley(1) + ZWJ+a(0) + VS16(0)
 
 
 def test_backspace_at_column_zero():
@@ -194,9 +212,9 @@ def test_iter_sequences_lone_esc():
     assert list(wcwidth.iter_sequences('*\x1b*')) == [('*', False), ('\x1b', True), ('*', False)]
 
 
-def test_tab_ignore_with_tabstop():
-    """Tabs are zero-width with control_codes='ignore', tabstop has no effect."""
-    assert wcwidth.width("abc\t", control_codes="ignore", tabstop=8) == 3
+def test_tab_ignore_with_tabsize():
+    """Tabs are zero-width with control_codes='ignore', tabsize has no effect."""
+    assert wcwidth.width("abc\t", control_codes="ignore", tabsize=8) == 3
 
 
 def test_cursor_right_unparameterized():
