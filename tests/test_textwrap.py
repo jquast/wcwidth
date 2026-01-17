@@ -1,4 +1,5 @@
 """Tests for sequence-aware text wrapping functions."""
+import sys
 import textwrap
 
 import pytest
@@ -27,6 +28,26 @@ HANGUL_GA = '\u1100\u1161'
 
 def _strip(text):
     return ''.join(seg for seg, is_seq in iter_sequences(text) if not is_seq)
+
+
+def _adjust_stdlib_result(expected, kwargs):
+    """
+    Adjust stdlib textwrap result for known bugs in Python < 3.15.
+
+    Older versions of textwrap could leave a preceding all-whitespace line
+    when drop_whitespace=True. See https://github.com/python/cpython/issues/140627
+    """
+    if not expected:
+        return expected
+    if (
+        kwargs.get('drop_whitespace') and
+        sys.version_info[:2] < (3, 15) and
+        not expected[0].strip()
+    ):
+        expected = expected[1:]
+        if expected and kwargs.get('subsequent_indent'):
+            expected[0] = expected[0][len(kwargs['subsequent_indent']):]
+    return expected
 
 
 def _colorize(text):
@@ -95,7 +116,9 @@ TEXTWRAP_KWARGS = [
 def test_wrap_matches_stdlib(kwargs, width):
     pgraph = ' Z! a bc defghij klmnopqrstuvw<<>>xyz012345678900 ' * 2
     pgraph_colored = _colorize(pgraph)
-    expected = textwrap.wrap(pgraph, width=width, **kwargs)
+    expected = _adjust_stdlib_result(
+        textwrap.wrap(pgraph, width=width, **kwargs), kwargs
+    )
     wrapper = SequenceTextWrapper(width=width, **kwargs)
     assert wrapper.wrap(pgraph) == expected
     assert [_strip(line) for line in wrapper.wrap(pgraph_colored)] == expected
@@ -107,7 +130,9 @@ def test_wrap_matches_stdlib(kwargs, width):
 def test_wrap_tabsize_matches_stdlib(kwargs, width, tabsize):
     tabsize = min(tabsize, width)
     pgraph = ' Z! a bc\t defghij\t kl mnopqrs\ttuvw<<>>xyz012345678900 ' * 2
-    expected = textwrap.wrap(pgraph, width=width, tabsize=tabsize, **kwargs)
+    expected = _adjust_stdlib_result(
+        textwrap.wrap(pgraph, width=width, tabsize=tabsize, **kwargs), kwargs
+    )
     wrapper = SequenceTextWrapper(width=width, tabsize=tabsize, **kwargs)
     assert wrapper.wrap(pgraph) == expected
 
