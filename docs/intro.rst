@@ -48,6 +48,8 @@ the displayed width of most C0 and C1 control codes, and measuring many kinds of
 like colors, bold, tabstops, and horizontal cursor movement. This is aided by the
 `iter_sequences()`_ function that provides an iterator over terminal sequences.
 
+A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal.
+
 Discrepancies
 -------------
 
@@ -289,6 +291,9 @@ languages.
 History
 =======
 
+0.2.15 **next version**
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -419,6 +424,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
@@ -455,6 +461,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
