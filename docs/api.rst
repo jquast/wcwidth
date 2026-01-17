@@ -12,15 +12,17 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.width
 
+.. autofunction:: wcwidth.iter_sequences
+
+.. autofunction:: wcwidth.iter_graphemes
+
 .. autofunction:: wcwidth.ljust
 
 .. autofunction:: wcwidth.rjust
 
 .. autofunction:: wcwidth.center
 
-.. autofunction:: wcwidth.iter_graphemes
-
-.. autofunction:: wcwidth.iter_sequences
+.. autofunction:: wcwidth.wrap
 
 .. autofunction:: wcwidth.list_versions
 
