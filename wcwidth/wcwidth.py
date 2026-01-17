@@ -539,3 +539,107 @@ def width(text, control_codes='parse', tabsize=8):
         idx += 1
 
     return max_extent
+
+
+def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text left-justified in a string of given display width.
+
+    :param str text: String to justify, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Single character for padding (default space). Must have
+        display width of 1 (not wide, not zero-width, not combining). Unicode
+        characters like ``'·'`` are acceptable. The width is not validated.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on the right to reach ``dest_width``.
+    :rtype: str
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> wcwidth.ljust('hi', 5)
+        'hi   '
+        >>> wcwidth.ljust('\\x1b[31mhi\\x1b[0m', 5)
+        '\\x1b[31mhi\\x1b[0m   '
+        >>> wcwidth.ljust('\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467', 6)
+        '👨‍👩‍👧    '
+    """
+    if text.isascii() and text.isprintable():
+        text_width = len(text)
+    else:
+        text_width = width(text, control_codes=control_codes)
+    padding_cells = max(0, dest_width - text_width)
+    return text + fillchar * padding_cells
+
+
+def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text right-justified in a string of given display width.
+
+    :param str text: String to justify, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Single character for padding (default space). Must have
+        display width of 1 (not wide, not zero-width, not combining). Unicode
+        characters like ``'·'`` are acceptable. The width is not validated.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on the left to reach ``dest_width``.
+    :rtype: str
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> wcwidth.rjust('hi', 5)
+        '   hi'
+        >>> wcwidth.rjust('\\x1b[31mhi\\x1b[0m', 5)
+        '   \\x1b[31mhi\\x1b[0m'
+        >>> wcwidth.rjust('\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467', 6)
+        '    👨‍👩‍👧'
+    """
+    if text.isascii() and text.isprintable():
+        text_width = len(text)
+    else:
+        text_width = width(text, control_codes=control_codes)
+    padding_cells = max(0, dest_width - text_width)
+    return fillchar * padding_cells + text
+
+
+def center(text, dest_width, fillchar=' ', control_codes='parse'):
+    """
+    Return text centered in a string of given display width.
+
+    :param str text: String to center, may contain terminal sequences.
+    :param int dest_width: Total display width of result in terminal cells.
+    :param str fillchar: Single character for padding (default space). Must have
+        display width of 1 (not wide, not zero-width, not combining). Unicode
+        characters like ``'·'`` are acceptable. The width is not validated.
+    :param str control_codes: How to handle control sequences when measuring.
+        Passed to :func:`width` for measurement.
+    :returns: Text padded on both sides to reach ``dest_width``.
+    :rtype: str
+
+    For odd-width padding, the extra cell goes on the right (matching
+    Python's :meth:`str.center` behavior).
+
+    .. versionadded:: 0.2.15
+
+    Example::
+
+        >>> wcwidth.center('hi', 6)
+        '  hi  '
+        >>> wcwidth.center('\\x1b[31mhi\\x1b[0m', 6)
+        '  \\x1b[31mhi\\x1b[0m  '
+        >>> wcwidth.center('\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467', 6)
+        '  👨‍👩‍👧  '
+    """
+    if text.isascii() and text.isprintable():
+        text_width = len(text)
+    else:
+        text_width = width(text, control_codes=control_codes)
+    total_padding = max(0, dest_width - text_width)
+    left_pad = total_padding // 2
+    right_pad = total_padding - left_pad
+    return fillchar * left_pad + text + fillchar * right_pad
