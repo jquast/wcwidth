@@ -44,6 +44,8 @@ The base of this library is POSIX.1-2001 and POSIX.1-2008 functions `wcwidth(3)`
 which this python module's functions precisely copy by interface as ``wcwidth()`` and ``wcswidth()``,
 and are brought up-to-date to support the latest unicode releases.
 
+A ``iter_graphemes()`` iterator function is provided to help format strings for a terminal.
+
 Discrepancies
 -------------
 
@@ -106,6 +108,25 @@ Use function ``wcswidth()`` to determine the length of many, a *string of unicod
 See `Specification <Specification_from_pypi_>`_ of character measurements. More briefly, return
 values of function ``wcswidth()`` is the sum of ``wcwidth()`` with some additional account for some
 kinds of sequences.  Similarly, ``-1`` is returned if control codes occurs anywhere in the string.
+
+iter_graphemes()
+----------------
+
+Use function ``iter_graphemes()`` to iterate over *grapheme clusters* of a string.
+
+.. code-block:: python
+
+    >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
+    >>> list(iter_graphemes('ok\U0001F1FF\U0001F1FC'))
+    ['o', 'k', '🇿🇼']
+
+    >>> # cafe + combining cute accent
+    >>> list(iter_graphemes('cafe\u0301'))
+    ['c', 'a', 'f', 'é']
+
+    >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
+    >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+    ['o', 'k', '👨‍👩‍👧']
 
 ==========
 Developing
@@ -237,6 +258,9 @@ languages.
 History
 =======
 
+0.2.15 **next version**
+  * **New** Function `iter_graphemes()`_. `PR #165`_.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -367,6 +391,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
@@ -403,6 +428,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
