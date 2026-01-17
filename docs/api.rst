@@ -10,6 +10,10 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.wcswidth
 
+.. autofunction:: wcwidth.width
+
+.. autofunction:: wcwidth.iter_sequences
+
 .. autofunction:: wcwidth.iter_graphemes
 
 .. autofunction:: wcwidth.list_versions
