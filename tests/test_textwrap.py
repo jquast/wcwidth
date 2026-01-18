@@ -66,6 +66,7 @@ def _colorize(text):
 BASIC_EDGE_CASES = [
     ('', 10, []),
     ('   ', 10, []),
+    ('\u5973', 0, ['\u5973']),
 ]
 
 
@@ -101,6 +102,7 @@ HYPHEN_LONG_WORD_CASES = [
     ('a-b-c-d', 3, False, ['a-b', '-c-', 'd']),
     ('---', 2, True, ['--', '-']),
     ('a---b', 2, True, ['a-', '--', 'b']),
+    ('a-\x1b[31mb', 2, True, ['a-\x1b[31m', 'b']),
 ]
 
 

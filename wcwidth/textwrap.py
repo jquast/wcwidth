@@ -205,8 +205,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 # (matches CPython #140627 fix behavior)
                 if self.drop_whitespace:
                     line_content = line_content.rstrip()
-                if line_content:
-                    lines.append(indent + line_content)
+                lines.append(indent + line_content)
                 is_first_line = False
 
         return lines
@@ -267,14 +266,16 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         for segment, is_seq in iter_sequences(text):
             if is_seq:
                 original_idx += len(segment)
+            elif stripped_idx + len(segment) > stripped_pos:
+                # Position is within this segment
+                return original_idx + (stripped_pos - stripped_idx)
             else:
-                for _ in segment:
-                    if stripped_idx >= stripped_pos:
-                        return original_idx
-                    stripped_idx += 1
-                    original_idx += 1
+                stripped_idx += len(segment)
+                original_idx += len(segment)
 
-        return original_idx
+        # Caller guarantees stripped_pos < total stripped chars, so we always
+        # return from within the loop. This line satisfies the type checker.
+        return original_idx  # pragma: no cover
 
     def _find_break_position(self, text: str, max_width: int) -> int:
         """Find string index in text that fits within max_width cells."""
@@ -296,31 +297,18 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             grapheme_width = self._width(grapheme)
             if width_so_far + grapheme_width > max_width:
-                break
+                return idx  # Found break point
 
             width_so_far += grapheme_width
             idx += len(grapheme)
 
-        return idx
+        # Caller guarantees chunk_width > max_width, so a grapheme always
+        # exceeds and we return from within the loop. Type checker requires this.
+        return idx  # pragma: no cover
 
     def _find_first_grapheme_end(self, text: str) -> int:
-        """Find the end position of the first grapheme (skipping leading sequences)."""
-        idx = 0
-        while idx < len(text):
-            char = text[idx]
-
-            # Skip escape sequences
-            if char == '\x1b':
-                match = ZERO_WIDTH_PATTERN.match(text, idx)
-                if match:
-                    idx = match.end()
-                    continue
-
-            # Found first non-sequence character, get its grapheme
-            grapheme = next(iter_graphemes(text[idx:]))
-            return idx + len(grapheme)
-
-        return len(text)
+        """Find the end position of the first grapheme."""
+        return len(next(iter_graphemes(text)))
 
 
 def wrap(text: str, width: int = 70, *,
