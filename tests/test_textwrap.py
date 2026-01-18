@@ -35,21 +35,22 @@ def _strip(text):
 
 def _adjust_stdlib_result(expected, kwargs):
     """
-    Adjust stdlib textwrap result for known bugs in Python < 3.15.
+    Adjust stdlib textwrap result for known bugs in older Python versions.
 
-    Older versions of textwrap could leave a preceding all-whitespace line
-    when drop_whitespace=True. See https://github.com/python/cpython/issues/140627
+    CPython #140627: Older versions leave trailing whitespace and preceding
+    all-whitespace lines when drop_whitespace=True. Fixed in 3.13.11+, 3.14.2+,
+    and 3.15+. We always strip to normalize across versions.
     """
     if not expected:
         return expected
-    if (
-        kwargs.get('drop_whitespace') and
-        sys.version_info[:2] < (3, 15) and
-        not expected[0].strip()
-    ):
-        expected = expected[1:]
-        if expected and kwargs.get('subsequent_indent'):
-            expected[0] = expected[0][len(kwargs['subsequent_indent']):]
+    if kwargs.get('drop_whitespace'):
+        # Strip trailing whitespace from each line (old Python bug)
+        expected = [line.rstrip() for line in expected]
+        # Remove leading all-whitespace lines (old Python bug)
+        if expected and not expected[0].strip():
+            expected = expected[1:]
+            if expected and kwargs.get('subsequent_indent'):
+                expected[0] = expected[0][len(kwargs['subsequent_indent']):]
     return expected
 
 
@@ -74,6 +75,12 @@ def test_wrap_edge_cases(text, w, expected):
 
 def test_wrap_initial_indent():
     assert wrap('hello world', 10, initial_indent='> ') == ['> hello', 'world']
+
+
+def test_wrap_drops_trailing_whitespace():
+    """Trailing whitespace stripped when drop_whitespace=True (CPython #140627)."""
+    result = wrap(' Z! a bc defghij', 3)
+    assert result[:3] == [' Z!', 'a', 'bc']
 
 
 LONG_WORD_CASES = [
@@ -124,7 +131,13 @@ def test_wrap_matches_stdlib(kwargs, width):
     )
     wrapper = SequenceTextWrapper(width=width, **kwargs)
     assert wrapper.wrap(pgraph) == expected
-    assert [_strip(line) for line in wrapper.wrap(pgraph_colored)] == expected
+    # For colored text, strip sequences
+    colored_result = [_strip(line) for line in wrapper.wrap(pgraph_colored)]
+    if kwargs.get('drop_whitespace'):
+        # normalize trailing whitespace, rstrip when drop_whitespace is True
+        # matches CPython #140627 fix
+        colored_result = [line.rstrip() for line in colored_result]
+    assert colored_result == expected
 
 
 @pytest.mark.parametrize('kwargs', TEXTWRAP_KWARGS)

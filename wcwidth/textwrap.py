@@ -200,7 +200,13 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     current_line[-1] = current_line[-1] + sequences
 
             if current_line:
-                lines.append(indent + ''.join(current_line))
+                line_content = ''.join(current_line)
+                # Strip trailing whitespace when drop_whitespace is enabled
+                # (matches CPython #140627 fix behavior)
+                if self.drop_whitespace:
+                    line_content = line_content.rstrip()
+                if line_content:
+                    lines.append(indent + line_content)
                 is_first_line = False
 
         return lines
