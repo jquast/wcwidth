@@ -1,5 +1,6 @@
 """Tests for sequence-aware text wrapping functions."""
 # std imports
+import platform
 import sys
 import textwrap
 
@@ -250,6 +251,10 @@ TABSIZE_WIDE_CASES = [
 
 
 @pytest.mark.parametrize('text,w,tabsize,expected', TABSIZE_WIDE_CASES)
+@pytest.mark.skipif(
+    platform.python_implementation() == 'PyPy' and sys.version_info < (3, 9),
+    reason='PyPy 3.8 str.expandtabs() counts UTF-8 bytes instead of characters'
+)
 def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
     """Verify tabsize respects wide character column positions."""
     assert wrap(text, w, tabsize=tabsize) == expected
