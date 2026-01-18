@@ -172,6 +172,11 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
     See :ref:`Specification` for details of cell measurement.
     """
     # this 'n' argument is a holdover for POSIX function
+
+    # Fast path: pure ASCII printable strings are always width == length
+    if n is None and pwcs.isascii() and pwcs.isprintable():
+        return len(pwcs)
+
     _unicode_version = None
     end = len(pwcs) if n is None else n
     total_width = 0
