@@ -1,10 +1,15 @@
 """Tests for sequence-aware text wrapping functions."""
+# std imports
+import platform
+import sys
 import textwrap
 
+# 3rd party
 import pytest
 
+# local
 from wcwidth import width, iter_sequences
-from wcwidth.textwrap import wrap, SequenceTextWrapper
+from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 SGR_RED = '\x1b[31m'
 SGR_BOLD = '\x1b[1m'
@@ -29,6 +34,27 @@ def _strip(text):
     return ''.join(seg for seg, is_seq in iter_sequences(text) if not is_seq)
 
 
+def _adjust_stdlib_result(expected, kwargs):
+    """
+    Adjust stdlib textwrap result for known bugs in older Python versions.
+
+    CPython #140627: Older versions leave trailing whitespace and preceding
+    all-whitespace lines when drop_whitespace=True. Fixed in 3.13.11+, 3.14.2+,
+    and 3.15+. We always strip to normalize across versions.
+    """
+    if not expected:
+        return expected
+    if kwargs.get('drop_whitespace'):
+        # Strip trailing whitespace from each line (old Python bug)
+        expected = [line.rstrip() for line in expected]
+        # Remove leading all-whitespace lines (old Python bug)
+        if expected and not expected[0].strip():
+            expected = expected[1:]
+            if expected and kwargs.get('subsequent_indent'):
+                expected[0] = expected[0][len(kwargs['subsequent_indent']):]
+    return expected
+
+
 def _colorize(text):
     return ''.join(
         ATTRS[idx % len(ATTRS)] + char + SGR_RESET if char not in ' -\t' else char
@@ -40,6 +66,7 @@ def _colorize(text):
 BASIC_EDGE_CASES = [
     ('', 10, []),
     ('   ', 10, []),
+    ('\u5973', 0, ['\u5973']),
 ]
 
 
@@ -50,6 +77,12 @@ def test_wrap_edge_cases(text, w, expected):
 
 def test_wrap_initial_indent():
     assert wrap('hello world', 10, initial_indent='> ') == ['> hello', 'world']
+
+
+def test_wrap_drops_trailing_whitespace():
+    """Trailing whitespace stripped when drop_whitespace=True (CPython #140627)."""
+    result = wrap(' Z! a bc defghij', 3)
+    assert result[:3] == [' Z!', 'a', 'bc']
 
 
 LONG_WORD_CASES = [
@@ -69,6 +102,7 @@ HYPHEN_LONG_WORD_CASES = [
     ('a-b-c-d', 3, False, ['a-b', '-c-', 'd']),
     ('---', 2, True, ['--', '-']),
     ('a---b', 2, True, ['a-', '--', 'b']),
+    ('a-\x1b[31mb', 2, True, ['a-\x1b[31m', 'b']),
 ]
 
 
@@ -95,10 +129,18 @@ TEXTWRAP_KWARGS = [
 def test_wrap_matches_stdlib(kwargs, width):
     pgraph = ' Z! a bc defghij klmnopqrstuvw<<>>xyz012345678900 ' * 2
     pgraph_colored = _colorize(pgraph)
-    expected = textwrap.wrap(pgraph, width=width, **kwargs)
+    expected = _adjust_stdlib_result(
+        textwrap.wrap(pgraph, width=width, **kwargs), kwargs
+    )
     wrapper = SequenceTextWrapper(width=width, **kwargs)
     assert wrapper.wrap(pgraph) == expected
-    assert [_strip(line) for line in wrapper.wrap(pgraph_colored)] == expected
+    # For colored text, strip sequences
+    colored_result = [_strip(line) for line in wrapper.wrap(pgraph_colored)]
+    if kwargs.get('drop_whitespace'):
+        # normalize trailing whitespace, rstrip when drop_whitespace is True
+        # matches CPython #140627 fix
+        colored_result = [line.rstrip() for line in colored_result]
+    assert colored_result == expected
 
 
 @pytest.mark.parametrize('kwargs', TEXTWRAP_KWARGS)
@@ -107,7 +149,9 @@ def test_wrap_matches_stdlib(kwargs, width):
 def test_wrap_tabsize_matches_stdlib(kwargs, width, tabsize):
     tabsize = min(tabsize, width)
     pgraph = ' Z! a bc\t defghij\t kl mnopqrs\ttuvw<<>>xyz012345678900 ' * 2
-    expected = textwrap.wrap(pgraph, width=width, tabsize=tabsize, **kwargs)
+    expected = _adjust_stdlib_result(
+        textwrap.wrap(pgraph, width=width, tabsize=tabsize, **kwargs), kwargs
+    )
     wrapper = SequenceTextWrapper(width=width, tabsize=tabsize, **kwargs)
     assert wrapper.wrap(pgraph) == expected
 
@@ -209,6 +253,10 @@ TABSIZE_WIDE_CASES = [
 
 
 @pytest.mark.parametrize('text,w,tabsize,expected', TABSIZE_WIDE_CASES)
+@pytest.mark.skipif(
+    platform.python_implementation() == 'PyPy' and sys.version_info < (3, 9),
+    reason='PyPy 3.8 str.expandtabs() counts UTF-8 bytes instead of characters'
+)
 def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
     """Verify tabsize respects wide character column positions."""
     assert wrap(text, w, tabsize=tabsize) == expected

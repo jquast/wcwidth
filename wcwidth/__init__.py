@@ -10,21 +10,20 @@ https://github.com/jquast/wcwidth
 
 # local
 from .wcwidth import ZERO_WIDTH  # noqa
-from .grapheme import iter_graphemes  # noqa
 from .wcwidth import (WIDE_EASTASIAN,
                       VS16_NARROW_TO_WIDE,
+                      ljust,
+                      rjust,
                       width,
+                      center,
                       wcwidth,
                       wcswidth,
                       list_versions,
                       iter_sequences,
-                      ljust,
-                      rjust,
-                      center,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch
-from .grapheme import iter_graphemes
+from .grapheme import iter_graphemes  # noqa
 from .textwrap import SequenceTextWrapper, wrap
 
 # The __all__ attribute defines the items exported from statement,
