@@ -54,7 +54,12 @@ UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
-BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '1.0'))
+BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
+
+# Global flag set by main() from --check-last-modified CLI argument.
+# When True, perform HTTP HEAD requests to check if remote files are newer.
+# Default is False because Unicode data files rarely change once published.
+CHECK_LAST_MODIFIED = False
 
 # Hangul Jamo is a decomposed form of Hangul Syllables, see
 # see https://www.unicode.org/faq/korean.html#3
@@ -420,6 +425,34 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
+def fetch_table_ambiguous_data() -> UnicodeTableRenderCtx:
+    """
+    Fetch east-asian ambiguous character table for the latest Unicode version.
+
+    East Asian Ambiguous (A) characters can display as either 1 cell (narrow)
+    or 2 cells (wide) depending on the terminal's configuration. This table
+    allows users to opt-in to treating these characters as wide by passing
+    ambiguous_width=2 to wcwidth/wcswidth.
+
+    See https://www.unicode.org/reports/tr11/ for the specification.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    version = fetch_unicode_versions()[-1]
+    # parse 'ambiguous' characters by category 'A'
+    table[version] = parse_category_ambiguous(
+        fname=UnicodeDataFile.EastAsianWidth(version)
+    )
+    # Subtract zero-width characters (they should remain zero-width
+    # regardless of ambiguous_width setting)
+    table[version].values = table[version].values.difference(
+        parse_category(
+            fname=UnicodeDataFile.DerivedGeneralCategory(version),
+            wide=0
+        ).values
+    )
+    return UnicodeTableRenderCtx('AMBIGUOUS_EASTASIAN', table)
+
+
 def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     """
     Fetch and create a "narrow to wide variation-16" lookup table.
@@ -578,6 +611,28 @@ def parse_category(fname: str, wide: int) -> TableDef:
     return TableDef(version, date, values)
 
 
+@functools.cache
+def parse_category_ambiguous(fname: str) -> TableDef:
+    """Parse EastAsianWidth.txt for 'A' (Ambiguous) category."""
+    print(f'parsing {fname}, category=A: ', end='', flush=True)
+
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_unicode_table(f)
+
+        # pull "version string" from first line of source file
+        version = next(table_iter).comment.strip()
+        # and "date string" from second line
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+        values = {
+            n
+            for entry in table_iter
+            if entry.code_range is not None and entry.properties[0] == 'A'
+            for n in range(entry.code_range[0], entry.code_range[1])
+        }
+    print('ok')
+    return TableDef(version, date, values)
+
+
 def parse_grapheme_break_properties(fname: str) -> dict[str, TableDef]:
     """Parse GraphemeBreakProperty.txt for grapheme break properties needing tables."""
     print(f'parsing {fname}: ', end='', flush=True)
@@ -693,7 +748,7 @@ class UnicodeDataFile:
     URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
     URL_EMOJI_VARIATION = 'https://unicode.org/Public/{version}/ucd/emoji/emoji-variation-sequences.txt'
     URL_LEGACY_VARIATION = 'https://unicode.org/Public/emoji/{version}/emoji-variation-sequences.txt'
-    URL_EMOJI_ZWJ = 'https://unicode.org/Public/{version}/emoji/emoji-zwj-sequences.txt'
+    URL_EMOJI_ZWJ = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
     URL_GRAPHEME_BREAK = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakProperty.txt'
     URL_EMOJI_DATA = 'https://www.unicode.org/Public/{version}/ucd/emoji/emoji-data.txt'
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
@@ -739,9 +794,9 @@ class UnicodeDataFile:
 
     @classmethod
     def TestEmojiZWJSequences(cls) -> str:
-        version = fetch_unicode_versions()[-1]
+        # ZWJ sequences are only at /Public/emoji/{version}/, use 'latest' for tests
         fname = os.path.join(PATH_TESTS, 'emoji-zwj-sequences.txt')
-        cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version=version), fname=fname)
+        cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version='latest'), fname=fname)
         return fname
 
     @classmethod
@@ -771,12 +826,12 @@ class UnicodeDataFile:
         return fname
 
     @staticmethod
-    def do_retrieve(url: str, fname: str, no_check_last_modified: bool = False) -> None:
+    def do_retrieve(url: str, fname: str) -> None:
         """Retrieve given url to target filepath fname."""
         folder = os.path.dirname(fname)
         if folder and not os.path.exists(folder):
             os.makedirs(folder)
-        if not UnicodeDataFile.is_url_newer(url, fname, no_check_last_modified):
+        if not UnicodeDataFile.is_url_newer(url, fname):
             return
         session = UnicodeDataFile.get_http_session()
         resp = session.get(url, timeout=CONNECT_TIMEOUT)
@@ -788,10 +843,10 @@ class UnicodeDataFile:
         print('ok')
 
     @staticmethod
-    def is_url_newer(url: str, fname: str, no_check_last_modified: bool = False) -> bool:
+    def is_url_newer(url: str, fname: str) -> bool:
         if not os.path.exists(fname):
             return True
-        if not no_check_last_modified:
+        if CHECK_LAST_MODIFIED:
             session = UnicodeDataFile.get_http_session()
             resp = session.head(url, timeout=CONNECT_TIMEOUT)
             resp.raise_for_status()
@@ -865,47 +920,41 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
     return True
 
 
-def fetch_all_emoji_files(no_check_last_modified: bool = False) -> None:
+def fetch_all_emoji_files() -> None:
     """Fetch emoji variation sequences and ZWJ sequences for all Unicode versions.
 
-    Note: Legacy emoji files (before Unicode 9.0) used their own versioning scheme
+    Note: Legacy emoji files (before Unicode 13.0) used their own versioning scheme
     and are stored at different URLs. Only certain versions have actual releases:
+
     - 5.0: first to include emoji-variation-sequences.txt
-    - 11.0, 12.0, 12.1, 13.0, 13.1: final legacy emoji releases
-    - 14.0+: synchronized with Unicode versioning
+    - 11.0, 12.0, 12.1: final legacy emoji releases at /Public/emoji/{version}/
+    - 13.0+: synchronized with Unicode versioning at /Public/{version}/ucd/emoji/
     """
     unicode_versions = fetch_unicode_versions()
 
     # Legacy emoji versions that have actual directories at unicode.org/Public/emoji/
     # Versions before 5.0 don't have emoji-variation-sequences.txt
-    legacy_emoji_versions = ['5.0', '11.0', '12.0', '12.1', '13.0', '13.1']
+    # Starting with 13.0, emoji files moved to /Public/{version}/ucd/emoji/
+    legacy_emoji_versions = ['5.0', '11.0', '12.0', '12.1']
 
     for emoji_version in legacy_emoji_versions:
         fname = os.path.join(PATH_DATA, f'emoji-variation-sequences-emoji-{emoji_version}.txt')
         UnicodeDataFile.do_retrieve(
             url=UnicodeDataFile.URL_LEGACY_VARIATION.format(version=emoji_version),
-            fname=fname,
-            no_check_last_modified=no_check_last_modified)
+            fname=fname)
 
         fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-emoji-{emoji_version}.txt')
         UnicodeDataFile.do_retrieve(
             url=f'https://unicode.org/Public/emoji/{emoji_version}/emoji-zwj-sequences.txt',
-            fname=fname,
-            no_check_last_modified=no_check_last_modified)
+            fname=fname)
 
+    # Starting with Unicode 13.0.0, variation sequences moved to /Public/{version}/ucd/emoji/
     for version in unicode_versions:
-        if version >= UnicodeVersion.parse('9.0.0'):
+        if version >= UnicodeVersion.parse('13.0.0'):
             fname = os.path.join(PATH_DATA, f'emoji-variation-sequences-{version}.txt')
             UnicodeDataFile.do_retrieve(
                 url=UnicodeDataFile.URL_EMOJI_VARIATION.format(version=version),
-                fname=fname,
-                no_check_last_modified=no_check_last_modified)
-
-            fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-{version}.txt')
-            UnicodeDataFile.do_retrieve(
-                url=UnicodeDataFile.URL_EMOJI_ZWJ.format(version=version),
-                fname=fname,
-                no_check_last_modified=no_check_last_modified)
+                fname=fname)
 
 
 def parse_args() -> dict[str, Any]:
@@ -921,15 +970,19 @@ def parse_args() -> dict[str, Any]:
              '(for archival/testing purposes)'
     )
     parser.add_argument(
-        '--no-check-last-modified',
+        '--check-last-modified',
         action='store_true',
-        help='Skip checking if remote files are newer than local files'
+        help='Check if remote files are newer than local files (rarely needed)'
     )
     return vars(parser.parse_args())
 
 
-def main(fetch_all_versions: bool = False, no_check_last_modified: bool = False) -> None:
+def main(fetch_all_versions: bool = False, check_last_modified: bool = False) -> None:
     """Update east-asian, combining and zero width tables."""
+    # Set global flag for HTTP requests to check Last-Modified headers
+    global CHECK_LAST_MODIFIED
+    CHECK_LAST_MODIFIED = check_last_modified
+
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
     # language options using jinja2 templates, with minimal modification of the
@@ -941,6 +994,7 @@ def main(fetch_all_versions: bool = False, no_check_last_modified: bool = False)
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+        yield UnicodeTableRenderDef.new('table_ambiguous.py', fetch_table_ambiguous_data())
         yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
 
@@ -964,7 +1018,7 @@ def main(fetch_all_versions: bool = False, no_check_last_modified: bool = False)
 
     # fetch all legacy emoji files if requested
     if fetch_all_versions:
-        fetch_all_emoji_files(no_check_last_modified=no_check_last_modified)
+        fetch_all_emoji_files()
 
 
 if __name__ == '__main__':

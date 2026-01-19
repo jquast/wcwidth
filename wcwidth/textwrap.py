@@ -35,6 +35,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
     def __init__(self, width: int = 70, *,
                  control_codes: str = 'parse',
                  tabsize: int = 8,
+                 ambiguous_width: int = 1,
                  **kwargs):
         """
         Initialize the wrapper.
@@ -42,15 +43,18 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         :param width: Maximum line width in display cells.
         :param control_codes: How to handle control sequences (see :func:`~.width`).
         :param tabsize: Tab stop width for tab expansion.
+        :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters.
         :param kwargs: Additional arguments passed to :class:`textwrap.TextWrapper`.
         """
         super().__init__(width=width, **kwargs)
         self.control_codes = control_codes
         self.tabsize = tabsize
+        self.ambiguous_width = ambiguous_width
 
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
-        return _width(text, control_codes=self.control_codes, tabsize=self.tabsize)
+        return _width(text, control_codes=self.control_codes, tabsize=self.tabsize,
+                      ambiguous_width=self.ambiguous_width)
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""
@@ -314,6 +318,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 def wrap(text: str, width: int = 70, *,
          control_codes: str = 'parse',
          tabsize: int = 8,
+         ambiguous_width: int = 1,
          initial_indent: str = '',
          subsequent_indent: str = '',
          break_long_words: bool = True,
@@ -329,6 +334,8 @@ def wrap(text: str, width: int = 70, *,
     :param int width: Maximum line width in display cells.
     :param str control_codes: How to handle terminal sequences (see :func:`~.width`).
     :param int tabsize: Tab stop width for tab expansion.
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :param str initial_indent: String prepended to first line.
     :param str subsequent_indent: String prepended to subsequent lines.
     :param bool break_long_words: If True, break words longer than width.
@@ -369,6 +376,7 @@ def wrap(text: str, width: int = 70, *,
         width=width,
         control_codes=control_codes,
         tabsize=tabsize,
+        ambiguous_width=ambiguous_width,
         initial_indent=initial_indent,
         subsequent_indent=subsequent_indent,
         break_long_words=break_long_words,

@@ -71,6 +71,8 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .table_ambiguous import AMBIGUOUS_EASTASIAN
+_AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -86,8 +88,8 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 ))
 
 
-@lru_cache(maxsize=1000)
-def wcwidth(wc, unicode_version='auto'):
+@lru_cache(maxsize=2000)
+def wcwidth(wc, unicode_version='auto', ambiguous_width=1):
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 
@@ -109,6 +111,10 @@ def wcwidth(wc, unicode_version='auto'):
 
             The default ``'auto'`` behavior is recommended for all use cases.
 
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts
+        where ambiguous characters display as double-width. See
+        :ref:`ambiguous_width` for details.
     :return: The width, in cells, necessary to display the character of
         Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
@@ -137,11 +143,18 @@ def wcwidth(wc, unicode_version='auto'):
     if _bisearch(ucs, ZERO_WIDTH[_unicode_version]):
         return 0
 
-    # 1 or 2 width
-    return 1 + _bisearch(ucs, WIDE_EASTASIAN[_unicode_version])
+    # Wide (F/W categories)
+    if _bisearch(ucs, WIDE_EASTASIAN[_unicode_version]):
+        return 2
+
+    # Ambiguous width (A category) - only when ambiguous_width=2
+    if ambiguous_width == 2 and _bisearch(ucs, _AMBIGUOUS_TABLE):
+        return 2
+
+    return 1
 
 
-def wcswidth(pwcs, n=None, unicode_version='auto'):
+def wcswidth(pwcs, n=None, unicode_version='auto', ambiguous_width=1):
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -164,6 +177,8 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
 
             The default ``'auto'`` behavior is recommended for all use cases.
 
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :rtype: int
     :returns: The width, in cells, needed to display the first ``n`` characters
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
@@ -200,7 +215,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto'):
             idx += 1
             continue
         # measure character at current index
-        wcw = wcwidth(char, unicode_version)
+        wcw = wcwidth(char, unicode_version, ambiguous_width)
         if wcw < 0:
             # early return -1 on C0 and C1 control characters
             return wcw
@@ -384,7 +399,7 @@ def iter_sequences(text):
         yield (text[segment_start:], False)
 
 
-def _width_ignored_codes(text):
+def _width_ignored_codes(text, ambiguous_width=1):
     """
     Fast path for width() with control_codes='ignore'.
 
@@ -392,11 +407,12 @@ def _width_ignored_codes(text):
     """
     return wcswidth(
         ''.join([seg for seg, is_seq in iter_sequences(text) if not is_seq])
-        .translate(_CONTROL_CHAR_TABLE)
+        .translate(_CONTROL_CHAR_TABLE),
+        ambiguous_width=ambiguous_width
     )
 
 
-def width(text, control_codes='parse', tabsize=8):
+def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
     """
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -419,6 +435,8 @@ def width(text, control_codes='parse', tabsize=8):
 
     :param int tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
         Must be positive. Has no effect when ``control_codes='ignore'``.
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :rtype: int
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
@@ -456,7 +474,7 @@ def width(text, control_codes='parse', tabsize=8):
 
     # Fast path for ignore mode -- this is useful if you know the text is already "clean"
     if control_codes == 'ignore':
-        return _width_ignored_codes(text)
+        return _width_ignored_codes(text, ambiguous_width)
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
@@ -536,7 +554,7 @@ def width(text, control_codes='parse', tabsize=8):
             continue
 
         # 7. Normal characters: measure with wcwidth
-        w = wcwidth(char)
+        w = wcwidth(char, 'auto', ambiguous_width)
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
@@ -546,7 +564,7 @@ def width(text, control_codes='parse', tabsize=8):
     return max_extent
 
 
-def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
+def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
     """
     Return text left-justified in a string of given display width.
 
@@ -557,6 +575,8 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
         characters like ``'·'`` are acceptable. The width is not validated.
     :param str control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on the right to reach ``dest_width``.
     :rtype: str
 
@@ -574,12 +594,12 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse'):
     if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
-        text_width = width(text, control_codes=control_codes)
+        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
     padding_cells = max(0, dest_width - text_width)
     return text + fillchar * padding_cells
 
 
-def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
+def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
     """
     Return text right-justified in a string of given display width.
 
@@ -590,6 +610,8 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
         characters like ``'·'`` are acceptable. The width is not validated.
     :param str control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on the left to reach ``dest_width``.
     :rtype: str
 
@@ -607,12 +629,12 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse'):
     if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
-        text_width = width(text, control_codes=control_codes)
+        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
     padding_cells = max(0, dest_width - text_width)
     return fillchar * padding_cells + text
 
 
-def center(text, dest_width, fillchar=' ', control_codes='parse'):
+def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
     """
     Return text centered in a string of given display width.
 
@@ -623,6 +645,8 @@ def center(text, dest_width, fillchar=' ', control_codes='parse'):
         characters like ``'·'`` are acceptable. The width is not validated.
     :param str control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on both sides to reach ``dest_width``.
     :rtype: str
 
@@ -643,7 +667,7 @@ def center(text, dest_width, fillchar=' ', control_codes='parse'):
     if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
-        text_width = width(text, control_codes=control_codes)
+        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
     total_padding = max(0, dest_width - text_width)
     left_pad = total_padding // 2
     right_pad = total_padding - left_pad
