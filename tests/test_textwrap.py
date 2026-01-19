@@ -1,14 +1,14 @@
 """Tests for sequence-aware text wrapping functions."""
 # std imports
-import platform
 import sys
+import platform
 import textwrap
 
 # 3rd party
 import pytest
 
 # local
-from wcwidth import width, iter_sequences
+from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 SGR_RED = '\x1b[31m'

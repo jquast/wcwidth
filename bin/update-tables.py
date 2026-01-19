@@ -384,9 +384,17 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
         # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
         table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
 
+        # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
+        # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
+        # See https://github.com/jquast/wcwidth/issues/118
+        default_ignorable = parse_default_ignorable_code_points(
+            fname=UnicodeDataFile.DerivedCoreProperties(version))
+        default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
+        table[version].values = table[version].values.difference(default_ignorable)
+
         # finally, join with atypical 'wide' characters defined by category 'Sk',
-        table[version].values.update(parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                                    wide=2).values)
+        fname = UnicodeDataFile.DerivedGeneralCategory(version)
+        table[version].values.update(parse_category(fname=fname, wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
@@ -399,14 +407,31 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     table: dict[UnicodeVersion, TableDef] = {}
     for version in fetch_unicode_versions():
         # Determine values of zero-width character lookup table by the following category codes
-        table[version] = parse_category(fname=UnicodeDataFile.DerivedGeneralCategory(version),
-                                        wide=0)
+        fname = UnicodeDataFile.DerivedGeneralCategory(version)
+        table[version] = parse_category(fname=fname, wide=0)
 
         # Include NULL
         table[version].values.add(0)
 
         # Add Hangul Jamo Vowels and Hangul Trailing Consonants
         table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
+
+        # Add Default_Ignorable_Code_Point characters
+        # Per Unicode Standard (https://www.unicode.org/faq/unsup_char.html):
+        # "All default-ignorable characters should be rendered as completely invisible
+        # (and non advancing, i.e. 'zero width'), if not explicitly supported in rendering."
+        #
+        # See also:
+        # - https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
+        # - https://github.com/jquast/wcwidth/issues/118
+        table[version].values.update(parse_default_ignorable_code_points(
+            fname=UnicodeDataFile.DerivedCoreProperties(version)))
+
+        # Remove U+115F HANGUL CHOSEONG FILLER from zero-width table.
+        # Although it has Default_Ignorable_Code_Point property, it should remain
+        # width 2 because it combines with other Hangul Jamo to form width-2
+        # syllable blocks.
+        table[version].values.discard(0x115F)
 
         # Remove u+00AD categoryCode=Cf name="SOFT HYPHEN",
         # > https://www.unicode.org/faq/casemap_charprop.html
@@ -422,6 +447,7 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         # This value was wrongly measured as a width of '0' in this wcwidth
         # versions 0.2.9 - 0.2.13. Fixed in 0.2.14
         table[version].values.discard(0x00AD)  # SOFT HYPHEN
+
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
@@ -712,6 +738,35 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
         f'INCB_{val.upper()}': TableDef('DerivedCoreProperties', 'see file', values)
         for val, values in values_by_incb.items()
     }
+
+
+def parse_default_ignorable_code_points(fname: str) -> set[int]:
+    """Parse DerivedCoreProperties.txt for Default_Ignorable_Code_Point property."""
+    print(f'parsing {fname} for Default_Ignorable_Code_Point: ', end='', flush=True)
+    values: set[int] = set()
+
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            data, _, comment = line.partition('#')
+            data = data.strip()
+            if not data:
+                continue
+
+            parts = [p.strip() for p in data.split(';')]
+            if len(parts) < 2:
+                continue
+
+            code_points_str, prop_name = parts[0], parts[1]
+
+            if prop_name == 'Default_Ignorable_Code_Point':
+                if '..' in code_points_str:
+                    start, end = code_points_str.split('..')
+                    values.update(range(int(start, 16), int(end, 16) + 1))
+                else:
+                    values.add(int(code_points_str, 16))
+
+    print('ok')
+    return values
 
 
 def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:

@@ -5,7 +5,6 @@ import pytest
 # local
 import wcwidth
 
-
 AMBIGUOUS_CHARS = [
     ('\u00a1', 'INVERTED_EXCLAMATION'),
     ('\u00a7', 'SECTION_SIGN'),

@@ -68,17 +68,19 @@ from functools import lru_cache
 
 # local
 from .bisearch import bisearch as _bisearch
+from .grapheme import iter_graphemes
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .table_ambiguous import AMBIGUOUS_EASTASIAN
-_AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
+from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+
+_AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -411,7 +413,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
     )
 
 
-def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
+def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
     """
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -563,7 +565,7 @@ def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
     return max_extent
 
 
-def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     """
     Return text left-justified in a string of given display width.
 
@@ -598,7 +600,7 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
     return text + fillchar * padding_cells
 
 
-def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     """
     Return text right-justified in a string of given display width.
 
@@ -633,7 +635,7 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
     return fillchar * padding_cells + text
 
 
-def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     """
     Return text centered in a string of given display width.
 
@@ -698,7 +700,7 @@ def strip_sequences(text):
     return ''.join(segment for segment, is_seq in iter_sequences(text) if not is_seq)
 
 
-def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
+def clip(text, start, end, *, fillchar=' ', tabsize=8, ambiguous_width=1):
     """
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 
@@ -738,10 +740,8 @@ def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
         >>> clip('a\\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    from .grapheme import iter_graphemes
-
-    if start < 0:
-        start = 0
+    # pylint: disable=too-complex,too-many-locals,too-many-branches
+    start = max(start, 0)
     if end <= start:
         return ''
 
