@@ -18,7 +18,10 @@
 #
 import os
 import sys
+import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+THIS_YEAR = datetime.datetime.now().year
 
 # local
 import wcwidth
@@ -52,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'wcwidth'
-copyright = '2017, Jeff Quast'
+copyright = f'2017-{THIS_YEAR}, Jeff Quast'
 author = 'Jeff Quast'
 
 # The version info for the project you're documenting, acts as replacement for
