@@ -723,7 +723,7 @@ def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
     :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :rtype: str
-    :returns: Substring of ``text`` spanning display columns ``[start, end)``,
+    :returns: Substring of ``text`` spanning display columns ``(start, end)``,
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
 
@@ -795,7 +795,7 @@ def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
             elif col < end and col + w > start:
                 # Partially visible: wide char spans boundary, replace with fillchar
                 output.append(fillchar * (min(end, col + w) - max(start, col)))
-            # Else: fully outside [start, end), omit entirely
+            # Else: fully outside (start, end), omit entirely
             col += w
 
         idx += len(grapheme)
