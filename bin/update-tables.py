@@ -921,31 +921,35 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
 
 
 def fetch_all_emoji_files() -> None:
-    """Fetch emoji variation sequences and ZWJ sequences for all Unicode versions.
+    """Fetch emoji variation sequences and ZWJ sequences for all versions.
 
-    Note: Legacy emoji files (before Unicode 13.0) used their own versioning scheme
-    and are stored at different URLs. Only certain versions have actual releases:
+    URL locations:
+    - Variation sequences (5.0-12.1): /Public/emoji/{version}/
+    - Variation sequences (13.0+): /Public/{version}/ucd/emoji/
+    - ZWJ sequences (ALL versions): /Public/emoji/{version}/
 
-    - 5.0: first to include emoji-variation-sequences.txt
-    - 11.0, 12.0, 12.1: final legacy emoji releases at /Public/emoji/{version}/
-    - 13.0+: synchronized with Unicode versioning at /Public/{version}/ucd/emoji/
+    Note: ZWJ files never moved to /Public/{version}/ucd/emoji/ - they remain
+    at /Public/emoji/{version}/ for all emoji versions.
     """
     unicode_versions = fetch_unicode_versions()
 
-    # Legacy emoji versions that have actual directories at unicode.org/Public/emoji/
-    # Versions before 5.0 don't have emoji-variation-sequences.txt
-    # Starting with 13.0, emoji files moved to /Public/{version}/ucd/emoji/
-    legacy_emoji_versions = ['5.0', '11.0', '12.0', '12.1']
+    # Legacy variation sequences (before 13.0, at /Public/emoji/{version}/)
+    legacy_variation_versions = ['5.0', '11.0', '12.0', '12.1']
 
-    for emoji_version in legacy_emoji_versions:
+    for emoji_version in legacy_variation_versions:
         fname = os.path.join(PATH_DATA, f'emoji-variation-sequences-emoji-{emoji_version}.txt')
         UnicodeDataFile.do_retrieve(
             url=UnicodeDataFile.URL_LEGACY_VARIATION.format(version=emoji_version),
             fname=fname)
 
+    # ZWJ sequences are ALL at /Public/emoji/{version}/ (they didn't move)
+    all_zwj_versions = ['5.0', '11.0', '12.0', '12.1', '13.0', '13.1',
+                        '14.0', '15.0', '15.1', '16.0']
+
+    for emoji_version in all_zwj_versions:
         fname = os.path.join(PATH_DATA, f'emoji-zwj-sequences-emoji-{emoji_version}.txt')
         UnicodeDataFile.do_retrieve(
-            url=f'https://unicode.org/Public/emoji/{emoji_version}/emoji-zwj-sequences.txt',
+            url=UnicodeDataFile.URL_EMOJI_ZWJ.format(version=emoji_version),
             fname=fname)
 
     # Starting with Unicode 13.0.0, variation sequences moved to /Public/{version}/ucd/emoji/
