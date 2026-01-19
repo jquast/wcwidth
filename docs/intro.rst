@@ -238,6 +238,51 @@ sequence-aware wrapping with full control over wrapping behavior.
 
 Full API Documentation at https://wcwidth.readthedocs.io
 
+.. _ambiguous_width:
+
+ambiguous_width
+---------------
+
+Some Unicode characters have "East Asian Ambiguous" (A) width. These characters display as 1 cell by
+default, matching Western terminal contexts, but many CJK (Chinese, Japanese, Korean) environments
+may have a preference for 2 cells.  This is often found as boolean option, "Ambiguous width as wide"
+in Terminal Emulator software preferences.
+
+By default, wcwidth treats ambiguous characters as narrow (width 1). For CJK environments where your
+terminal is configured to display ambiguous characters as double-width, pass ``ambiguous_width=2``:
+
+.. code-block:: python
+
+    >>> # CIRCLED DIGIT ONE - ambiguous width
+    >>> wcwidth.width('\u2460')
+    1
+    >>> wcwidth.width('\u2460', ambiguous_width=2)
+    2
+
+The ``ambiguous_width`` parameter is available on all width-measuring functions: ``wcwidth()``,
+``wcswidth()``, ``width()``, ``ljust()``, ``rjust()``, ``center()``, and ``wrap()``.
+
+**Terminal Detection**
+
+The most reliable method to detect whether a terminal profile is set for "Ambiguous width as wide"
+mode is to display an ambiguous character surrounded by a pair of Cursor Position Report (CPR)
+queries with a terminal in cooked or raw mode, and to parse the responses for their ``(y, x)``
+locations, and measure the difference of the ``x`` positions. This code should also check whether
+it is attached to a terminal and timeout, and then fallback to the preferred locale.
+
+`jquast/blessed`_ library provides a `Terminal.detect_ambiguous_width()`_ method:
+
+.. code-block:: python
+
+    >>> import blessed, functools
+    >>> # Detect terminal ambiguous width as wide (2) or narrow (1)
+    >>> ambiguous_width = blessed.Terminal().detect_ambiguous_width()
+    >>> # Define a new 'width' function with this argument
+    >>> awidth = functools.partial(wcwidth.width, ambiguous_width=ambiguous_width)
+    >>> # result depends on attached terminal mode
+    >>> awidth('\u2460')
+    1
+
 ==========
 Developing
 ==========
@@ -374,6 +419,7 @@ History
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
   * **New** Function `wrap()`_. `PR #169`_.
   * **Performance** improvement in `wcswidth()`_. `PR #171`_.
+  * **New** argument ``ambiguous_width`` to all functions. `PR #172`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -510,6 +556,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
 .. _`PR #169`: https://github.com/jquast/wcwidth/pull/169
 .. _`PR #171`: https://github.com/jquast/wcwidth/pull/171
+.. _`PR #172`: https://github.com/jquast/wcwidth/pull/172
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
