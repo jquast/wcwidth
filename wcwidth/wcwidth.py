@@ -406,8 +406,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
     Strips escape sequences and control characters, then measures remaining text.
     """
     return wcswidth(
-        ''.join([seg for seg, is_seq in iter_sequences(text) if not is_seq])
-        .translate(_CONTROL_CHAR_TABLE),
+        strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width
     )
 
@@ -672,3 +671,133 @@ def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_widt
     left_pad = total_padding // 2
     right_pad = total_padding - left_pad
     return fillchar * left_pad + text + fillchar * right_pad
+
+
+def strip_sequences(text):
+    """
+    Return text with all terminal escape sequences removed.
+
+    This is a simple wrapper around :func:`iter_sequences` that concatenates
+    all non-sequence segments.
+
+    :param str text: String that may contain terminal escape sequences.
+    :rtype: str
+    :returns: The input text with all escape sequences stripped.
+
+    .. versionadded:: 0.3.0
+
+    Example::
+
+        >>> strip_sequences('\\x1b[31mred\\x1b[0m')
+        'red'
+        >>> strip_sequences('hello')
+        'hello'
+        >>> strip_sequences('\\x1b[1m\\x1b[31mbold red\\x1b[0m text')
+        'bold red text'
+    """
+    return ''.join(segment for segment, is_seq in iter_sequences(text) if not is_seq)
+
+
+def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
+    """
+    Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
+
+    This function extracts a substring based on visible column positions rather than
+    character indices. Terminal escape sequences are preserved in the output since
+    they have zero display width. If a wide character (width 2) would be split at
+    either boundary, it is replaced with ``fillchar``.
+
+    TAB characters (``\\t``) are expanded to spaces up to the next tab stop,
+    controlled by the ``tabsize`` parameter.
+
+    Other cursor movement characters (backspace, carriage return) and cursor
+    movement sequences are passed through unchanged as zero-width.
+
+    :param str text: String to clip, may contain terminal escape sequences.
+    :param int start: Absolute starting column (inclusive, 0-indexed).
+    :param int end: Absolute ending column (exclusive).
+    :param str fillchar: Character to use when a wide character must be split at
+        a boundary (default space). Must have display width of 1.
+    :param int tabsize: Tab stop width (default 8). Set to 0 to pass tabs through
+        as zero-width (preserved in output but don't advance column position).
+    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
+    :rtype: str
+    :returns: Substring of ``text`` spanning display columns ``[start, end)``,
+        with all terminal sequences preserved and wide characters at boundaries
+        replaced with ``fillchar``.
+
+    .. versionadded:: 0.3.0
+
+    Example::
+
+        >>> clip('hello world', 0, 5)
+        'hello'
+        >>> clip('中文字', 0, 3)  # Wide char split at column 3
+        '中 '
+        >>> clip('a\\tb', 0, 10)  # Tab expanded to spaces
+        'a       b'
+    """
+    from .grapheme import iter_graphemes
+
+    if start < 0:
+        start = 0
+    if end <= start:
+        return ''
+
+    # Fast path: printable ASCII only (no tabs, escapes, or wide chars)
+    if text.isascii() and text.isprintable():
+        return text[start:end]
+
+    output = []
+    col = 0
+    idx = 0
+    text_len = len(text)
+
+    while idx < text_len:
+        char = text[idx]
+
+        # Escape sequences: always include (zero-width)
+        if char == '\x1b':
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match:
+                output.append(match.group())
+                idx = match.end()
+            else:
+                output.append(char)
+                idx += 1
+            continue
+
+        # TAB: expand to spaces (or pass through if tabsize=0)
+        if char == '\t':
+            if tabsize > 0:
+                next_tab = col + (tabsize - (col % tabsize))
+                while col < next_tab:
+                    if start <= col < end:
+                        output.append(' ')
+                    col += 1
+            else:
+                output.append(char)
+            idx += 1
+            continue
+
+        # Grapheme clustering handles everything else (including control chars)
+        grapheme = next(iter_graphemes(text[idx:]))
+        w = width(grapheme, ambiguous_width=ambiguous_width)
+
+        if w == 0:
+            # Zero-width (combining marks, etc): always include, doesn't advance column
+            output.append(grapheme)
+        else:
+            if col >= start and col + w <= end:
+                # Fully visible: include the grapheme
+                output.append(grapheme)
+            elif col < end and col + w > start:
+                # Partially visible: wide char spans boundary, replace with fillchar
+                output.append(fillchar * (min(end, col + w) - max(start, col)))
+            # Else: fully outside [start, end), omit entirely
+            col += w
+
+        idx += len(grapheme)
+
+    return ''.join(output)

@@ -39,16 +39,17 @@ The lowest-level functions in this library are the POSIX.1-2001 and POSIX.1-2008
 `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
 These functions return -1 when C0 and C1 control codes are present.
 
-The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation
-of grapheme and terminal control sequence boundaries.
-
 An easy-to-use `width()`_ function is provided as a wrapper of `wcswidth()`_ that is also capable of
 measuring most terminal control codes and sequences, like colors, bold, tabstops, and horizontal
 cursor movement.
 
-Finally, text-justification is solved by the grapheme and sequence-aware functions `ljust()`_,
+Text-justification is solved by the grapheme and sequence-aware functions `ljust()`_,
 `rjust()`_, `center()`_, and `wrap()`_, serving as drop-in replacements to python standard functions
 of the same names.
+
+The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation of
+grapheme and terminal control sequence boundaries.  The `clip()`_ function extracts substrings by
+display column positions, and `strip_sequences()`_ removes terminal escape sequences from text.
 
 Discrepancies
 -------------
@@ -135,6 +136,10 @@ Measures width of a string, with improved handling of ``control_codes``
     Traceback (most recent call last):
     ...
     ValueError: Vertical movement character 0xa at position 0
+
+Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
+terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
+character and is also ignored (you may want to use :func:`str.expandtabs` first).
 
 iter_sequences()
 ----------------
@@ -236,7 +241,34 @@ clusters, and wide characters to a given display width.
 The ``SequenceTextWrapper`` class extends :class:`textwrap.TextWrapper` for
 sequence-aware wrapping with full control over wrapping behavior.
 
-Full API Documentation at https://wcwidth.readthedocs.io
+clip()
+------
+
+Use `clip()`_ to extract a substring by the column positions displayed, preserving terminal sequences.
+
+.. code-block:: python
+
+    >>> from wcwidth import clip
+    >>> # Wide characters split to Narrow boundaries using fillchar=' '
+    >>> clip('中文字', 0, 3)
+    '中 '
+    >>> clip('中文字', 1, 5, fillchar='.')
+    '.文.'
+
+    >>> # *ALL* Terminal sequences are preserved
+    >>> clip('\x1b[31m中文\x1b[0m', 0, 3)
+    '\x1b[31m中 \x1b[0m'
+
+strip_sequences()
+-----------------
+
+Use `strip_sequences()`_ to remove all terminal escape sequences from text.
+
+.. code-block:: python
+
+    >>> from wcwidth import strip_sequences
+    >>> strip_sequences('\x1b[31mred\x1b[0m')
+    'red'
 
 .. _ambiguous_width:
 
@@ -259,8 +291,8 @@ terminal is configured to display ambiguous characters as double-width, pass ``a
     >>> wcwidth.width('\u2460', ambiguous_width=2)
     2
 
-The ``ambiguous_width`` parameter is available on all width-measuring functions: ``wcwidth()``,
-``wcswidth()``, ``width()``, ``ljust()``, ``rjust()``, ``center()``, and ``wrap()``.
+The ``ambiguous_width`` parameter is available on all width-measuring functions: `wcwidth()`_,
+`wcswidth()`_, `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
 **Terminal Detection**
 
@@ -420,6 +452,7 @@ History
   * **New** Function `wrap()`_. `PR #169`_.
   * **Performance** improvement in `wcswidth()`_. `PR #171`_.
   * **New** argument ``ambiguous_width`` to all functions. `PR #172`_.
+  * **New** Functions `clip()`_ and `strip_sequences()`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -602,6 +635,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
 .. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center
 .. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
+.. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
+.. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
+.. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
