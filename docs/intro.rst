@@ -315,51 +315,6 @@ it is attached to a terminal and timeout, and then fallback to the preferred loc
     >>> awidth('\u2460')
     1
 
-.. _ambiguous_width:
-
-ambiguous_width
----------------
-
-Some Unicode characters have "East Asian Ambiguous" (A) width. These characters display as 1 cell by
-default, matching Western terminal contexts, but many CJK (Chinese, Japanese, Korean) environments
-may have a preference for 2 cells.  This is often found as boolean option, "Ambiguous width as wide"
-in Terminal Emulator software preferences.
-
-By default, wcwidth treats ambiguous characters as narrow (width 1). For CJK environments where your
-terminal is configured to display ambiguous characters as double-width, pass ``ambiguous_width=2``:
-
-.. code-block:: python
-
-    >>> # CIRCLED DIGIT ONE - ambiguous width
-    >>> wcwidth.width('\u2460')
-    1
-    >>> wcwidth.width('\u2460', ambiguous_width=2)
-    2
-
-The ``ambiguous_width`` parameter is available on all width-measuring functions: ``wcwidth()``,
-``wcswidth()``, ``width()``, ``ljust()``, ``rjust()``, ``center()``, and ``wrap()``.
-
-**Terminal Detection**
-
-The most reliable method to detect whether a terminal profile is set for "Ambiguous width as wide"
-mode is to display an ambiguous character surrounded by a pair of Cursor Position Report (CPR)
-queries with a terminal in cooked or raw mode, and to parse the responses for their ``(y, x)``
-locations, and measure the difference of the ``x`` positions. This code should also check whether
-it is attached to a terminal and timeout, and then fallback to the preferred locale.
-
-`jquast/blessed`_ library provides a `Terminal.detect_ambiguous_width()`_ method:
-
-.. code-block:: python
-
-    >>> import blessed, functools
-    >>> # Detect terminal ambiguous width as wide (2) or narrow (1)
-    >>> ambiguous_width = blessed.Terminal().detect_ambiguous_width()
-    >>> # Define a new 'width' function with this argument
-    >>> awidth = functools.partial(wcwidth.width, ambiguous_width=ambiguous_width)
-    >>> # result depends on attached terminal mode
-    >>> awidth('\u2460')
-    1
-
 ==========
 Developing
 ==========
