@@ -413,9 +413,8 @@ def _width_ignored_codes(text, ambiguous_width=1):
     )
 
 
-
 def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
-    """
+    r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
     Unlike :func:`wcswidth`, this function handles most control characters and many popular terminal
@@ -567,7 +566,7 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
 
 
 def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text left-justified in a string of given display width.
 
     :param str text: String to justify, may contain terminal sequences.
@@ -602,7 +601,7 @@ def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_wi
 
 
 def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text right-justified in a string of given display width.
 
     :param str text: String to justify, may contain terminal sequences.
@@ -637,7 +636,7 @@ def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_wi
 
 
 def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text centered in a string of given display width.
 
     :param str text: String to center, may contain terminal sequences.
@@ -702,7 +701,7 @@ def strip_sequences(text):
 
 
 def clip(text, start, end, *, fillchar=' ', tabsize=8, ambiguous_width=1):
-    """
+    r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 
     This function extracts a substring based on visible column positions rather than
