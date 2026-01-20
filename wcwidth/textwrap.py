@@ -1,9 +1,8 @@
 """
 Sequence-aware text wrapping functions.
 
-This module provides functions for wrapping text that may contain
-terminal escape sequences, with proper handling of Unicode grapheme
-clusters and character display widths.
+This module provides functions for wrapping text that may contain terminal escape sequences, with
+proper handling of Unicode grapheme clusters and character display widths.
 """
 # std imports
 import textwrap
@@ -76,10 +75,10 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
 
-        This method ensures that terminal escape sequences don't interfere
-        with the text splitting logic, particularly for hyphen-based word
-        breaking. It builds a position mapping from stripped text to original
-        text, calls the parent's _split on stripped text, then maps chunks back.
+        This method ensures that terminal escape sequences don't interfere with the text splitting
+        logic, particularly for hyphen-based word breaking. It builds a position mapping from
+        stripped text to original text, calls the parent's _split on stripped text, then maps chunks
+        back.
         """
         # Build a mapping from stripped text positions to original text positions.
         # We track where each character ENDS so that sequences between characters
@@ -140,8 +139,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         Wrap chunks into lines using sequence-aware width.
 
-        Override TextWrapper._wrap_chunks to use _width instead of len.
-        Follows stdlib's algorithm: greedily fill lines, handle long words.
+        Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
+        greedily fill lines, handle long words.
         """
         if not chunks:
             return []
@@ -220,8 +219,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         Sequence-aware :meth:`textwrap.TextWrapper._handle_long_word`.
 
-        This method ensures that word boundaries are not broken mid-sequence,
-        and respects grapheme cluster boundaries when breaking long words.
+        This method ensures that word boundaries are not broken mid-sequence, and respects grapheme
+        cluster boundaries when breaking long words.
         """
         if width < 1:
             space_left = 1

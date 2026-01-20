@@ -1,8 +1,9 @@
 """Tests for clip() and strip_sequences() functions."""
+# 3rd party
 import pytest
 
-from wcwidth import clip, strip_sequences, width
-
+# local
+from wcwidth import clip, width, strip_sequences
 
 STRIP_SEQUENCES_CASES = [
     ('', ''),

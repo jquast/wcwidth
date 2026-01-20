@@ -1,4 +1,5 @@
-"""Core tests for wcwidth module. isort:skip_file"""
+"""Core tests for wcwidth module."""
+# std imports
 import importlib.metadata
 
 # local
@@ -38,7 +39,7 @@ def test_empty_string():
 
 def basic_string_type():
     """
-    This is a python 2-specific test of the basic "string type"
+    This is a python 2-specific test of the basic "string type".
 
     Such strings cannot contain anything but ascii in python2.
     """
@@ -117,14 +118,14 @@ def test_null_width_0():
 
 
 def test_control_c0_width_negative_1():
-    """How the API reacts to CSI (Control sequence initiate).
+    """
+    How the API reacts to CSI (Control sequence initiate).
 
-    An example of bad fortune, this terminal sequence is a width of 0
-    on all terminals, but wcwidth doesn't parse Control-Sequence-Inducer
-    (CSI) sequences.
+    An example of bad fortune, this terminal sequence is a width of 0 on all terminals, but wcwidth
+    doesn't parse Control-Sequence-Inducer (CSI) sequences.
 
-    Also the "legacy" posix functions wcwidth and wcswidth return -1 for
-    any string containing the C1 control character \x1b (ESC).
+    Also the "legacy" posix functions wcwidth and wcswidth return -1 for any string containing the
+    C1 control character \x1b (ESC).
     """
     # given,
     phrase = '\x1b[0m'
@@ -190,8 +191,8 @@ def test_balinese_script():
     """
     Balinese kapal (ship) is length 3.
 
-    This may be an example that is not yet correctly rendered by any terminal so
-    far, like devanagari.
+    This may be an example that is not yet correctly rendered by any terminal so far, like
+    devanagari.
     """
     phrase = ("\u1B13"    # Category 'Lo', EAW 'N' -- BALINESE LETTER KA
               "\u1B28"    # Category 'Lo', EAW 'N' -- BALINESE LETTER PA KAPAL
@@ -211,7 +212,7 @@ def test_balinese_script():
 
 def test_kr_jamo():
     """
-    Test basic combining of HANGUL CHOSEONG and JUNGSEONG
+    Test basic combining of HANGUL CHOSEONG and JUNGSEONG.
 
     Example and from Raymond Chen's blog post,
     https://devblogs.microsoft.com/oldnewthing/20201009-00/?p=104351

@@ -1,8 +1,8 @@
 """
 Control character sets for terminal handling.
 
-This module provides the control character sets used by the width() function
-to handle terminal control characters.
+This module provides the control character sets used by the width() function to handle terminal
+control characters.
 """
 
 # Illegal C0/C1 control characters.

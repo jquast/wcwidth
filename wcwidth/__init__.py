@@ -11,18 +11,18 @@ https://github.com/jquast/wcwidth
 # local
 from .wcwidth import ZERO_WIDTH  # noqa
 from .wcwidth import (WIDE_EASTASIAN,
-                      VS16_NARROW_TO_WIDE,
                       AMBIGUOUS_EASTASIAN,
+                      VS16_NARROW_TO_WIDE,
+                      clip,
                       ljust,
                       rjust,
                       width,
                       center,
                       wcwidth,
                       wcswidth,
-                      clip,
-                      strip_sequences,
                       list_versions,
                       iter_sequences,
+                      strip_sequences,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch

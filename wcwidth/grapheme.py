@@ -1,8 +1,8 @@
 """
 Grapheme cluster segmentation following Unicode Standard Annex #29.
 
-This module provides pure-Python implementation of the grapheme cluster
-boundary algorithm as defined in UAX #29: Unicode Text Segmentation.
+This module provides pure-Python implementation of the grapheme cluster boundary algorithm as
+defined in UAX #29: Unicode Text Segmentation.
 
 https://www.unicode.org/reports/tr29/
 """
@@ -118,8 +118,8 @@ def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
     """
     Check simple GCB-pair-based break rules (cacheable).
 
-    Returns BreakResult for rules that can be determined from GCB properties alone,
-    or None if complex lookback rules (GB9c, GB11) need to be checked.
+    Returns BreakResult for rules that can be determined from GCB properties alone, or None if
+    complex lookback rules (GB9c, GB11) need to be checked.
     """
     # GB3: CR x LF
     if prev_gcb == GCB.CR and curr_gcb == GCB.LF:
