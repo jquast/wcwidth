@@ -80,6 +80,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         stripped text to original text, calls the parent's _split on stripped text, then maps chunks
         back.
         """
+        # pylint: disable=too-many-locals,too-many-branches
         # Build a mapping from stripped text positions to original text positions.
         # We track where each character ENDS so that sequences between characters
         # attach to the following text (not preceding text). This ensures sequences
@@ -143,6 +144,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
         greedily fill lines, handle long words.
         """
+        # pylint: disable=too-many-branches
         if not chunks:
             return []
 

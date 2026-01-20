@@ -21,6 +21,10 @@ return value of of :func:`wcwidth.wcswidth` is -1.
 Width of 0
 ----------
 
+Any characters with the ``Default_Ignorable_Code_Point`` property in
+`DerivedCoreProperties.txt`_ files, 4,174 characters, excluding `U+00AD`_ SOFT HYPHEN
+(width 1) and `U+115F`_ HANGUL CHOSEONG FILLER (width 2).
+
 Any characters defined by category codes in `DerivedGeneralCategory.txt`_ files:
 
 - 'Me': Enclosing Combining Mark, aprox. 13 characters.
@@ -74,6 +78,8 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
+.. _`U+115F`: https://codepoints.net/U+115F
 .. _`DerivedGeneralCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
+.. _`DerivedCoreProperties.txt`: https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt
 .. _`EastAsianWidth.txt`: https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
 .. _`emoji-variation-sequences.txt`: https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-variation-sequences.txt

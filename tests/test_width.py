@@ -323,3 +323,58 @@ def test_modern_sequences(seq, expected_width, name):
     """Modern terminal sequences are recognized as zero-width."""
     assert wcwidth.width(seq) == expected_width
     assert wcwidth.width(seq, control_codes='strict') == expected_width
+
+
+@pytest.mark.parametrize('codepoint,expected_width', [
+    (0x3164, 0),
+    (0xFFA0, 0),
+    (0x2065, 0),
+    (0xFFF0, 0),
+    (0xFFF1, 0),
+    (0xFFF8, 0),
+    (0xE0000, 0),
+    (0xE0002, 0),
+    (0xE001F, 0),
+    (0xE0080, 0),
+    (0xE00FF, 0),
+    (0xE01F0, 0),
+    (0xE0FFF, 0),
+])
+def test_default_ignorable_zero_width(codepoint, expected_width):
+    """Default_Ignorable_Code_Point characters return width 0."""
+    result = wcwidth.wcwidth(chr(codepoint))
+    assert result == expected_width
+
+
+@pytest.mark.parametrize('codepoint,expected_width', [
+    (0x00AD, 1),
+    (0x115F, 2),
+])
+def test_default_ignorable_exceptions(codepoint, expected_width):
+    """Exceptions to Default_Ignorable_Code_Point zero-width rule."""
+    result = wcwidth.wcwidth(chr(codepoint))
+    assert result == expected_width
+
+
+def test_hangul_filler_zero_width():
+    """U+3164 HANGUL FILLER is width 0."""
+    result = wcwidth.wcwidth('\u3164')
+    assert result == 0
+
+
+def test_halfwidth_hangul_filler_zero_width():
+    """U+FFA0 HALFWIDTH HANGUL FILLER is width 0."""
+    result = wcwidth.wcwidth('\uFFA0')
+    assert result == 0
+
+
+def test_hangul_choseong_filler_exception():
+    """U+115F HANGUL CHOSEONG FILLER remains width 2 for jamo composition."""
+    result = wcwidth.wcwidth('\u115F')
+    assert result == 2
+
+
+def test_soft_hyphen_exception():
+    """U+00AD SOFT HYPHEN remains width 1 for ISO-8859-1 compatibility."""
+    result = wcwidth.wcwidth('\u00AD')
+    assert result == 1

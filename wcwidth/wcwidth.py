@@ -413,7 +413,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
     )
 
 
-def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
+def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -565,7 +565,7 @@ def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
     return max_extent
 
 
-def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     r"""
     Return text left-justified in a string of given display width.
 
@@ -600,7 +600,7 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
     return text + fillchar * padding_cells
 
 
-def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     r"""
     Return text right-justified in a string of given display width.
 
@@ -635,7 +635,7 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
     return fillchar * padding_cells + text
 
 
-def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
+def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
     r"""
     Return text centered in a string of given display width.
 
@@ -700,7 +700,7 @@ def strip_sequences(text):
     return ''.join(segment for segment, is_seq in iter_sequences(text) if not is_seq)
 
 
-def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
+def clip(text, start, end, *, fillchar=' ', tabsize=8, ambiguous_width=1):
     r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 
@@ -740,9 +740,8 @@ def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
         >>> clip('a\\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-positional-arguments,consider-using-max-builtin
-    if start < 0:
-        start = 0
+    # pylint: disable=too-complex,too-many-locals,too-many-branches
+    start = max(start, 0)
     if end <= start:
         return ''
 

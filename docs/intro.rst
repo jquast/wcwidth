@@ -453,6 +453,8 @@ History
   * **Performance** improvement in `wcswidth()`_. `PR #171`_.
   * **New** argument ``ambiguous_width`` to all functions. `PR #172`_.
   * **New** Functions `clip()`_ and `strip_sequences()`_. `PR #173`_.
+  * **Bugfix** Characters with ``Default_Ignorable_Code_Point`` property now
+    return width 0. `PR #174`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -591,6 +593,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #171`: https://github.com/jquast/wcwidth/pull/171
 .. _`PR #172`: https://github.com/jquast/wcwidth/pull/172
 .. _`PR #173`: https://github.com/jquast/wcwidth/pull/173
+.. _`PR #174`: https://github.com/jquast/wcwidth/pull/174
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
