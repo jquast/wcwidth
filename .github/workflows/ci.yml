@@ -18,6 +18,39 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 jobs:
+  lint:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow linting to fail without blocking CI
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # docformatter on 3.13 (not yet compatible with 3.14)
+          - python-version: '3.13'
+            toxenv: docformatter_check
+            label: docformatter
+
+          # All other linting tools on 3.13
+          - python-version: '3.13'
+            toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs
+            label: Linting
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install tox
+        run: python -Im pip install tox
+
+      - name: Run linting
+        run: python -Im tox -e ${{ matrix.toxenv }}
+
   tests:
     strategy:
       fail-fast: false
@@ -140,8 +173,10 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+          verbose: true
 
       - name: Fail if coverage is <100%.
         run: |

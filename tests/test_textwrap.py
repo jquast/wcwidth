@@ -1,14 +1,14 @@
 """Tests for sequence-aware text wrapping functions."""
 # std imports
-import platform
 import sys
+import platform
 import textwrap
 
 # 3rd party
 import pytest
 
 # local
-from wcwidth import width, iter_sequences
+from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 SGR_RED = '\x1b[31m'
@@ -38,9 +38,9 @@ def _adjust_stdlib_result(expected, kwargs):
     """
     Adjust stdlib textwrap result for known bugs in older Python versions.
 
-    CPython #140627: Older versions leave trailing whitespace and preceding
-    all-whitespace lines when drop_whitespace=True. Fixed in 3.13.11+, 3.14.2+,
-    and 3.15+. We always strip to normalize across versions.
+    CPython #140627: Older versions leave trailing whitespace and preceding all-whitespace lines
+    when drop_whitespace=True. Fixed in 3.13.11+, 3.14.2+, and 3.15+. We always strip to normalize
+    across versions.
     """
     if not expected:
         return expected
