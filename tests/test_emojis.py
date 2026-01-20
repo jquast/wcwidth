@@ -1,8 +1,12 @@
+"""Tests for emoji width measurement and ZWJ sequences."""
 # std imports
 import os
 
 # 3rd party
 import pytest
+
+# local
+import wcwidth
 
 # some tests cannot be done on some builds of python, where the internal
 # unicode structure is limited to 0x10000 for memory conservation,
@@ -12,9 +16,6 @@ try:
     NARROW_ONLY = False
 except ValueError:
     NARROW_ONLY = True
-
-# local
-import wcwidth
 
 
 def make_sequence_from_line(line):
@@ -28,7 +29,7 @@ def emoji_zwj_sequence():
     phrase = ("\U0001f469"   # Base, Category So, East Asian Width property 'W' -- WOMAN
               "\U0001f3fb"   # Modifier, Category Sk, East Asian Width property 'W' -- EMOJI MODIFIER FITZPATRICK TYPE-1-2
               "\u200d"       # Joiner, Category Cf, East Asian Width property 'N'  -- ZERO WIDTH JOINER
-              "\U0001f4bb")  # Fused, Category So, East Asian Width peroperty 'W' -- PERSONAL COMPUTER
+              "\U0001f4bb")  # Fused, Category So, East Asian Width property 'W' -- PERSONAL COMPUTER
     # This test adapted from https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
     expect_length_each = (2, 0, 0, 2)
     expect_length_phrase = 2
@@ -132,11 +133,10 @@ def test_longer_emoji_zwj_sequence():
 
 
 def read_sequences_from_file(filename):
-    fp = open(os.path.join(os.path.dirname(__file__), filename), encoding='utf-8')
-    lines = [line.strip()
-             for line in fp.readlines()
-             if not line.startswith('#') and line.strip()]
-    fp.close()
+    with open(os.path.join(os.path.dirname(__file__), filename), encoding='utf-8') as fp:
+        lines = [line.strip()
+                 for line in fp.readlines()
+                 if not line.startswith('#') and line.strip()]
     sequences = [make_sequence_from_line(line) for line in lines]
     return lines, sequences
 
@@ -162,7 +162,7 @@ def test_recommended_emoji_zwj_sequences():
             })
 
     # verify
-    assert errors == []
+    assert not errors
     assert num >= 1468
 
 
@@ -188,7 +188,7 @@ def test_recommended_variation_16_sequences():
             })
 
     # verify
-    assert errors == []
+    assert not errors
     assert num >= 742
 
 
@@ -210,7 +210,7 @@ def test_unicode_9_vs16():
 
 
 def test_unicode_8_vs16():
-    """Verify that VS-16 has no effect on unicode_version 8.0 and earler."""
+    """Verify that VS-16 has no effect on unicode_version 8.0 and earlier."""
     phrase = ("\u2640"        # FEMALE SIGN
               "\uFE0F")       # VARIATION SELECTOR-16
 

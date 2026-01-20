@@ -71,7 +71,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 result.append(segment)
         return ''.join(result)
 
-    def _split(self, text: str) -> List[str]:
+    def _split(self, text: str) -> List[str]:  # pylint: disable=too-many-locals
         """
         Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
 
@@ -104,6 +104,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         char_end.append(original_pos)
 
         # Use parent's _split on the stripped text
+        # pylint: disable-next=protected-access
         stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
 
         # Handle text that contains only sequences (no visible characters).
@@ -135,7 +136,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
         return result
 
-    def _wrap_chunks(self, chunks: List[str]) -> List[str]:
+    def _wrap_chunks(self, chunks: List[str]) -> List[str]:  # pylint: disable=too-many-branches
         """
         Wrap chunks into lines using sequence-aware width.
 

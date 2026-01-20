@@ -68,6 +68,7 @@ from functools import lru_cache
 
 # local
 from .bisearch import bisearch as _bisearch
+from .grapheme import iter_graphemes
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -78,7 +79,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
-from .grapheme import iter_graphemes
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
@@ -97,7 +97,7 @@ def wcwidth(wc, unicode_version='auto', ambiguous_width=1):
 
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as
-        ``'6.0.0'``. A list of version levels suported by wcwidth
+        ``'6.0.0'``. A list of version levels supported by wcwidth
         is returned by :func:`list_versions`.
 
         Any version string may be specified without error -- the nearest
@@ -740,9 +740,7 @@ def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
         >>> clip('a\\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    # local
-    from .grapheme import iter_graphemes
-
+    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-positional-arguments,consider-using-max-builtin
     if start < 0:
         start = 0
     if end <= start:
