@@ -1,9 +1,8 @@
 """
 Sequence-aware text wrapping functions.
 
-This module provides functions for wrapping text that may contain
-terminal escape sequences, with proper handling of Unicode grapheme
-clusters and character display widths.
+This module provides functions for wrapping text that may contain terminal escape sequences, with
+proper handling of Unicode grapheme clusters and character display widths.
 """
 # std imports
 import textwrap
@@ -72,14 +71,14 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 result.append(segment)
         return ''.join(result)
 
-    def _split(self, text: str) -> List[str]:
+    def _split(self, text: str) -> List[str]:  # pylint: disable=too-many-locals
         """
         Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
 
-        This method ensures that terminal escape sequences don't interfere
-        with the text splitting logic, particularly for hyphen-based word
-        breaking. It builds a position mapping from stripped text to original
-        text, calls the parent's _split on stripped text, then maps chunks back.
+        This method ensures that terminal escape sequences don't interfere with the text splitting
+        logic, particularly for hyphen-based word breaking. It builds a position mapping from
+        stripped text to original text, calls the parent's _split on stripped text, then maps chunks
+        back.
         """
         # pylint: disable=too-many-locals,too-many-branches
         # Build a mapping from stripped text positions to original text positions.
@@ -106,8 +105,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         char_end.append(original_pos)
 
         # Use parent's _split on the stripped text
-        stripped_chunks = textwrap.TextWrapper._split(  # pylint: disable=protected-access
-            self, stripped_text)
+        # pylint: disable-next=protected-access
+        stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
 
         # Handle text that contains only sequences (no visible characters).
         # Return the sequences as a single chunk to preserve them.
@@ -138,12 +137,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
         return result
 
-    def _wrap_chunks(self, chunks: List[str]) -> List[str]:
+    def _wrap_chunks(self, chunks: List[str]) -> List[str]:  # pylint: disable=too-many-branches
         """
         Wrap chunks into lines using sequence-aware width.
 
-        Override TextWrapper._wrap_chunks to use _width instead of len.
-        Follows stdlib's algorithm: greedily fill lines, handle long words.
+        Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
+        greedily fill lines, handle long words.
         """
         # pylint: disable=too-many-branches
         if not chunks:
@@ -223,8 +222,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         Sequence-aware :meth:`textwrap.TextWrapper._handle_long_word`.
 
-        This method ensures that word boundaries are not broken mid-sequence,
-        and respects grapheme cluster boundaries when breaking long words.
+        This method ensures that word boundaries are not broken mid-sequence, and respects grapheme
+        cluster boundaries when breaking long words.
         """
         if width < 1:
             space_left = 1
@@ -326,7 +325,7 @@ def wrap(text: str, width: int = 70, *,
          subsequent_indent: str = '',
          break_long_words: bool = True,
          break_on_hyphens: bool = True) -> List[str]:
-    """
+    r"""
     Wrap text to fit within given width, returning a list of wrapped lines.
 
     Like :func:`textwrap.wrap`, but measures width in display cells rather than

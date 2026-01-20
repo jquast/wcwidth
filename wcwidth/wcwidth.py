@@ -97,7 +97,7 @@ def wcwidth(wc, unicode_version='auto', ambiguous_width=1):
 
     :param str wc: A single Unicode character.
     :param str unicode_version: A Unicode version number, such as
-        ``'6.0.0'``. A list of version levels suported by wcwidth
+        ``'6.0.0'``. A list of version levels supported by wcwidth
         is returned by :func:`list_versions`.
 
         Any version string may be specified without error -- the nearest
@@ -349,7 +349,7 @@ def _wcmatch_version(given_version):
 
 
 def iter_sequences(text):
-    """
+    r"""
     Iterate through text, yielding segments with sequence identification.
 
     This generator yields tuples of ``(segment, is_sequence)`` for each part
@@ -411,6 +411,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width
     )
+
 
 
 def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
@@ -676,7 +677,7 @@ def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_w
 
 
 def strip_sequences(text):
-    """
+    r"""
     Return text with all terminal escape sequences removed.
 
     This is a simple wrapper around :func:`iter_sequences` that concatenates

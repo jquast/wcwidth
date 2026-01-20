@@ -455,12 +455,9 @@ def fetch_table_ambiguous_data() -> UnicodeTableRenderCtx:
     """
     Fetch east-asian ambiguous character table for the latest Unicode version.
 
-    East Asian Ambiguous (A) characters can display as either 1 cell (narrow)
-    or 2 cells (wide) depending on the terminal's configuration. This table
-    allows users to opt-in to treating these characters as wide by passing
-    ambiguous_width=2 to wcwidth/wcswidth.
-
-    See https://www.unicode.org/reports/tr11/ for the specification.
+    East Asian Ambiguous (A) characters can display as either 1 cell (narrow) or 2 cells (wide)
+    depending on the terminal's configuration. This table allows users to opt-in to treating these
+    characters as wide by passing ambiguous_width=2 to wcwidth/wcswidth.
     """
     table: dict[UnicodeVersion, TableDef] = {}
     version = fetch_unicode_versions()[-1]
@@ -938,10 +935,11 @@ class UnicodeDataFile:
 
 
 def replace_if_modified(new_filename: str, original_filename: str) -> None:
-    """Replace original file with new file only if there are significant changes.
+    """
+    Replace original file with new file only if there are significant changes.
 
-    If only the 'This code generated' timestamp line differs, discard the new file.
-    If there are other changes or the original doesn't exist, replace it.
+    If only the 'This code generated' timestamp line differs, discard the new file. If there are
+    other changes or the original doesn't exist, replace it.
     """
     if os.path.exists(original_filename):
         with open(original_filename, encoding='utf-8') as f1, \
@@ -976,7 +974,8 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
 
 
 def fetch_all_emoji_files() -> None:
-    """Fetch emoji variation sequences and ZWJ sequences for all versions.
+    """
+    Fetch emoji variation sequences and ZWJ sequences for all versions.
 
     URL locations:
     - Variation sequences (5.0-12.1): /Public/emoji/{version}/

@@ -178,7 +178,7 @@ Use `iter_graphemes()`_ to iterate over *grapheme clusters* of a string.
     ['o', 'k', '👨\u200d👩\u200d👧']
 
 A grapheme cluster is what a user perceives as a single character, even if it is composed of
-multiple Unicode codepoints. This function implements Unicode Standard `Annex #29`_ grapheme cluster
+multiple Unicode codepoints. This function implements `Unicode Standard Annex #29`_ grapheme cluster
 boundary rules.
 
 ljust()
@@ -244,7 +244,7 @@ sequence-aware wrapping with full control over wrapping behavior.
 clip()
 ------
 
-Use `clip()`_ to extract a substring by the column positions displayed, preserving terminal sequences.
+Use `clip()`_ to extract a substring by column positions, preserving terminal sequences.
 
 .. code-block:: python
 
@@ -639,6 +639,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
+.. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

@@ -14,3 +14,5 @@ htmlcov
 data
 .DS_Store
 .idea
+.python-version
+

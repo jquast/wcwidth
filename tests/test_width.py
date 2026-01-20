@@ -4,6 +4,7 @@ import pytest
 
 # local
 import wcwidth
+from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
 
 BASIC_WIDTH_CASES = [
     ('', 0, 'empty'),
@@ -253,7 +254,6 @@ INDETERMINATE_CAP_SAMPLES = [
 def test_indeterminate_caps_covered_by_term_seq_pattern(seq, cap_name):
     """Verify all INDETERMINATE_CAPS sequences are matched by ZERO_WIDTH_PATTERN."""
     # local
-    from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
     assert ZERO_WIDTH_PATTERN.match(seq)
     assert wcwidth.width(seq) == 0
 

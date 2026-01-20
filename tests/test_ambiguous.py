@@ -39,34 +39,34 @@ def test_wcswidth_mixed_ambiguous_and_wide():
 
 
 def test_width_ambiguous():
-    """width() respects ambiguous_width parameter."""
+    """Width() respects ambiguous_width parameter."""
     assert wcwidth.width('\u00b1') == 1
     assert wcwidth.width('\u00b1', ambiguous_width=2) == 2
 
 
 def test_ljust_ambiguous():
-    """ljust respects ambiguous_width parameter."""
+    """Ljust respects ambiguous_width parameter."""
     text = '\u00b1'
     assert wcwidth.ljust(text, 4) == '\u00b1   '
     assert wcwidth.ljust(text, 4, ambiguous_width=2) == '\u00b1  '
 
 
 def test_rjust_ambiguous():
-    """rjust respects ambiguous_width parameter."""
+    """Rjust respects ambiguous_width parameter."""
     text = '\u00b1'
     assert wcwidth.rjust(text, 4) == '   \u00b1'
     assert wcwidth.rjust(text, 4, ambiguous_width=2) == '  \u00b1'
 
 
 def test_center_ambiguous():
-    """center respects ambiguous_width parameter."""
+    """Center respects ambiguous_width parameter."""
     text = '\u00b1'
     assert wcwidth.center(text, 5) == '  \u00b1  '
     assert wcwidth.center(text, 6, ambiguous_width=2) == '  \u00b1  '
 
 
 def test_wrap_ambiguous():
-    """wrap respects ambiguous_width parameter."""
+    """Wrap respects ambiguous_width parameter."""
     text = '\u00b1' * 5  # 5 ambiguous characters
     assert wcwidth.wrap(text, 4) == ['\u00b1\u00b1\u00b1\u00b1', '\u00b1']
     assert wcwidth.wrap(text, 4, ambiguous_width=2) == ['\u00b1\u00b1', '\u00b1\u00b1', '\u00b1']
