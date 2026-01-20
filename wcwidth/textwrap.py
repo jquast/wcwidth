@@ -322,7 +322,7 @@ def wrap(text: str, width: int = 70, *,
          subsequent_indent: str = '',
          break_long_words: bool = True,
          break_on_hyphens: bool = True) -> List[str]:
-    """
+    r"""
     Wrap text to fit within given width, returning a list of wrapped lines.
 
     Like :func:`textwrap.wrap`, but measures width in display cells rather than

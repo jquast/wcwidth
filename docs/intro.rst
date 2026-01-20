@@ -244,7 +244,7 @@ sequence-aware wrapping with full control over wrapping behavior.
 clip()
 ------
 
-Use `clip()`_ to extract a substring by the column positions displayed, preserving terminal sequences.
+Use `clip()`_ to extract a substring by column positions, preserving terminal sequences.
 
 .. code-block:: python
 

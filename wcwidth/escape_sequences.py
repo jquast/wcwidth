@@ -1,4 +1,4 @@
-"""
+r"""
 Terminal escape sequence patterns.
 
 This module provides regex patterns for matching terminal escape sequences. All patterns match

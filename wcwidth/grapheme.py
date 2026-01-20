@@ -32,6 +32,7 @@ from .table_grapheme import (GRAPHEME_L,
 
 class GCB(IntEnum):
     """Grapheme Cluster Break property values."""
+
     OTHER = 0
     CR = 1
     LF = 2
@@ -109,6 +110,7 @@ def _is_incb_extend(ucs: int) -> bool:
 
 class BreakResult(NamedTuple):
     """Result of grapheme cluster break decision."""
+
     should_break: bool
     ri_count: int
 
@@ -234,7 +236,7 @@ def iter_graphemes(
     start: int = 0,
     end: Optional[int] = None,
 ) -> Iterator[str]:
-    """
+    r"""
     Iterate over grapheme clusters in a Unicode string.
 
     Grapheme clusters are "user-perceived characters" - what a user would

@@ -8,7 +8,7 @@ import textwrap
 import pytest
 
 # local
-from wcwidth import width, iter_sequences
+from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 SGR_RED = '\x1b[31m'

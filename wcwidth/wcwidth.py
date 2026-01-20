@@ -71,16 +71,16 @@ from .bisearch import bisearch as _bisearch
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .table_ambiguous import AMBIGUOUS_EASTASIAN
-
-_AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
-# local
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
+from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+from .grapheme import iter_graphemes
+
+_AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -349,7 +349,7 @@ def _wcmatch_version(given_version):
 
 
 def iter_sequences(text):
-    """
+    r"""
     Iterate through text, yielding segments with sequence identification.
 
     This generator yields tuples of ``(segment, is_sequence)`` for each part
@@ -414,7 +414,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
 
 
 def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
-    """
+    r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
     Unlike :func:`wcswidth`, this function handles most control characters and many popular terminal
@@ -566,7 +566,7 @@ def width(text, control_codes='parse', tabsize=8, ambiguous_width=1):
 
 
 def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text left-justified in a string of given display width.
 
     :param str text: String to justify, may contain terminal sequences.
@@ -601,7 +601,7 @@ def ljust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
 
 
 def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text right-justified in a string of given display width.
 
     :param str text: String to justify, may contain terminal sequences.
@@ -636,7 +636,7 @@ def rjust(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width
 
 
 def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_width=1):
-    """
+    r"""
     Return text centered in a string of given display width.
 
     :param str text: String to center, may contain terminal sequences.
@@ -676,7 +676,7 @@ def center(text, dest_width, fillchar=' ', control_codes='parse', ambiguous_widt
 
 
 def strip_sequences(text):
-    """
+    r"""
     Return text with all terminal escape sequences removed.
 
     This is a simple wrapper around :func:`iter_sequences` that concatenates
@@ -701,7 +701,7 @@ def strip_sequences(text):
 
 
 def clip(text, start, end, fillchar=' ', tabsize=8, ambiguous_width=1):
-    """
+    r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 
     This function extracts a substring based on visible column positions rather than
