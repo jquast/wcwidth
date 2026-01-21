@@ -445,7 +445,7 @@ languages.
 History
 =======
 
-0.3.0 *2026-01-18*
+0.3.0 *2026-01-21*
   * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
