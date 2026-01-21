@@ -22,8 +22,8 @@ STRIP_SEQUENCES_CASES = [
     ('\x1b[31m中文\x1b[0m', '中文'),
     ('\x1b[1m\U0001F468\u200D\U0001F469\u200D\U0001F467\x1b[0m',
      '\U0001F468\u200D\U0001F469\u200D\U0001F467'),
-    ('\x1b', ''),
-    ('a\x1bb', 'ab'),
+    ('\x1b', '\x1b'),
+    ('a\x1bb', 'a\x1bb'),
     ('\x1b[', ''),
     ('text\x1b[mmore', 'textmore'),
 ]

@@ -28,6 +28,8 @@ IGNORE_MODE_CASES = [
     ('abc\nxy', 5, 'LF'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('hello\x80world', 10, 'C1_control'),
+    ('\x1b', 0, 'lone_ESC'),
+    ('a\x1bb', 2, 'lone_ESC_between'),
 ]
 
 
@@ -62,6 +64,9 @@ STRICT_ALLOWED_CASES = [
     ('abc\rxy', 3, 'CR'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('a\x1b[2Cb', 4, 'cursor_right'),
+    ('\x1b', 0, 'lone_ESC'),
+    ('a\x1bb', 2, 'lone_ESC_between'),
+    ('\x1b!', 1, 'ESC_unrecognized'),
 ]
 
 
@@ -139,7 +144,7 @@ ESCAPE_SEQUENCE_CASES = [
     ('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 4, 'OSC_hyperlink'),
     ('\x1b]0;title\x07text', 4, 'OSC_title'),
     ('\x1b(B', 0, 'charset'),
-    ('\x1b[', 0, 'incomplete_CSI'),
+    ('\x1b[', 0, 'Fe_CSI'),
 ]
 
 

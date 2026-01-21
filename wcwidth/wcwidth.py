@@ -679,8 +679,7 @@ def strip_sequences(text):
     r"""
     Return text with all terminal escape sequences removed.
 
-    This is a simple wrapper around :func:`iter_sequences` that concatenates
-    all non-sequence segments.
+    Unknown or incomplete ESC sequences are preserved.
 
     :param str text: String that may contain terminal escape sequences.
     :rtype: str
@@ -697,7 +696,7 @@ def strip_sequences(text):
         >>> strip_sequences('\\x1b[1m\\x1b[31mbold red\\x1b[0m text')
         'bold red text'
     """
-    return ''.join(segment for segment, is_seq in iter_sequences(text) if not is_seq)
+    return ZERO_WIDTH_PATTERN.sub('', text)
 
 
 def clip(text, start, end, *, fillchar=' ', tabsize=8, ambiguous_width=1):
