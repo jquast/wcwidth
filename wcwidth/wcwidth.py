@@ -510,6 +510,10 @@ def width(
     # considering this function is a likely "hot path", they are inlined, breaking many of our
     # complexity rules.
 
+    # Fast path for ASCII printable (no tabs, escapes, or control chars)
+    if text.isascii() and text.isprintable():
+        return len(text)
+
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check for longer strings - the detection overhead hurts short string performance.
     if control_codes == 'parse' and len(text) > 20:
