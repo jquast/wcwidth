@@ -30,7 +30,8 @@ Any characters defined by category codes in `DerivedGeneralCategory.txt`_ files:
 - 'Me': Enclosing Combining Mark, aprox. 13 characters.
 - 'Mn': Nonspacing Combining Mark, aprox. 1,839 characters.
 - 'Mc': Spacing Mark, aprox. 443 characters.
-- 'Cf': Format control characters excluding `U+00AD` SOFT HYPHEN, aprox. 160 characters.
+- 'Cf': Format control characters excluding `U+00AD`_ SOFT HYPHEN and
+  `Prepended_Concatenation_Mark`_ characters, aprox. 147 characters.
 - 'Zl': `U+2028`_ LINE SEPARATOR only
 - 'Zp': `U+2029`_ PARAGRAPH SEPARATOR only
 - 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase
@@ -83,3 +84,4 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`DerivedCoreProperties.txt`: https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt
 .. _`EastAsianWidth.txt`: https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
 .. _`emoji-variation-sequences.txt`: https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-variation-sequences.txt
+.. _`Prepended_Concatenation_Mark`: https://www.unicode.org/reports/tr44/#Prepended_Concatenation_Mark

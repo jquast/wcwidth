@@ -387,8 +387,9 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
         # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
         # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
         # See https://github.com/jquast/wcwidth/issues/118
-        default_ignorable = parse_default_ignorable_code_points(
-            fname=UnicodeDataFile.DerivedCoreProperties(version))
+        default_ignorable = parse_derived_core_property(
+            fname=UnicodeDataFile.DerivedCoreProperties(version),
+            property_name='Default_Ignorable_Code_Point')
         default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
         table[version].values = table[version].values.difference(default_ignorable)
 
@@ -424,8 +425,9 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         # See also:
         # - https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
         # - https://github.com/jquast/wcwidth/issues/118
-        table[version].values.update(parse_default_ignorable_code_points(
-            fname=UnicodeDataFile.DerivedCoreProperties(version)))
+        table[version].values.update(parse_derived_core_property(
+            fname=UnicodeDataFile.DerivedCoreProperties(version),
+            property_name='Default_Ignorable_Code_Point'))
 
         # Remove U+115F HANGUL CHOSEONG FILLER from zero-width table.
         # Although it has Default_Ignorable_Code_Point property, it should remain
@@ -447,6 +449,15 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
         # This value was wrongly measured as a width of '0' in this wcwidth
         # versions 0.2.9 - 0.2.13. Fixed in 0.2.14
         table[version].values.discard(0x00AD)  # SOFT HYPHEN
+
+        # Remove Prepended_Concatenation_Mark characters from zero-width.
+        # Per Unicode Standard Annex #44, these format characters (General_Category=Cf) have
+        # mandatory visible display and should NOT be treated as invisible.
+        # See https://github.com/jquast/wcwidth/issues/119
+        table[version].values = table[version].values.difference(
+            parse_derived_core_property(
+                fname=UnicodeDataFile.PropList(version),
+                property_name='Prepended_Concatenation_Mark'))
 
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
@@ -737,9 +748,9 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     }
 
 
-def parse_default_ignorable_code_points(fname: str) -> set[int]:
-    """Parse DerivedCoreProperties.txt for Default_Ignorable_Code_Point property."""
-    print(f'parsing {fname} for Default_Ignorable_Code_Point: ', end='', flush=True)
+def parse_derived_core_property(fname: str, property_name: str) -> set[int]:
+    """Parse DerivedCoreProperties.txt for a specific property."""
+    print(f'parsing {fname} for {property_name}: ', end='', flush=True)
     values: set[int] = set()
 
     with open(fname, encoding='utf-8') as f:
@@ -755,7 +766,7 @@ def parse_default_ignorable_code_points(fname: str) -> set[int]:
 
             code_points_str, prop_name = parts[0], parts[1]
 
-            if prop_name == 'Default_Ignorable_Code_Point':
+            if prop_name == property_name:
                 if '..' in code_points_str:
                     start, end = code_points_str.split('..')
                     values.update(range(int(start, 16), int(end, 16) + 1))
@@ -804,6 +815,7 @@ class UnicodeDataFile:
     URL_GRAPHEME_BREAK = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakProperty.txt'
     URL_EMOJI_DATA = 'https://www.unicode.org/Public/{version}/ucd/emoji/emoji-data.txt'
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
+    URL_PROP_LIST = 'https://www.unicode.org/Public/{version}/ucd/PropList.txt'
     URL_GRAPHEME_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakTest.txt'
 
     @classmethod
@@ -868,6 +880,12 @@ class UnicodeDataFile:
     def DerivedCoreProperties(cls, version: str) -> str:
         fname = os.path.join(PATH_DATA, f'DerivedCoreProperties-{version}.txt')
         cls.do_retrieve(url=cls.URL_DERIVED_CORE_PROPS.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def PropList(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'PropList-{version}.txt')
+        cls.do_retrieve(url=cls.URL_PROP_LIST.format(version=version), fname=fname)
         return fname
 
     @classmethod

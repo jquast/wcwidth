@@ -455,6 +455,8 @@ History
   * **New** Functions `clip()`_ and `strip_sequences()`_. `PR #173`_.
   * **Bugfix** Characters with ``Default_Ignorable_Code_Point`` property now
     return width 0. `PR #174`_.
+  * **Bugfix** Characters with ``Prepended_Concatenation_Mark`` property now
+    return width 1. `PR #175`_.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
