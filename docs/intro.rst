@@ -139,7 +139,7 @@ Measures width of a string, with improved handling of ``control_codes``
 
 Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
 terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
-character and is also ignored (you may want to use :func:`str.expandtabs` first).
+character and is also ignored, you may want to use `str.expandtabs()`_, first.
 
 iter_sequences()
 ----------------
@@ -633,6 +633,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
+.. _`str.expandtabs()`: https://docs.python.org/3/library/stdtypes.html#str.expandtabs
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html#tabulated-results
 .. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
