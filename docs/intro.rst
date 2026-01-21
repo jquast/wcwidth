@@ -238,9 +238,6 @@ clusters, and wide characters to a given display width.
     >>> wrap('\x1b[31mhello world\x1b[0m', 5)
     ['\x1b[31mhello', 'world\x1b[0m']
 
-The ``SequenceTextWrapper`` class extends :class:`textwrap.TextWrapper` for
-sequence-aware wrapping with full control over wrapping behavior.
-
 clip()
 ------
 
