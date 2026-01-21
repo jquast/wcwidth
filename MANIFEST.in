@@ -1,7 +1,0 @@
-include LICENSE
-include tox.ini
-include requirements-*.in requirements-*.txt
-recursive-include bin *.py
-recursive-include code_templates *.j2
-recursive-include docs *.py *.rst requirements.txt
-recursive-include tests *.py *.txt
