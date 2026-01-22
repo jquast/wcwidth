@@ -3,3 +3,4 @@ pytest>=7.4.2
 pytest-cov>=4.1.0
 pytest-codspeed
 importlib-metadata<8.7.1
+packaging<26.0

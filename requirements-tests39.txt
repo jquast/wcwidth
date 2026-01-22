@@ -20,8 +20,10 @@ markdown-it-py==3.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-packaging==26.0
-    # via pytest
+packaging==25.0
+    # via
+    #   -r requirements-tests39.in
+    #   pytest
 pluggy==1.6.0
     # via
     #   pytest
