@@ -24,8 +24,11 @@ pytest==6.2.5
     # via
     #   -r requirements-tests38.in
     #   pytest-benchmark
+    #   pytest-codspeed
     #   pytest-cov
 pytest-benchmark==4.0.0
+    # via -r requirements-tests38.in
+pytest-codspeed==4.2.0
     # via -r requirements-tests38.in
 pytest-cov==5.0.0
     # via -r requirements-tests38.in
