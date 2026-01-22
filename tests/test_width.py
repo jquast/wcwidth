@@ -234,6 +234,26 @@ def test_vs16_after_control_chars():
     assert wcwidth.width(("\u263A\x07\uFE0F") * 10) == 20  # (smiley(1) + BEL(0) + VS16(+1)) * 10 (!)
 
 
+def test_width_long_horizontal_fastpath():
+    # Long strings with horizontal movement chars use full parse loop (not fast path).
+    # width() returns max_extent (maximum position reached), not final position.
+    assert wcwidth.width("a" * 25 + "\b") == 25  # max is 25, BS reduces pos not max
+    assert wcwidth.width("a" * 25 + "\t") == 32  # 25 + tab to next 8-col stop
+    assert wcwidth.width("a" * 25 + "\r") == 25  # max is 25, CR resets pos not max
+
+    # Long strings with cursor movement sequences use full parse loop.
+    # Cursor right increases max, cursor left only decreases pos.
+    assert wcwidth.width("a" * 25 + "\x1b[C") == 26  # 25 + cursor right 1
+    assert wcwidth.width("a" * 25 + "\x1b[2D") == 25  # max is 25, cursor left reduces pos
+
+    # Long plain strings (no \x1b) take the fast path via wcswidth()
+    assert wcwidth.width("a" * 25) == 25
+    assert wcwidth.width("hello world, this is a test") == 27
+
+    # Long strings with non-cursor escape sequences (SGR) also take fast path
+    assert wcwidth.width("\x1b[31m" + "a" * 25 + "\x1b[0m") == 25
+
+
 def test_backspace_at_column_zero():
     """Backspace at column 0 does not go negative."""
     assert wcwidth.width('\b') == 0
