@@ -473,6 +473,17 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
     # considering this function is a likely "hot path", they are inlined, breaking many of our
     # complexity rules.
 
+    # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode
+    if control_codes == 'parse':
+        # Check for cursor-affecting control characters
+        if '\b' not in text and '\t' not in text and '\r' not in text:
+            # Check for escape sequences - if none, or only non-cursor-movement sequences
+            if '\x1b' not in text or (
+                not CURSOR_RIGHT_SEQUENCE.search(text) and
+                not CURSOR_LEFT_SEQUENCE.search(text)
+            ):
+                control_codes = 'ignore'
+
     # Fast path for ignore mode -- this is useful if you know the text is already "clean"
     if control_codes == 'ignore':
         return _width_ignored_codes(text, ambiguous_width)
@@ -484,8 +495,9 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
     max_extent = 0
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
+    text_len = len(text)
 
-    while idx < len(text):
+    while idx < text_len:
         char = text[idx]
 
         # 1. Handle ESC sequences
