@@ -10,8 +10,10 @@ coverage==7.10.7
     # via pytest-cov
 exceptiongroup==1.3.1
     # via pytest
-importlib-metadata==8.7.1
-    # via pytest-codspeed
+importlib-metadata==8.7.0
+    # via
+    #   -r requirements-tests39.in
+    #   pytest-codspeed
 iniconfig==2.1.0
     # via pytest
 markdown-it-py==3.0.0
