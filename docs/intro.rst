@@ -442,6 +442,9 @@ languages.
 History
 =======
 
+0.3.1 *2026-01-22*
+  * **Performance** improvement up to 30% in `width()_`. `PR #181`_.
+
 0.3.0 *2026-01-21*
   * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
@@ -594,6 +597,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #173`: https://github.com/jquast/wcwidth/pull/173
 .. _`PR #174`: https://github.com/jquast/wcwidth/pull/174
 .. _`PR #175`: https://github.com/jquast/wcwidth/pull/175
+.. _`PR #181`: https://github.com/jquast/wcwidth/pull/181
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
