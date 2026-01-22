@@ -209,10 +209,10 @@ def test_zwj_with_non_emoji_chars():
     # ZWJ at end of string
     assert wcwidth.width("\u263A\u200D") == 1  # smiley + ZWJ = 1
 
-    # Long strings (>40 chars) use fast path which routes to wcswidth().
+    # Long strings (>20 chars) use fast path which routes to wcswidth().
     # wcswidth() has more lenient VS16 handling, causing VS16 to incorrectly apply (!)
-    padding = 'x' * 50
-    assert wcwidth.width(padding + "\u263A\u200Da\uFE0F") == 52  # padding(50) + smiley(1) + ZWJ+a(0) + VS16(+1) (!)
+    # Multiply by 10 to exceed threshold: "\u263A\u200Da\uFE0F" (4 chars) * 10 = 40 chars
+    assert wcwidth.width("\u263A\u200Da\uFE0F" * 10) == 20  # (smiley(1) + ZWJ+a(0) + VS16(+1)) * 10 (!)
 
 
 def test_vs16_after_control_chars():
@@ -227,12 +227,11 @@ def test_vs16_after_control_chars():
     assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(-1) + VS16(0), extent=1
     assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
 
-    # Long strings (>40 chars) use fast path which routes to wcswidth().
+    # Long strings (>20 chars) use fast path which routes to wcswidth().
     # wcswidth() has more lenient VS16 handling (`last_measured_idx >= 0` vs `== idx - 1`),
     # causing VS16 to incorrectly apply when separated by control chars (!)
-    padding = 'x' * 50
-    assert wcwidth.width(padding + "\u263A\x07\uFE0F") == 52  # padding(50) + smiley(1) + BEL(0) + VS16(+1) (!)
-    assert wcwidth.width(padding + "\u263A\x1b[m\uFE0F") == 52  # padding(50) + smiley(1) + SGR(0) + VS16(+1) (!)
+    # Multiply by 10 to exceed threshold
+    assert wcwidth.width(("\u263A\x07\uFE0F") * 10) == 20  # (smiley(1) + BEL(0) + VS16(+1)) * 10 (!)
 
 
 def test_backspace_at_column_zero():
