@@ -475,7 +475,7 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check for longer strings - the detection overhead hurts short string performance.
-    if control_codes == 'parse' and len(text) > 40:
+    if control_codes == 'parse' and len(text) > 20:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences - if none, or only non-cursor-movement sequences
