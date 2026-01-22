@@ -196,50 +196,43 @@ def test_zwj_with_non_emoji_chars():
     # emoji because VS16 must immediately follow the character it modifies.
     #
     # In the full parse loop, VS16 checks `last_measured_idx == idx - 1` (immediate adjacency).
-    # The ZWJ+char skip means VS16 is not adjacent to the smiley.
-    #
-    # However, for a "fast path" where no horizontal movement or escape sequences are detected,
-    # width() routes to wcswidth() which has a more lenient VS16 check (`last_measured_idx >= 0`).
-    # This causes VS16 to incorrectly apply to the earlier smiley, measuring as wide (!)
+    # The ZWJ+char skip means VS16 is not adjacent to the smiley, so VS16 has no effect.
     #
     # Control test,
     assert wcwidth.width("\u263A\uFE0F") == 2  # smiley + VS16 = 2
 
-    # ZWJ followed by non-emoji, fast path causes VS16 to apply incorrectly (!)
-    assert wcwidth.width("\u263A\u200Da\uFE0F") == 2  # (!)
-    assert wcwidth.width("\u263A\u200Dx\uFE0F") == 2  # (!)
-    assert wcwidth.width("\u263A\u200Da\u200Db\uFE0F") == 2  # (!)
+    # ZWJ followed by non-emoji, VS16 does not apply (not adjacent)
+    assert wcwidth.width("\u263A\u200Da\uFE0F") == 1
+    assert wcwidth.width("\u263A\u200Dx\uFE0F") == 1
+    assert wcwidth.width("\u263A\u200Da\u200Db\uFE0F") == 1
 
     # ZWJ at end of string
     assert wcwidth.width("\u263A\u200D") == 1  # smiley + ZWJ = 1
 
-    # Converse: horizontal movement forces full parse loop, VS16 correctly has no effect
-    assert wcwidth.width("\u263A\u200Da\uFE0F\b") == 1
-    assert wcwidth.width("\u263A\u200Da\uFE0F\r") == 1
+    # Long strings (>40 chars) use fast path which routes to wcswidth().
+    # wcswidth() has more lenient VS16 handling, causing VS16 to incorrectly apply (!)
+    padding = 'x' * 50
+    assert wcwidth.width(padding + "\u263A\u200Da\uFE0F") == 52  # padding(50) + smiley(1) + ZWJ+a(0) + VS16(+1) (!)
 
 
 def test_vs16_after_control_chars():
-    """VS16 after control or unknown characters measure wrong."""
-    # When used in correct sequence, VS-16 has the correct measurements. wcwidth API and
-    # specification make no specification of illegal or "glitch" unicode. An Emoji, then control
-    # char, then VS16 should NOT be measured as "wide", but it is (!)
-    #
-    # Because, for a "fast path" where no horizontal sequence or control character is detected,
-    # they are stripped before before calling wcswidth(), and this "glitch emoji" becomes known
-    # VS-16 sequence and measure as "Wide".
+    """VS16 after control characters does not apply (not adjacent)."""
+    # When VS16 is separated from a potential emoji by control characters or escape sequences,
+    # VS16 should NOT apply because it must immediately follow the character it modifies.
     #
     # Control tests,
-    assert wcwidth.width("a\uFE0F") == 1  # a(1) + VS16(0)
-    # Control-character variations (!)
-    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 2  # smiley(1) + SGR(0) + VS16(0)
-    assert wcwidth.width("\u263A\x07\uFE0F") == 2  # smiley(1) + BEL(0) + VS16(0)
+    assert wcwidth.width("a\uFE0F") == 1  # a(1) + VS16(0), 'a' not in VS16 table
+    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 1  # smiley(1) + SGR(0) + VS16(0)
+    assert wcwidth.width("\u263A\x07\uFE0F") == 1  # smiley(1) + BEL(0) + VS16(0)
+    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(-1) + VS16(0), extent=1
+    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
 
-    # converse of this side-effect, that default control_chars='parse' will use the "long loop"
-    # to measure VS-16 causing such "glitch emoji" containing horizontal movement sequences
-    # more correctly measure as "Narrow" as having no effect for a string containing '\b' or other
-    # horizontal movement
-    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(back) + VS16(0)
-    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0)
+    # Long strings (>40 chars) use fast path which routes to wcswidth().
+    # wcswidth() has more lenient VS16 handling (`last_measured_idx >= 0` vs `== idx - 1`),
+    # causing VS16 to incorrectly apply when separated by control chars (!)
+    padding = 'x' * 50
+    assert wcwidth.width(padding + "\u263A\x07\uFE0F") == 52  # padding(50) + smiley(1) + BEL(0) + VS16(+1) (!)
+    assert wcwidth.width(padding + "\u263A\x1b[m\uFE0F") == 52  # padding(50) + smiley(1) + SGR(0) + VS16(+1) (!)
 
 
 def test_backspace_at_column_zero():

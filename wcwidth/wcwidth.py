@@ -468,13 +468,14 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
         >>> width('1\\x1b[10C', control_codes='ignore')   # faster but wrong in this case
         1
     """
-    # pylint: disable=too-complex,too-many-branches,too-many-statements
+    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals
     # This could be broken into sub-functions (#1, #3, and 6 especially), but for reduced overhead
     # considering this function is a likely "hot path", they are inlined, breaking many of our
     # complexity rules.
 
-    # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode
-    if control_codes == 'parse':
+    # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
+    # Only check for longer strings - the detection overhead hurts short string performance.
+    if control_codes == 'parse' and len(text) > 40:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences - if none, or only non-cursor-movement sequences
