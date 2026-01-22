@@ -48,3 +48,21 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/jquast/wcwidth"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/wcwidth/**",
+  "/bin/**",
+  "/code_templates/**",
+  "/docs/**",
+  "/data/**",
+  "/tests/**",
+  "/README.rst",
+  "/LICENSE",
+  "/tox.ini",
+  "/requirements-*.in",
+  "/requirements-*.txt",
+]
+exclude = [
+  ".gitignore",
+]
