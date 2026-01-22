@@ -413,7 +413,7 @@ class Pager:
         # pylint: disable=W0613
         #         Unused argument 'args'
         assert self.term.width >= self.screen.hint_width, (
-            f'Screen to small {self.term.width}, must be at least {self.screen.hint_width}')
+            f'Screen too small: {self.term.width}, must be at least {self.screen.hint_width}')
         self._set_lastpage()
         self.dirty = self.STATE_REFRESH
 

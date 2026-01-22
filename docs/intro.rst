@@ -98,7 +98,7 @@ Measures width of a string, returns -1 for control codes.
 .. code-block:: python
 
     >>> # '♀️' emoji w/vs-16
-    >>> wcwidth.wcswidth('♀️')
+    >>> wcwidth.wcswidth('\u2640\ufe0f')
     2
 
 Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*.
