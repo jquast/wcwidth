@@ -189,15 +189,57 @@ def test_vs16_selector():
     assert wcwidth.width("A\uFE0F") == 1
 
 
+def test_zwj_with_non_emoji_chars():
+    """ZWJ with non-emoji characters and trailing VS16."""
+    # ZWJ (Zero Width Joiner) skips both itself and the following character, treating them as a
+    # failed emoji ZWJ sequence. When followed by VS16, the VS16 should NOT apply to the earlier
+    # emoji because VS16 must immediately follow the character it modifies.
+    #
+    # In the full parse loop, VS16 checks `last_measured_idx == idx - 1` (immediate adjacency).
+    # The ZWJ+char skip means VS16 is not adjacent to the smiley.
+    #
+    # However, for a "fast path" where no horizontal movement or escape sequences are detected,
+    # width() routes to wcswidth() which has a more lenient VS16 check (`last_measured_idx >= 0`).
+    # This causes VS16 to incorrectly apply to the earlier smiley, measuring as wide (!)
+    #
+    # Control test,
+    assert wcwidth.width("\u263A\uFE0F") == 2  # smiley + VS16 = 2
+
+    # ZWJ followed by non-emoji, fast path causes VS16 to apply incorrectly (!)
+    assert wcwidth.width("\u263A\u200Da\uFE0F") == 2  # (!)
+    assert wcwidth.width("\u263A\u200Dx\uFE0F") == 2  # (!)
+    assert wcwidth.width("\u263A\u200Da\u200Db\uFE0F") == 2  # (!)
+
+    # ZWJ at end of string
+    assert wcwidth.width("\u263A\u200D") == 1  # smiley + ZWJ = 1
+
+    # Converse: horizontal movement forces full parse loop, VS16 correctly has no effect
+    assert wcwidth.width("\u263A\u200Da\uFE0F\b") == 1
+    assert wcwidth.width("\u263A\u200Da\uFE0F\r") == 1
+
+
 def test_vs16_after_control_chars():
-    """VS16 after control characters should not add width."""
-    # Emoji, then control char, then VS16 - VS16 should NOT apply to emoji
-    # width() returns max extent, so BS/CR don't reduce it
-    assert wcwidth.width("\u263A\x07\uFE0F") == 1  # smiley(1) + BEL(0) + VS16(0)
-    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(back) + VS16(0), extent=1
-    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
-    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 1  # smiley(1) + SGR(0) + VS16(0)
-    assert wcwidth.width("\u263A\u200Da\uFE0F") == 1  # smiley(1) + ZWJ+a(0) + VS16(0)
+    """VS16 after control or unknown characters measure wrong."""
+    # When used in correct sequence, VS-16 has the correct measurements. wcwidth API and
+    # specification make no specification of illegal or "glitch" unicode. An Emoji, then control
+    # char, then VS16 should NOT be measured as "wide", but it is (!)
+    #
+    # Because, for a "fast path" where no horizontal sequence or control character is detected,
+    # they are stripped before before calling wcswidth(), and this "glitch emoji" becomes known
+    # VS-16 sequence and measure as "Wide".
+    #
+    # Control tests,
+    assert wcwidth.width("a\uFE0F") == 1  # a(1) + VS16(0)
+    # Control-character variations (!)
+    assert wcwidth.width("\u263A\x1b[m\uFE0F") == 2  # smiley(1) + SGR(0) + VS16(0)
+    assert wcwidth.width("\u263A\x07\uFE0F") == 2  # smiley(1) + BEL(0) + VS16(0)
+
+    # converse of this side-effect, that default control_chars='parse' will use the "long loop"
+    # to measure VS-16 causing such "glitch emoji" containing horizontal movement sequences
+    # more correctly measure as "Narrow" as having no effect for a string containing '\b' or other
+    # horizontal movement
+    assert wcwidth.width("\u263A\x08\uFE0F") == 1  # smiley(1) + BS(back) + VS16(0)
+    assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0)
 
 
 def test_backspace_at_column_zero():
