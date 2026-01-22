@@ -52,7 +52,7 @@ Homepage = "https://github.com/jquast/wcwidth"
 [tool.hatch.build.targets.sdist]
 include = [
   # hatch includes **everything**, even embarrassing TODO files or spreadsheets or whatever is in
-  # your root foler, a commonly dangerous thing even without hatch, like that we released an
+  # your root folder, a commonly dangerous thing even without hatch, like that we released an
   # unimported table_vs15.py in version 0.2.14. A 'git clean -dfx' should work ..  but! *Global* git
   # ignore is not honored by hatch, even files containing secrets may easily be leaked!
   "/wcwidth/**",
