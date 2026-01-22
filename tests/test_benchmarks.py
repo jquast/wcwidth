@@ -1,9 +1,10 @@
 """Performance benchmarks for wcwidth module."""
+# std imports
 import os
 
-import pytest
-
+# local
 import wcwidth
+
 
 def test_wcwidth_ascii(benchmark):
     """Benchmark wcwidth() with ASCII characters."""
