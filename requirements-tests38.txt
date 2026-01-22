@@ -6,26 +6,30 @@
 #
 attrs==25.3.0
     # via pytest
+cffi==1.17.1
+    # via pytest-codspeed
 coverage==5.5
     # via
     #   -r requirements-tests38.in
     #   pytest-cov
+filelock==3.16.1
+    # via pytest-codspeed
 iniconfig==2.1.0
     # via pytest
-packaging==25.0
+packaging==26.0
     # via pytest
 pluggy==1.5.0
     # via pytest
 py==1.11.0
     # via pytest
-py-cpuinfo==9.0.0
-    # via pytest-benchmark
+pycparser==2.23
+    # via cffi
 pytest==6.2.5
     # via
     #   -r requirements-tests38.in
-    #   pytest-benchmark
+    #   pytest-codspeed
     #   pytest-cov
-pytest-benchmark==4.0.0
+pytest-codspeed==2.2.1
     # via -r requirements-tests38.in
 pytest-cov==5.0.0
     # via -r requirements-tests38.in
