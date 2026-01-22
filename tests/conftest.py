@@ -1,9 +1,10 @@
 """Pytest configuration and fixtures."""
+# 3rd party
 import pytest
 
-
 try:
-    from pytest_codspeed import BenchmarkFixture  # noqa: F401
+    # 3rd party
+    from pytest_codspeed import BenchmarkFixture  # noqa: F401  pylint:disable=unused-import
 except ImportError:
     # Provide a no-op benchmark fixture when pytest-codspeed is not installed
     @pytest.fixture
