@@ -1,4 +1,4 @@
-|pypi_downloads| |codecov| |license|
+|pypi_downloads| |codecov| |codspeed| |license|
 
 ============
 Introduction
@@ -82,7 +82,7 @@ Measures width of a single codepoint,
 .. code-block:: python
 
     >>> # '♀' narrow emoji
-    >>> wcwidth.wcwidth('\u2640')
+    >>> wcwidth.wcwidth('\\u2640')
     1
 
 Use function `wcwidth()`_ to determine the length of a *single unicode character*.
@@ -114,31 +114,31 @@ Measures width of a string, with improved handling of ``control_codes``
 .. code-block:: python
 
     >>> # same support as wcswidth(), eg. regional indicator flag:
-    >>> wcwidth.width('\U0001F1FF\U0001F1FC')
+    >>> wcwidth.width('\\U0001F1FF\\U0001F1FC')
     2
     >>> # but also supports SGR colored text, 'WARN', followed by SGR reset
-    >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
+    >>> wcwidth.width('\\x1b[38;2;255;150;100mWARN\\x1b[0m')
     4
     >>> # tabs,
-    >>> wcwidth.width('\t', tabsize=4)
+    >>> wcwidth.width('\\t', tabsize=4)
     4
     >>> # or, tab and all other control characters can be ignored
-    >>> wcwidth.width('\t', control_codes='ignore')
+    >>> wcwidth.width('\\t', control_codes='ignore')
     0
     >>> # "vertical" control characters are ignored
-    >>> wcwidth.width('\n')
+    >>> wcwidth.width('\\n')
     0
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
-    >>> wcwidth.width('\x1b[H\x1b[2J')
+    >>> wcwidth.width('\\x1b[H\\x1b[2J')
     0
     >>> # or, raise ValueError for "indeterminate" effects using control_codes='strict'
-    >>> wcwidth.width('\n', control_codes='strict')
+    >>> wcwidth.width('\\n', control_codes='strict')
     Traceback (most recent call last):
     ...
     ValueError: Vertical movement character 0xa at position 0
 
 Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
-terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
+terminal sequences for slightly improved performance. Note that TAB (``'\\t'``) is a control
 character and is also ignored, you may want to use `str.expandtabs()`_, first.
 
 iter_sequences()
@@ -150,8 +150,8 @@ Iterates through text, segmented by terminal sequence,
 
     >>> list(wcwidth.iter_sequences('hello'))
     [('hello', False)]
-    >>> list(wcwidth.iter_sequences('\x1b[31mred\x1b[0m'))
-    [('\x1b[31m', True), ('red', False), ('\x1b[0m', True)]
+    >>> list(wcwidth.iter_sequences('\\x1b[31mred\\x1b[0m'))
+    [('\\x1b[31m', True), ('red', False), ('\\x1b[0m', True)]
 
 Use `iter_sequences()`_ to split text into segments of plain text and escape sequences. Each tuple
 contains the segment string and a boolean indicating whether it is an escape sequence (``True``) or
@@ -166,16 +166,16 @@ Use `iter_graphemes()`_ to iterate over *grapheme clusters* of a string.
 
     >>> from wcwidth import iter_graphemes
     >>> # ok + Regional Indicator 'Z', 'W' (Zimbabwe)
-    >>> list(wcwidth.iter_graphemes('ok\U0001F1FF\U0001F1FC'))
+    >>> list(wcwidth.iter_graphemes('ok\\U0001F1FF\\U0001F1FC'))
     ['o', 'k', '🇿🇼']
 
     >>> # cafe + combining acute accent
-    >>> list(wcwidth.iter_graphemes('cafe\u0301'))
+    >>> list(wcwidth.iter_graphemes('cafe\\u0301'))
     ['c', 'a', 'f', 'é']
 
     >>> # ok + Emoji Man + ZWJ + Woman + ZWJ + Girl
-    >>> list(wcwidth.iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
-    ['o', 'k', '👨\u200d👩\u200d👧']
+    >>> list(wcwidth.iter_graphemes('ok\\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467'))
+    ['o', 'k', '👨\\u200d👩\\u200d👧']
 
 A grapheme cluster is what a user perceives as a single character, even if it is composed of
 multiple Unicode codepoints. This function implements `Unicode Standard Annex #29`_ grapheme cluster
@@ -212,9 +212,9 @@ Use `center()`_ as replacement of `str.center()`_:
 
 .. code-block:: python
 
-    >>> 'cafe\u0301'.center(6, '*')             # don't do this
+    >>> 'cafe\\u0301'.center(6, '*')             # don't do this
     'café*'
-    >>> wcwidth.center('cafe\u0301', 6, '*')
+    >>> wcwidth.center('cafe\\u0301', 6, '*')
     '*café*'                                    # do this!
 
 wrap()
@@ -235,8 +235,8 @@ clusters, and wide characters to a given display width.
     ['コン', 'ニチ', 'ハ']
 
     >>> # Text with ANSI color sequences
-    >>> wrap('\x1b[31mhello world\x1b[0m', 5)
-    ['\x1b[31mhello', 'world\x1b[0m']
+    >>> wrap('\\x1b[31mhello world\\x1b[0m', 5)
+    ['\\x1b[31mhello', 'world\\x1b[0m']
 
 clip()
 ------
@@ -253,8 +253,8 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     '.文.'
 
     >>> # *ALL* Terminal sequences are preserved
-    >>> clip('\x1b[31m中文\x1b[0m', 0, 3)
-    '\x1b[31m中 \x1b[0m'
+    >>> clip('\\x1b[31m中文\\x1b[0m', 0, 3)
+    '\\x1b[31m中 \\x1b[0m'
 
 strip_sequences()
 -----------------
@@ -264,7 +264,7 @@ Use `strip_sequences()`_ to remove all terminal escape sequences from text.
 .. code-block:: python
 
     >>> from wcwidth import strip_sequences
-    >>> strip_sequences('\x1b[31mred\x1b[0m')
+    >>> strip_sequences('\\x1b[31mred\\x1b[0m')
     'red'
 
 .. _ambiguous_width:
@@ -283,9 +283,9 @@ terminal is configured to display ambiguous characters as double-width, pass ``a
 .. code-block:: python
 
     >>> # CIRCLED DIGIT ONE - ambiguous width
-    >>> wcwidth.width('\u2460')
+    >>> wcwidth.width('\\u2460')
     1
-    >>> wcwidth.width('\u2460', ambiguous_width=2)
+    >>> wcwidth.width('\\u2460', ambiguous_width=2)
     2
 
 The ``ambiguous_width`` parameter is available on all width-measuring functions: `wcwidth()`_,
@@ -309,7 +309,7 @@ it is attached to a terminal and timeout, and then fallback to the preferred loc
     >>> # Define a new 'width' function with this argument
     >>> awidth = functools.partial(wcwidth.width, ambiguous_width=ambiguous_width)
     >>> # result depends on attached terminal mode
-    >>> awidth('\u2460')
+    >>> awidth('\\u2460')
     1
 
 ==========
@@ -651,6 +651,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. |codecov| image:: https://codecov.io/gh/jquast/wcwidth/branch/master/graph/badge.svg
     :alt: codecov.io Code Coverage
     :target: https://app.codecov.io/gh/jquast/wcwidth/
+.. |codspeed| image:: https://img.shields.io/badge/CodSpeed-performance%20tracked-blue
+    :alt: CodSpeed
+    :target: https://codspeed.io/jquast/wcwidth?utm_source=badge
 .. |license| image:: https://img.shields.io/pypi/l/wcwidth.svg
     :target: https://pypi.org/project/wcwidth/
     :alt: MIT License

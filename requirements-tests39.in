@@ -2,3 +2,4 @@
 pytest>=7.4.2
 pytest-cov>=4.1.0
 pytest-benchmark
+pytest-codspeed
