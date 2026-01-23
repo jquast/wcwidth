@@ -6,11 +6,14 @@ defined in UAX #29: Unicode Text Segmentation.
 
 https://www.unicode.org/reports/tr29/
 """
+
+from __future__ import annotations
+
 # std imports
 from enum import IntEnum
 from functools import lru_cache
 
-from typing import Iterator, Optional, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -28,6 +31,10 @@ from .table_grapheme import (GRAPHEME_L,
                              GRAPHEME_SPACINGMARK,
                              EXTENDED_PICTOGRAPHIC,
                              GRAPHEME_REGIONAL_INDICATOR)
+
+if TYPE_CHECKING:
+    # std imports
+    from collections.abc import Iterator
 
 
 class GCB(IntEnum):
@@ -116,7 +123,7 @@ class BreakResult(NamedTuple):
 
 
 @lru_cache(maxsize=196)  # 14 GCB values × 14 = 196 max combinations
-def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
+def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> BreakResult | None:
     """
     Check simple GCB-pair-based break rules (cacheable).
 
@@ -234,7 +241,7 @@ def _should_break(
 def iter_graphemes(
     unistr: str,
     start: int = 0,
-    end: Optional[int] = None,
+    end: int | None = None,
 ) -> Iterator[str]:
     r"""
     Iterate over grapheme clusters in a Unicode string.
