@@ -158,7 +158,10 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     return 1
 
 
-def wcswidth(pwcs: str, n: Optional[int] = None, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:
+def wcswidth(pwcs: str,
+             n: Optional[int] = None,
+             unicode_version: str = 'auto',
+             ambiguous_width: int = 1) -> int:
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -580,7 +583,8 @@ def width(text: str, *, control_codes='parse', tabsize=8, ambiguous_width=1) -> 
     return max_extent
 
 
-def ljust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def ljust(text: str, dest_width: int, fillchar: str = ' ', *,
+          control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text left-justified in a string of given display width.
 
@@ -615,7 +619,8 @@ def ljust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='par
     return text + fillchar * padding_cells
 
 
-def rjust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def rjust(text: str, dest_width: int, fillchar: str = ' ', *,
+          control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text right-justified in a string of given display width.
 
@@ -650,7 +655,8 @@ def rjust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='par
     return fillchar * padding_cells + text
 
 
-def center(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def center(text: str, dest_width: int, fillchar: str = ' ', *,
+           control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text centered in a string of given display width.
 
