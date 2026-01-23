@@ -67,10 +67,11 @@ from __future__ import annotations
 import os
 import warnings
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from typing import Literal, TYPE_CHECKING
+    from typing import Literal
 
 # local
 from .bisearch import bisearch as _bisearch
