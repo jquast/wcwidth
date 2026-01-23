@@ -337,18 +337,17 @@ def wrap(text: str, width: int = 70, *,
     characters, correctly handling wide characters, combining marks, and terminal
     escape sequences.
 
-    :param str text: Text to wrap, may contain terminal sequences.
-    :param int width: Maximum line width in display cells.
-    :param str control_codes: How to handle terminal sequences (see :func:`~.width`).
-    :param int tabsize: Tab stop width for tab expansion.
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param text: Text to wrap, may contain terminal sequences.
+    :param width: Maximum line width in display cells.
+    :param control_codes: How to handle terminal sequences (see :func:`~.width`).
+    :param tabsize: Tab stop width for tab expansion.
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :param str initial_indent: String prepended to first line.
-    :param str subsequent_indent: String prepended to subsequent lines.
-    :param bool break_long_words: If True, break words longer than width.
-    :param bool break_on_hyphens: If True, allow breaking at hyphens.
+    :param initial_indent: String prepended to first line.
+    :param subsequent_indent: String prepended to subsequent lines.
+    :param break_long_words: If True, break words longer than width.
+    :param break_on_hyphens: If True, allow breaking at hyphens.
     :returns: List of wrapped lines without trailing newlines.
-    :rtype: list[str]
 
     Like :func:`textwrap.wrap`, newlines in the input text are treated as
     whitespace and collapsed. To preserve paragraph breaks, wrap each

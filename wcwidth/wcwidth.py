@@ -127,8 +127,8 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 
-    :param str wc: A single Unicode character.
-    :param str unicode_version: A Unicode version number, such as
+    :param wc: A single Unicode character.
+    :param unicode_version: A Unicode version number, such as
         ``'6.0.0'``. A list of version levels supported by wcwidth
         is returned by :func:`list_versions`.
 
@@ -145,17 +145,16 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
 
             The default ``'auto'`` behavior is recommended for all use cases.
 
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts
         where ambiguous characters display as double-width. See
         :ref:`ambiguous_width` for details.
-    :return: The width, in cells, necessary to display the character of
+    :returns: The width, in cells, necessary to display the character of
         Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
         no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
         not printable, or has an indeterminate effect on the terminal, such as
         a control character.  Otherwise, the number of column positions the
         character occupies on a graphic terminal (1 or 2) is returned.
-    :rtype: int
 
     See :ref:`Specification` for details of cell measurement.
     """
@@ -197,13 +196,13 @@ def wcswidth(
     """
     Given a unicode string, return its printable length on a terminal.
 
-    :param str pwcs: Measure width of given unicode string.
-    :param int n: When ``n`` is None (default), return the length of the entire
+    :param pwcs: Measure width of given unicode string.
+    :param n: When ``n`` is None (default), return the length of the entire
         string, otherwise only the first ``n`` characters are measured. This
         argument exists only for compatibility with the C POSIX function
         signature. It is suggested instead to use python's string slicing
         capability, ``wcswidth(pwcs[:n])``
-    :param str unicode_version: A Unicode version number, such as
+    :param unicode_version: A Unicode version number, such as
         ``'6.0.0'``, or ``'auto'`` (default) which uses the
         ``UNICODE_VERSION`` environment variable if defined, or the latest
         available unicode version otherwise.
@@ -216,9 +215,8 @@ def wcswidth(
 
             The default ``'auto'`` behavior is recommended for all use cases.
 
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :rtype: int
     :returns: The width, in cells, needed to display the first ``n`` characters
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
         characters!
@@ -270,8 +268,7 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:
     """
     Integer-mapped value of given dotted version string.
 
-    :param str ver_string: Unicode version string, of form ``n.n.n``.
-    :rtype: tuple(int)
+    :param ver_string: Unicode version string, of form ``n.n.n``.
     :returns: tuple of digit tuples, ``tuple(int, [...])``.
     """
     retval = tuple(map(int, (ver_string.split('.'))))
@@ -295,11 +292,10 @@ def _wcmatch_version(given_version: str) -> str:
     >>> _wcmatch_version('1')
     '4.1.0'
 
-    :param str given_version: given version for compare, may be ``auto``
+    :param given_version: given version for compare, may be ``auto``
         (default), to select Unicode Version from Environment Variable,
         ``UNICODE_VERSION``. If the environment variable is not set, then the
         latest is used.
-    :rtype: str
     :returns: unicode string.
     """
     # Design note: the choice to return the same type that is given certainly
@@ -393,8 +389,7 @@ def iter_sequences(text: str) -> Iterator[tuple[str, bool]]:
     of the input text, where ``is_sequence`` is ``True`` if the segment is
     a recognized terminal escape sequence.
 
-    :param str text: String to iterate through.
-    :rtype: Iterator[tuple[str, bool]]
+    :param text: String to iterate through.
     :returns: Iterator of (segment, is_sequence) tuples.
 
     .. versionadded:: 0.3.0
@@ -463,8 +458,8 @@ def width(
     Unlike :func:`wcswidth`, this function handles most control characters and many popular terminal
     output sequences.  Never returns -1.
 
-    :param str text: String to measure.
-    :param str control_codes: How to handle control characters and sequences:
+    :param text: String to measure.
+    :param control_codes: How to handle control characters and sequences:
 
         - ``'parse'`` (default): Track horizontal cursor movement from BS ``\\b``, CR ``\\r``, TAB
           ``\\t``, and cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
@@ -477,11 +472,10 @@ def width(
           any kinds of control codes or sequences. TAB ``\\t`` is zero-width; for tab expansion,
           pre-process: ``text.replace('\\t', ' ' * 8)``.
 
-    :param int tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
+    :param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
         Must be positive. Has no effect when ``control_codes='ignore'``.
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :rtype: int
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
         cursor reaches.  Always a non-negative integer.
@@ -632,17 +626,16 @@ def ljust(
     r"""
     Return text left-justified in a string of given display width.
 
-    :param str text: String to justify, may contain terminal sequences.
-    :param int dest_width: Total display width of result in terminal cells.
-    :param str fillchar: Single character for padding (default space). Must have
+    :param text: String to justify, may contain terminal sequences.
+    :param dest_width: Total display width of result in terminal cells.
+    :param fillchar: Single character for padding (default space). Must have
         display width of 1 (not wide, not zero-width, not combining). Unicode
         characters like ``'·'`` are acceptable. The width is not validated.
-    :param str control_codes: How to handle control sequences when measuring.
+    :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on the right to reach ``dest_width``.
-    :rtype: str
 
     .. versionadded:: 0.3.0
 
@@ -674,17 +667,16 @@ def rjust(
     r"""
     Return text right-justified in a string of given display width.
 
-    :param str text: String to justify, may contain terminal sequences.
-    :param int dest_width: Total display width of result in terminal cells.
-    :param str fillchar: Single character for padding (default space). Must have
+    :param text: String to justify, may contain terminal sequences.
+    :param dest_width: Total display width of result in terminal cells.
+    :param fillchar: Single character for padding (default space). Must have
         display width of 1 (not wide, not zero-width, not combining). Unicode
         characters like ``'·'`` are acceptable. The width is not validated.
-    :param str control_codes: How to handle control sequences when measuring.
+    :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on the left to reach ``dest_width``.
-    :rtype: str
 
     .. versionadded:: 0.3.0
 
@@ -716,17 +708,16 @@ def center(
     r"""
     Return text centered in a string of given display width.
 
-    :param str text: String to center, may contain terminal sequences.
-    :param int dest_width: Total display width of result in terminal cells.
-    :param str fillchar: Single character for padding (default space). Must have
+    :param text: String to center, may contain terminal sequences.
+    :param dest_width: Total display width of result in terminal cells.
+    :param fillchar: Single character for padding (default space). Must have
         display width of 1 (not wide, not zero-width, not combining). Unicode
         characters like ``'·'`` are acceptable. The width is not validated.
-    :param str control_codes: How to handle control sequences when measuring.
+    :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on both sides to reach ``dest_width``.
-    :rtype: str
 
     For odd-width padding, the extra cell goes on the right (matching
     Python's :meth:`str.center` behavior).
@@ -758,8 +749,7 @@ def strip_sequences(text: str) -> str:
 
     Unknown or incomplete ESC sequences are preserved.
 
-    :param str text: String that may contain terminal escape sequences.
-    :rtype: str
+    :param text: String that may contain terminal escape sequences.
     :returns: The input text with all escape sequences stripped.
 
     .. versionadded:: 0.3.0
@@ -799,16 +789,15 @@ def clip(
     Other cursor movement characters (backspace, carriage return) and cursor
     movement sequences are passed through unchanged as zero-width.
 
-    :param str text: String to clip, may contain terminal escape sequences.
-    :param int start: Absolute starting column (inclusive, 0-indexed).
-    :param int end: Absolute ending column (exclusive).
-    :param str fillchar: Character to use when a wide character must be split at
+    :param text: String to clip, may contain terminal escape sequences.
+    :param start: Absolute starting column (inclusive, 0-indexed).
+    :param end: Absolute ending column (exclusive).
+    :param fillchar: Character to use when a wide character must be split at
         a boundary (default space). Must have display width of 1.
-    :param int tabsize: Tab stop width (default 8). Set to 0 to pass tabs through
+    :param tabsize: Tab stop width (default 8). Set to 0 to pass tabs through
         as zero-width (preserved in output but don't advance column position).
-    :param int ambiguous_width: Width to use for East Asian Ambiguous (A)
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :rtype: str
     :returns: Substring of ``text`` spanning display columns ``(start, end)``,
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
