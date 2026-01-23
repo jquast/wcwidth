@@ -17,7 +17,7 @@ from .wcwidth import iter_sequences
 from .grapheme import iter_graphemes
 from .escape_sequences import ZERO_WIDTH_PATTERN
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
 
 

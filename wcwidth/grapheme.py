@@ -32,7 +32,7 @@ from .table_grapheme import (GRAPHEME_L,
                              EXTENDED_PICTOGRAPHIC,
                              GRAPHEME_REGIONAL_INDICATOR)
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # std imports
     from collections.abc import Iterator
 
