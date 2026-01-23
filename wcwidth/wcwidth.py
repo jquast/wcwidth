@@ -67,11 +67,8 @@ from __future__ import annotations
 import os
 import warnings
 from functools import lru_cache
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-    from typing import Literal
+from typing import TYPE_CHECKING
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -86,6 +83,12 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+
+if TYPE_CHECKING:
+    # std imports
+    from collections.abc import Iterator
+
+    from typing import Literal
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
