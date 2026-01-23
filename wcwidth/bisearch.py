@@ -1,9 +1,10 @@
 """Binary search function for Unicode interval tables."""
 from typing import Tuple
 
+from __future__ import annotations
 
-def bisearch(ucs: int, table: Tuple[Tuple[int, int], Ellipsis]) -> int:
-    # type: (int, tuple) -> int
+
+def bisearch(ucs: int, table: tuple[tuple[int, int], ...]) -> int:
     """
     Binary search in interval table.
 

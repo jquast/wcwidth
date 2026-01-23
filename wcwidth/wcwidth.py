@@ -61,12 +61,14 @@ http://www.unicode.org/unicode/reports/tr11/
 Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 """
 
+from __future__ import annotations
+
 # std imports
 import os
 import warnings
 from functools import lru_cache
 
-from typing import Tuple, Union, Iterator, Optional
+from typing import TYPE_CHECKING
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -81,6 +83,12 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+
+if TYPE_CHECKING:
+    # std imports
+    from collections.abc import Iterator
+
+    from typing import Literal
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
@@ -158,10 +166,12 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     return 1
 
 
-def wcswidth(pwcs: str,
-             n: Optional[int] = None,
-             unicode_version: str = 'auto',
-             ambiguous_width: int = 1) -> int:
+def wcswidth(
+    pwcs: str,
+    n: int | None = None,
+    unicode_version: str = 'auto',
+    ambiguous_width: int = 1,
+) -> int:
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -234,7 +244,7 @@ def wcswidth(pwcs: str,
 
 
 @lru_cache(maxsize=128)
-def _wcversion_value(ver_string: str) -> Union[Tuple[int], Tuple[int, int], Tuple[int, int, int]]:
+def _wcversion_value(ver_string: str) -> tuple[int, ...]:
     """
     Integer-mapped value of given dotted version string.
 
@@ -353,7 +363,7 @@ def _wcmatch_version(given_version: str) -> str:
     assert False, ("Code path unreachable", given_version, unicode_versions)  # pragma: no cover
 
 
-def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
+def iter_sequences(text: str) -> Iterator[tuple[str, bool]]:
     r"""
     Iterate through text, yielding segments with sequence identification.
 
@@ -418,7 +428,13 @@ def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
     )
 
 
-def width(text: str, *, control_codes='parse', tabsize=8, ambiguous_width=1) -> int:
+def width(
+    text: str,
+    *,
+    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
+    tabsize: int = 8,
+    ambiguous_width: int = 1,
+) -> int:
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -583,8 +599,14 @@ def width(text: str, *, control_codes='parse', tabsize=8, ambiguous_width=1) -> 
     return max_extent
 
 
-def ljust(text: str, dest_width: int, fillchar: str = ' ', *,
-          control_codes='parse', ambiguous_width=1) -> str:
+def ljust(
+    text: str,
+    dest_width: int,
+    fillchar: str = ' ',
+    *,
+    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
+    ambiguous_width: int = 1,
+) -> str:
     r"""
     Return text left-justified in a string of given display width.
 
@@ -619,8 +641,14 @@ def ljust(text: str, dest_width: int, fillchar: str = ' ', *,
     return text + fillchar * padding_cells
 
 
-def rjust(text: str, dest_width: int, fillchar: str = ' ', *,
-          control_codes='parse', ambiguous_width=1) -> str:
+def rjust(
+    text: str,
+    dest_width: int,
+    fillchar: str = ' ',
+    *,
+    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
+    ambiguous_width: int = 1,
+) -> str:
     r"""
     Return text right-justified in a string of given display width.
 
@@ -655,8 +683,14 @@ def rjust(text: str, dest_width: int, fillchar: str = ' ', *,
     return fillchar * padding_cells + text
 
 
-def center(text: str, dest_width: int, fillchar: str = ' ', *,
-           control_codes='parse', ambiguous_width=1) -> str:
+def center(
+    text: str,
+    dest_width: int,
+    fillchar: str = ' ',
+    *,
+    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
+    ambiguous_width: int = 1,
+) -> str:
     r"""
     Return text centered in a string of given display width.
 
@@ -720,7 +754,15 @@ def strip_sequences(text: str) -> str:
     return ZERO_WIDTH_PATTERN.sub('', text)
 
 
-def clip(text: str, start: int, end: int, *, fillchar=' ', tabsize=8, ambiguous_width=1) -> str:
+def clip(
+    text: str,
+    start: int,
+    end: int,
+    *,
+    fillchar: str = ' ',
+    tabsize: int = 8,
+    ambiguous_width: int = 1,
+) -> str:
     r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 
