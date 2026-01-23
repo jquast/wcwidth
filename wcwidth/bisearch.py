@@ -1,6 +1,4 @@
 """Binary search function for Unicode interval tables."""
-from typing import Tuple
-
 from __future__ import annotations
 
 

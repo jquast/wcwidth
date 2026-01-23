@@ -18,7 +18,7 @@ from .grapheme import iter_graphemes
 from .escape_sequences import ZERO_WIDTH_PATTERN
 
 if TYPE_CHECKING:
-    from typing import Literal
+    from typing import Any, Literal
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):
@@ -40,7 +40,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                  control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
                  tabsize: int = 8,
                  ambiguous_width: int = 1,
-                 **kwargs) -> None:
+                 **kwargs: Any) -> None:
         """
         Initialize the wrapper.
 

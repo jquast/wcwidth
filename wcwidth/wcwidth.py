@@ -68,7 +68,9 @@ import os
 import warnings
 from functools import lru_cache
 
-from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import Literal, TYPE_CHECKING
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -84,12 +86,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
 
-if TYPE_CHECKING:
-    # std imports
-    from collections.abc import Iterator
-
-    from typing import Literal
-
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
@@ -98,6 +94,28 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
     '\x7f' +                                       # DEL
     ''.join(chr(c) for c in range(0x80, 0xa0))     # C1: U+0080-U+009F
 ))
+
+# Unlike wcwidth.__all__, wcwidth.wcwidth.__all__ is NOT for the purpose of defining a public API,
+# or what we prefer to be imported with statement, "from wcwidth.wcwidth import *".  Explicitly
+# re-export imports here for no other reason than to satisfy the type checkers (mypy). Yak shavings.
+__all__ = (
+    'ZERO_WIDTH',
+    'WIDE_EASTASIAN',
+    'AMBIGUOUS_EASTASIAN',
+    'VS16_NARROW_TO_WIDE',
+    'list_versions',
+    'wcwidth',
+    'wcswidth',
+    'width',
+    'iter_sequences',
+    'ljust',
+    'rjust',
+    'center',
+    'clip',
+    'strip_sequences',
+    '_wcmatch_version',
+    '_wcversion_value',
+)
 
 
 @lru_cache(maxsize=2000)

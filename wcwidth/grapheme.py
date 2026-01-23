@@ -94,25 +94,25 @@ def _grapheme_cluster_break(ucs: int) -> GCB:
 @lru_cache(maxsize=512)
 def _is_extended_pictographic(ucs: int) -> bool:
     """Check if codepoint has Extended_Pictographic property."""
-    return _bisearch(ucs, EXTENDED_PICTOGRAPHIC)
+    return bool(_bisearch(ucs, EXTENDED_PICTOGRAPHIC))
 
 
 @lru_cache(maxsize=128)
 def _is_incb_linker(ucs: int) -> bool:
     """Check if codepoint has InCB=Linker property."""
-    return _bisearch(ucs, INCB_LINKER)
+    return bool(_bisearch(ucs, INCB_LINKER))
 
 
 @lru_cache(maxsize=256)
 def _is_incb_consonant(ucs: int) -> bool:
     """Check if codepoint has InCB=Consonant property."""
-    return _bisearch(ucs, INCB_CONSONANT)
+    return bool(_bisearch(ucs, INCB_CONSONANT))
 
 
 @lru_cache(maxsize=256)
 def _is_incb_extend(ucs: int) -> bool:
     """Check if codepoint has InCB=Extend property."""
-    return _bisearch(ucs, INCB_EXTEND)
+    return bool(_bisearch(ucs, INCB_EXTEND))
 
 
 class BreakResult(NamedTuple):
