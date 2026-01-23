@@ -66,6 +66,8 @@ import os
 import warnings
 from functools import lru_cache
 
+from typing import Tuple, Union, Iterator, Optional
+
 # local
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
@@ -79,7 +81,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
-from typing import Iterator, Optional, Tuple, Union
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
@@ -92,7 +93,7 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 
 
 @lru_cache(maxsize=2000)
-def wcwidth(wc: str, unicode_version: str='auto', ambiguous_width: int=1) -> int:
+def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 
@@ -157,7 +158,7 @@ def wcwidth(wc: str, unicode_version: str='auto', ambiguous_width: int=1) -> int
     return 1
 
 
-def wcswidth(pwcs: str, n: Optional[int]=None, unicode_version: str='auto', ambiguous_width: int=1) -> int:
+def wcswidth(pwcs: str, n: Optional[int] = None, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -402,7 +403,7 @@ def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
         yield (text[segment_start:], False)
 
 
-def _width_ignored_codes(text: str, ambiguous_width: int=1) -> int:
+def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
     """
     Fast path for width() with control_codes='ignore'.
 
@@ -579,7 +580,7 @@ def width(text: str, *, control_codes='parse', tabsize=8, ambiguous_width=1) -> 
     return max_extent
 
 
-def ljust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def ljust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text left-justified in a string of given display width.
 
@@ -614,7 +615,7 @@ def ljust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse
     return text + fillchar * padding_cells
 
 
-def rjust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def rjust(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text right-justified in a string of given display width.
 
@@ -649,7 +650,7 @@ def rjust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse
     return fillchar * padding_cells + text
 
 
-def center(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
+def center(text: str, dest_width: int, fillchar: str = ' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text centered in a string of given display width.
 
