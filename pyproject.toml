@@ -44,6 +44,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Localization",
   "Topic :: Terminals",
+  "Typing :: Typed",
 ]
 
 [project.urls]
