@@ -37,6 +37,11 @@ jobs:
             toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs
             label: Linting
 
+          # Type checking with mypy on 3.14
+          - python-version: '3.14'
+            toxenv: mypy
+            label: mypy
+
     steps:
       - uses: actions/checkout@v6
 
