@@ -442,6 +442,9 @@ languages.
 History
 =======
 
+0.3.2 *2026-01-23*
+  * **Updated** type hinting for full ``mympy --strict`` compliance. `PR #183`_.
+
 0.3.1 *2026-01-22*
   * **Performance** improvement up to 30% in `width()_`. `PR #181`_.
 
