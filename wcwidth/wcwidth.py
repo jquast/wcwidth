@@ -87,6 +87,7 @@ from .unicode_versions import list_versions
 if TYPE_CHECKING:  # pragma: no cover
     # std imports
     from collections.abc import Iterator
+
     from typing import Literal
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
