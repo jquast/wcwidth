@@ -79,6 +79,7 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
 from .unicode_versions import list_versions
+from typing import Iterator, Optional, Tuple, Union
 
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 
@@ -91,7 +92,7 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 
 
 @lru_cache(maxsize=2000)
-def wcwidth(wc, unicode_version='auto', ambiguous_width=1):
+def wcwidth(wc: str, unicode_version: str='auto', ambiguous_width: int=1) -> int:
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 
@@ -156,7 +157,7 @@ def wcwidth(wc, unicode_version='auto', ambiguous_width=1):
     return 1
 
 
-def wcswidth(pwcs, n=None, unicode_version='auto', ambiguous_width=1):
+def wcswidth(pwcs: str, n: Optional[int]=None, unicode_version: str='auto', ambiguous_width: int=1) -> int:
     """
     Given a unicode string, return its printable length on a terminal.
 
@@ -229,7 +230,7 @@ def wcswidth(pwcs, n=None, unicode_version='auto', ambiguous_width=1):
 
 
 @lru_cache(maxsize=128)
-def _wcversion_value(ver_string):
+def _wcversion_value(ver_string: str) -> Union[Tuple[int], Tuple[int, int], Tuple[int, int, int]]:
     """
     Integer-mapped value of given dotted version string.
 
@@ -242,7 +243,7 @@ def _wcversion_value(ver_string):
 
 
 @lru_cache(maxsize=8)
-def _wcmatch_version(given_version):
+def _wcmatch_version(given_version: str) -> str:
     """
     Return nearest matching supported Unicode version level.
 
@@ -348,7 +349,7 @@ def _wcmatch_version(given_version):
     assert False, ("Code path unreachable", given_version, unicode_versions)  # pragma: no cover
 
 
-def iter_sequences(text):
+def iter_sequences(text: str) -> Iterator[Tuple[str, bool]]:
     r"""
     Iterate through text, yielding segments with sequence identification.
 
@@ -401,7 +402,7 @@ def iter_sequences(text):
         yield (text[segment_start:], False)
 
 
-def _width_ignored_codes(text, ambiguous_width=1):
+def _width_ignored_codes(text: str, ambiguous_width: int=1) -> int:
     """
     Fast path for width() with control_codes='ignore'.
 
@@ -413,7 +414,7 @@ def _width_ignored_codes(text, ambiguous_width=1):
     )
 
 
-def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
+def width(text: str, *, control_codes='parse', tabsize=8, ambiguous_width=1) -> int:
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -578,7 +579,7 @@ def width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1):
     return max_extent
 
 
-def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
+def ljust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text left-justified in a string of given display width.
 
@@ -613,7 +614,7 @@ def ljust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_wi
     return text + fillchar * padding_cells
 
 
-def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
+def rjust(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text right-justified in a string of given display width.
 
@@ -648,7 +649,7 @@ def rjust(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_wi
     return fillchar * padding_cells + text
 
 
-def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_width=1):
+def center(text: str, dest_width: int, fillchar: str=' ', *, control_codes='parse', ambiguous_width=1) -> str:
     r"""
     Return text centered in a string of given display width.
 
@@ -688,7 +689,7 @@ def center(text, dest_width, fillchar=' ', *, control_codes='parse', ambiguous_w
     return fillchar * left_pad + text + fillchar * right_pad
 
 
-def strip_sequences(text):
+def strip_sequences(text: str) -> str:
     r"""
     Return text with all terminal escape sequences removed.
 
@@ -712,7 +713,7 @@ def strip_sequences(text):
     return ZERO_WIDTH_PATTERN.sub('', text)
 
 
-def clip(text, start, end, *, fillchar=' ', tabsize=8, ambiguous_width=1):
+def clip(text: str, start: int, end: int, *, fillchar=' ', tabsize=8, ambiguous_width=1) -> str:
     r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
 

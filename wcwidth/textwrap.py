@@ -35,7 +35,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                  control_codes: str = 'parse',
                  tabsize: int = 8,
                  ambiguous_width: int = 1,
-                 **kwargs):
+                 **kwargs) -> None:
         """
         Initialize the wrapper.
 
