@@ -443,7 +443,7 @@ History
 =======
 
 0.3.3 *2026-01-24*
-  * **Performance** improvement in `wcwidth()`_. `PR #185`_.
+  * **Performance** improvement in `width()`_. `PR #185`_.
   * **Bugfix** missing ``py.typed``, ``Typing :: Typed``. `PR #184`_.
 
 0.3.2 *2026-01-23*
