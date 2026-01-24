@@ -442,6 +442,10 @@ languages.
 History
 =======
 
+0.3.3 *2026-01-24*
+  * **Performance** improvement in `wcwidth()`_. `PR #185`_.
+  * **Bugfix** missing ``py.typed``, ``Typing :: Typed``. `PR #184`_.
+
 0.3.2 *2026-01-23*
   * **Updated** type hinting for full ``mympy --strict`` compliance. `PR #183`_.
 
@@ -602,6 +606,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #175`: https://github.com/jquast/wcwidth/pull/175
 .. _`PR #181`: https://github.com/jquast/wcwidth/pull/181
 .. _`PR #183`: https://github.com/jquast/wcwidth/pull/183
+.. _`PR #184`: https://github.com/jquast/wcwidth/pull/184
+.. _`PR #185`: https://github.com/jquast/wcwidth/pull/185
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
