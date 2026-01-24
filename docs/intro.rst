@@ -109,7 +109,7 @@ See `Specification <Specification_from_pypi_>`_ of character measurements. Note 
 width()
 -------
 
-Measures width of a string, with improved handling of ``control_codes``
+Use function `width()`_ to measure a string with improved handling of ``control_codes``.
 
 .. code-block:: python
 
