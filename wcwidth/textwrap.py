@@ -80,7 +80,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         return ''.join(result)
 
     def _split(self, text: str) -> list[str]:  # pylint: disable=too-many-locals
-        """
+        r"""
         Sequence-aware variant of :meth:`textwrap.TextWrapper._split`.
 
         This method ensures that terminal escape sequences don't interfere with the text splitting
