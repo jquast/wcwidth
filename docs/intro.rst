@@ -442,6 +442,9 @@ languages.
 History
 =======
 
+0.3.5 *2026-01-24*
+  * **Bugfix** packaging of 0.3.4 contains a failing test.
+
 0.3.4 *2026-01-24*
   * **Bugfix** `center()`_ should match the eccentric `parity padding`_
     of `str.center()`_. `PR #188`_.
