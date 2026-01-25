@@ -12,6 +12,7 @@ from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 SGR_RED = '\x1b[31m'
+SGR_BLUE = '\x1b[34m'
 SGR_BOLD = '\x1b[1m'
 SGR_RESET = '\x1b[0m'
 ATTRS = ('\x1b[31m', '\x1b[34m', '\x1b[4m', '\x1b[7m', '\x1b[41m', '\x1b[37m', '\x1b[107m')
@@ -264,24 +265,61 @@ def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
     assert wrap(text, w, tabsize=tabsize) == expected
 
 
-OSC_START = '\x1b]8;;http://example.com\x1b\\'
-OSC_END = '\x1b]8;;\x1b\\'
+OSC_START_ST = '\x1b]8;;http://example.com\x1b\\'
+OSC_END_ST = '\x1b]8;;\x1b\\'
+OSC_START_BEL = '\x1b]8;;http://example.com\x07'
+OSC_END_BEL = '\x1b]8;;\x07'
 
 HYPERLINK_WORD_BOUNDARY_CASES = [
-    (
-        f'{OSC_START}link{OSC_END}more',
+    (   # standard, ST-variant,
+        f'{OSC_START_ST}link{OSC_END_ST}more',
         5,
-        [f'{OSC_START}link{OSC_END}', 'more'],
+        [f'{OSC_START_ST}link{OSC_END_ST}', 'more'],
+    ),
+    (   # BEL-variant,
+        f'{OSC_START_BEL}link{OSC_END_BEL}more',
+        5,
+        [f'{OSC_START_BEL}link{OSC_END_BEL}', 'more'],
+    ),
+    (   # hyperlink breaks after word, 'prefix',
+        f'prefix{OSC_START_ST}link{OSC_END_ST}',
+        6,
+        ['prefix', f'{OSC_START_ST}link{OSC_END_ST}'],
     ),
     (
-        f'prefix{OSC_START}link{OSC_END}',
+        f'prefix{OSC_START_BEL}link{OSC_END_BEL}',
         6,
-        ['prefix', f'{OSC_START}link{OSC_END}'],
+        ['prefix', f'{OSC_START_BEL}link{OSC_END_BEL}'],
+    ),
+    (   # hyperlink breaks before following, 'suffix',
+        f'prefix{OSC_START_ST}link{OSC_END_ST}suffix',
+        6,
+        ['prefix', f'{OSC_START_ST}link{OSC_END_ST}', 'suffix'],
     ),
     (
-        f'prefix{OSC_START}link{OSC_END}suffix',
+        f'prefix{OSC_START_BEL}link{OSC_END_BEL}suffix',
         6,
-        ['prefix', f'{OSC_START}link{OSC_END}', 'suffix'],
+        ['prefix', f'{OSC_START_BEL}link{OSC_END_BEL}', 'suffix'],
+    ),
+    (   # hyperlink *surrounded* by SGR attributes
+        f'foo {SGR_RED}{OSC_START_ST}link{OSC_END_ST}{SGR_RESET} bar',
+        6,
+        ['foo', f'{SGR_RED}{OSC_START_ST}link{OSC_END_ST}{SGR_RESET}', 'bar'],
+    ),
+    (
+        f'foo {SGR_RED}{OSC_START_BEL}link{OSC_END_BEL}{SGR_RESET} bar',
+        6,
+        ['foo', f'{SGR_RED}{OSC_START_BEL}link{OSC_END_BEL}{SGR_RESET}', 'bar'],
+    ),
+    (   # hyperlink *containing* SGR attributes
+        f'foo {OSC_START_ST}{SGR_RED}link{SGR_RESET}{OSC_END_ST} bar',
+        6,
+        ['foo', f'{OSC_START_ST}{SGR_RED}link{SGR_RESET}{OSC_END_ST}', 'bar'],
+    ),
+    (
+        f'foo {OSC_START_BEL}{SGR_RED}link{SGR_RESET}{OSC_END_BEL} bar',
+        6,
+        ['foo', f'{OSC_START_BEL}{SGR_RED}link{SGR_RESET}{OSC_END_BEL}', 'bar'],
     ),
 ]
 
