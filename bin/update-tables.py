@@ -13,7 +13,6 @@ from __future__ import annotations
 # std imports
 import os
 import re
-import sys
 import string
 import difflib
 import argparse

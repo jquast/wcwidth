@@ -442,8 +442,9 @@ languages.
 History
 =======
 
-*next version*
-  * **Bugfix** our `center()`_ to better match padding of `str.center()`_.
+0.3.4 *2026-01-24*
+  * **Bugfix** `center()`_ should match the eccentric `parity padding`_
+    of `str.center()`_. `PR #188`_.
 
 0.3.3 *2026-01-24*
   * **Performance** improvement in `width()`_. `PR #185`_.
@@ -611,6 +612,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #183`: https://github.com/jquast/wcwidth/pull/183
 .. _`PR #184`: https://github.com/jquast/wcwidth/pull/184
 .. _`PR #185`: https://github.com/jquast/wcwidth/pull/185
+.. _`PR #188`: https://github.com/jquast/wcwidth/pull/188
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
@@ -662,6 +664,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
+.. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
