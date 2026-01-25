@@ -457,6 +457,7 @@ History
   * **Performance** improvement up to 30% in `width()_`. `PR #181`_.
 
 0.3.0 *2026-01-21*
+  * **Drop Support** for Python 3.6 and 3.7. `PR #156`_.
   * **New** Function `iter_graphemes()`_. `PR #165`_.
   * **New** Functions `width()`_ and `iter_sequences()`_. `PR #166`_.
   * **New** Functions `ljust()`_, `rjust()`_, `center()`_. `PR #168`_.
@@ -599,6 +600,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #117`: https://github.com/jquast/wcwidth/pull/117
 .. _`PR #146`: https://github.com/jquast/wcwidth/pull/146
 .. _`PR #149`: https://github.com/jquast/wcwidth/pull/149
+.. _`PR #156`: https://github.com/jquast/wcwidth/pull/156
 .. _`PR #165`: https://github.com/jquast/wcwidth/pull/165
 .. _`PR #166`: https://github.com/jquast/wcwidth/pull/166
 .. _`PR #168`: https://github.com/jquast/wcwidth/pull/168
