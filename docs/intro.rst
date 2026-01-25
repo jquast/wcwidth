@@ -442,6 +442,9 @@ languages.
 History
 =======
 
+*next version*
+  * **Bugfix** our `center()`_ to better match padding of `str.center()`_.
+
 0.3.3 *2026-01-24*
   * **Performance** improvement in `width()`_. `PR #185`_.
   * **Bugfix** missing ``py.typed``, ``Typing :: Typed``. `PR #184`_.

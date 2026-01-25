@@ -742,7 +742,8 @@ def center(
     else:
         text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
     total_padding = max(0, dest_width - text_width)
-    left_pad = total_padding // 2
+    # matching https://jazcap53.github.io/pythons-eccentric-strcenter.html
+    left_pad = total_padding // 2 + (total_padding & dest_width & 1)
     right_pad = total_padding - left_pad
     return fillchar * left_pad + text + fillchar * right_pad
 
