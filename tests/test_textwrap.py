@@ -203,7 +203,7 @@ SEQUENCE_CASES = [
     # Empty/adjacent sequences
     (f'{SGR_RED}{SGR_RESET}', 10, [f'{SGR_RED}{SGR_RESET}']),
     (f'hello {SGR_RED}{SGR_RESET}world', 6, ['hello', f'{SGR_RED}{SGR_RESET}world']),
-    # OSC hyperlinks
+    # OSC hyperlinks (with space separator)
     (f'{OSC_HYPERLINK} text', 5, [OSC_HYPERLINK, 'text']),
     # CSI cursor sequences
     (f'{CSI_CURSOR}text here', 10, [f'{CSI_CURSOR}text', 'here']),
@@ -262,3 +262,32 @@ TABSIZE_WIDE_CASES = [
 def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
     """Verify tabsize respects wide character column positions."""
     assert wrap(text, w, tabsize=tabsize) == expected
+
+
+OSC_START = '\x1b]8;;http://example.com\x1b\\'
+OSC_END = '\x1b]8;;\x1b\\'
+
+HYPERLINK_WORD_BOUNDARY_CASES = [
+    (
+        f'{OSC_START}link{OSC_END}more',
+        5,
+        [f'{OSC_START}link{OSC_END}', 'more'],
+    ),
+    (
+        f'prefix{OSC_START}link{OSC_END}',
+        6,
+        ['prefix', f'{OSC_START}link{OSC_END}'],
+    ),
+    (
+        f'prefix{OSC_START}link{OSC_END}suffix',
+        6,
+        ['prefix', f'{OSC_START}link{OSC_END}', 'suffix'],
+    ),
+]
+
+
+@pytest.mark.parametrize('text,w,expected', HYPERLINK_WORD_BOUNDARY_CASES)
+def test_wrap_hyperlink_word_boundary(text, w, expected):
+    """OSC hyperlink sequences should act as word boundaries."""
+    result = wrap(text, w)
+    assert result == expected
