@@ -332,8 +332,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     idx = match.end()
                     continue
 
-            # Get grapheme
-            grapheme = next(iter_graphemes(text[idx:]))
+            # Get grapheme (use start= to avoid slice allocation)
+            grapheme = next(iter_graphemes(text, start=idx))
 
             grapheme_width = self._width(grapheme)
             if width_so_far + grapheme_width > max_width:
