@@ -140,6 +140,10 @@ def test_clip_sequences_cjk_with_sequences():
     assert clip('\x1b[31m中文\x1b[0m', 0, 3) == '\x1b[31m中 \x1b[0m'
 
 
+def test_clip_sequences_partial_wide_at_start():
+    assert clip('\x1b[31m中文\x1b[0m', 1, 4) == '\x1b[31m 文\x1b[0m'
+
+
 def test_clip_sequences_between_chars():
     assert clip('a\x1b[31mb\x1b[0mc', 1, 2) == '\x1b[31mb\x1b[0m'
 

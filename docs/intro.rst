@@ -336,6 +336,10 @@ Or execute individual tasks, see ``tox -lv`` for all available targets::
 
    tox -e pylint,py36,py314
 
+To run tests with detailed coverage reporting showing missing lines::
+
+   tox -epy314 -- --cov-report=term-missing
+
 Updating Unicode Version
 ------------------------
 
