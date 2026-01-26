@@ -111,15 +111,24 @@ def test_clip_sequences_before_start():
 
 
 def test_clip_sequences_after_end():
-    assert clip('hello\x1b[31m world\x1b[0m', 0, 5) == 'hello\x1b[31m\x1b[0m'
+    # With propagate_sgr=True (default), no style active at start, so no prefix
+    assert clip('hello\x1b[31m world\x1b[0m', 0, 5) == 'hello'
+    # With propagate_sgr=False, all sequences preserved
+    assert clip('hello\x1b[31m world\x1b[0m', 0, 5, propagate_sgr=False) == 'hello\x1b[31m\x1b[0m'
 
 
 def test_clip_sequences_multiple():
-    assert clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4) == '\x1b[1m\x1b[31mbold\x1b[0m'
+    # With propagate_sgr=True (default), sequences collapsed to minimal
+    assert clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4) == '\x1b[1;31mbold\x1b[0m'
+    # With propagate_sgr=False, all sequences preserved separately
+    assert clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4, propagate_sgr=False) == '\x1b[1m\x1b[31mbold\x1b[0m'
 
 
 def test_clip_sequences_only():
-    assert clip('\x1b[31m\x1b[0m', 0, 10) == '\x1b[31m\x1b[0m'
+    # With propagate_sgr=True (default), no visible text means empty result
+    assert clip('\x1b[31m\x1b[0m', 0, 10) == ''
+    # With propagate_sgr=False, sequences preserved
+    assert clip('\x1b[31m\x1b[0m', 0, 10, propagate_sgr=False) == '\x1b[31m\x1b[0m'
 
 
 def test_clip_sequences_osc_hyperlink():

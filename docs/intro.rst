@@ -236,8 +236,13 @@ clusters, and wide characters to a given display width.
     >>> wrap('コンニチハ', 4)
     ['コン', 'ニチ', 'ハ']
 
-    >>> # Text with ANSI color sequences
-    >>> wrap('\x1b[31mhello world\x1b[0m', 5)
+    >>> # Text with ANSI color sequences - SGR codes are propagated by default
+    >>> # Each line ends with reset, next line starts with restored style
+    >>> wrap('\x1b[1;31mhello world\x1b[0m', 5)
+    ['\x1b[1;31mhello\x1b[0m', '\x1b[1;31mworld\x1b[0m']
+
+    >>> # Disable SGR propagation if needed
+    >>> wrap('\x1b[31mhello world\x1b[0m', 5, propagate_sgr=False)
     ['\x1b[31mhello', 'world\x1b[0m']
 
 clip()
@@ -254,8 +259,13 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('中文字', 1, 5, fillchar='.')
     '.文.'
 
-    >>> # *ALL* Terminal sequences are preserved
-    >>> clip('\x1b[31m中文\x1b[0m', 0, 3)
+    >>> # SGR codes are propagated by default - result begins with active style
+    >>> # and ends with reset if styles are active
+    >>> clip('\x1b[1;31mHello world\x1b[0m', 6, 11)
+    '\x1b[1;31mworld\x1b[0m'
+
+    >>> # Disable SGR propagation to preserve original sequences as-is
+    >>> clip('\x1b[31m中文\x1b[0m', 0, 3, propagate_sgr=False)
     '\x1b[31m中 \x1b[0m'
 
 strip_sequences()
