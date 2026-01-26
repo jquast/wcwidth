@@ -73,6 +73,11 @@ from typing import TYPE_CHECKING
 # local
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
+from .sgr_state import (_SGR_PATTERN,
+                        _SGR_STATE_DEFAULT,
+                        _sgr_state_update,
+                        _sgr_state_is_active,
+                        _sgr_state_to_sequence)
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -779,6 +784,7 @@ def clip(
     fillchar: str = ' ',
     tabsize: int = 8,
     ambiguous_width: int = 1,
+    propagate_sgr: bool = True,
 ) -> str:
     r"""
     Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
@@ -803,11 +809,25 @@ def clip(
         as zero-width (preserved in output but don't advance column position).
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
+    :param propagate_sgr: If True (default), SGR (terminal styling) sequences
+        are propagated. The result begins with any active style at the start
+        position and ends with a reset sequence if styles are active.
     :returns: Substring of ``text`` spanning display columns ``(start, end)``,
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
 
+    SGR (terminal styling) sequences are propagated by default. The result
+    begins with any active style and ends with a reset::
+
+        >>> clip('\x1b[1;34mHello world\x1b[0m', 6, 11)
+        '\x1b[1;34mworld\x1b[0m'
+
+    Set ``propagate_sgr=False`` to disable this behavior.
+
     .. versionadded:: 0.3.0
+
+    .. versionchanged:: 0.5.0
+       Added ``propagate_sgr`` parameter (default True).
 
     Example::
 
@@ -818,64 +838,101 @@ def clip(
         >>> clip('a\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    # pylint: disable=too-complex,too-many-locals,too-many-branches
+    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
+    # Again, for 'hot path', we avoid additional delegate functions and accept the cost
+    # of complexity for improved python performance.
     start = max(start, 0)
     if end <= start:
         return ''
 
-    # Fast path: printable ASCII only (no tabs, escapes, or wide chars)
+    # Fast path: printable ASCII only (no tabs, escape sequences, or wide or zero-width chars)
     if text.isascii() and text.isprintable():
         return text[start:end]
 
-    output = []
+    # Fast path: no escape sequences means no SGR tracking needed
+    if propagate_sgr and '\x1b' not in text:
+        propagate_sgr = False
+
+    # SGR tracking state (only when propagate_sgr=True)
+    sgr_at_clip_start = None  # state when first visible char emitted (None = not yet)
+    if propagate_sgr:
+        sgr = _SGR_STATE_DEFAULT  # current SGR state, updated by all sequences
+
+    output: list[str] = []
     col = 0
     idx = 0
-    text_len = len(text)
 
-    while idx < text_len:
+    while idx < len(text):
         char = text[idx]
 
-        # Escape sequences: always include (zero-width)
-        if char == '\x1b':
-            match = ZERO_WIDTH_PATTERN.match(text, idx)
-            if match:
-                output.append(match.group())
-                idx = match.end()
+        # Early exit: past visible region, SGR captured, no escape ahead
+        if col >= end and sgr_at_clip_start is not None and char != '\x1b':
+            break
+
+        # Handle escape sequences
+        if char == '\x1b' and (match := ZERO_WIDTH_PATTERN.match(text, idx)):
+            seq = match.group()
+            if propagate_sgr and _SGR_PATTERN.match(seq):
+                # Update SGR state; will be applied as prefix when visible content starts
+                sgr = _sgr_state_update(sgr, seq)
             else:
-                output.append(char)
-                idx += 1
+                # Non-SGR sequences always preserved
+                output.append(seq)
+            idx = match.end()
             continue
 
-        # TAB: expand to spaces (or pass through if tabsize=0)
+        # Handle bare ESC (not a valid sequence)
+        if char == '\x1b':
+            output.append(char)
+            idx += 1
+            continue
+
+        # TAB expansion
         if char == '\t':
             if tabsize > 0:
                 next_tab = col + (tabsize - (col % tabsize))
                 while col < next_tab:
                     if start <= col < end:
                         output.append(' ')
+                        if propagate_sgr and sgr_at_clip_start is None:
+                            sgr_at_clip_start = sgr
                     col += 1
             else:
                 output.append(char)
             idx += 1
             continue
 
-        # Grapheme clustering handles everything else (including control chars)
-        grapheme = next(iter_graphemes(text[idx:]))
+        # Grapheme clustering for everything else
+        grapheme = next(iter_graphemes(text, start=idx))
         w = width(grapheme, ambiguous_width=ambiguous_width)
 
         if w == 0:
-            # Zero-width (combining marks, etc): always include, doesn't advance column
-            output.append(grapheme)
-        else:
-            if col >= start and col + w <= end:
-                # Fully visible: include the grapheme
+            if start <= col < end:
                 output.append(grapheme)
-            elif col < end and col + w > start:
-                # Partially visible: wide char spans boundary, replace with fillchar
-                output.append(fillchar * (min(end, col + w) - max(start, col)))
-            # Else: fully outside (start, end), omit entirely
+        elif col >= start and col + w <= end:
+            # Fully visible
+            output.append(grapheme)
+            if propagate_sgr and sgr_at_clip_start is None:
+                sgr_at_clip_start = sgr
+            col += w
+        elif col < end and col + w > start:
+            # Partially visible (wide char at boundary)
+            output.append(fillchar * (min(end, col + w) - max(start, col)))
+            if propagate_sgr and sgr_at_clip_start is None:
+                sgr_at_clip_start = sgr
+            col += w
+        else:
             col += w
 
         idx += len(grapheme)
 
-    return ''.join(output)
+    result = ''.join(output)
+
+    # Apply SGR prefix/suffix
+    if sgr_at_clip_start is not None:
+        if prefix := _sgr_state_to_sequence(sgr_at_clip_start):
+            result = prefix + result
+        if _sgr_state_is_active(sgr_at_clip_start):
+            result += '\x1b[0m'
+
+    return result

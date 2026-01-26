@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from .wcwidth import width as _width
 from .wcwidth import iter_sequences
 from .grapheme import iter_graphemes
+from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -468,7 +469,8 @@ def wrap(text: str, width: int = 70, *,
          initial_indent: str = '',
          subsequent_indent: str = '',
          break_long_words: bool = True,
-         break_on_hyphens: bool = True) -> list[str]:
+         break_on_hyphens: bool = True,
+         propagate_sgr: bool = True) -> list[str]:
     r"""
     Wrap text to fit within given width, returning a list of wrapped lines.
 
@@ -486,7 +488,19 @@ def wrap(text: str, width: int = 70, *,
     :param subsequent_indent: String prepended to subsequent lines.
     :param break_long_words: If True, break words longer than width.
     :param break_on_hyphens: If True, allow breaking at hyphens.
+    :param propagate_sgr: If True (default), SGR (terminal styling) sequences
+        are propagated across wrapped lines. Each line ends with a reset
+        sequence and the next line begins with the active style restored.
     :returns: List of wrapped lines without trailing newlines.
+
+    SGR (terminal styling) sequences are propagated across wrapped lines
+    by default. Each line ends with a reset sequence and the next line
+    begins with the active style restored::
+
+        >>> wrap('\x1b[1;34mHello world\x1b[0m', width=6)
+        ['\x1b[1;34mHello\x1b[0m', '\x1b[1;34mworld\x1b[0m']
+
+    Set ``propagate_sgr=False`` to disable this behavior.
 
     Like :func:`textwrap.wrap`, newlines in the input text are treated as
     whitespace and collapsed. To preserve paragraph breaks, wrap each
@@ -509,6 +523,9 @@ def wrap(text: str, width: int = 70, *,
 
     .. versionadded:: 0.3.0
 
+    .. versionchanged:: 0.5.0
+       Added ``propagate_sgr`` parameter (default True).
+
     Example::
 
         >>> from wcwidth import wrap
@@ -527,4 +544,9 @@ def wrap(text: str, width: int = 70, *,
         break_long_words=break_long_words,
         break_on_hyphens=break_on_hyphens,
     )
-    return wrapper.wrap(text)
+    lines = wrapper.wrap(text)
+
+    if propagate_sgr:
+        lines = _propagate_sgr(lines)
+
+    return lines

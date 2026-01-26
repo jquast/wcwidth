@@ -236,9 +236,10 @@ clusters, and wide characters to a given display width.
     >>> wrap('コンニチハ', 4)
     ['コン', 'ニチ', 'ハ']
 
-    >>> # Text with ANSI color sequences
-    >>> wrap('\x1b[31mhello world\x1b[0m', 5)
-    ['\x1b[31mhello', 'world\x1b[0m']
+    >>> # Text with ANSI color sequences - SGR codes are propagated by default
+    >>> # Each line ends with reset, next line starts with restored style
+    >>> wrap('\x1b[1;31mhello world\x1b[0m', 5)
+    ['\x1b[1;31mhello\x1b[0m', '\x1b[1;31mworld\x1b[0m']
 
 clip()
 ------
@@ -254,8 +255,13 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('中文字', 1, 5, fillchar='.')
     '.文.'
 
-    >>> # *ALL* Terminal sequences are preserved
-    >>> clip('\x1b[31m中文\x1b[0m', 0, 3)
+    >>> # SGR codes are propagated by default - result begins with active style
+    >>> # and ends with reset if styles are active
+    >>> clip('\x1b[1;31mHello world\x1b[0m', 6, 11)
+    '\x1b[1;31mworld\x1b[0m'
+
+    >>> # Disable SGR propagation to preserve original sequences as-is
+    >>> clip('\x1b[31m中文\x1b[0m', 0, 3, propagate_sgr=False)
     '\x1b[31m中 \x1b[0m'
 
 strip_sequences()
@@ -329,6 +335,10 @@ Execute all code generation, autoformatters, linters and unit tests using tox::
 Or execute individual tasks, see ``tox -lv`` for all available targets::
 
    tox -e pylint,py36,py314
+
+To run tests with detailed coverage reporting showing missing lines::
+
+   tox -epy314 -- --cov-report=term-missing
 
 Updating Unicode Version
 ------------------------
@@ -444,7 +454,13 @@ languages.
 History
 =======
 
-0.4.1 *next release*
+0.4.1 *2026-01-26*
+  * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines.
+  * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next
+    line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with
+    reset). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `clip()`_ combining characters and zero-width marks at clipping boundaries.
   * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
 0.4.0 *2026-01-25*
@@ -680,6 +696,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
 .. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
+.. _`propagate_sgr()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.propagate_sgr
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
