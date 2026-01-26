@@ -445,7 +445,7 @@ History
 =======
 
 0.4.1 *next release*
-  * **Bugfix** OSC Hyperlinks can now be broken by ``wrap()``. `PR #193`_.
+  * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
 0.4.0 *2026-01-25*
   * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_. `PR #192`_.

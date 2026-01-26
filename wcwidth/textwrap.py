@@ -209,10 +209,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
         greedily fill lines, handle long words.
 
-        When hyperlinks span multiple lines, each line gets complete open/close sequences
-        with matching id parameters for hover underlining continuity per OSC 8 spec.
+        When hyperlinks span multiple lines, each line gets complete open/close sequences with
+        matching id parameters for hover underlining continuity per OSC 8 spec.
         """
-        # pylint: disable=too-many-branches,too-many-statements
+        # pylint: disable=too-many-branches,too-many-statements,too-complex,too-many-locals
+        # the hyperlink code in particular really pushes the complexity rating of this method.
+        # preferring to keep it "all in one method" because of so much state manipulation,
         if not chunks:
             return []
 
