@@ -458,10 +458,11 @@ History
   * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
   * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with reset). Pass ``propagate_sgr=False`` for previous behavior.
   * **Bugfix** `clip()`_ combining characters and zero-width marks at clipping boundaries.
+  * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
 0.4.0 *2026-01-25*
-  * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_.
-  * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``
+  * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_. `PR #192`_.
+  * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``. `PR #191`_.
 
 0.3.5 *2026-01-24*
   * **Bugfix** packaging of 0.3.4 contains a failing test.
@@ -639,6 +640,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #184`: https://github.com/jquast/wcwidth/pull/184
 .. _`PR #185`: https://github.com/jquast/wcwidth/pull/185
 .. _`PR #188`: https://github.com/jquast/wcwidth/pull/188
+.. _`PR #191`: https://github.com/jquast/wcwidth/pull/191
+.. _`PR #192`: https://github.com/jquast/wcwidth/pull/192
+.. _`PR #193`: https://github.com/jquast/wcwidth/pull/193
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
