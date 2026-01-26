@@ -310,8 +310,8 @@ def _find_cluster_start(text: str, pos: int) -> int:
     """
     Find the start of the grapheme cluster containing the character before pos.
 
-    Scans backwards from pos to find a safe starting point, then iterates
-    forward using standard break rules to find the actual cluster boundary.
+    Scans backwards from pos to find a safe starting point, then iterates forward using standard
+    break rules to find the actual cluster boundary.
 
     :param text: The Unicode string.
     :param pos: Position to search before (exclusive).
@@ -368,7 +368,7 @@ def _find_cluster_start(text: str, pos: int) -> int:
 
 
 def grapheme_boundary_before(unistr: str, pos: int) -> int:
-    """
+    r"""
     Find the grapheme cluster boundary immediately before a position.
 
     :param unistr: The Unicode string to search.
@@ -377,9 +377,9 @@ def grapheme_boundary_before(unistr: str, pos: int) -> int:
 
     Example::
 
-        >>> grapheme_boundary_before('Hello \\U0001F44B\\U0001F3FB', 8)
+        >>> grapheme_boundary_before('Hello \U0001F44B\U0001F3FB', 8)
         6
-        >>> grapheme_boundary_before('a\\r\\nb', 3)
+        >>> grapheme_boundary_before('a\r\nb', 3)
         1
 
     .. versionadded:: 0.3.6
@@ -397,7 +397,7 @@ def iter_graphemes_reverse(
     start: int = 0,
     end: int | None = None,
 ) -> Iterator[str]:
-    """
+    r"""
     Iterate over grapheme clusters in reverse order (last to first).
 
     :param unistr: The Unicode string to segment.
@@ -407,8 +407,8 @@ def iter_graphemes_reverse(
 
     Example::
 
-        >>> list(iter_graphemes_reverse('cafe\\u0301'))
-        ['e\\u0301', 'f', 'a', 'c']
+        >>> list(iter_graphemes_reverse('cafe\u0301'))
+        ['e\u0301', 'f', 'a', 'c']
 
     .. versionadded:: 0.3.6
     """

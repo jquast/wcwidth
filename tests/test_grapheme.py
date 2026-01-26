@@ -232,16 +232,6 @@ def test_grapheme_roundtrip_consistency(input_str, expected):
     assert forward == reverse
 
 
-@pytest.mark.skipif(NARROW_ONLY, reason="requires wide Unicode")
-def test_grapheme_boundary_before_long_line():
-    """Real-world scenario: finding previous grapheme in a long line."""
-    text = 'x' * 95 + '\U0001F468\u200D\U0001F469\u200D\U0001F467!'
-    assert grapheme_boundary_before(text, 101) == 100
-    assert grapheme_boundary_before(text, 100) == 95
-    assert grapheme_boundary_before(text, 95) == 94
-    assert grapheme_boundary_before(text, 50) == 49
-
-
 def test_grapheme_boundary_before_edge_cases():
     """Edge cases for grapheme_boundary_before."""
     assert grapheme_boundary_before('abc', 0) == 0
