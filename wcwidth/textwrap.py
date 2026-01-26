@@ -124,7 +124,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 # boundary, but *not* before hyperlink close sequences, to ensure hyperlink is
                 # terminated on the same line.
                 is_hyperlink_close = segment.startswith(('\x1b]8;;\x1b\\', '\x1b]8;;\x07'))
-                if segment.startswith('\x1b]') and stripped_text and not stripped_text[-1].isspace():
+                if (segment.startswith('\x1b]') and stripped_text and not
+                        stripped_text[-1].isspace()):
                     if not is_hyperlink_close:
                         stripped_text += ' '
                         char_end.append(original_pos)
