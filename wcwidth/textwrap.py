@@ -254,7 +254,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             # Drop leading whitespace (except at very start)
             # When dropping, transfer any sequences to the next chunk.
             # Only drop if there's actual whitespace text, not if it's only sequences.
-            stripped = self._strip_sequences(chunks[-1]) if chunks else ''
+            stripped = self._strip_sequences(chunks[-1])
             if self.drop_whitespace and lines and stripped and not stripped.strip():
                 sequences = self._extract_sequences(chunks[-1])
                 del chunks[-1]
