@@ -16,6 +16,10 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.iter_graphemes
 
+.. autofunction:: wcwidth.iter_graphemes_reverse
+
+.. autofunction:: wcwidth.grapheme_boundary_before
+
 .. autofunction:: wcwidth.ljust
 
 .. autofunction:: wcwidth.rjust

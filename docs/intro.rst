@@ -48,8 +48,10 @@ Text-justification is solved by the grapheme and sequence-aware functions `ljust
 of the same names.
 
 The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation of
-grapheme and terminal control sequence boundaries.  The `clip()`_ function extracts substrings by
-display column positions, and `strip_sequences()`_ removes terminal escape sequences from text.
+grapheme and terminal control sequence boundaries.  `iter_graphemes_reverse()`_, and
+`grapheme_boundary_before()`_ are useful for editing and searching of complex unicode.  The
+`clip()`_ function extracts substrings by display column positions, and `strip_sequences()`_ removes
+terminal escape sequences from text altogether.
 
 Discrepancies
 -------------
@@ -442,6 +444,10 @@ languages.
 History
 =======
 
+*next version*
+  * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_.
+
+
 0.3.5 *2026-01-24*
   * **Bugfix** packaging of 0.3.4 contains a failing test.
 
@@ -660,6 +666,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
 .. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
 .. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
+.. _`iter_graphemes_reverse()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes_reverse
+.. _`grapheme_boundary_before()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.grapheme_boundary_before
 .. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
 .. _`rjust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.rjust
 .. _`center()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.center

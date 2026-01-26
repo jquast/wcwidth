@@ -26,12 +26,15 @@ from .wcwidth import (WIDE_EASTASIAN,
                       _wcmatch_version,
                       _wcversion_value)
 from .bisearch import bisearch as _bisearch
-from .grapheme import iter_graphemes  # noqa
+from .grapheme import (iter_graphemes,
+                       iter_graphemes_reverse,
+                       grapheme_boundary_before)  # noqa
 from .textwrap import SequenceTextWrapper, wrap
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
+           'iter_graphemes_reverse', 'grapheme_boundary_before',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
            'list_versions')
 

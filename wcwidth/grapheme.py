@@ -304,3 +304,136 @@ def iter_graphemes(
 
     # Yield the final cluster
     yield unistr[cluster_start:end]
+
+
+def _find_cluster_start(text: str, pos: int) -> int:
+    """
+    Find the start of the grapheme cluster containing the character before pos.
+
+    Scans backwards from pos to find a safe starting point, then iterates
+    forward using standard break rules to find the actual cluster boundary.
+
+    :param text: The Unicode string.
+    :param pos: Position to search before (exclusive).
+    :returns: Start position of the grapheme cluster.
+    """
+    # We're finding the cluster containing text[pos-1]
+    target_char = text[pos - 1]
+    target_cp = ord(target_char)
+
+    # GB3: CR x LF - LF after CR is part of same cluster
+    if target_char == '\n' and pos >= 2 and text[pos - 2] == '\r':
+        return pos - 2
+
+    # Fast path: ASCII (except LF) starts its own cluster
+    if target_cp < 0x80:
+        # GB9b: Check for preceding PREPEND (rare: Arabic/Brahmic)
+        if pos >= 2 and target_cp >= 0x20:
+            preceding_cp = ord(text[pos - 2])
+            if preceding_cp >= 0x80 and _grapheme_cluster_break(preceding_cp) == GCB.PREPEND:
+                return _find_cluster_start(text, pos - 1)
+        return pos - 1
+
+    # Phase 1: Scan backward to find a safe starting point
+    safe_start = pos - 1
+    max_scan = 32  # Bounded by max grapheme cluster complexity
+
+    while safe_start > 0 and (pos - safe_start) < max_scan:
+        cp = ord(text[safe_start])
+        if 0x20 <= cp < 0x80:  # ASCII always starts a cluster
+            break
+        if _grapheme_cluster_break(cp) == GCB.CONTROL:  # Control breaks after (GB4)
+            break
+        safe_start -= 1
+
+    # Phase 2: Verify forward to find the actual cluster boundary
+    cluster_start = safe_start
+    ri_count = 0
+
+    left_gcb = _grapheme_cluster_break(ord(text[safe_start]))
+    if left_gcb == GCB.REGIONAL_INDICATOR:
+        ri_count = 1
+
+    for i in range(safe_start + 1, pos):
+        right_gcb = _grapheme_cluster_break(ord(text[i]))
+        result = _should_break(left_gcb, right_gcb, text, i, ri_count)
+        ri_count = result.ri_count
+
+        if result.should_break:
+            cluster_start = i
+
+        left_gcb = right_gcb
+
+    return cluster_start
+
+
+def grapheme_boundary_before(unistr: str, pos: int) -> int:
+    """
+    Find the grapheme cluster boundary immediately before a position.
+
+    :param unistr: The Unicode string to search.
+    :param pos: Position in the string (0 < pos <= len(unistr)).
+    :returns: Start index of the grapheme cluster containing the character at pos-1.
+
+    Example::
+
+        >>> grapheme_boundary_before('Hello \\U0001F44B\\U0001F3FB', 8)
+        6
+        >>> grapheme_boundary_before('a\\r\\nb', 3)
+        1
+
+    .. versionadded:: 0.3.6
+    """
+    if pos <= 0:
+        return 0
+    if pos > len(unistr):
+        pos = len(unistr)
+
+    return _find_cluster_start(unistr, pos)
+
+
+def iter_graphemes_reverse(
+    unistr: str,
+    start: int = 0,
+    end: int | None = None,
+) -> Iterator[str]:
+    """
+    Iterate over grapheme clusters in reverse order (last to first).
+
+    :param unistr: The Unicode string to segment.
+    :param start: Starting index (default 0).
+    :param end: Ending index (default len(unistr)).
+    :yields: Grapheme cluster substrings in reverse order.
+
+    Example::
+
+        >>> list(iter_graphemes_reverse('cafe\\u0301'))
+        ['e\\u0301', 'f', 'a', 'c']
+
+    .. versionadded:: 0.3.6
+    """
+    if not unistr:
+        return
+
+    length = len(unistr)
+
+    if end is None:
+        end = length
+    else:
+        end = min(end, length)
+
+    # Clamp start to valid range
+    if start < 0:
+        start = 0
+
+    if start >= end or start >= length:
+        return
+
+    pos = end
+    while pos > start:
+        cluster_start = _find_cluster_start(unistr, pos)
+        # Don't yield partial graphemes that extend before start
+        if cluster_start < start:
+            break
+        yield unistr[cluster_start:pos]
+        pos = cluster_start
