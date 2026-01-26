@@ -21,7 +21,9 @@ class _SGR(IntEnum):
     """
     SGR (Select Graphic Rendition) parameter codes.
 
-    Reference: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+    References:
+    - https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+    - https://github.com/tehmaze/ansi/tree/master/ansi/colour
     """
 
     RESET = 0
