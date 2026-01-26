@@ -8,6 +8,7 @@ from __future__ import annotations
 
 # std imports
 import re
+import secrets
 import textwrap
 
 from typing import TYPE_CHECKING
@@ -80,12 +81,11 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         self.control_codes = control_codes
         self.tabsize = tabsize
         self.ambiguous_width = ambiguous_width
-        self._hyperlink_id_counter = 0
 
-    def _next_hyperlink_id(self) -> str:
-        """Generate next hyperlink id (rotating 1-10000)."""
-        self._hyperlink_id_counter = (self._hyperlink_id_counter % 10000) + 1
-        return str(self._hyperlink_id_counter)
+    @staticmethod
+    def _next_hyperlink_id() -> str:
+        """Generate unique hyperlink id as 8-character hex string."""
+        return secrets.token_hex(4)
 
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
@@ -238,16 +238,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             # If continuing a hyperlink from previous line, prepend open sequence
             if hyperlink_state is not None:
                 url, params, terminator = hyperlink_state
-                # Use existing id or generate new one
-                if current_hyperlink_id is None:
-                    if 'id=' in params:
-                        current_hyperlink_id = params
-                    else:
-                        current_hyperlink_id = f'id={self._next_hyperlink_id()}'
                 open_seq = _make_hyperlink_open(url, current_hyperlink_id, terminator)
-                # Prepend to next chunk
-                if chunks:
-                    chunks[-1] = open_seq + chunks[-1]
+                chunks[-1] = open_seq + chunks[-1]
 
             # Drop leading whitespace (except at very start)
             # When dropping, transfer any sequences to the next chunk.

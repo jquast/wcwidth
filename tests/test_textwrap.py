@@ -11,6 +11,20 @@ import pytest
 from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
+
+@pytest.fixture(autouse=True)
+def mock_hyperlink_ids(monkeypatch):
+    """Mock secrets.token_hex to return predictable IDs for testing."""
+    counter = 0
+
+    def fake_token_hex(n):
+        nonlocal counter
+        counter += 1
+        return f'{counter:0{n * 2}x}'
+
+    monkeypatch.setattr('secrets.token_hex', fake_token_hex)
+
+
 SGR_RED = '\x1b[31m'
 SGR_BLUE = '\x1b[34m'
 SGR_BOLD = '\x1b[1m'
@@ -326,8 +340,8 @@ HYPERLINK_WORD_BOUNDARY_CASES = [
         5,
         [
             'Go',
-            '\x1b]8;id=1;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\here\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\here\x1b]8;;\x1b\\',
             'now',
         ],
     ),
@@ -336,8 +350,8 @@ HYPERLINK_WORD_BOUNDARY_CASES = [
         5,
         [
             'Go',
-            '\x1b]8;id=1;http://example.com\x07Click\x1b]8;;\x07',
-            '\x1b]8;id=1;http://example.com\x07here\x1b]8;;\x07',
+            '\x1b]8;id=00000001;http://example.com\x07Click\x1b]8;;\x07',
+            '\x1b]8;id=00000001;http://example.com\x07here\x1b]8;;\x07',
             'now',
         ],
     ),
@@ -353,28 +367,28 @@ HYPERLINK_WORD_BOUNDARY_CASES = [
         f'{OSC_START_ST}one two three{OSC_END_ST}',
         5,
         [
-            '\x1b]8;id=1;http://example.com\x1b\\one\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\two\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\three\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\one\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\two\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\three\x1b]8;;\x1b\\',
         ],
     ),
     (   # multiple hyperlinks in same text
         f'{OSC_START_ST}ab cd{OSC_END_ST} {OSC_START_BEL}ef gh{OSC_END_BEL}',
         4,
         [
-            '\x1b]8;id=1;http://example.com\x1b\\ab\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\cd\x1b]8;;\x1b\\',
-            '\x1b]8;id=2;http://example.com\x07ef\x1b]8;;\x07',
-            '\x1b]8;id=2;http://example.com\x07gh\x1b]8;;\x07',
+            '\x1b]8;id=00000001;http://example.com\x1b\\ab\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\cd\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000002;http://example.com\x07ef\x1b]8;;\x07',
+            '\x1b]8;id=00000002;http://example.com\x07gh\x1b]8;;\x07',
         ],
     ),
     (   # long word inside hyperlink forces character-level breaking
         f'{OSC_START_ST}abcdefgh{OSC_END_ST}',
         3,
         [
-            '\x1b]8;id=1;http://example.com\x1b\\abc\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\def\x1b]8;;\x1b\\',
-            '\x1b]8;id=1;http://example.com\x1b\\gh\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\abc\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\def\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001;http://example.com\x1b\\gh\x1b]8;;\x1b\\',
         ],
     ),
 ]
