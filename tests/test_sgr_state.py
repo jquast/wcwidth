@@ -1,6 +1,9 @@
 """Tests for SGR state tracking and propagation."""
 from __future__ import annotations
 
+# std imports
+import re
+
 # local
 from wcwidth import clip, wrap
 from wcwidth.sgr_state import (_SGR_STATE_DEFAULT,
@@ -44,7 +47,9 @@ def test_wrap_propagate_sgr_disabled():
 def test_wrap_preserves_non_sgr_sequences():
     """Wrap() preserves non-SGR sequences (OSC hyperlinks)."""
     result = wrap('\x1b]8;;url\x07long link text\x1b]8;;\x07', width=5)
-    assert any('\x1b]8;;url\x07' in line for line in result)
+    # Hyperlinks get IDs added for identity preservation across lines
+    osc_pattern = re.compile(r'\x1b]8;[^;]*;url\x07')
+    assert all(osc_pattern.search(line) for line in result)
 
 
 def test_clip_propagates_sgr():
@@ -84,22 +89,28 @@ def test_sgr_state_parse_boolean_attributes_on():
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[3m').italic is True
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[4m').underline is True
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[5m').blink is True
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[6m').rapid_blink is True
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[7m').inverse is True
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[8m').hidden is True
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[9m').strikethrough is True
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[21m').double_underline is True
 
 
 def test_sgr_state_parse_boolean_attributes_off():
     """_sgr_state_update parses all boolean attribute off codes."""
     assert _sgr_state_update(_SGRState(italic=True), '\x1b[23m').italic is False
-    assert _sgr_state_update(_SGRState(underline=True), '\x1b[24m').underline is False
-    assert _sgr_state_update(_SGRState(blink=True), '\x1b[25m').blink is False
     assert _sgr_state_update(_SGRState(inverse=True), '\x1b[27m').inverse is False
     assert _sgr_state_update(_SGRState(hidden=True), '\x1b[28m').hidden is False
     assert _sgr_state_update(_SGRState(strikethrough=True), '\x1b[29m').strikethrough is False
     # code 22 resets both bold and dim
     state = _sgr_state_update(_SGRState(bold=True, dim=True), '\x1b[22m')
     assert state.bold is False and state.dim is False
+    # code 24 resets both underline and double_underline
+    state = _sgr_state_update(_SGRState(underline=True, double_underline=True), '\x1b[24m')
+    assert state.underline is False and state.double_underline is False
+    # code 25 resets both blink and rapid_blink
+    state = _sgr_state_update(_SGRState(blink=True, rapid_blink=True), '\x1b[25m')
+    assert state.blink is False and state.rapid_blink is False
 
 
 def test_sgr_state_parse_colors():
@@ -110,12 +121,29 @@ def test_sgr_state_parse_colors():
     # bright foreground/background
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[91m').foreground == (91,)
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[101m').background == (101,)
-    # 256-color
+    # 256-color (semicolon format)
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;5;208m').foreground == (38, 5, 208)
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48;5;208m').background == (48, 5, 208)
-    # RGB
+    # RGB (semicolon format)
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;2;255;128;0m').foreground == (38, 2, 255, 128, 0)
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48;2;255;128;0m').background == (48, 2, 255, 128, 0)
+
+
+def test_sgr_state_parse_colors_colon_format():
+    """_sgr_state_update parses ITU T.416 colon-separated color format."""
+    # 256-color (colon format)
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38:5:208m').foreground == (38, 5, 208)
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48:5:208m').background == (48, 5, 208)
+    # RGB with empty colorspace (colon format): 38:2::R:G:B
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38:2::255:128:0m').foreground == (38, 2, 0, 255, 128, 0)
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48:2::255:128:0m').background == (48, 2, 0, 255, 128, 0)
+    # RGB with colorspace (colon format): 38:2:colorspace:R:G:B
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38:2:1:255:128:0m').foreground == (38, 2, 1, 255, 128, 0)
+    # Mixed: colon color with semicolon attributes
+    state = _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[1;38:2::255:0:0;4m')
+    assert state.bold is True
+    assert state.underline is True
+    assert state.foreground == (38, 2, 0, 255, 0, 0)
 
 
 def test_sgr_state_color_override():
@@ -155,6 +183,8 @@ def test_sgr_state_to_sequence():
     """_sgr_state_to_sequence generates correct sequences."""
     assert _sgr_state_to_sequence(_SGR_STATE_DEFAULT) == ''
     assert _sgr_state_to_sequence(_SGRState(bold=True)) == '\x1b[1m'
+    assert _sgr_state_to_sequence(_SGRState(rapid_blink=True)) == '\x1b[6m'
+    assert _sgr_state_to_sequence(_SGRState(double_underline=True)) == '\x1b[21m'
     assert _sgr_state_to_sequence(_SGRState(foreground=(31,))) == '\x1b[31m'
     assert _sgr_state_to_sequence(_SGRState(foreground=(38, 5, 208))) == '\x1b[38;5;208m'
     assert _sgr_state_to_sequence(_SGRState(foreground=(38, 2, 255, 128, 0))) == '\x1b[38;2;255;128;0m'
@@ -179,7 +209,7 @@ def test_sgr_state_is_active():
 
 def test_propagate_sgr():
     """propagate_sgr handles various input cases."""
-    assert propagate_sgr([]) == []
+    assert len(propagate_sgr([])) == 0
     assert propagate_sgr(['hello', 'world']) == ['hello', 'world']
     assert propagate_sgr(['\x1b[31mhello\x1b[0m']) == ['\x1b[31mhello\x1b[0m']
     assert propagate_sgr(['\x1b[31mhello', 'world\x1b[0m']) == [

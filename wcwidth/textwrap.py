@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from .wcwidth import width as _width
 from .wcwidth import iter_sequences
 from .grapheme import iter_graphemes
+from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -546,8 +547,6 @@ def wrap(text: str, width: int = 70, *,
     lines = wrapper.wrap(text)
 
     if propagate_sgr:
-        # local
-        from .sgr_state import propagate_sgr as _propagate_sgr
         lines = _propagate_sgr(lines)
 
     return lines

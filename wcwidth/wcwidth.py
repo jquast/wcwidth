@@ -838,7 +838,7 @@ def clip(
         >>> clip('a\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements
+    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
     # Again, for 'hot path', we avoid additional delegate functions and accept the cost
     # of complexity for improved python performance.
     start = max(start, 0)

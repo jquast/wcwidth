@@ -455,8 +455,10 @@ History
 =======
 
 0.4.1 *2026-01-26*
-  * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
-  * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with reset). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next
+    line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with
+    reset). Pass ``propagate_sgr=False`` for previous behavior.
   * **Bugfix** `clip()`_ combining characters and zero-width marks at clipping boundaries.
   * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
