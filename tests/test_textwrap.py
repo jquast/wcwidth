@@ -399,6 +399,14 @@ HYPERLINK_WORD_BOUNDARY_CASES = [
             '\x1b]8;id=00000001:foo=bar;http://example.com\x1b\\here\x1b]8;;\x1b\\',
         ],
     ),
+    (   # id not at start of params (junk:id=given) - full params preserved
+        '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\Click here\x1b]8;;\x1b\\',
+        6,
+        [
+            '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
+            '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\here\x1b]8;;\x1b\\',
+        ],
+    ),
 ]
 
 

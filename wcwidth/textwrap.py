@@ -11,7 +11,7 @@ import re
 import secrets
 import textwrap
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 # local
 from .wcwidth import width as _width
@@ -23,14 +23,23 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
 
 
+class _HyperlinkState(NamedTuple):
+    """State for tracking an open OSC 8 hyperlink across line breaks."""
+
+    url: str  # hyperlink target URL
+    params: str  # id=xxx and other key=value pairs separated by :
+    terminator: str  # BEL (\x07) or ST (\x1b\\)
+
+
 # Hyperlink parsing: captures (params, url, terminator)
 _HYPERLINK_OPEN_RE = re.compile(r'\x1b]8;([^;]*);([^\x07\x1b]*)(\x07|\x1b\\)')
 
 
-def _parse_hyperlink_open(seq: str) -> tuple[str, str, str] | None:
-    """Parse OSC 8 open: return (params, url, terminator) or None."""
-    m = _HYPERLINK_OPEN_RE.match(seq)
-    return (m.group(1), m.group(2), m.group(3)) if m else None
+def _parse_hyperlink_open(seq: str) -> _HyperlinkState | None:
+    """Parse OSC 8 open sequence, return state or None."""
+    if (m := _HYPERLINK_OPEN_RE.match(seq)):
+        return _HyperlinkState(url=m.group(2), params=m.group(1), terminator=m.group(3))
+    return None
 
 
 def _make_hyperlink_open(url: str, params: str, terminator: str) -> str:
@@ -207,22 +216,21 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         Wrap chunks into lines using sequence-aware width.
 
         Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
-        greedily fill lines, handle long words.
-
-        When hyperlinks span multiple lines, each line gets complete open/close sequences with
-        matching id parameters for hover underlining continuity per OSC 8 spec.
+        greedily fill lines, handle long words.  Also handle OSC hyperlink processing. When
+        hyperlinks span multiple lines, each line gets complete open/close sequences with matching
+        id parameters for hover underlining continuity per OSC 8 spec.
         """
         # pylint: disable=too-many-branches,too-many-statements,too-complex,too-many-locals
+        # pylint: disable=too-many-nested-blocks
         # the hyperlink code in particular really pushes the complexity rating of this method.
-        # preferring to keep it "all in one method" because of so much state manipulation,
+        # preferring to keep it "all in one method" because of so much local state and manipulation.
         if not chunks:
             return []
 
         lines: list[str] = []
         is_first_line = True
 
-        # Track hyperlink state across lines: (url, params, terminator) or None
-        hyperlink_state: tuple[str, str, str] | None = None
+        hyperlink_state: _HyperlinkState | None = None
         # Track the id we're using for the current hyperlink continuation
         current_hyperlink_id: str | None = None
 
@@ -239,8 +247,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # If continuing a hyperlink from previous line, prepend open sequence
             if hyperlink_state is not None:
-                url, params, terminator = hyperlink_state
-                open_seq = _make_hyperlink_open(url, params, terminator)
+                open_seq = _make_hyperlink_open(
+                    hyperlink_state.url, hyperlink_state.params, hyperlink_state.terminator)
                 chunks[-1] = open_seq + chunks[-1]
 
             # Drop leading whitespace (except at very start)
@@ -294,30 +302,31 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
                 # If we end inside a hyperlink, append close sequence
                 if new_state is not None:
-                    url, params, terminator = new_state
                     # Ensure we have an id for continuation
                     if current_hyperlink_id is None:
-                        if 'id=' in params:
-                            current_hyperlink_id = params
-                        else:
+                        if 'id=' in new_state.params:
+                            current_hyperlink_id = new_state.params
+                        elif new_state.params:
                             # Prepend id to existing params (per OSC 8 spec, params can have
                             # multiple key=value pairs separated by :)
-                            if params:
-                                current_hyperlink_id = f'id={self._next_hyperlink_id()}:{params}'
-                            else:
-                                current_hyperlink_id = f'id={self._next_hyperlink_id()}'
-                    close_seq = _make_hyperlink_close(terminator)
-                    line_content = line_content + close_seq
+                            current_hyperlink_id = (
+                                f'id={self._next_hyperlink_id()}:{new_state.params}')
+                        else:
+                            current_hyperlink_id = f'id={self._next_hyperlink_id()}'
+                    line_content = line_content + _make_hyperlink_close(new_state.terminator)
 
                     # Also need to inject the id into the opening sequence if it didn't have one
-                    if 'id=' not in params:
+                    if 'id=' not in new_state.params:
                         # Find and replace the original open sequence with one that has id
-                        old_open = _make_hyperlink_open(url, params, terminator)
-                        new_open = _make_hyperlink_open(url, current_hyperlink_id, terminator)
+                        old_open = _make_hyperlink_open(
+                            new_state.url, new_state.params, new_state.terminator)
+                        new_open = _make_hyperlink_open(
+                            new_state.url, current_hyperlink_id, new_state.terminator)
                         line_content = line_content.replace(old_open, new_open, 1)
 
                     # Update state for next line, using computed id
-                    hyperlink_state = (url, current_hyperlink_id, terminator)
+                    hyperlink_state = _HyperlinkState(
+                        new_state.url, current_hyperlink_id, new_state.terminator)
                 else:
                     hyperlink_state = None
                     current_hyperlink_id = None  # Reset id when hyperlink closes
@@ -333,20 +342,19 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _track_hyperlink_state(
             self, text: str,
-            state: tuple[str, str, str] | None) -> tuple[str, str, str] | None:
+            state: _HyperlinkState | None) -> _HyperlinkState | None:
         """
         Track hyperlink state through text.
 
         :param text: Text to scan for hyperlink sequences.
-        :param state: Current state as (url, params, terminator) or None if outside hyperlink.
+        :param state: Current state or None if outside hyperlink.
         :returns: Updated state after processing text.
         """
         for segment, is_seq in iter_sequences(text):
             if is_seq:
-                parsed = _parse_hyperlink_open(segment)
-                if parsed is not None and parsed[1]:  # has URL = open
-                    params, url, terminator = parsed
-                    state = (url, params, terminator)
+                parsed_link = _parse_hyperlink_open(segment)
+                if parsed_link is not None and parsed_link.url:  # has URL = open
+                    state = parsed_link
                 elif segment.startswith(('\x1b]8;;\x1b\\', '\x1b]8;;\x07')):  # close
                     state = None
         return state
