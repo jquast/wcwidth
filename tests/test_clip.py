@@ -176,6 +176,27 @@ def test_clip_combining_multiple():
     assert clip('e\u0301\u0327', 0, 1) == 'e\u0301\u0327'
 
 
+def test_clip_zero_width_position_bounds():
+    # Standalone combining mark before visible region should NOT be included
+    assert clip('\u0301hello', 1, 4) == 'ell'
+    # Standalone combining mark after visible region should NOT be included
+    assert clip('hello\u0301', 0, 3) == 'hel'
+    # Combining mark within visible region should be included (attached to base)
+    assert clip('he\u0301llo', 0, 4) == 'he\u0301ll'
+
+
+def test_clip_prepend_grapheme():
+    # PREPEND characters (Arabic Number Sign) cluster with following char, width 2
+    # Full cluster fits
+    assert clip('\u0600abc', 0, 2) == '\u0600a'
+    # Cluster split at start boundary - replaced with fillchar
+    assert clip('\u0600abc', 0, 1) == ' '
+    # Cluster split at end boundary - partial overlap gets fillchar
+    assert clip('\u0600abc', 1, 3) == ' b'
+    # Clipping after the prepend cluster
+    assert clip('\u0600abc', 2, 4) == 'bc'
+
+
 def test_clip_ambiguous_width_1():
     assert clip('\u00b1test', 0, 3, ambiguous_width=1) == '\u00b1te'
 

@@ -1,12 +1,14 @@
 """
 SGR (Select Graphic Rendition) state tracking for terminal escape sequences.
 
-This module provides functions for tracking and propagating terminal styling
-(bold, italic, colors, etc.) across wrapped or clipped text lines.
+This module provides functions for tracking and propagating terminal styling (bold, italic, colors,
+etc.) across wrapped or clipped text lines.
 """
 from __future__ import annotations
 
+# std imports
 import re
+
 from typing import TYPE_CHECKING, Iterator, NamedTuple
 
 if TYPE_CHECKING:
@@ -93,11 +95,11 @@ def _sgr_state_to_sequence(state: _SGRState) -> str:
 
 
 def _parse_sgr_params(sequence: str) -> list[int]:
-    """
+    r"""
     Parse SGR sequence and return list of parameter values.
 
-    Handles compound sequences like ``\\x1b[1;31;4m`` -> [1, 31, 4].
-    Empty params (e.g., ``\\x1b[m``) are treated as [0] (reset).
+    Handles compound sequences like ``\x1b[1;31;4m`` -> [1, 31, 4].
+    Empty params (e.g., ``\x1b[m``) are treated as [0] (reset).
 
     :param sequence: SGR escape sequence string.
     :returns: List of integer parameters.
@@ -176,13 +178,13 @@ def _sgr_state_update(state: _SGRState, sequence: str) -> _SGRState:
 
 
 def propagate_sgr(lines: Sequence[str]) -> list[str]:
-    """
+    r"""
     Propagate SGR codes across wrapped lines.
 
     When text with SGR styling is wrapped across multiple lines, each line
     needs to be self-contained for proper display. This function:
 
-    - Ends each line with ``\\x1b[0m`` if styles are active (prevents bleeding)
+    - Ends each line with ``\x1b[0m`` if styles are active (prevents bleeding)
     - Starts each subsequent line with the active style restored
 
     Fast path: If no SGR sequences exist in any line, returns input unchanged.
@@ -192,8 +194,8 @@ def propagate_sgr(lines: Sequence[str]) -> list[str]:
 
     Example::
 
-        >>> propagate_sgr(['\\x1b[31mhello', 'world\\x1b[0m'])
-        ['\\x1b[31mhello\\x1b[0m', '\\x1b[31mworld\\x1b[0m']
+        >>> propagate_sgr(['\x1b[31mhello', 'world\x1b[0m'])
+        ['\x1b[31mhello\x1b[0m', '\x1b[31mworld\x1b[0m']
     """
     if not lines:
         return list(lines)

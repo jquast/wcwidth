@@ -1,15 +1,18 @@
 """Tests for SGR state tracking and propagation."""
 from __future__ import annotations
 
-from wcwidth import wrap, clip
-from wcwidth.sgr_state import (
-    _SGRState, _SGR_STATE_DEFAULT, _sgr_state_update, _sgr_state_to_sequence,
-    _sgr_state_is_active, propagate_sgr
-)
+# local
+from wcwidth import clip, wrap
+from wcwidth.sgr_state import (_SGR_STATE_DEFAULT,
+                               _SGRState,
+                               propagate_sgr,
+                               _sgr_state_update,
+                               _sgr_state_is_active,
+                               _sgr_state_to_sequence)
 
 
 def test_wrap_propagates_sgr():
-    """wrap() propagates SGR codes across lines by default."""
+    """Wrap() propagates SGR codes across lines by default."""
     assert wrap('\x1b[1;34mHello world\x1b[0m', width=6) == [
         '\x1b[1;34mHello\x1b[0m', '\x1b[1;34mworld\x1b[0m']
     assert wrap('\x1b[1mHello world\x1b[0m', width=6) == [
@@ -27,25 +30,25 @@ def test_wrap_propagates_sgr():
 
 
 def test_wrap_reset_and_no_sgr():
-    """wrap() handles reset and plain text."""
+    """Wrap() handles reset and plain text."""
     assert wrap('\x1b[31mred\x1b[0m plain text', width=6) == ['\x1b[31mred\x1b[0m', 'plain', 'text']
     assert wrap('hello world', width=6) == ['hello', 'world']
 
 
 def test_wrap_propagate_sgr_disabled():
-    """wrap() with propagate_sgr=False returns old behavior."""
+    """Wrap() with propagate_sgr=False returns old behavior."""
     assert wrap('\x1b[31mhello world\x1b[0m', width=6, propagate_sgr=False) == [
         '\x1b[31mhello', 'world\x1b[0m']
 
 
 def test_wrap_preserves_non_sgr_sequences():
-    """wrap() preserves non-SGR sequences (OSC hyperlinks)."""
+    """Wrap() preserves non-SGR sequences (OSC hyperlinks)."""
     result = wrap('\x1b]8;;url\x07long link text\x1b]8;;\x07', width=5)
     assert any('\x1b]8;;url\x07' in line for line in result)
 
 
 def test_clip_propagates_sgr():
-    """clip() restores SGR state at start and reset at end."""
+    """Clip() restores SGR state at start and reset at end."""
     assert clip('\x1b[1;34mHello world\x1b[0m', 6, 11) == '\x1b[1;34mworld\x1b[0m'
     assert clip('\x1b[1mHello world\x1b[0m', 6, 11) == '\x1b[1mworld\x1b[0m'
     assert clip('\x1b[31mHello world\x1b[0m', 6, 11) == '\x1b[31mworld\x1b[0m'
@@ -53,24 +56,24 @@ def test_clip_propagates_sgr():
 
 
 def test_clip_no_active_style_and_plain():
-    """clip() handles reset and plain text."""
+    """Clip() handles reset and plain text."""
     assert clip('\x1b[31mred\x1b[0m plain', 4, 9) == 'plain'
     assert clip('Hello world', 6, 11) == 'world'
 
 
 def test_clip_propagate_sgr_disabled():
-    """clip() with propagate_sgr=False returns old behavior."""
+    """Clip() with propagate_sgr=False returns old behavior."""
     assert clip('\x1b[1;34mHello world\x1b[0m', 6, 11, propagate_sgr=False) == '\x1b[1;34mworld\x1b[0m'
 
 
 def test_clip_preserves_non_sgr_sequences():
-    """clip() preserves non-SGR sequences (OSC hyperlinks)."""
+    """Clip() preserves non-SGR sequences (OSC hyperlinks)."""
     result = clip('\x1b]8;;url\x07link\x1b]8;;\x07', 0, 4)
     assert '\x1b]8;;url\x07' in result and '\x1b]8;;\x07' in result
 
 
 def test_clip_sgr_only_no_visible_content():
-    """clip() returns empty when only SGR sequences exist."""
+    """Clip() returns empty when only SGR sequences exist."""
     assert clip('\x1b[31m\x1b[0m', 0, 10) == ''
 
 

@@ -436,6 +436,7 @@ def wrap(text: str, width: int = 70, *,
     lines = wrapper.wrap(text)
 
     if propagate_sgr:
+        # local
         from .sgr_state import propagate_sgr as _propagate_sgr
         lines = _propagate_sgr(lines)
 

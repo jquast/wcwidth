@@ -73,6 +73,11 @@ from typing import TYPE_CHECKING
 # local
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
+from .sgr_state import (_SGR_PATTERN,
+                        _SGR_STATE_DEFAULT,
+                        _sgr_state_update,
+                        _sgr_state_is_active,
+                        _sgr_state_to_sequence)
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -834,11 +839,13 @@ def clip(
         'a       b'
     """
     # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements
+    # Again, for 'hot path', we avoid additional delegate functions and accept the cost
+    # of complexity for improved python performance.
     start = max(start, 0)
     if end <= start:
         return ''
 
-    # Fast path: printable ASCII only (no tabs, escapes, or wide chars)
+    # Fast path: printable ASCII only (no tabs, escape sequences, or wide or zero-width chars)
     if text.isascii() and text.isprintable():
         return text[start:end]
 
@@ -847,13 +854,9 @@ def clip(
         propagate_sgr = False
 
     # SGR tracking state (only when propagate_sgr=True)
+    sgr_at_clip_start = None  # state when first visible char emitted (None = not yet)
     if propagate_sgr:
-        from .sgr_state import (
-            _SGR_STATE_DEFAULT, _SGR_PATTERN, _sgr_state_update,
-            _sgr_state_is_active, _sgr_state_to_sequence
-        )
         sgr = _SGR_STATE_DEFAULT  # current SGR state, updated by all sequences
-        sgr_at_clip_start = None  # state when first visible char emitted (None = not yet)
 
     output: list[str] = []
     col = 0
@@ -862,17 +865,18 @@ def clip(
     while idx < len(text):
         char = text[idx]
 
+        # Early exit: past visible region, SGR captured, no escape ahead
+        if col >= end and sgr_at_clip_start is not None and char != '\x1b':
+            break
+
         # Handle escape sequences
         if char == '\x1b' and (match := ZERO_WIDTH_PATTERN.match(text, idx)):
             seq = match.group()
             if propagate_sgr and _SGR_PATTERN.match(seq):
                 # Update SGR state; will be applied as prefix when visible content starts
                 sgr = _sgr_state_update(sgr, seq)
-            elif propagate_sgr:
-                # Non-SGR sequence (OSC, CSI cursor, etc): preserve as-is
-                output.append(seq)
             else:
-                # propagate_sgr=False: preserve all sequences
+                # Non-SGR sequences always preserved
                 output.append(seq)
             idx = match.end()
             continue
@@ -899,11 +903,12 @@ def clip(
             continue
 
         # Grapheme clustering for everything else
-        grapheme = next(iter_graphemes(text[idx:]))
+        grapheme = next(iter_graphemes(text, start=idx))
         w = width(grapheme, ambiguous_width=ambiguous_width)
 
         if w == 0:
-            output.append(grapheme)
+            if start <= col < end:
+                output.append(grapheme)
         elif col >= start and col + w <= end:
             # Fully visible
             output.append(grapheme)
@@ -924,7 +929,7 @@ def clip(
     result = ''.join(output)
 
     # Apply SGR prefix/suffix
-    if propagate_sgr and sgr_at_clip_start is not None:
+    if sgr_at_clip_start is not None:
         if prefix := _sgr_state_to_sequence(sgr_at_clip_start):
             result = prefix + result
         if _sgr_state_is_active(sgr_at_clip_start):

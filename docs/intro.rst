@@ -454,6 +454,11 @@ languages.
 History
 =======
 
+0.4.1 *2026-01-26*
+  * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with reset). Pass ``propagate_sgr=False`` for previous behavior.
+  * **Bugfix** `clip()`_ combining characters and zero-width marks at clipping boundaries.
+
 0.4.0 *2026-01-25*
   * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_.
   * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``
