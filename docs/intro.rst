@@ -455,6 +455,7 @@ History
 =======
 
 0.4.1 *2026-01-26*
+  * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines.
   * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next
     line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
   * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with
@@ -695,6 +696,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
 .. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
+.. _`propagate_sgr()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.propagate_sgr
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width

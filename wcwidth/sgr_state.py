@@ -2,7 +2,8 @@
 SGR (Select Graphic Rendition) state tracking for terminal escape sequences.
 
 This module provides functions for tracking and propagating terminal styling (bold, italic, colors,
-etc.) via public API propagate_sgr(), and its dependent functions, cut() and wrap().
+etc.) via public API propagate_sgr(), and its dependent functions, cut() and wrap(). It only has
+attributes necessary to perform its functions, eg 'RED' and 'BLUE' attributes are not defined.
 """
 from __future__ import annotations
 
@@ -295,8 +296,6 @@ def propagate_sgr(lines: Sequence[str]) -> list[str]:
     - Ends each line with ``\x1b[0m`` if styles are active (prevents bleeding)
     - Starts each subsequent line with the active style restored
 
-    Fast path: If no SGR sequences exist in any line, returns input unchanged.
-
     :param lines: List of text lines, possibly containing SGR sequences.
     :returns: List of lines with SGR codes propagated.
 
@@ -304,12 +303,16 @@ def propagate_sgr(lines: Sequence[str]) -> list[str]:
 
         >>> propagate_sgr(['\x1b[31mhello', 'world\x1b[0m'])
         ['\x1b[31mhello\x1b[0m', '\x1b[31mworld\x1b[0m']
-    """
-    if not lines:
-        return list(lines)
 
+    This is useful in cases of making special editors and viewers, and is used for the
+    default modes (propagate_sgr=True) of :func:`wcwidth.width` and :func:`wcwidth.clip`.
+
+    When wrapping and clipping text containing SGR sequences, maybe a previous line enabled the BLUE
+    color--if we are viewing *only* the line following, we would want the carry over the BLUE color,
+    and all lines with sequences should end with terminating reset (``\x1b[0m``).
+    """
     # Fast path: check if any line contains SGR sequences
-    if not any(_SGR_QUICK_CHECK.search(line) for line in lines):
+    if not any(_SGR_QUICK_CHECK.search(line) for line in lines) or not lines:
         return list(lines)
 
     result: list[str] = []

@@ -32,6 +32,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.strip_sequences
 
+.. autofunction:: wcwidth.propagate_sgr
+
 .. autofunction:: wcwidth.list_versions
 
 .. _SEMVER: https://semver.org
