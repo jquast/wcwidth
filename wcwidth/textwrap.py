@@ -240,7 +240,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             # If continuing a hyperlink from previous line, prepend open sequence
             if hyperlink_state is not None:
                 url, params, terminator = hyperlink_state
-                open_seq = _make_hyperlink_open(url, current_hyperlink_id, terminator)
+                open_seq = _make_hyperlink_open(url, params, terminator)
                 chunks[-1] = open_seq + chunks[-1]
 
             # Drop leading whitespace (except at very start)
@@ -300,7 +300,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                         if 'id=' in params:
                             current_hyperlink_id = params
                         else:
-                            current_hyperlink_id = f'id={self._next_hyperlink_id()}'
+                            # Prepend id to existing params (per OSC 8 spec, params can have
+                            # multiple key=value pairs separated by :)
+                            if params:
+                                current_hyperlink_id = f'id={self._next_hyperlink_id()}:{params}'
+                            else:
+                                current_hyperlink_id = f'id={self._next_hyperlink_id()}'
                     close_seq = _make_hyperlink_close(terminator)
                     line_content = line_content + close_seq
 
@@ -311,9 +316,10 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                         new_open = _make_hyperlink_open(url, current_hyperlink_id, terminator)
                         line_content = line_content.replace(old_open, new_open, 1)
 
-                # Update state for next line
-                hyperlink_state = new_state
-                if new_state is None:
+                    # Update state for next line, using computed id
+                    hyperlink_state = (url, current_hyperlink_id, terminator)
+                else:
+                    hyperlink_state = None
                     current_hyperlink_id = None  # Reset id when hyperlink closes
 
                 # Strip trailing whitespace when drop_whitespace is enabled
