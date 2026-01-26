@@ -241,10 +241,6 @@ clusters, and wide characters to a given display width.
     >>> wrap('\x1b[1;31mhello world\x1b[0m', 5)
     ['\x1b[1;31mhello\x1b[0m', '\x1b[1;31mworld\x1b[0m']
 
-    >>> # Disable SGR propagation if not needed, improving performance
-    >>> wrap('\x1b[31mhello world\x1b[0m', 5, propagate_sgr=False)
-    ['\x1b[31mhello', 'world\x1b[0m']
-
 clip()
 ------
 
