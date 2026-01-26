@@ -446,7 +446,7 @@ History
 
 *next version*
   * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_.
-
+  * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``
 
 0.3.5 *2026-01-24*
   * **Bugfix** packaging of 0.3.4 contains a failing test.
