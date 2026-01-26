@@ -629,6 +629,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #188`: https://github.com/jquast/wcwidth/pull/188
 .. _`PR #191`: https://github.com/jquast/wcwidth/pull/191
 .. _`PR #192`: https://github.com/jquast/wcwidth/pull/192
+.. _`PR #193`: https://github.com/jquast/wcwidth/pull/193
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
