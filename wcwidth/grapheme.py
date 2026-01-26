@@ -36,6 +36,10 @@ if TYPE_CHECKING:  # pragma: no cover
     # std imports
     from collections.abc import Iterator
 
+# Maximum backward scan distance when finding grapheme cluster boundaries.
+# Covers all known Unicode grapheme clusters with margin; longer sequences are pathological.
+MAX_GRAPHEME_SCAN = 32
+
 
 class GCB(IntEnum):
     """Grapheme Cluster Break property values."""
@@ -317,51 +321,42 @@ def _find_cluster_start(text: str, pos: int) -> int:
     :param pos: Position to search before (exclusive).
     :returns: Start position of the grapheme cluster.
     """
-    # We're finding the cluster containing text[pos-1]
-    target_char = text[pos - 1]
-    target_cp = ord(target_char)
+    target_cp = ord(text[pos - 1])
 
     # GB3: CR x LF - LF after CR is part of same cluster
-    if target_char == '\n' and pos >= 2 and text[pos - 2] == '\r':
+    if target_cp == 0x0A and pos >= 2 and text[pos - 2] == '\r':
         return pos - 2
 
     # Fast path: ASCII (except LF) starts its own cluster
     if target_cp < 0x80:
         # GB9b: Check for preceding PREPEND (rare: Arabic/Brahmic)
         if pos >= 2 and target_cp >= 0x20:
-            preceding_cp = ord(text[pos - 2])
-            if preceding_cp >= 0x80 and _grapheme_cluster_break(preceding_cp) == GCB.PREPEND:
+            prev_cp = ord(text[pos - 2])
+            if prev_cp >= 0x80 and _grapheme_cluster_break(prev_cp) == GCB.PREPEND:
                 return _find_cluster_start(text, pos - 1)
         return pos - 1
 
-    # Phase 1: Scan backward to find a safe starting point
+    # Scan backward to find a safe starting point
     safe_start = pos - 1
-    max_scan = 32  # Bounded by max grapheme cluster complexity
-
-    while safe_start > 0 and (pos - safe_start) < max_scan:
+    while safe_start > 0 and (pos - safe_start) < MAX_GRAPHEME_SCAN:
         cp = ord(text[safe_start])
         if 0x20 <= cp < 0x80:  # ASCII always starts a cluster
             break
-        if _grapheme_cluster_break(cp) == GCB.CONTROL:  # Control breaks after (GB4)
+        if _grapheme_cluster_break(cp) == GCB.CONTROL:  # GB4
             break
         safe_start -= 1
 
-    # Phase 2: Verify forward to find the actual cluster boundary
+    # Verify forward to find the actual cluster boundary
     cluster_start = safe_start
-    ri_count = 0
-
     left_gcb = _grapheme_cluster_break(ord(text[safe_start]))
-    if left_gcb == GCB.REGIONAL_INDICATOR:
-        ri_count = 1
+    ri_count = 1 if left_gcb == GCB.REGIONAL_INDICATOR else 0
 
     for i in range(safe_start + 1, pos):
         right_gcb = _grapheme_cluster_break(ord(text[i]))
         result = _should_break(left_gcb, right_gcb, text, i, ri_count)
         ri_count = result.ri_count
-
         if result.should_break:
             cluster_start = i
-
         left_gcb = right_gcb
 
     return cluster_start
@@ -386,10 +381,7 @@ def grapheme_boundary_before(unistr: str, pos: int) -> int:
     """
     if pos <= 0:
         return 0
-    if pos > len(unistr):
-        pos = len(unistr)
-
-    return _find_cluster_start(unistr, pos)
+    return _find_cluster_start(unistr, min(pos, len(unistr)))
 
 
 def iter_graphemes_reverse(
@@ -417,14 +409,8 @@ def iter_graphemes_reverse(
 
     length = len(unistr)
 
-    if end is None:
-        end = length
-    else:
-        end = min(end, length)
-
-    # Clamp start to valid range
-    if start < 0:
-        start = 0
+    end = length if end is None else min(end, length)
+    start = max(start, 0)
 
     if start >= end or start >= length:
         return

@@ -444,7 +444,7 @@ languages.
 History
 =======
 
-*next version*
+0.4.0 *2026-01-25*
   * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_.
   * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``
 

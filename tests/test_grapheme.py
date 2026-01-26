@@ -170,6 +170,8 @@ MULTI_COMBINE = 'e\u0301\u0300'
     (PREPEND_CHAR + 'a', 2, 0),  # whole cluster
     # Prepend + Control: control breaks (GB4)
     (PREPEND_CHAR + '\n', 2, 1),  # '\n' separate at 1
+    # C1 control (NEL, 0x85) stops backward scan in _find_cluster_start (GB4)
+    ('X\x85\u0301', 3, 2),
 ])
 def test_grapheme_boundary_before_basic(text, pos, expected):
     """Basic grapheme_boundary_before tests."""
@@ -243,10 +245,10 @@ def test_iter_graphemes_reverse_edge_cases():
     """Edge cases for iter_graphemes_reverse."""
     assert list(iter_graphemes_reverse('abcdef', start=2, end=5)) == ['e', 'd', 'c']
     assert list(iter_graphemes_reverse('abc', start=0, end=100)) == ['c', 'b', 'a']
-    assert list(iter_graphemes_reverse('abc', start=5)) == []
-    assert list(iter_graphemes_reverse('abc', start=2, end=2)) == []
+    assert not list(iter_graphemes_reverse('abc', start=5))
+    assert not list(iter_graphemes_reverse('abc', start=2, end=2))
     # PREPEND + char is one grapheme (GB9b), so start=1 yields nothing (won't split)
-    assert list(iter_graphemes_reverse(PREPEND_CHAR + 'a', start=1)) == []
+    assert not list(iter_graphemes_reverse(PREPEND_CHAR + 'a', start=1))
     # But start=0 yields the full grapheme
     assert list(iter_graphemes_reverse(PREPEND_CHAR + 'a', start=0)) == [PREPEND_CHAR + 'a']
     # Negative start is clamped to 0
