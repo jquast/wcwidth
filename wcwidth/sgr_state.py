@@ -2,7 +2,7 @@
 SGR (Select Graphic Rendition) state tracking for terminal escape sequences.
 
 This module provides functions for tracking and propagating terminal styling (bold, italic, colors,
-etc.) across wrapped or clipped text lines.
+etc.) via public API propagate_sgr(), and its dependent functions, cut() and wrap().
 """
 from __future__ import annotations
 
@@ -42,18 +42,17 @@ class _SGR(IntEnum):
     HIDDEN_OFF = 28
     STRIKETHROUGH_OFF = 29
     FG_BLACK = 30
-    FG_RED = 31
-    FG_GREEN = 32
-    FG_YELLOW = 33
-    FG_BLUE = 34
-    FG_MAGENTA = 35
-    FG_CYAN = 36
     FG_WHITE = 37
     FG_EXTENDED = 38
     FG_DEFAULT = 39
     BG_BLACK = 40
+    BG_WHITE = 47
     BG_EXTENDED = 48
     BG_DEFAULT = 49
+    FG_BRIGHT_BLACK = 90
+    FG_BRIGHT_WHITE = 97
+    BG_BRIGHT_BLACK = 100
+    BG_BRIGHT_WHITE = 107
 
 
 # SGR sequence pattern: CSI followed by params (digits, semicolons, colons) ending with 'm'
@@ -266,9 +265,11 @@ def _sgr_state_update(state: _SGRState, sequence: str) -> _SGRState:
         elif p == _SGR.STRIKETHROUGH_OFF:
             state = state._replace(strikethrough=False)
         # Basic colors (30-37, 40-47 standard; 90-97, 100-107 bright)
-        elif _SGR.FG_BLACK <= p <= _SGR.FG_WHITE or 90 <= p <= 97:
+        elif (_SGR.FG_BLACK <= p <= _SGR.FG_WHITE
+              or _SGR.FG_BRIGHT_BLACK <= p <= _SGR.FG_BRIGHT_WHITE):
             state = state._replace(foreground=(p,))
-        elif _SGR.BG_BLACK <= p <= 47 or 100 <= p <= 107:
+        elif (_SGR.BG_BLACK <= p <= _SGR.BG_WHITE
+              or _SGR.BG_BRIGHT_BLACK <= p <= _SGR.BG_BRIGHT_WHITE):
             state = state._replace(background=(p,))
         elif p == _SGR.FG_DEFAULT:
             state = state._replace(foreground=None)
