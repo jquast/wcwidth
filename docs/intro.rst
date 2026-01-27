@@ -498,6 +498,15 @@ History
   * **Bugfix** Characters with ``Prepended_Concatenation_Mark`` property now
     return width 1. `PR #175`_.
 
+0.5.0 *2026-01-26*
+  * **Breaking Change**: Only the latest Unicode version (17.0.0) is now
+    shipped. Historical Unicode version tables have been removed to reduce
+    package size. The ``unicode_version`` parameter is now deprecated and
+    ignored -- the latest version is always used. The ``UNICODE_VERSION``
+    environment variable is also no longer read. `Issue #190`_.
+  * **Changed**: ``list_versions()`` now returns a single-element tuple
+    containing only the latest Unicode version.
+
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
   * **Update** tables to include Unicode Specifications 16.0.0 and 17.0.0.
@@ -647,6 +656,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #192`: https://github.com/jquast/wcwidth/pull/192
 .. _`PR #193`: https://github.com/jquast/wcwidth/pull/193
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
+.. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies

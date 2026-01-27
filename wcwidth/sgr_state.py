@@ -13,7 +13,7 @@ from enum import IntEnum
 
 from typing import TYPE_CHECKING, Iterator, NamedTuple
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Sequence
 
 
