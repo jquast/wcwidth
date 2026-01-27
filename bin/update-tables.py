@@ -367,96 +367,98 @@ def fetch_source_headers() -> UnicodeVersionRstRenderCtx:
 
 
 def fetch_table_wide_data() -> UnicodeTableRenderCtx:
-    """Fetch east-asian tables."""
+    """Fetch east-asian tables for the latest Unicode version only."""
     table: dict[UnicodeVersion, TableDef] = {}
-    for version in fetch_unicode_versions():
-        # parse typical 'wide' characters by categories 'W' and 'F',
-        table[version] = parse_category(fname=UnicodeDataFile.EastAsianWidth(version),
-                                        wide=2)
+    version = fetch_unicode_versions()[-1]  # Only latest version
 
-        # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
-        # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
-        table[version].values = table[version].values.difference(parse_category(
-            fname=UnicodeDataFile.DerivedGeneralCategory(version),
-            wide=0).values)
+    # parse typical 'wide' characters by categories 'W' and 'F',
+    table[version] = parse_category(fname=UnicodeDataFile.EastAsianWidth(version),
+                                    wide=2)
 
-        # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
-        table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
+    # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
+    # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
+    table[version].values = table[version].values.difference(parse_category(
+        fname=UnicodeDataFile.DerivedGeneralCategory(version),
+        wide=0).values)
 
-        # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
-        # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
-        # See https://github.com/jquast/wcwidth/issues/118
-        default_ignorable = parse_derived_core_property(
-            fname=UnicodeDataFile.DerivedCoreProperties(version),
-            property_name='Default_Ignorable_Code_Point')
-        default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
-        table[version].values = table[version].values.difference(default_ignorable)
+    # Also subtract Hangul Jamo Vowels and Hangul Trailing Consonants
+    table[version].values = table[version].values.difference(HANGUL_JAMO_ZEROWIDTH)
 
-        # finally, join with atypical 'wide' characters defined by category 'Sk',
-        fname = UnicodeDataFile.DerivedGeneralCategory(version)
-        table[version].values.update(parse_category(fname=fname, wide=2).values)
+    # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
+    # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
+    # See https://github.com/jquast/wcwidth/issues/118
+    default_ignorable = parse_derived_core_property(
+        fname=UnicodeDataFile.DerivedCoreProperties(version),
+        property_name='Default_Ignorable_Code_Point')
+    default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
+    table[version].values = table[version].values.difference(default_ignorable)
+
+    # finally, join with atypical 'wide' characters defined by category 'Sk',
+    fname = UnicodeDataFile.DerivedGeneralCategory(version)
+    table[version].values.update(parse_category(fname=fname, wide=2).values)
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
 def fetch_table_zero_data() -> UnicodeTableRenderCtx:
     """
-    Fetch zero width tables.
+    Fetch zero width tables for the latest Unicode version only.
 
     See also: https://unicode.org/L2/L2002/02368-default-ignorable.html
     """
     table: dict[UnicodeVersion, TableDef] = {}
-    for version in fetch_unicode_versions():
-        # Determine values of zero-width character lookup table by the following category codes
-        fname = UnicodeDataFile.DerivedGeneralCategory(version)
-        table[version] = parse_category(fname=fname, wide=0)
+    version = fetch_unicode_versions()[-1]  # Only latest version
 
-        # Include NULL
-        table[version].values.add(0)
+    # Determine values of zero-width character lookup table by the following category codes
+    fname = UnicodeDataFile.DerivedGeneralCategory(version)
+    table[version] = parse_category(fname=fname, wide=0)
 
-        # Add Hangul Jamo Vowels and Hangul Trailing Consonants
-        table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
+    # Include NULL
+    table[version].values.add(0)
 
-        # Add Default_Ignorable_Code_Point characters
-        # Per Unicode Standard (https://www.unicode.org/faq/unsup_char.html):
-        # "All default-ignorable characters should be rendered as completely invisible
-        # (and non advancing, i.e. 'zero width'), if not explicitly supported in rendering."
-        #
-        # See also:
-        # - https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
-        # - https://github.com/jquast/wcwidth/issues/118
-        table[version].values.update(parse_derived_core_property(
-            fname=UnicodeDataFile.DerivedCoreProperties(version),
-            property_name='Default_Ignorable_Code_Point'))
+    # Add Hangul Jamo Vowels and Hangul Trailing Consonants
+    table[version].values.update(HANGUL_JAMO_ZEROWIDTH)
 
-        # Remove U+115F HANGUL CHOSEONG FILLER from zero-width table.
-        # Although it has Default_Ignorable_Code_Point property, it should remain
-        # width 2 because it combines with other Hangul Jamo to form width-2
-        # syllable blocks.
-        table[version].values.discard(0x115F)
+    # Add Default_Ignorable_Code_Point characters
+    # Per Unicode Standard (https://www.unicode.org/faq/unsup_char.html):
+    # "All default-ignorable characters should be rendered as completely invisible
+    # (and non advancing, i.e. 'zero width'), if not explicitly supported in rendering."
+    #
+    # See also:
+    # - https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
+    # - https://github.com/jquast/wcwidth/issues/118
+    table[version].values.update(parse_derived_core_property(
+        fname=UnicodeDataFile.DerivedCoreProperties(version),
+        property_name='Default_Ignorable_Code_Point'))
 
-        # Remove u+00AD categoryCode=Cf name="SOFT HYPHEN",
-        # > https://www.unicode.org/faq/casemap_charprop.html
-        #
-        # > Q: Unicode now treats the SOFT HYPHEN as format control (Cf)
-        # > character when formerly it was a punctuation character (Pd).
-        # > Doesn't this break ISO 8859-1 compatibility?
-        #
-        # > [..] In a terminal emulation environment, particularly in
-        # > ISO-8859-1 contexts, one could display the SOFT HYPHEN as a hyphen
-        # > in all circumstances.
-        #
-        # This value was wrongly measured as a width of '0' in this wcwidth
-        # versions 0.2.9 - 0.2.13. Fixed in 0.2.14
-        table[version].values.discard(0x00AD)  # SOFT HYPHEN
+    # Remove U+115F HANGUL CHOSEONG FILLER from zero-width table.
+    # Although it has Default_Ignorable_Code_Point property, it should remain
+    # width 2 because it combines with other Hangul Jamo to form width-2
+    # syllable blocks.
+    table[version].values.discard(0x115F)
 
-        # Remove Prepended_Concatenation_Mark characters from zero-width.
-        # Per Unicode Standard Annex #44, these format characters (General_Category=Cf) have
-        # mandatory visible display and should NOT be treated as invisible.
-        # See https://github.com/jquast/wcwidth/issues/119
-        table[version].values = table[version].values.difference(
-            parse_derived_core_property(
-                fname=UnicodeDataFile.PropList(version),
-                property_name='Prepended_Concatenation_Mark'))
+    # Remove u+00AD categoryCode=Cf name="SOFT HYPHEN",
+    # > https://www.unicode.org/faq/casemap_charprop.html
+    #
+    # > Q: Unicode now treats the SOFT HYPHEN as format control (Cf)
+    # > character when formerly it was a punctuation character (Pd).
+    # > Doesn't this break ISO 8859-1 compatibility?
+    #
+    # > [..] In a terminal emulation environment, particularly in
+    # > ISO-8859-1 contexts, one could display the SOFT HYPHEN as a hyphen
+    # > in all circumstances.
+    #
+    # This value was wrongly measured as a width of '0' in this wcwidth
+    # versions 0.2.9 - 0.2.13. Fixed in 0.2.14
+    table[version].values.discard(0x00AD)  # SOFT HYPHEN
+
+    # Remove Prepended_Concatenation_Mark characters from zero-width.
+    # Per Unicode Standard Annex #44, these format characters (General_Category=Cf) have
+    # mandatory visible display and should NOT be treated as invisible.
+    # See https://github.com/jquast/wcwidth/issues/119
+    table[version].values = table[version].values.difference(
+        parse_derived_core_property(
+            fname=UnicodeDataFile.PropList(version),
+            property_name='Prepended_Concatenation_Mark'))
 
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
@@ -545,8 +547,8 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
                       hex_str_vs=HEX_STR_VS16).values)
 
     # perform culling on any values that are already understood as 'wide'
-    # without the variation-16 selector
-    wide_table = wide_tables[unicode_version].as_value_ranges()
+    # without the variation-16 selector (use latest wide table)
+    wide_table = wide_tables[unicode_latest].as_value_ranges()
     table[unicode_version].values = {
         ucs for ucs in table[unicode_version].values
         if not _bisearch(ucs, wide_table)
@@ -1064,7 +1066,7 @@ def main(fetch_all_versions: bool = False, check_last_modified: bool = False) ->
     # code.
     def get_codegen_definitions() -> Iterator[RenderDefinition]:
         yield UnicodeVersionPyRenderDef.new(
-            UnicodeVersionPyRenderCtx(fetch_unicode_versions())
+            UnicodeVersionPyRenderCtx([fetch_unicode_versions()[-1]])  # Only latest
         )
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())

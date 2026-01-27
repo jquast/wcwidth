@@ -11,8 +11,8 @@ def list_versions() -> tuple[str, ...]:
     """
     Return Unicode version levels supported by this module release.
 
-    Any of the version strings returned may be used as keyword argument
-    ``unicode_version`` to the ``wcwidth()`` family of functions.
+    .. versionchanged:: 0.5.0
+       Now returns a single-element tuple containing only the latest version.
 
     :returns: Supported Unicode version numbers in ascending sorted order.
     """

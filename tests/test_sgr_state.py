@@ -230,3 +230,9 @@ def test_sgr_malformed_sequences():
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;5m').foreground is None
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;2;255m').foreground is None
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[999m') == _SGR_STATE_DEFAULT
+    # malformed background extended colors
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48;5m').background is None
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48;2;255m').background is None
+    # invalid mode (not 2 or 5) for extended color
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;3;128m').foreground is None
+    assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[48;3;128m').background is None
