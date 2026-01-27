@@ -454,6 +454,10 @@ languages.
 History
 =======
 
+0.5.1 *2026-01-27*
+  * **Updated** generated zero and wide code tables to length of 1 to complete the previously
+    announced removal of historical wide and zero tables. `PR #196`_.
+
 0.5.0 *2026-01-26*
   * **Drop Support** of many historical versions of wide and zero unicode tables.  Only the latest
     Unicode version (17.0.0) is now shipped. The related ``unicode_version='auto'`` keyword of the
@@ -652,6 +656,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #193`: https://github.com/jquast/wcwidth/pull/193
 .. _`PR #194`: https://github.com/jquast/wcwidth/pull/194
 .. _`PR #195`: https://github.com/jquast/wcwidth/pull/195
+.. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
