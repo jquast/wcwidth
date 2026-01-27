@@ -459,6 +459,8 @@ History
     Unicode version (17.0.0) is now shipped. The related ``unicode_version='auto'`` keyword of the
     `wcwidth()`_ family of functions are ignored. `list_versions()`_ always returns a tuple of only
     a single element of the only unicode version supported. `PR #195`_.`
+  * **Performance** improvement of most common call without version or ambiguous_width specified by
+    20%. `PR #195`_
   * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines.
     `PR #194`_
   * **Improved** `wrap()`_ and `clip()`_ with ``propagate_sgr=True``. `PR #194`_
