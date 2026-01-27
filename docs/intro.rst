@@ -454,13 +454,14 @@ languages.
 History
 =======
 
-0.4.1 *2026-01-26*
-  * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines.
-  * **Bugfix** `wrap()`_ now propagates SGR styling across lines (each line ends with reset, next
-    line restores active style). Pass ``propagate_sgr=False`` for previous behavior.
-  * **Bugfix** `clip()`_ now propagates SGR state (result begins with active style, ends with
-    reset). Pass ``propagate_sgr=False`` for previous behavior.
-  * **Bugfix** `clip()`_ combining characters and zero-width marks at clipping boundaries.
+0.5.0 *2026-01-26*
+  * **Drop Support** of many historical versions of wide and zero unicode tables.  Only the latest
+    Unicode version (17.0.0) is now shipped. The related ``unicode_version='auto'`` keyword of the
+    `wcwidth()`_ family of functions are ignored. `list_versions()`_ always returns a tuple of only
+    a single element of the only unicode version supported. `PR #195`_.`
+  * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines. `PR #194`_
+  * **Improved** `wrap()`_ and `clip()`_ with ``propagate_sgr=True``. `PR #194`_
+  * **Bugfix** `clip()`_ zero-width characters at clipping boundaries. `PR #194`_
   * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
 0.4.0 *2026-01-25*
@@ -497,15 +498,6 @@ History
     return width 0. `PR #174`_.
   * **Bugfix** Characters with ``Prepended_Concatenation_Mark`` property now
     return width 1. `PR #175`_.
-
-0.5.0 *2026-01-26*
-  * **Breaking Change**: Only the latest Unicode version (17.0.0) is now
-    shipped. Historical Unicode version tables have been removed to reduce
-    package size. The ``unicode_version`` parameter is now deprecated and
-    ignored -- the latest version is always used. The ``UNICODE_VERSION``
-    environment variable is also no longer read. `Issue #190`_.
-  * **Changed**: ``list_versions()`` now returns a single-element tuple
-    containing only the latest Unicode version.
 
 0.2.14 *2025-09-22*
   * **Drop Support** for Python 2.7 and 3.5. `PR #117`_.
@@ -655,8 +647,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #191`: https://github.com/jquast/wcwidth/pull/191
 .. _`PR #192`: https://github.com/jquast/wcwidth/pull/192
 .. _`PR #193`: https://github.com/jquast/wcwidth/pull/193
+.. _`PR #194`: https://github.com/jquast/wcwidth/pull/194
+.. _`PR #195`: https://github.com/jquast/wcwidth/pull/195
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
-.. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
@@ -708,6 +701,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
 .. _`propagate_sgr()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.propagate_sgr
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
+.. _`list_versions()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_versions`
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
