@@ -131,7 +131,7 @@ __all__ = (
 
 
 @lru_cache(maxsize=2000)
-def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:
+def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 
@@ -181,7 +181,7 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     return 1
 
 
-def wcswidth(
+def wcswidth(  # pylint: disable=unused-argument
     pwcs: str,
     n: int | None = None,
     unicode_version: str = 'auto',
@@ -215,6 +215,11 @@ def wcswidth(
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
 
+    # Select wcwidth call pattern for best lru_cache performance:
+    # - ambiguous_width=1 (default): single-arg calls share cache with direct wcwidth() calls
+    # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
+    _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
+
     end = len(pwcs) if n is None else n
     total_width = 0
     idx = 0
@@ -235,8 +240,7 @@ def wcswidth(
             last_measured_idx = -2  # Prevent double application
             idx += 1
             continue
-        # measure character at current index
-        wcw = wcwidth(char, ambiguous_width=ambiguous_width)
+        wcw = _wcwidth(char)
         if wcw < 0:
             # early return -1 on C0 and C1 control characters
             return wcw
@@ -270,7 +274,7 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:
 
 
 @lru_cache(maxsize=8)
-def _wcmatch_version(given_version: str) -> str:
+def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argument
     """
     Return the supported Unicode version level.
 
@@ -447,6 +451,11 @@ def width(
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
     text_len = len(text)
 
+    # Select wcwidth call pattern for best lru_cache performance:
+    # - ambiguous_width=1 (default): single-arg calls share cache with direct wcwidth() calls
+    # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
+    _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
+
     while idx < text_len:
         char = text[idx]
 
@@ -517,7 +526,7 @@ def width(
             continue
 
         # 7. Normal characters: measure with wcwidth
-        w = wcwidth(char, ambiguous_width=ambiguous_width)
+        w = _wcwidth(char)
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)

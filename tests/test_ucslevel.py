@@ -1,7 +1,4 @@
 """Unicode version level tests for wcwidth."""
-# 3rd party
-import pytest
-
 # local
 import wcwidth
 
@@ -50,8 +47,6 @@ def test_env_var_ignored(monkeypatch):
 
 def test_unicode_version_param_ignored():
     """unicode_version parameter is ignored in wcwidth/wcswidth."""
-    latest = wcwidth.list_versions()[-1]
-
     # wcwidth should work the same regardless of unicode_version value
     assert wcwidth.wcwidth('A', unicode_version='4.1.0') == 1
     assert wcwidth.wcwidth('A', unicode_version='latest') == 1
