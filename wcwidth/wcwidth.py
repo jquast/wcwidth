@@ -258,7 +258,7 @@ def wcswidth(  # pylint: disable=unused-argument
 
 
 @lru_cache(maxsize=128)
-def _wcversion_value(ver_string: str) -> tuple[int, ...]:
+def _wcversion_value(ver_string: str) -> tuple[int, ...]:  # pragma: no cover
     """
     Integer-mapped value of given dotted version string.
 

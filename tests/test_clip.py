@@ -255,3 +255,8 @@ CLIP_CURSOR_SEQUENCE_CASES = [
 @pytest.mark.parametrize('text,start,end,expected', CLIP_CURSOR_SEQUENCE_CASES)
 def test_clip_cursor_sequences_zero_width(text, start, end, expected):
     assert clip(text, start, end) == expected
+
+
+def test_clip_tab_first_visible_with_sgr():
+    """Tab as first visible character with SGR propagation."""
+    assert clip('\x1b[31m\tb', 0, 4, tabsize=8) == '\x1b[31m    \x1b[0m'
