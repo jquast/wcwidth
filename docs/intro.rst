@@ -465,11 +465,11 @@ History
     `PR #194`_.
   * **Improved** `wrap()`_ and `clip()`_ with ``propagate_sgr=True``. `PR #194`_.
   * **Bugfix** `clip()`_ zero-width characters at clipping boundaries. `PR #194`_.
-  * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
+  * **Bugfix** OSC Hyperlinks when broken mid-text by `wrap()`_. `PR #193`_.
 
 0.4.0 *2026-01-25*
   * **New** Functions `iter_graphemes_reverse()`_, `grapheme_boundary_before()`_. `PR #192`_.
-  * **Bugfix** OSC Hyperlinks should not be broken by ``wrap()``. `PR #191`_.
+  * **Bugfix** OSC Hyperlinks should not be broken by `wrap()`_. `PR #191`_.
 
 0.3.5 *2026-01-24*
   * **Bugfix** packaging of 0.3.4 contains a failing test.
