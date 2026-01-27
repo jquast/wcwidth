@@ -458,13 +458,13 @@ History
   * **Drop Support** of many historical versions of wide and zero unicode tables.  Only the latest
     Unicode version (17.0.0) is now shipped. The related ``unicode_version='auto'`` keyword of the
     `wcwidth()`_ family of functions are ignored. `list_versions()`_ always returns a tuple of only
-    a single element of the only unicode version supported. `PR #195`_.`
+    a single element of the only unicode version supported. `PR #195`_.
   * **Performance** improvement of most common call without version or ambiguous_width specified by
-    20%. `PR #195`_
+    20%. `PR #195`_.
   * **New** Function `propagate_sgr()`_ for applying SGR state propagation to a list of lines.
-    `PR #194`_
-  * **Improved** `wrap()`_ and `clip()`_ with ``propagate_sgr=True``. `PR #194`_
-  * **Bugfix** `clip()`_ zero-width characters at clipping boundaries. `PR #194`_
+    `PR #194`_.
+  * **Improved** `wrap()`_ and `clip()`_ with ``propagate_sgr=True``. `PR #194`_.
+  * **Bugfix** `clip()`_ zero-width characters at clipping boundaries. `PR #194`_.
   * **Bugfix** OSC Hyperlinks when broken mid-text by ``wrap()``. `PR #193`_.
 
 0.4.0 *2026-01-25*
@@ -475,7 +475,7 @@ History
   * **Bugfix** packaging of 0.3.4 contains a failing test.
 
 0.3.4 *2026-01-24*
-  * **Bugfix** `center()`_ should match the eccentric `parity padding`_
+  * **Bugfix** `center()`_ should match the eccentric `parity padding`_.
     of `str.center()`_. `PR #188`_.
 
 0.3.3 *2026-01-24*
