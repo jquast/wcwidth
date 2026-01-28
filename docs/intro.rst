@@ -222,7 +222,7 @@ Use `center()`_ as replacement of `str.center()`_:
 wrap()
 ------
 
-Use function ``wrap()`` to wrap text containing terminal sequences, Unicode grapheme
+Use function `wrap()`_ to wrap text containing terminal sequences, Unicode grapheme
 clusters, and wide characters to a given display width.
 
 .. code-block:: python
