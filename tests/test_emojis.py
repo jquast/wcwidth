@@ -166,7 +166,7 @@ def test_recommended_emoji_zwj_sequences(benchmark):
     assert len(sequences) >= 1468
 
 
-@pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'emoji-zwj-sequences.txt')),
+@pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'emoji-variation-sequences.txt')),
                     reason="emoji-variation-sequences.txt is missing; run bin/update-tables.py")
 def test_recommended_variation_16_sequences(benchmark):
     """Test wcswidth of all of the unicode.org-published emoji-variation-sequences.txt."""

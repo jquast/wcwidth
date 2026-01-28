@@ -4,7 +4,6 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-tests39.txt --strip-extras requirements-tests39.in
 #
---trusted-host localhost
 
 cffi==1.17.1
     # via
