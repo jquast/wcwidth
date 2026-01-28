@@ -201,8 +201,8 @@ def test_balinese_script():
               "\u1B28"    # Category 'Lo', EAW 'N' -- BALINESE LETTER PA KAPAL
               "\u1B2E"    # Category 'Lo', EAW 'N' -- BALINESE LETTER LA
               "\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG
-    expect_length_each = (1, 1, 1, 0)
-    expect_length_phrase = 3
+    expect_length_each = (1, 1, 1, 1)
+    expect_length_phrase = 4
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -301,9 +301,9 @@ def test_devanagari_script():
               "\u0937"    # Fused, Category 'Lo', East Asian Width property 'N' -- DEVANAGARI LETTER SSA
               "\u093F")   # MatraL, Category 'Mc', East Asian Width property 'N' -- DEVANAGARI VOWEL SIGN I
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
-    expect_length_each = (1, 0, 1, 0)
+    expect_length_each = (1, 0, 1, 1)
     # I believe the final width *should* be 3.
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -321,10 +321,10 @@ def test_tamil_script():
               "\u0bb7"    # Fused, Category 'Lo', East Asian Width property 'N' -- TAMIL LETTER SSA
               "\u0bcc")   # MatraLR, Category 'Mc', East Asian Width property 'N' -- TAMIL VOWEL SIGN AU
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (3, 0, 0, 4)
-    expect_length_each = (1, 0, 1, 0)
+    expect_length_each = (1, 0, 1, 1)
 
     # I believe the final width should be about 5 or 6.
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -344,9 +344,9 @@ def test_kannada_script():
               "\u0c9d"    # Base, Category 'Lo', East Asian Width property 'N' -- KANNADA LETTER JHA
               "\u0cc8")   # MatraUR, Category 'Mc', East Asian Width property 'N' -- KANNADA VOWEL SIGN AI
     # 23107-terminal-suppt.pdf suggests should be (2, 0, 3, 1)
-    expect_length_each = (1, 0, 1, 0)
+    expect_length_each = (1, 0, 1, 1)
     # I believe the correct final width *should* be 3 or 4.
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))

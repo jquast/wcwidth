@@ -167,7 +167,7 @@ class TableEntry:
         # Cf Format
         # Zl Line Separator
         # Zp Paragraph Separator
-        if self.properties[0] in ('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp'):
+        if self.properties[0] in ('Me', 'Mn', 'Cf', 'Zl', 'Zp'):
             return wide == 0
         # F  Fullwidth
         # W  Wide
@@ -379,7 +379,7 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
                                     wide=2)
 
     # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
-    # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
+    # but also zero-width category 'Mn' in DerivedGeneralCategory!
     table[version].values = table[version].values.difference(parse_category(
         fname=UnicodeDataFile.DerivedGeneralCategory(version),
         wide=0).values)

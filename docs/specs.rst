@@ -21,15 +21,14 @@ return value of of :func:`wcwidth.wcswidth` is -1.
 Width of 0
 ----------
 
-Any characters with the ``Default_Ignorable_Code_Point`` property in
+Any characters with the `Default_Ignorable_Code_Point`_ property in
 `DerivedCoreProperties.txt`_ files, 4,174 characters, excluding `U+00AD`_ SOFT HYPHEN
 (width 1) and `U+115F`_ HANGUL CHOSEONG FILLER (width 2).
 
-Any characters defined by category codes in `DerivedGeneralCategory.txt`_ files:
+Any characters defined by `General Category`_ codes in `DerivedGeneralCategory.txt`_ files:
 
 - 'Me': Enclosing Combining Mark, aprox. 13 characters.
 - 'Mn': Nonspacing Combining Mark, aprox. 1,839 characters.
-- 'Mc': Spacing Mark, aprox. 443 characters.
 - 'Cf': Format control characters excluding `U+00AD`_ SOFT HYPHEN and
   `Prepended_Concatenation_Mark`_ characters, aprox. 147 characters.
 - 'Zl': `U+2028`_ LINE SEPARATOR only
@@ -52,12 +51,15 @@ Width of 1
 String characters are measured width of 1 when they are not
 measured as `Width of 0`_ or `Width of 2`_.
 
+This includes characters of category ``Mc`` (`Spacing Combining Mark`_), aprox. 443
+characters, which have positive advance width per the `Unicode specification`_.
+
 Width of 2
 ----------
 
-Any character defined by East Asian Fullwidth (``F``) or Wide (``W``)
+Any character defined by `East Asian`_ Fullwidth (``F``) or Wide (``W``)
 properties in `EastAsianWidth.txt`_ files, except those that are defined by the
-Category codes of Nonspacing Mark (``Mn``) and Spacing Mark (``Mc``).
+Category code of `Nonspacing Mark`_ (``Mn``).
 
 Any characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of unicode data file, aprox. 3 characters.
@@ -85,3 +87,9 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`EastAsianWidth.txt`: https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
 .. _`emoji-variation-sequences.txt`: https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-variation-sequences.txt
 .. _`Prepended_Concatenation_Mark`: https://www.unicode.org/reports/tr44/#Prepended_Concatenation_Mark
+.. _`Default_Ignorable_Code_Point`: https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
+.. _`General Category`: https://www.unicode.org/reports/tr44/#General_Category
+.. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/ch04.pdf#G134153
+.. _`Unicode specification`: https://www.unicode.org/versions/latest/
+.. _`East Asian`: https://www.unicode.org/reports/tr11/
+.. _`Nonspacing Mark`: https://www.unicode.org/versions/Unicode17.0.0/core-spec/chapter-5/#G1095
