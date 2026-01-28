@@ -142,6 +142,8 @@ def read_sequences_from_file(filename):
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Some sequences in text file are not compatible with 'narrow' builds")
+@pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'emoji-zwj-sequences.txt')),
+                    reason="emoji-zwj-sequences.txt; missing run bin/update-tables.py")
 def test_recommended_emoji_zwj_sequences(benchmark):
     """Test wcswidth of all of the unicode.org-published emoji-zwj-sequences.txt."""
     lines, sequences = read_sequences_from_file('emoji-zwj-sequences.txt')
@@ -164,6 +166,8 @@ def test_recommended_emoji_zwj_sequences(benchmark):
     assert len(sequences) >= 1468
 
 
+@pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'emoji-zwj-sequences.txt')),
+                    reason="emoji-variation-sequences.txt is missing; run bin/update-tables.py")
 def test_recommended_variation_16_sequences(benchmark):
     """Test wcswidth of all of the unicode.org-published emoji-variation-sequences.txt."""
     lines, sequences = read_sequences_from_file('emoji-variation-sequences.txt')

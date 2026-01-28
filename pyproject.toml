@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "wcwidth"
-version = "0.5.1"
+version = "0.5.2"
 description = "Measures the displayed width of unicode strings in a terminal"
 readme = "README.rst"
 keywords = [
@@ -60,8 +60,7 @@ include = [
   "/bin/**",
   "/code_templates/**",
   "/docs/**",
-  "/data/**",
-  "/tests/**",
+  "/tests/*.py",
   "/README.rst",
   "/LICENSE",
   "/tox.ini",

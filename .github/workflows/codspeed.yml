@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -Im pip install --upgrade pip
-          python -Im pip install -e .
-          python -Im pip install -r requirements-tests39.txt
+          python -Im pip install -e . -r requirements-tests39.txt -r requirements-update.txt
+          python bin/update-tables.py --only-fetch
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
         with:

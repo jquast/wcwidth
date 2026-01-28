@@ -108,28 +108,28 @@ jobs:
 
           python -Im pip install tox
 
-      - name: Prepare sdist and source-dir
+      - name: Build wheel
         shell: bash
         run: |
           python -Im pip install build
-          python -Im build
+          python -Im build --wheel
 
-          mkdir source-dir
-          tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
+      - name: Fetch test data files
+        if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          python -Im tox -e fetch
 
       - name: Run tests
         shell: bash
-        working-directory: ./source-dir
         run: |
-          python -Im tox -e ${{ env.TOX_PYTHON }}
+          python -Im tox -e ${{ env.TOX_PYTHON }} --installpkg dist/wcwidth-*.whl
 
       - name: Rename coverage data
         shell: bash
-        working-directory: ./source-dir
         run: |
           if test -f .coverage; then
             mv .coverage{,.${{ matrix.os }}.${{ env.TOX_PYTHON }}.$(date +"%Y-%m-%d_%H%M%S")}
-            mv .coverage.* ..
           fi
 
       - name: Upload coverage data

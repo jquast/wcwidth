@@ -3,6 +3,9 @@
 import os
 import unicodedata
 
+# 3rd party
+import pytest
+
 # local
 import wcwidth
 
@@ -297,38 +300,70 @@ def test_iter_sequences_mixed(benchmark):
 
 
 # UDHR-based benchmarks,
-# Load combined text (12 world languages)
+# Load combined text (500+ world languages)
 UDHR_FILE = os.path.join(os.path.dirname(__file__), 'udhr_combined.txt')
-with open(UDHR_FILE, encoding='utf-8') as f:
-    UDHR_TEXT = f.read()
-UDHR_LINES = UDHR_TEXT.splitlines()[:200]
+UDHR_TEXT = ''
+# parallel arrays for pre-computed widths for center/ljust/+1's
+UDHR_LINES = []
+UDHR_WIDTHS = []
+UDHR_FILLCHAR = '█'
+if os.path.exists(UDHR_FILE):
+    with open(UDHR_FILE, encoding='utf-8') as f:
+        UDHR_TEXT = f.read()
+    UDHR_LINES = [line.rstrip() for line in UDHR_TEXT.splitlines()]
+    UDHR_WIDTHS = [wcwidth.width(line) for line in UDHR_LINES]
+    for line, w in zip(UDHR_LINES, UDHR_WIDTHS):
+        assert (w > 0) == (len(line) > 0)
 
 
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
 def test_wrap_udhr(benchmark):
     """Benchmark wrap() with multilingual UDHR text."""
-    benchmark(wcwidth.wrap, UDHR_TEXT, 80)
+    result = benchmark.pedantic(wcwidth.wrap, args=(UDHR_TEXT, 80), rounds=1, iterations=1)
+    assert len(result)
+    assert all(0 <= wcwidth.width(_l) <= 80 for _l in result)
 
 
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
 def test_width_udhr(benchmark):
     """Benchmark width() with multilingual UDHR text."""
-    benchmark(wcwidth.width, UDHR_TEXT)
+    result = benchmark.pedantic(wcwidth.width, args=(UDHR_TEXT,), rounds=1, iterations=1)
+    assert result > 0
 
 
-def test_wcswidth_udhr(benchmark):
-    """Benchmark wcswidth() with multilingual UDHR text."""
-    benchmark(wcwidth.wcswidth, UDHR_TEXT)
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
+def test_width_udhr_lines(benchmark):
+    """Benchmark width() on UDHR lines."""
+    result = benchmark.pedantic(lambda: sum(wcwidth.width(line) for line in UDHR_LINES),
+                                rounds=1, iterations=1)
+    assert result > 0
 
 
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
 def test_ljust_udhr_lines(benchmark):
     """Benchmark ljust() on UDHR lines."""
-    benchmark(lambda: [wcwidth.ljust(line, 100) for line in UDHR_LINES])
+    benchmark.pedantic(lambda: [wcwidth.ljust(line, width + 1, UDHR_FILLCHAR)
+                                for line, width in zip(UDHR_LINES, UDHR_WIDTHS)],
+                       rounds=1, iterations=1)
 
 
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
 def test_rjust_udhr_lines(benchmark):
     """Benchmark rjust() on UDHR lines."""
-    benchmark(lambda: [wcwidth.rjust(line, 100) for line in UDHR_LINES])
+    benchmark.pedantic(lambda: [wcwidth.rjust(line, width + 1, UDHR_FILLCHAR)
+                                for line, width in zip(UDHR_LINES, UDHR_WIDTHS)],
+                       rounds=1, iterations=1)
 
 
+@pytest.mark.skipif(not os.path.exists(UDHR_FILE),
+                    reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py")
 def test_center_udhr_lines(benchmark):
     """Benchmark center() on UDHR lines."""
-    benchmark(lambda: [wcwidth.center(line, 100) for line in UDHR_LINES])
+    benchmark.pedantic(lambda: [wcwidth.center(line, width + 1, UDHR_FILLCHAR)
+                                for line, width in zip(UDHR_LINES, UDHR_WIDTHS)],
+                       rounds=1, iterations=1)
