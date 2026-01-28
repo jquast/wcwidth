@@ -304,10 +304,12 @@ The ``ambiguous_width`` parameter is available on all width-measuring functions:
 The most reliable method to detect whether a terminal profile is set for "Ambiguous width as wide"
 mode is to display an ambiguous character surrounded by a pair of Cursor Position Report (CPR)
 queries with a terminal in cooked or raw mode, and to parse the responses for their ``(y, x)``
-locations, and measure the difference of the ``x`` positions. This code should also check whether
-it is attached to a terminal and timeout, and then fallback to the preferred locale.
+locations and measure the difference ``x``.
 
-`jquast/blessed`_ library provides a `Terminal.detect_ambiguous_width()`_ method:
+This code should also be careful check whether it is attached to a terminal and be careful of
+possible timeout, slow network, or non-response when working with "dumb terminals" like a CI build.
+
+`jquast/blessed`_ library provides such a helping `Terminal.detect_ambiguous_width()`_ method:
 
 .. code-block:: python
 
