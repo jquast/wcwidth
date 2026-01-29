@@ -267,7 +267,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         # Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
         is_ri = False
         if ucs > 0xFFFF:
-            is_ri = _bisearch(ucs, _REGIONAL_INDICATOR_TABLE)
+            is_ri = bool(_bisearch(ucs, _REGIONAL_INDICATOR_TABLE))
             if is_ri:
                 ri_count += 1
                 if ri_count % 2 == 0:
@@ -291,7 +291,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         if wcw > 0:
             last_measured_idx = idx
             last_was_emoji = (ucs > 0x7F and (
-                _bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE) or is_ri
+                bool(_bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE)) or is_ri
             ))
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
@@ -586,7 +586,7 @@ def width(
         # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
         is_ri = False
         if ucs > 0xFFFF:
-            is_ri = _bisearch(ucs, _REGIONAL_INDICATOR_TABLE)
+            is_ri = bool(_bisearch(ucs, _REGIONAL_INDICATOR_TABLE))
             if is_ri:
                 ri_count += 1
                 if ri_count % 2 == 0:
@@ -609,7 +609,7 @@ def width(
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
             last_was_emoji = (ucs > 0x7F and (
-                _bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE) or is_ri
+                bool(_bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE)) or is_ri
             ))
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
