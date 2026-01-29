@@ -1223,4 +1223,3 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
 
 if __name__ == '__main__':
     main(**parse_args())
-    assert False
