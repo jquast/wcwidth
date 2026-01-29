@@ -456,6 +456,11 @@ languages.
 History
 =======
 
+0.5.2 *unreleased*
+  * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
+    codepoints, has a more nuanced `Specification <Specification_from_pypi_>`_, and may be
+    categorized as both zero or wide.
+
 0.5.1 *2026-01-27*
   * **Updated** generated zero and wide code tables to length of 1 to complete the previously
     announced removal of historical wide and zero tables. `PR #196`_.
@@ -614,6 +619,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
+.. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/ch04.pdf#G134153
 .. _`Specification_from_pypi`: https://wcwidth.readthedocs.io/en/latest/specs.html
 .. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
@@ -659,6 +665,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #194`: https://github.com/jquast/wcwidth/pull/194
 .. _`PR #195`: https://github.com/jquast/wcwidth/pull/195
 .. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
+.. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed

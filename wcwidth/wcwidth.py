@@ -71,6 +71,7 @@ from typing import TYPE_CHECKING
 # local
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
+from .table_mc import CATEGORY_MC
 from .sgr_state import (_SGR_PATTERN,
                         _SGR_STATE_DEFAULT,
                         _sgr_state_update,
@@ -94,11 +95,17 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Literal
 
 # Pre-compute table references for the latest (and only) Unicode version.
-# This avoids dictionary lookups in the hot path.
 _LATEST_VERSION = list_versions()[-1]
 _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
+_CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
+
+# In 'parse' mode, strings longer than this are checked for cursor-movement
+# controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
+# 'ignore' to skip character-by-character parsing. The detection scan cost is
+# negligible for long strings but wasted on short ones like labels or headings.
+_WIDTH_FAST_PATH_MIN_LEN = 20
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -130,7 +137,11 @@ __all__ = (
 )
 
 
-@lru_cache(maxsize=2000)
+# maxsize=1024: western scripts need ~64 unique codepoints per session, but
+# CJK sessions may use ~2000 of ~3500 common hanzi/kanji. 1024 accommodates
+# heavy CJK use. Performance floor at 32; bisearch is ~100ns per miss.
+
+@lru_cache(maxsize=1024)
 def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
@@ -246,6 +257,10 @@ def wcswidth(  # pylint: disable=unused-argument
             return wcw
         if wcw > 0:
             last_measured_idx = idx
+        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character adds 1
+            wcw = 1
+            last_measured_idx = -2
         total_width += wcw
         idx += 1
     return total_width
@@ -253,6 +268,7 @@ def wcswidth(  # pylint: disable=unused-argument
 
 # NOTE: _wcversion_value and _wcmatch_version are no longer used internally
 # by wcwidth since version 0.5.0 (only the latest Unicode version is shipped).
+#
 # They are retained for API compatibility with external tools like ucs-detect
 # that may use these private functions.
 
@@ -262,7 +278,8 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:  # pragma: no cover
     """
     Integer-mapped value of given dotted version string.
 
-    .. note::
+    .. deprecated:: 0.3.0
+
         This function is no longer used internally by wcwidth but is retained
         for API compatibility with external tools.
 
@@ -278,14 +295,11 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
     """
     Return the supported Unicode version level.
 
-    .. note::
-        This function is no longer used internally by wcwidth but is retained
-        for API compatibility with external tools.
-
     .. deprecated:: 0.3.0
         This function now always returns the latest version.
-        The ``unicode_version`` parameter and ``UNICODE_VERSION`` environment
-        variable are ignored.
+
+        This function is no longer used internally by wcwidth but is retained
+        for API compatibility with external tools.
 
     :param given_version: Ignored. Any value is accepted for compatibility.
     :returns: The latest unicode version string.
@@ -428,7 +442,7 @@ def width(
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check for longer strings - the detection overhead hurts short string performance.
-    if control_codes == 'parse' and len(text) > 20:
+    if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences - if none, or only non-cursor-movement sequences
@@ -531,6 +545,11 @@ def width(
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
+        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character adds 1
+            current_col += 1
+            max_extent = max(max_extent, current_col)
+            last_measured_idx = -2
         idx += 1
 
     return max_extent
