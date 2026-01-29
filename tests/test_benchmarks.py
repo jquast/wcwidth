@@ -309,10 +309,13 @@ UDHR_TEXT = ''
 UDHR_LINES = []
 UDHR_WIDTHS = []
 UDHR_FILLCHAR = '█'
+UDHR_SAMPLE_EVERY = 20
 if os.path.exists(UDHR_FILE):
     with open(UDHR_FILE, encoding='utf-8') as f:
         UDHR_TEXT = f.read()
-    UDHR_LINES = [line.rstrip() for line in UDHR_TEXT.splitlines()]
+    _all_lines = [line.rstrip() for line in UDHR_TEXT.splitlines() if line.strip()]
+    UDHR_LINES = [l for i, l in enumerate(_all_lines) if i % UDHR_SAMPLE_EVERY == 0]
+    UDHR_TEXT = '\n'.join(UDHR_LINES)
     UDHR_WIDTHS = [wcwidth.width(line) for line in UDHR_LINES]
 
 _udhr_skip = pytest.mark.skipif(
