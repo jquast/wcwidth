@@ -247,7 +247,8 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
     while idx < end:
         char = pwcs[idx]
-        if char == '\u200D':
+        ucs = ord(char)
+        if ucs == 0x200D:
             # Zero Width Joiner: only skip next character when preceded
             # by an emoji (Extended_Pictographic), not after CJK or ASCII.
             if idx + 1 < end and last_measured_ucs in _EMOJI_ZWJ_SET:
@@ -255,7 +256,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             else:
                 idx += 1
             continue
-        if char == '\uFE0F' and last_measured_idx >= 0:
+        if ucs == 0xFE0F and last_measured_idx >= 0:
             # VS16 following a measured character: add 1 if that character is
             # known to be converted from narrow to wide by VS16.
             total_width += _bisearch(ord(pwcs[last_measured_idx]),
@@ -265,8 +266,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             idx += 1
             continue
         # Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
-        if char > '\uFFFF':
-            ucs = ord(char)
+        if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 # Lazy RI pairing: count preceding consecutive RIs only when the last one is
                 # received, because RI's are received so rarely its better than per-loop tracking of
@@ -295,8 +295,8 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             return wcw
         if wcw > 0:
             last_measured_idx = idx
-            last_measured_ucs = ord(char)
-        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            last_measured_ucs = ucs
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             wcw = 1
             last_measured_idx = -2
@@ -573,8 +573,10 @@ def width(
             idx += 1
             continue
 
+        ucs = ord(char)
+
         # 6. Handle VS16: converts preceding narrow character to wide
-        if char == '\uFE0F':
+        if ucs == 0xFE0F:
             if last_measured_idx == idx - 1:
                 if _bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
                     current_col += 1
@@ -584,8 +586,7 @@ def width(
             continue
 
         # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
-        if char > '\uFFFF':
-            ucs = ord(char)
+        if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 # Lazy RI pairing: count preceding consecutive RIs
                 ri_before = 0
@@ -609,8 +610,8 @@ def width(
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
-            last_measured_ucs = ord(char)
-        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            last_measured_ucs = ucs
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
