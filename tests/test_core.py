@@ -7,6 +7,7 @@ import pytest
 
 # local
 import wcwidth
+from wcwidth.wcwidth import _FAST_PATH_MIN_LEN
 
 
 def test_package_version():
@@ -319,6 +320,7 @@ def test_devanagari_script():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+    assert wcwidth.width(phrase) == expect_length_phrase
 
 
 def test_tamil_script():
@@ -340,6 +342,7 @@ def test_tamil_script():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+    assert wcwidth.width(phrase) == expect_length_phrase
 
 
 def test_kannada_script():
@@ -362,6 +365,7 @@ def test_kannada_script():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+    assert wcwidth.width(phrase) == expect_length_phrase
 
 
 def test_kannada_script_2():
@@ -384,6 +388,50 @@ def test_kannada_script_2():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+    assert wcwidth.width(phrase) == expect_length_phrase
+
+
+def test_bengali_nukta_mc():
+    # Mc following Mn (Nukta) is still counted as spacing mark.
+    #
+    # Discovered via UDHR Bengali text where wrap() produced lines exceeding the requested width.
+    # The root cause was that width() only recognized a Spacing Combining Mark (Mc) when it was
+    # *immediately* adjacent to the base character (index == last_base + 1).
+    #
+    # In Bengali, a Nukta (U+09BC, category Mn) commonly sits between the consonant and the vowel
+    # sign, so the Mc vowel sign was skipped and measured as zero instead of one.
+    #
+    # The nukta between consonant and vowel sign does not break the combining sequence, so the Mc
+    # must still be counted.
+    phrase = "\u09AF\u09BC\u09C7"
+    assert wcwidth.wcwidth("\u09C7") == 0
+    assert wcwidth.wcswidth(phrase) == 2
+    assert wcwidth.width(phrase) == 2
+
+
+@pytest.mark.parametrize("repeat", [1, _FAST_PATH_MIN_LEN])
+def test_mc_width_consistency(repeat):
+    # width(), wcswidth(), and per-grapheme width sums must all agree.
+    #
+    # The repeat parameter ensures both the short (parse) and long (fast) code
+    # paths of width() are exercised.  At repeat=1 the phrases are short enough
+    # to go through character-by-character parse mode.  At repeat=_FAST_PATH_MIN_LEN
+    # every phrase exceeds the threshold and takes the fast path that delegates
+    # to wcswidth().
+    phrases = [
+        "\u0915\u094D\u0937\u093F",
+        "\u0b95\u0bcd\u0bb7\u0bcc",
+        "\u0cb0\u0ccd\u0c9d\u0cc8",
+        "\u0cb0\u0cbc\u0ccd\u0c9a",
+        "\u09AF\u09BC\u09C7",
+        "\u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
+        "\u0915\u09BE\u0999\u09CD\u0996\u09BE",
+    ]
+    for phrase in phrases:
+        text = phrase * repeat
+        assert wcwidth.width(text) == wcwidth.wcswidth(text)
+        grapheme_sum = sum(wcwidth.width(g) for g in wcwidth.iter_graphemes(text))
+        assert wcwidth.width(text) == grapheme_sum
 
 
 def test_soft_hyphen():

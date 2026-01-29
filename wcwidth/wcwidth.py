@@ -101,6 +101,10 @@ _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 _CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
 
+# Minimum string length for width() to attempt the fast path that bypasses
+# character-by-character parse mode and delegates to wcswidth() instead.
+_FAST_PATH_MIN_LEN = 20
+
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
     ''.join(chr(c) for c in range(0x00, 0x20)) +   # C0: NUL through US (including tab)
@@ -432,7 +436,7 @@ def width(
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check for longer strings - the detection overhead hurts short string performance.
-    if control_codes == 'parse' and len(text) > 20:
+    if control_codes == 'parse' and len(text) > _FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences - if none, or only non-cursor-movement sequences

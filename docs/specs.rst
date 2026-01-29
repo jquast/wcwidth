@@ -69,9 +69,12 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 `emoji-variation-sequences.txt`_ as ``emoji style``.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
-character when measured in sequence by :func:`wcwidth.wcswidth`. The ``Mc``
-character adds +1 to the total width, reflecting its *positive advance width*
-as defined in `General Category`_ (Table 4-4).
+character when measured in sequence by :func:`wcwidth.wcswidth` or
+:func:`wcwidth.width`. The ``Mc`` character adds +1 to the total width,
+reflecting its *positive advance width* as defined in `General Category`_
+(Table 4-4). Zero-width combining marks (``Mn``) between the base character
+and the ``Mc`` do not break the association — for example, a consonant followed
+by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001

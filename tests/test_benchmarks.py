@@ -352,6 +352,24 @@ def test_width_udhr_lines(benchmark, text, lines, widths):
 
 @_udhr_skip
 @pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
+def test_width_wcswidth_consistency_udhr(benchmark, text, lines, widths):
+    """Verify width() and wcswidth() agree for printable multilingual text."""
+    def check():
+        failures = []
+        for line in lines:
+            if not line or not line.isprintable():
+                continue
+            w = wcwidth.width(line)
+            wcs = wcwidth.wcswidth(line)
+            if w != wcs:
+                failures.append((line[:60], w, wcs))
+        return failures
+    failures = benchmark.pedantic(check, rounds=1, iterations=1)
+    assert not failures
+
+
+@_udhr_skip
+@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
 def test_ljust_udhr_lines(benchmark, text, lines, widths):
     """Benchmark ljust() on UDHR lines."""
     benchmark.pedantic(lambda: [wcwidth.ljust(line, w + 1, UDHR_FILLCHAR)
