@@ -94,6 +94,24 @@ reflecting its *positive advance width* as defined in `General Category`_
 and the ``Mc`` do not break the association — for example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
+Virama Conjunct Formation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Brahmic scripts, a ``Virama`` (as defined by `Indic_Syllabic_Category`_ in
+`IndicSyllabicCategory.txt`_) between two consonants triggers conjunct formation:
+the terminal's shaping engine (HarfBuzz/CoreText) merges the consonants into a
+single ligature glyph occupying one cell. A ``Consonant`` (also defined by
+`Indic_Syllabic_Category`_) immediately following a ``Virama`` contributes 0
+width when measured in sequence by :func:`wcwidth.wcswidth` or
+:func:`wcwidth.width`.
+
+Chained conjuncts (C + virama + C + virama + C) collapse recursively — each
+virama-consonant pair reduces by one cell.
+
+This rule applies across all Brahmic scripts including Devanagari, Bengali,
+Gujarati, Gurmukhi, Oriya, Tamil, Telugu, Kannada, Malayalam, and Sinhala.
+See `L2/2023/23107`_ for background on complex script support in terminals.
+
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F
@@ -131,3 +149,6 @@ by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 .. _`Emoji Modifier`: https://unicode.org/reports/tr51/#Emoji_Modifiers
 .. _`Extended_Pictographic`: https://www.unicode.org/reports/tr51/#def_extended_pictographic
 .. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
+.. _`IndicSyllabicCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
+.. _`Indic_Syllabic_Category`: https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+.. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf

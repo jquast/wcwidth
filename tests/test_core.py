@@ -313,8 +313,8 @@ def test_devanagari_script():
               "\u093F")   # MatraL, Category 'Mc', East Asian Width property 'N' -- DEVANAGARI VOWEL SIGN I
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
     expect_length_each = (1, 0, 1, 0)
-    # wcswidth detects Mc following base, adding +1 for the spacing mark
-    expect_length_phrase = 3
+    # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -335,8 +335,8 @@ def test_tamil_script():
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (3, 0, 0, 4)
     expect_length_each = (1, 0, 1, 0)
 
-    # wcswidth detects Mc following base, adding +1 for the spacing mark
-    expect_length_phrase = 3
+    # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -358,8 +358,8 @@ def test_kannada_script():
               "\u0cc8")   # MatraUR, Category 'Mc', East Asian Width property 'N' -- KANNADA VOWEL SIGN AI
     # 23107-terminal-suppt.pdf suggests should be (2, 0, 3, 1)
     expect_length_each = (1, 0, 1, 0)
-    # wcswidth detects Mc following base, adding +1 for the spacing mark
-    expect_length_phrase = 3
+    # virama conjunct collapses RA+virama+JHA into one cell, Mc adds +1
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -381,8 +381,8 @@ def test_kannada_script_2():
               "\u0c9a")   # Subjoin, Category 'Mc', East Asian Width property 'N' -- KANNADA LETTER CA
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
     expect_length_each = (1, 0, 0, 1)
-    # I believe the final width is correct, but maybe for the wrong reasons!
-    expect_length_phrase = 2
+    # virama conjunct collapses RA(+Nukta)+virama+CA into one cell
+    expect_length_phrase = 1
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -435,6 +435,20 @@ def test_mc_width_consistency(repeat):
         assert wcwidth.width(text) == wcwidth.wcswidth(text)
         grapheme_sum = sum(wcwidth.width(g) for g in wcwidth.iter_graphemes(text))
         assert wcwidth.width(text) == grapheme_sum
+
+
+@pytest.mark.parametrize("phrase,expected", [
+    ("\u0999\u09CD\u0997\u09C7", 2),
+    ("\u0915\u094D\u0924\u093F", 2),
+    ("\u0915\u094D\u0930\u093F", 2),
+    ("\u0A95\u0ACD\u0A95\u0ACB", 2),
+    ("\u0938\u094D\u0924\u094D\u0930", 1),
+    ("\u0938\u094D\u0924", 1),
+    ("\u0915\u094D\u0020", 2),
+])
+def test_virama_conjunct(phrase, expected):
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
 
 
 def test_soft_hyphen():
