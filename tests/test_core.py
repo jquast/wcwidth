@@ -212,6 +212,13 @@ def test_balinese_script():
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
 
+    # verify width() parse mode also handles Mc correctly
+    assert wcwidth.width(phrase) == expect_length_phrase
+
+    # standalone Mc has zero width
+    assert wcwidth.wcswidth("\u1B44") == 0
+    assert wcwidth.width("\u1B44") == 0
+
 
 def test_kr_jamo():
     """
