@@ -258,6 +258,7 @@ def wcswidth(  # pylint: disable=unused-argument
 
 # NOTE: _wcversion_value and _wcmatch_version are no longer used internally
 # by wcwidth since version 0.5.0 (only the latest Unicode version is shipped).
+#
 # They are retained for API compatibility with external tools like ucs-detect
 # that may use these private functions.
 
@@ -267,7 +268,8 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:  # pragma: no cover
     """
     Integer-mapped value of given dotted version string.
 
-    .. note::
+    .. deprecated:: 0.3.0
+
         This function is no longer used internally by wcwidth but is retained
         for API compatibility with external tools.
 
@@ -283,14 +285,12 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
     """
     Return the supported Unicode version level.
 
-    .. note::
-        This function is no longer used internally by wcwidth but is retained
-        for API compatibility with external tools.
 
     .. deprecated:: 0.3.0
         This function now always returns the latest version.
-        The ``unicode_version`` parameter and ``UNICODE_VERSION`` environment
-        variable are ignored.
+
+        This function is no longer used internally by wcwidth but is retained
+        for API compatibility with external tools.
 
     :param given_version: Ignored. Any value is accepted for compatibility.
     :returns: The latest unicode version string.
