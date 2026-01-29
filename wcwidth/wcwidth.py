@@ -249,9 +249,9 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         char = pwcs[idx]
         ucs = ord(char)
         if ucs == 0x200D:
-            # Zero Width Joiner: only skip next character when preceded
-            # by an emoji (Extended_Pictographic), not after CJK or ASCII.
-            if idx + 1 < end and last_measured_ucs in _EMOJI_ZWJ_SET:
+            # Zero Width Joiner: skip next character unconditionally.
+            # Non-emoji + ZWJ is undefined so we don't care the cost to check.
+            if idx + 1 < end:
                 idx += 2
             else:
                 idx += 1
@@ -560,9 +560,9 @@ def width(
             idx += 1
             continue
 
-        # 4. Handle ZWJ: only skip next char when preceded by emoji
+        # 4. Handle ZWJ: skip next char unconditionally.
         if char == '\u200D':
-            if idx + 1 < text_len and last_measured_ucs in _EMOJI_ZWJ_SET:
+            if idx + 1 < text_len:
                 idx += 2
             else:
                 idx += 1
