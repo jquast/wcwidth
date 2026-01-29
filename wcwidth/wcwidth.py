@@ -81,6 +81,7 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
+from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -100,6 +101,9 @@ _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 _CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
+_EXTENDED_PICTOGRAPHIC_TABLE = EXTENDED_PICTOGRAPHIC
+_REGIONAL_INDICATOR_TABLE = GRAPHEME_REGIONAL_INDICATOR
+_FITZPATRICK_RANGE = (0x1F3FB, 0x1F3FF)
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
@@ -192,7 +196,7 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     return 1
 
 
-def wcswidth(  # pylint: disable=unused-argument
+def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branches
     pwcs: str,
     n: int | None = None,
     unicode_version: str = 'auto',
@@ -220,7 +224,8 @@ def wcswidth(  # pylint: disable=unused-argument
 
     See :ref:`Specification` for details of cell measurement.
     """
-    # this 'n' argument is a holdover for POSIX function
+    # this 'n' argument is a holdover for POSIX function.
+    # pylint:disable=too-complex
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
@@ -235,11 +240,18 @@ def wcswidth(  # pylint: disable=unused-argument
     total_width = 0
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16
+    last_was_emoji = False  # Track emoji context for ZWJ
+    ri_count = 0  # Track consecutive Regional Indicator count
     while idx < end:
         char = pwcs[idx]
+        ucs = ord(char)
         if char == '\u200D':
-            # Zero Width Joiner, do not measure this or next character
-            idx += 2
+            # Zero Width Joiner: only skip next character when preceded
+            # by an emoji (Extended_Pictographic), not after CJK or ASCII.
+            if last_was_emoji and idx + 1 < end:
+                idx += 2
+            else:
+                idx += 1
             continue
         if char == '\uFE0F' and last_measured_idx >= 0:
             # VS16 following a measured character: add 1 if that character is
@@ -249,15 +261,39 @@ def wcswidth(  # pylint: disable=unused-argument
             total_width += _bisearch(ord(pwcs[last_measured_idx]),
                                      VS16_NARROW_TO_WIDE["9.0.0"])
             last_measured_idx = -2  # Prevent double application
+            last_was_emoji = True
             idx += 1
             continue
+        # Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
+        is_ri = False
+        if ucs > 0xFFFF:
+            is_ri = _bisearch(ucs, _REGIONAL_INDICATOR_TABLE)
+            if is_ri:
+                ri_count += 1
+                if ri_count % 2 == 0:
+                    # Second RI in pair: contributes 0 (pair = one 2-cell flag)
+                    idx += 1
+                    last_was_emoji = True
+                    continue
+                # First or unpaired RI: measured normally (width 2 from table)
+                last_was_emoji = True
+            # Fitzpatrick modifier: zero-width when following emoji base
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]
+                    and last_was_emoji):
+                idx += 1
+                continue
+        if not is_ri:
+            ri_count = 0
         wcw = _wcwidth(char)
         if wcw < 0:
             # early return -1 on C0 and C1 control characters
             return wcw
         if wcw > 0:
             last_measured_idx = idx
-        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            last_was_emoji = (ucs > 0x7F and (
+                _bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE) or is_ri
+            ))
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             wcw = 1
             last_measured_idx = -2
@@ -463,6 +499,8 @@ def width(
     max_extent = 0
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
+    last_was_emoji = False  # Track emoji context for ZWJ
+    ri_count = 0  # Track consecutive Regional Indicator count
     text_len = len(text)
 
     # Select wcwidth call pattern for best lru_cache performance:
@@ -520,9 +558,12 @@ def width(
             idx += 1
             continue
 
-        # 4. Handle ZWJ (skip this and next character)
+        # 4. Handle ZWJ: only skip next char when preceded by emoji
         if char == '\u200D':
-            idx += 2
+            if last_was_emoji and idx + 1 < text_len:
+                idx += 2
+            else:
+                idx += 1
             continue
 
         # 5. Handle other zero-width characters (control chars)
@@ -530,14 +571,36 @@ def width(
             idx += 1
             continue
 
+        ucs = ord(char)
+
         # 6. Handle VS16: converts preceding narrow character to wide
         if char == '\uFE0F':
             if last_measured_idx == idx - 1:
                 if _bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
                     current_col += 1
                     max_extent = max(max_extent, current_col)
+            last_was_emoji = True
             idx += 1
             continue
+
+        # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
+        is_ri = False
+        if ucs > 0xFFFF:
+            is_ri = _bisearch(ucs, _REGIONAL_INDICATOR_TABLE)
+            if is_ri:
+                ri_count += 1
+                if ri_count % 2 == 0:
+                    last_was_emoji = True
+                    idx += 1
+                    continue
+                last_was_emoji = True
+            # 6c. Fitzpatrick modifier: zero-width when following emoji base
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]
+                    and last_was_emoji):
+                idx += 1
+                continue
+        if not is_ri:
+            ri_count = 0
 
         # 7. Normal characters: measure with wcwidth
         w = _wcwidth(char)
@@ -545,7 +608,10 @@ def width(
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
-        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            last_was_emoji = (ucs > 0x7F and (
+                _bisearch(ucs, _EXTENDED_PICTOGRAPHIC_TABLE) or is_ri
+            ))
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
