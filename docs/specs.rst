@@ -73,7 +73,6 @@ character when measured in sequence by :func:`wcwidth.wcswidth`. The ``Mc``
 character adds +1 to the total width, reflecting its *positive advance width*
 as defined in `General Category`_ (Table 4-4).
 
-
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F

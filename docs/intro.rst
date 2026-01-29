@@ -458,7 +458,8 @@ History
 
 0.5.2 *unreleased*
   * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
-    codepoints, previously described as zero-width are now narrow. `PR #200`_.
+    codepoints, has a more nuanced `Specification <Specification_from_pypi_>`_, and may be
+    categorized as both zero or wide.
 
 0.5.1 *2026-01-27*
   * **Updated** generated zero and wide code tables to length of 1 to complete the previously
