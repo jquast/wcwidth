@@ -108,14 +108,18 @@ jobs:
 
           python -Im pip install tox
 
-      - name: Build wheel
+      - name: Prepare sdist and source-dir
         shell: bash
         run: |
           python -Im pip install build
-          python -Im build --wheel
+          python -Im build
+
+          mkdir source-dir
+          tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
 
       - name: Fetch test data files
         if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'
+        continue-on-error: true
         shell: bash
         run: |
           python -Im tox -e fetch
