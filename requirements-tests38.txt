@@ -10,6 +10,8 @@ coverage==5.5
     # via
     #   -r requirements-tests38.in
     #   pytest-cov
+execnet==2.1.2
+    # via pytest-xdist
 iniconfig==2.1.0
     # via pytest
 packaging==25.0
@@ -24,7 +26,10 @@ pytest==6.2.5
     # via
     #   -r requirements-tests38.in
     #   pytest-cov
+    #   pytest-xdist
 pytest-cov==5.0.0
+    # via -r requirements-tests38.in
+pytest-xdist==3.5.0
     # via -r requirements-tests38.in
 toml==0.10.2
     # via

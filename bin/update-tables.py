@@ -11,10 +11,12 @@ https://github.com/jquast/wcwidth
 from __future__ import annotations
 
 # std imports
+import io
 import os
 import re
 import string
 import difflib
+import zipfile
 import argparse
 import datetime
 import functools
@@ -51,9 +53,10 @@ JINJA_ENV = jinja2.Environment(
 UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
+READ_TIMEOUT = int(os.environ.get('READ_TIMEOUT', '30'))
 FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
-BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '0.1'))
+BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '1.0'))
 
 # Global flag set by main() from --check-last-modified CLI argument.
 # When True, perform HTTP HEAD requests to check if remote files are newer.
@@ -818,6 +821,7 @@ class UnicodeDataFile:
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
     URL_PROP_LIST = 'https://www.unicode.org/Public/{version}/ucd/PropList.txt'
     URL_GRAPHEME_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakTest.txt'
+    URL_UDHR_ZIP = 'http://efele.net/udhr/assemblies/udhr_txt.zip'
 
     @classmethod
     def DerivedAge(cls) -> str:
@@ -896,6 +900,47 @@ class UnicodeDataFile:
         cls.do_retrieve(url=cls.URL_GRAPHEME_BREAK_TEST.format(version=version), fname=fname)
         return fname
 
+    @classmethod
+    def UDHRCombined(cls) -> str:
+        """
+        Fetch UDHR zip, extract and combine all translations into a single file.
+
+        Downloads http://efele.net/udhr/assemblies/udhr_txt.zip, extracts the text files,
+        and combines them with '--' separator between translations.
+        """
+        fname = os.path.join(PATH_TESTS, 'udhr_combined.txt')
+        cls.do_retrieve_udhr_combined(url=cls.URL_UDHR_ZIP, fname=fname)
+        return fname
+
+    @staticmethod
+    def do_retrieve_udhr_combined(url: str, fname: str) -> None:
+        """Fetch UDHR zip file, extract, and combine all translations."""
+        if not UnicodeDataFile.is_url_newer(url, fname):
+            return
+
+        session = UnicodeDataFile.get_http_session()
+        print(f"fetching {url}: ", end='', flush=True)
+        resp = session.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+        resp.raise_for_status()
+        print('ok')
+
+        print(f"extracting and combining to {fname}: ", end='', flush=True)
+        combined_content = []
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+            txt_files = sorted([n for n in zf.namelist() if n.endswith('.txt')])
+            for txt_name in txt_files:
+                with zf.open(txt_name) as f:
+                    content = f.read().decode('utf-8').rstrip()
+                    combined_content.append(f'----\n\n{content}\n')
+
+        folder = os.path.dirname(fname)
+        if folder and not os.path.exists(folder):
+            os.makedirs(folder)
+
+        with open(fname, 'w', encoding='utf-8', newline='\n') as fout:
+            fout.writelines(combined_content)
+        print('ok')
+
     @staticmethod
     def do_retrieve(url: str, fname: str) -> None:
         """Retrieve given url to target filepath fname."""
@@ -905,7 +950,7 @@ class UnicodeDataFile:
         if not UnicodeDataFile.is_url_newer(url, fname):
             return
         session = UnicodeDataFile.get_http_session()
-        resp = session.get(url, timeout=CONNECT_TIMEOUT)
+        resp = session.get(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
         resp.raise_for_status()
         print(f"saving {fname}: ", end='', flush=True)
         with open(fname, 'wb') as fout:
@@ -919,7 +964,7 @@ class UnicodeDataFile:
             return True
         if CHECK_LAST_MODIFIED:
             session = UnicodeDataFile.get_http_session()
-            resp = session.head(url, timeout=CONNECT_TIMEOUT)
+            resp = session.head(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
             resp.raise_for_status()
             remote_url_dt = dateutil.parser.parse(resp.headers['Last-Modified']).astimezone()
             local_file_dt = datetime.datetime.fromtimestamp(os.path.getmtime(fname)).astimezone()
@@ -929,10 +974,23 @@ class UnicodeDataFile:
     @functools.cache
     def get_http_session() -> requests.Session:
         session = requests.Session()
-        retries = urllib3.util.Retry(total=MAX_RETRIES,
-                                     backoff_factor=BACKOFF_FACTOR,
-                                     status_forcelist=[500, 502, 503, 504, 520])
-        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+        session.headers.update({
+            'User-Agent': 'wcwidth-update-tables/1.0 (https://github.com/jquast/wcwidth)'
+        })
+        retries = urllib3.util.Retry(
+            total=MAX_RETRIES,
+            connect=MAX_RETRIES,
+            read=MAX_RETRIES,
+            backoff_factor=BACKOFF_FACTOR,
+            backoff_jitter=BACKOFF_FACTOR,
+            status_forcelist=[408, 429, 500, 502, 503, 504, 520],
+            allowed_methods=['HEAD', 'GET'],
+            raise_on_status=False,
+            respect_retry_after_header=True,
+        )
+        adapter = requests.adapters.HTTPAdapter(max_retries=retries)
+        session.mount('https://', adapter)
+        session.mount('http://', adapter)
         return session
 
     @staticmethod
@@ -1041,6 +1099,11 @@ def parse_args() -> dict[str, Any]:
         epilog='https://github.com/jquast/wcwidth'
     )
     parser.add_argument(
+        '--only-fetch',
+        action='store_true',
+        help='Only fetch data files without processing or code generation'
+    )
+    parser.add_argument(
         '--fetch-all-versions',
         action='store_true',
         help='Fetch emoji variation sequences and ZWJ sequences for all Unicode versions '
@@ -1054,11 +1117,52 @@ def parse_args() -> dict[str, Any]:
     return vars(parser.parse_args())
 
 
-def main(fetch_all_versions: bool = False, check_last_modified: bool = False) -> None:
+def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
+    """
+    Fetch all required Unicode data files.
+
+    Fetches data files for code generation and test files. Files are only downloaded if they don't
+    exist locally or if CHECK_LAST_MODIFIED is True and the remote file is newer.
+    """
+    # Fetch DerivedAge first to determine available Unicode versions
+    UnicodeDataFile.DerivedAge()
+    version = fetch_unicode_versions()[-1]
+
+    # Fetch data files required for code generation
+    UnicodeDataFile.EastAsianWidth(version)
+    UnicodeDataFile.DerivedGeneralCategory(version)
+    UnicodeDataFile.EmojiVariationSequences(version)
+    UnicodeDataFile.LegacyEmojiVariationSequences()
+    UnicodeDataFile.GraphemeBreakProperty(version)
+    UnicodeDataFile.EmojiData(version)
+    UnicodeDataFile.DerivedCoreProperties(version)
+    UnicodeDataFile.PropList(version)
+
+    # Fetch test data files
+    UnicodeDataFile.TestEmojiVariationSequences()
+    UnicodeDataFile.TestEmojiZWJSequences()
+    UnicodeDataFile.TestGraphemeBreakTest()
+    UnicodeDataFile.UDHRCombined()
+
+    # Fetch all legacy emoji files if requested
+    if fetch_all_versions:
+        fetch_all_emoji_files()
+
+
+def main(only_fetch: bool = False, fetch_all_versions: bool = False,
+         check_last_modified: bool = False) -> None:
     """Update east-asian, combining and zero width tables."""
     # Set global flag for HTTP requests to check Last-Modified headers
     global CHECK_LAST_MODIFIED
     CHECK_LAST_MODIFIED = check_last_modified
+
+    # Always fetch data files first
+    fetch_all_data_files(fetch_all_versions)
+
+    # Exit early if only fetching was requested
+    if only_fetch:
+        print('Fetch complete (--only-fetch mode, skipping code generation)')
+        return
 
     # This defines which jinja source templates map to which output filenames,
     # and what function defines the source data. We hope to add more source
@@ -1087,15 +1191,6 @@ def main(fetch_all_versions: bool = False, check_last_modified: bool = False) ->
         else:
             assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
             print('ok')
-
-    # fetch latest test data files, used by our automatic tests
-    UnicodeDataFile.TestEmojiVariationSequences()
-    UnicodeDataFile.TestEmojiZWJSequences()
-    UnicodeDataFile.TestGraphemeBreakTest()
-
-    # fetch all legacy emoji files if requested
-    if fetch_all_versions:
-        fetch_all_emoji_files()
 
 
 if __name__ == '__main__':

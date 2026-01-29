@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+.. deprecated:: 0.5.0
+
+This file depends on a previous version of wcwidth API that offered multiple versions of each
+unicode table. It is just useful for investigative purposes and kept for the discoveries marked
+below.
+
 This is a small script to make an inquiry into the version history of unicode data tables, and to
 validate conflicts in the tables as they are published:
 
@@ -37,7 +43,6 @@ Category code was changed from 'W' to 'N':
     -EastAsianWidth-6.1.0.txt:11A3;W # HANGUL JUNGSEONG A-EU
     +EastAsianWidth-6.2.0.txt:11A3;N # HANGUL JUNGSEONG A-EU
 
-
 2.
 
     value 0x1cf2 in table ZERO_WIDTH version 11.0.0 is not defined in 12.0.0 from range ('0x1cf2', '0x1cf4')
@@ -58,6 +63,7 @@ Category code was changed from 'Mc' to 'Lo':
 
     -DerivedGeneralCategory-7.0.0.txt:19B0..19C0    ; Mc #  [17] NEW TAI LUE VOWEL SIGN VOWEL SHORTENER..NEW TAI LUE VOWEL SIGN IY
     +DerivedGeneralCategory-8.0.0.txt:19B0..19C9    ; Lo #  [26] NEW TAI LUE VOWEL SIGN VOWEL SHORTENER..NEW TAI LUE TONE MARK-2
+
 """
 # std imports
 import logging

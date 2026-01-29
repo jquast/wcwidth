@@ -1,5 +1,6 @@
 # for python3.8
 pytest<7
 pytest-cov
+pytest-xdist
 coverage[toml]<6
 packaging<26

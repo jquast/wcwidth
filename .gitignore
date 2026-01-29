@@ -15,4 +15,4 @@ data
 .DS_Store
 .idea
 .python-version
-
+tests/*.txt
