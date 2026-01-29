@@ -535,10 +535,11 @@ def width(
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
-        elif last_measured_idx == idx - 1 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
+            last_measured_idx = -2
         idx += 1
 
     return max_extent
