@@ -6,8 +6,13 @@ import unicodedata
 # 3rd party
 import pytest
 
+# std imports
+import sys
+
 # local
 import wcwidth
+
+_wcwidth_module = sys.modules['wcwidth.wcwidth']
 
 
 def test_wcwidth_ascii(benchmark):
@@ -366,6 +371,29 @@ def test_width_wcswidth_consistency_udhr(benchmark, text, lines, widths):
         return failures
     failures = benchmark.pedantic(check, rounds=1, iterations=1)
     assert not failures
+
+
+@_udhr_skip
+@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
+def test_width_fastpath_integrity_udhr(benchmark, text, lines, widths):
+    """Verify width() produces identical results with and without the fast path.
+
+    The fast path (for strings longer than _WIDTH_FAST_PATH_MIN_LEN) delegates to
+    wcswidth().  The parse path processes character-by-character.  Both must
+    produce the same total across all UDHR lines.
+    """
+    saved = _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN
+
+    def check():
+        _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 0
+        fast_total = sum(wcwidth.width(line) for line in lines)
+        _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 999_999
+        parse_total = sum(wcwidth.width(line) for line in lines)
+        return fast_total, parse_total
+
+    fast_total, parse_total = benchmark.pedantic(check, rounds=1, iterations=1)
+    _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = saved
+    assert fast_total == parse_total
 
 
 @_udhr_skip
