@@ -456,6 +456,10 @@ languages.
 History
 =======
 
+0.5.2 *unreleased*
+  * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
+    codepoints, previously described as zero-width are now narrow. `PR #200`_.
+
 0.5.1 *2026-01-27*
   * **Updated** generated zero and wide code tables to length of 1 to complete the previously
     announced removal of historical wide and zero tables. `PR #196`_.
@@ -659,6 +663,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #194`: https://github.com/jquast/wcwidth/pull/194
 .. _`PR #195`: https://github.com/jquast/wcwidth/pull/195
 .. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
+.. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
