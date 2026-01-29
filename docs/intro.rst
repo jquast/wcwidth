@@ -455,10 +455,9 @@ languages.
 History
 =======
 
-0.5.2 *unreleased*
-  * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
-    codepoints, has a more nuanced specification_, and may be categorized as both zero or wide.
-    `PR #200`.
+0.5.2 *2026-01-28*
+  * **Bugfix** Measurement of category ``Mc`` (`Spacing Combining Mark`_), approx.  443, has a more
+    nuanced specification_, and may be categorized as either zero or wide. `PR #200`.
   * **Updated** Data files used in some automatic tests are no longer distributed. `PR #199`_
 
 0.5.1 *2026-01-27*
