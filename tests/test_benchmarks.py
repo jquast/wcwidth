@@ -303,23 +303,17 @@ def test_iter_sequences_mixed(benchmark):
 
 
 # UDHR-based benchmarks,
-# Load combined text (500+ world languages), split into 10k-line chunks
+# Load combined text (500+ world languages)
 UDHR_FILE = os.path.join(os.path.dirname(__file__), 'udhr_combined.txt')
-UDHR_CHUNK_SIZE = 10_000
-UDHR_CHUNKS = []
+UDHR_TEXT = ''
+UDHR_LINES = []
+UDHR_WIDTHS = []
 UDHR_FILLCHAR = '█'
 if os.path.exists(UDHR_FILE):
     with open(UDHR_FILE, encoding='utf-8') as f:
-        all_lines = [line.rstrip() for line in f]
-    for start in range(0, len(all_lines), UDHR_CHUNK_SIZE):
-        end = min(start + UDHR_CHUNK_SIZE, len(all_lines))
-        chunk_lines = all_lines[start:end]
-        chunk_text = '\n'.join(chunk_lines)
-        chunk_widths = [wcwidth.width(line) for line in chunk_lines]
-        UDHR_CHUNKS.append(pytest.param(
-            chunk_text, chunk_lines, chunk_widths,
-            id=f"udhr_data_lines_{start}_{end}",
-        ))
+        UDHR_TEXT = f.read()
+    UDHR_LINES = [line.rstrip() for line in UDHR_TEXT.splitlines()]
+    UDHR_WIDTHS = [wcwidth.width(line) for line in UDHR_LINES]
 
 _udhr_skip = pytest.mark.skipif(
     not os.path.exists(UDHR_FILE),
@@ -328,38 +322,34 @@ _udhr_skip = pytest.mark.skipif(
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_wrap_udhr(benchmark, text, lines, widths):
+def test_wrap_udhr(benchmark):
     """Benchmark wrap() with multilingual UDHR text."""
-    result = benchmark.pedantic(wcwidth.wrap, args=(text, 80), rounds=1, iterations=1)
+    result = benchmark.pedantic(wcwidth.wrap, args=(UDHR_TEXT, 80), rounds=1, iterations=1)
     assert len(result)
     assert all(0 <= wcwidth.width(_l) <= 80 for _l in result)
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_width_udhr(benchmark, text, lines, widths):
+def test_width_udhr(benchmark):
     """Benchmark width() with multilingual UDHR text."""
-    result = benchmark.pedantic(wcwidth.width, args=(text,), rounds=1, iterations=1)
+    result = benchmark.pedantic(wcwidth.width, args=(UDHR_TEXT,), rounds=1, iterations=1)
     assert result > 0
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_width_udhr_lines(benchmark, text, lines, widths):
+def test_width_udhr_lines(benchmark):
     """Benchmark width() on individual UDHR lines."""
-    result = benchmark.pedantic(lambda: sum(wcwidth.width(line) for line in lines),
+    result = benchmark.pedantic(lambda: sum(wcwidth.width(line) for line in UDHR_LINES),
                                 rounds=1, iterations=1)
     assert result > 0
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_width_wcswidth_consistency_udhr(benchmark, text, lines, widths):
+def test_width_wcswidth_consistency_udhr(benchmark):
     """Verify width() and wcswidth() agree for printable multilingual text."""
     def check():
         failures = []
-        for line in lines:
+        for line in UDHR_LINES:
             if not line or not line.isprintable():
                 continue
             w = wcwidth.width(line)
@@ -372,22 +362,15 @@ def test_width_wcswidth_consistency_udhr(benchmark, text, lines, widths):
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_width_fastpath_integrity_udhr(benchmark, text, lines, widths):
-    """
-    Verify width() produces identical results with and without the fast path.
-
-    The fast path (for strings longer than _WIDTH_FAST_PATH_MIN_LEN) delegates to wcswidth().  The
-    parse path processes character-by-character.  Both must produce the same total across all UDHR
-    lines.
-    """
+def test_width_fastpath_integrity_udhr(benchmark):
+    """Verify width() produces identical results with and without the fast path."""
     saved = _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN
 
     def check():
         _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 0
-        fast_total = sum(wcwidth.width(line) for line in lines)
+        fast_total = sum(wcwidth.width(line) for line in UDHR_LINES)
         _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 999_999
-        parse_total = sum(wcwidth.width(line) for line in lines)
+        parse_total = sum(wcwidth.width(line) for line in UDHR_LINES)
         return fast_total, parse_total
 
     fast_total, parse_total = benchmark.pedantic(check, rounds=1, iterations=1)
@@ -396,9 +379,8 @@ def test_width_fastpath_integrity_udhr(benchmark, text, lines, widths):
 
 
 @_udhr_skip
-@pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
-def test_ljust_udhr_lines(benchmark, text, lines, widths):
+def test_ljust_udhr_lines(benchmark):
     """Benchmark ljust() on UDHR lines."""
     benchmark.pedantic(lambda: [wcwidth.ljust(line, w + 1, UDHR_FILLCHAR)
-                                for line, w in zip(lines, widths)],
+                                for line, w in zip(UDHR_LINES, UDHR_WIDTHS)],
                        rounds=1, iterations=1)
