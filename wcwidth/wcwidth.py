@@ -245,25 +245,20 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
-    ri_count = 0  # Track consecutive Regional Indicator count
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
-        if char == '\u200D':
+        if ucs == 0x200D:
             # Zero Width Joiner: only skip next character when preceded
             # by an emoji (Extended_Pictographic), not after CJK or ASCII.
-            if idx + 1 < end and (
-                last_measured_ucs in _EMOJI_ZWJ_SET
-            ):
+            if idx + 1 < end and last_measured_ucs in _EMOJI_ZWJ_SET:
                 idx += 2
             else:
                 idx += 1
             continue
-        if char == '\uFE0F' and last_measured_idx >= 0:
+        if ucs == 0xFE0F and last_measured_idx >= 0:
             # VS16 following a measured character: add 1 if that character is
             # known to be converted from narrow to wide by VS16.
-            # Note: VS16 support requires Unicode 9.0+, which is always true
-            # since only the latest version is shipped.
             total_width += _bisearch(ord(pwcs[last_measured_idx]),
                                      VS16_NARROW_TO_WIDE["9.0.0"])
             last_measured_idx = -2  # Prevent double application
@@ -271,25 +266,29 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             idx += 1
             continue
         # Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
-        is_ri = False
         if ucs > 0xFFFF:
-            is_ri = bool(ucs in _REGIONAL_INDICATOR_SET)
-            if is_ri:
-                ri_count += 1
-                if ri_count % 2 == 0:
-                    # Second RI in pair: contributes 0 (pair = one 2-cell flag)
+            if ucs in _REGIONAL_INDICATOR_SET:
+                # Lazy RI pairing: count preceding consecutive RIs only when the last one is
+                # received, because RI's are received so rarely its better than per-loop tracking of
+                # 'last char was an RI'.
+                ri_before = 0
+                j = idx - 1
+                while j >= 0 and ord(pwcs[j]) in _REGIONAL_INDICATOR_SET:
+                    ri_before += 1
+                    j -= 1
+                if ri_before % 2 == 1:
+                    # Second RI in pair: contributes 0 (pair = one 2-cell flag) using an even-or-odd
+                    # check to determine, 'CAUS' would be two flags, but 'CAU' would be 1 flag
+                    # and wide 'U'.
                     idx += 1
                     last_measured_ucs = ucs
                     continue
                 # First or unpaired RI: measured normally (width 2 from table)
             # Fitzpatrick modifier: zero-width when following emoji base
-            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1] and (
-                last_measured_ucs in _EMOJI_ZWJ_SET
-            )):
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]
+                  and last_measured_ucs in _EMOJI_ZWJ_SET):
                 idx += 1
                 continue
-        if not is_ri:
-            ri_count = 0
         wcw = _wcwidth(char)
         if wcw < 0:
             # early return -1 on C0 and C1 control characters
@@ -504,7 +503,6 @@ def width(
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
-    ri_count = 0  # Track consecutive Regional Indicator count
     text_len = len(text)
 
     # Select wcwidth call pattern for best lru_cache performance:
@@ -564,9 +562,7 @@ def width(
 
         # 4. Handle ZWJ: only skip next char when preceded by emoji
         if char == '\u200D':
-            if idx + 1 < text_len and (
-                last_measured_ucs in _EMOJI_ZWJ_SET
-            ):
+            if idx + 1 < text_len and last_measured_ucs in _EMOJI_ZWJ_SET:
                 idx += 2
             else:
                 idx += 1
@@ -580,7 +576,7 @@ def width(
         ucs = ord(char)
 
         # 6. Handle VS16: converts preceding narrow character to wide
-        if char == '\uFE0F':
+        if ucs == 0xFE0F:
             if last_measured_idx == idx - 1:
                 if _bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
                     current_col += 1
@@ -590,23 +586,23 @@ def width(
             continue
 
         # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
-        is_ri = False
         if ucs > 0xFFFF:
-            is_ri = bool(ucs in _REGIONAL_INDICATOR_SET)
-            if is_ri:
-                ri_count += 1
-                if ri_count % 2 == 0:
+            if ucs in _REGIONAL_INDICATOR_SET:
+                # Lazy RI pairing: count preceding consecutive RIs
+                ri_before = 0
+                j = idx - 1
+                while j >= 0 and ord(text[j]) in _REGIONAL_INDICATOR_SET:
+                    ri_before += 1
+                    j -= 1
+                if ri_before % 2 == 1:
                     last_measured_ucs = ucs
                     idx += 1
                     continue
             # 6c. Fitzpatrick modifier: zero-width when following emoji base
-            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1] and (
-                last_measured_ucs in _EMOJI_ZWJ_SET
-            )):
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]
+                  and last_measured_ucs in _EMOJI_ZWJ_SET):
                 idx += 1
                 continue
-        if not is_ri:
-            ri_count = 0
 
         # 7. Normal characters: measure with wcwidth
         w = _wcwidth(char)
