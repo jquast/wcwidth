@@ -81,7 +81,8 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
+from .table_grapheme import (EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR,
+                             ISC_VIRAMA, ISC_CONSONANT)
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -108,6 +109,11 @@ _EMOJI_ZWJ_SET = frozenset(
     cp for lo, hi in EXTENDED_PICTOGRAPHIC for cp in range(lo, hi + 1)
 ) | _REGIONAL_INDICATOR_SET
 _FITZPATRICK_RANGE = (0x1F3FB, 0x1F3FF)
+_ISC_VIRAMA_TABLE = ISC_VIRAMA
+_ISC_CONSONANT_TABLE = ISC_CONSONANT
+# Range guard for Indic codepoints: avoids bisearch on non-Indic zero-width chars.
+# Covers Devanagari (U+0900) through Bhaiksuki Virama (U+11C3F).
+_ISC_RANGE = (0x0900, 0x11C3F)
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
@@ -245,6 +251,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
+    last_was_virama = False  # Virama conjunct formation state
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
@@ -255,6 +262,9 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
                 idx += 2
             else:
                 idx += 1
+            # ZWJ after virama is used in Sinhala/Devanagari for specific conjunct
+            # forms — the ZWJ+next char are already consumed, reset virama state.
+            last_was_virama = False
             continue
         if ucs == 0xFE0F and last_measured_idx >= 0:
             # VS16 following a measured character: add 1 if that character is
@@ -289,6 +299,14 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
                   and last_measured_ucs in _EMOJI_ZWJ_SET):
                 idx += 1
                 continue
+        # Virama conjunct formation: consonant following virama contributes 0 width.
+        # See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+        if last_was_virama and _bisearch(ucs, _ISC_CONSONANT_TABLE):
+            last_measured_idx = idx
+            last_measured_ucs = ucs
+            last_was_virama = False
+            idx += 1
+            continue
         wcw = _wcwidth(char)
         if wcw < 0:
             # early return -1 on C0 and C1 control characters
@@ -296,10 +314,16 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         if wcw > 0:
             last_measured_idx = idx
             last_measured_ucs = ucs
+            last_was_virama = False
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             wcw = 1
             last_measured_idx = -2
+            last_was_virama = False
+        elif _ISC_RANGE[0] <= ucs <= _ISC_RANGE[1]:
+            last_was_virama = _bisearch(ucs, _ISC_VIRAMA_TABLE) == 1
+        else:
+            last_was_virama = False
         total_width += wcw
         idx += 1
     return total_width
@@ -503,6 +527,7 @@ def width(
     idx = 0
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
+    last_was_virama = False  # Virama conjunct formation state
     text_len = len(text)
 
     # Select wcwidth call pattern for best lru_cache performance:
@@ -566,6 +591,7 @@ def width(
                 idx += 2
             else:
                 idx += 1
+            last_was_virama = False
             continue
 
         # 5. Handle other zero-width characters (control chars)
@@ -604,18 +630,33 @@ def width(
                 idx += 1
                 continue
 
-        # 7. Normal characters: measure with wcwidth
+        # 7. Virama conjunct formation: consonant following virama contributes 0 width.
+        # See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+        if last_was_virama and _bisearch(ucs, _ISC_CONSONANT_TABLE):
+            last_measured_idx = idx
+            last_measured_ucs = ucs
+            last_was_virama = False
+            idx += 1
+            continue
+
+        # 8. Normal characters: measure with wcwidth
         w = _wcwidth(char)
         if w > 0:
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
             last_measured_ucs = ucs
+            last_was_virama = False
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
             last_measured_idx = -2
+            last_was_virama = False
+        elif _ISC_RANGE[0] <= ucs <= _ISC_RANGE[1]:
+            last_was_virama = _bisearch(ucs, _ISC_VIRAMA_TABLE) == 1
+        else:
+            last_was_virama = False
         idx += 1
 
     return max_extent
