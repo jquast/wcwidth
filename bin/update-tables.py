@@ -779,6 +779,46 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     }
 
 
+ISC_VALUES = ('Virama', 'Consonant')
+
+
+def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
+    """Parse IndicSyllabicCategory.txt for Virama and Consonant properties.
+
+    See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+    """
+    print(f'parsing {fname} for ISC: ', end='', flush=True)
+    values_by_isc: dict[str, set[int]] = {val: set() for val in ISC_VALUES}
+
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            data, _, comment = line.partition('#')
+            data = data.strip()
+            if not data:
+                continue
+
+            parts = [p.strip() for p in data.split(';')]
+            if len(parts) < 2:
+                continue
+
+            code_points_str, prop_value = parts[0], parts[1]
+
+            if prop_value in values_by_isc:
+                if '..' in code_points_str:
+                    start, end = code_points_str.split('..')
+                    values_by_isc[prop_value].update(
+                        range(int(start, 16), int(end, 16) + 1)
+                    )
+                else:
+                    values_by_isc[prop_value].add(int(code_points_str, 16))
+
+    print('ok')
+    return {
+        f'ISC_{val.upper()}': TableDef('IndicSyllabicCategory', 'see file', values)
+        for val, values in values_by_isc.items()
+    }
+
+
 def parse_derived_core_property(fname: str, property_name: str) -> set[int]:
     """Parse DerivedCoreProperties.txt for a specific property."""
     print(f'parsing {fname} for {property_name}: ', end='', flush=True)
@@ -822,6 +862,9 @@ def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:
     tables.update(parse_indic_conjunct_breaks(
         UnicodeDataFile.DerivedCoreProperties(latest_version)
     ))
+    tables.update(parse_indic_syllabic_category(
+        UnicodeDataFile.IndicSyllabicCategory(latest_version)
+    ))
 
     return GraphemeTableRenderCtx(str(latest_version), tables)
 
@@ -848,6 +891,7 @@ class UnicodeDataFile:
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
     URL_PROP_LIST = 'https://www.unicode.org/Public/{version}/ucd/PropList.txt'
     URL_GRAPHEME_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakTest.txt'
+    URL_INDIC_SYLLABIC_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/IndicSyllabicCategory.txt'
     URL_UDHR_ZIP = 'http://efele.net/udhr/assemblies/udhr_txt.zip'
 
     @classmethod
@@ -918,6 +962,12 @@ class UnicodeDataFile:
     def PropList(cls, version: str) -> str:
         fname = os.path.join(PATH_DATA, f'PropList-{version}.txt')
         cls.do_retrieve(url=cls.URL_PROP_LIST.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def IndicSyllabicCategory(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'IndicSyllabicCategory-{version}.txt')
+        cls.do_retrieve(url=cls.URL_INDIC_SYLLABIC_CATEGORY.format(version=version), fname=fname)
         return fname
 
     @classmethod
@@ -1164,6 +1214,7 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
     UnicodeDataFile.EmojiData(version)
     UnicodeDataFile.DerivedCoreProperties(version)
     UnicodeDataFile.PropList(version)
+    UnicodeDataFile.IndicSyllabicCategory(version)
 
     # Fetch test data files
     UnicodeDataFile.TestEmojiVariationSequences()
