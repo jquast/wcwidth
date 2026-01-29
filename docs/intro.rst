@@ -618,6 +618,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
+.. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/ch04.pdf#G134153
 .. _`Specification_from_pypi`: https://wcwidth.readthedocs.io/en/latest/specs.html
 .. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
