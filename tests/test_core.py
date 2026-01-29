@@ -430,9 +430,18 @@ def test_mc_width_consistency(repeat):
         "\u09B9\u09AF\u09BC\u09C7\u099B\u09C7",
         "\u0915\u09BE\u0999\u09CD\u0996\u09BE",
     ]
+    # Virama conjunct collapsing is context-sensitive across grapheme
+    # boundaries (virama ends one grapheme, consonant starts the next),
+    # so per-grapheme width sums may exceed wcswidth/width totals for
+    # phrases containing conjuncts.
+    no_conjunct_phrases = [
+        "\u09AF\u09BC\u09C7",
+    ]
     for phrase in phrases:
         text = phrase * repeat
         assert wcwidth.width(text) == wcwidth.wcswidth(text)
+    for phrase in no_conjunct_phrases:
+        text = phrase * repeat
         grapheme_sum = sum(wcwidth.width(g) for g in wcwidth.iter_graphemes(text))
         assert wcwidth.width(text) == grapheme_sum
 

@@ -82,7 +82,7 @@ from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import (EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR,
-                             ISC_VIRAMA, ISC_CONSONANT)
+                             ISC_CONSONANT)
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -109,11 +109,39 @@ _EMOJI_ZWJ_SET = frozenset(
     cp for lo, hi in EXTENDED_PICTOGRAPHIC for cp in range(lo, hi + 1)
 ) | _REGIONAL_INDICATOR_SET
 _FITZPATRICK_RANGE = (0x1F3FB, 0x1F3FF)
-_ISC_VIRAMA_TABLE = ISC_VIRAMA
+# Indic_Syllabic_Category=Virama codepoints, from IndicSyllabicCategory.txt.
+# These are structurally tied to their scripts and not expected to change.
+# https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
+_ISC_VIRAMA_SET = frozenset((
+    0x094D,   # DEVANAGARI SIGN VIRAMA
+    0x09CD,   # BENGALI SIGN VIRAMA
+    0x0A4D,   # GURMUKHI SIGN VIRAMA
+    0x0ACD,   # GUJARATI SIGN VIRAMA
+    0x0B4D,   # ORIYA SIGN VIRAMA
+    0x0BCD,   # TAMIL SIGN VIRAMA
+    0x0C4D,   # TELUGU SIGN VIRAMA
+    0x0CCD,   # KANNADA SIGN VIRAMA
+    0x0D4D,   # MALAYALAM SIGN VIRAMA
+    0x0DCA,   # SINHALA SIGN AL-LAKUNA
+    0x1B44,   # BALINESE ADEG ADEG
+    0xA806,   # SYLOTI NAGRI SIGN HASANTA
+    0xA8C4,   # SAURASHTRA SIGN VIRAMA
+    0xA9C0,   # JAVANESE PANGKON
+    0x11046,  # BRAHMI VIRAMA
+    0x110B9,  # KAITHI SIGN VIRAMA
+    0x111C0,  # SHARADA SIGN VIRAMA
+    0x11235,  # KHOJKI SIGN VIRAMA
+    0x1134D,  # GRANTHA SIGN VIRAMA
+    0x11442,  # NEWA SIGN VIRAMA
+    0x114C2,  # TIRHUTA SIGN VIRAMA
+    0x115BF,  # SIDDHAM SIGN VIRAMA
+    0x1163F,  # MODI SIGN VIRAMA
+    0x116B6,  # TAKRI SIGN VIRAMA
+    0x11839,  # DOGRA SIGN VIRAMA
+    0x119E0,  # NANDINAGARI SIGN VIRAMA
+    0x11C3F,  # BHAIKSUKI SIGN VIRAMA
+))
 _ISC_CONSONANT_TABLE = ISC_CONSONANT
-# Range guard for Indic codepoints: avoids bisearch on non-Indic zero-width chars.
-# Covers Devanagari (U+0900) through Bhaiksuki Virama (U+11C3F).
-_ISC_RANGE = (0x0900, 0x11C3F)
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
@@ -320,10 +348,8 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             wcw = 1
             last_measured_idx = -2
             last_was_virama = False
-        elif _ISC_RANGE[0] <= ucs <= _ISC_RANGE[1]:
-            last_was_virama = _bisearch(ucs, _ISC_VIRAMA_TABLE) == 1
         else:
-            last_was_virama = False
+            last_was_virama = ucs in _ISC_VIRAMA_SET
         total_width += wcw
         idx += 1
     return total_width
@@ -653,10 +679,8 @@ def width(
             max_extent = max(max_extent, current_col)
             last_measured_idx = -2
             last_was_virama = False
-        elif _ISC_RANGE[0] <= ucs <= _ISC_RANGE[1]:
-            last_was_virama = _bisearch(ucs, _ISC_VIRAMA_TABLE) == 1
         else:
-            last_was_virama = False
+            last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
     return max_extent
