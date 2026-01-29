@@ -76,6 +76,7 @@ from .sgr_state import (_SGR_PATTERN,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
+from .table_mc import CATEGORY_MC
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -94,11 +95,11 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Literal
 
 # Pre-compute table references for the latest (and only) Unicode version.
-# This avoids dictionary lookups in the hot path.
 _LATEST_VERSION = list_versions()[-1]
 _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
+_CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -246,6 +247,10 @@ def wcswidth(  # pylint: disable=unused-argument
             return wcw
         if wcw > 0:
             last_measured_idx = idx
+        elif last_measured_idx >= 0 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character adds 1
+            wcw = 1
+            last_measured_idx = -2
         total_width += wcw
         idx += 1
     return total_width
@@ -531,6 +536,10 @@ def width(
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
+        elif last_measured_idx == idx - 1 and _bisearch(ord(char), _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character adds 1
+            current_col += 1
+            max_extent = max(max_extent, current_col)
         idx += 1
 
     return max_extent
