@@ -27,32 +27,33 @@ Any characters with the `Default_Ignorable_Code_Point`_ property in
 
 Any characters defined by `General Category`_ codes in `DerivedGeneralCategory.txt`_ files:
 
-- 'Me': Enclosing Combining Mark, aprox. 13 characters.
-- 'Mn': Nonspacing Combining Mark, aprox. 1,839 characters.
-- 'Cf': Format control characters excluding `U+00AD`_ SOFT HYPHEN and
+- 'Me': `Enclosing Mark`_, aprox. 13 characters.
+- 'Mn': `Nonspacing Mark`_, aprox. 1,839 characters.
+- 'Cf': `Format`_ control characters excluding `U+00AD`_ SOFT HYPHEN and
   `Prepended_Concatenation_Mark`_ characters, aprox. 147 characters.
 - 'Zl': `U+2028`_ LINE SEPARATOR only
 - 'Zp': `U+2029`_ PARAGRAPH SEPARATOR only
-- 'Sk': Modifier Symbol, aprox. 4 characters of only those where phrase
-  ``'EMOJI MODIFIER'`` is present in comment of unicode data file.
+- 'Sk': `Modifier Symbol`_, aprox. 4 characters of only those where phrase
+  ``'EMOJI MODIFIER'`` is present in comment of `UnicodeData.txt`_.
 
 The NULL character (`U+0000`_).
 
 Any character following ZWJ (`U+200D`_) when in sequence by
 function :func:`wcwidth.wcswidth`.
 
-Hangul Jamo Jungseong and "Extended-B" code blocks, `U+1160`_ through
-`U+11FF`_ and `U+D7B0`_ through U+D7FF.
+`Hangul Jamo`_ Jungseong and "Extended-B" code blocks, `U+1160`_ through
+`U+11FF`_ and `U+D7B0`_ through `U+D7FF`_.
 
+
+Any characters of category ``Mc`` (`Spacing Combining Mark`_), aprox. 443
+characters, for the single-character function :func:`wcwidth.wcwidth`.
+When measured in sequence by :func:`wcwidth.wcswidth`, see `Width of 2`_.
 
 Width of 1
 ----------
 
 String characters are measured width of 1 when they are not
 measured as `Width of 0`_ or `Width of 2`_.
-
-This includes characters of category ``Mc`` (`Spacing Combining Mark`_), aprox. 443
-characters, which have positive advance width per the `Unicode specification`_.
 
 Width of 2
 ----------
@@ -61,11 +62,16 @@ Any character defined by `East Asian`_ Fullwidth (``F``) or Wide (``W``)
 properties in `EastAsianWidth.txt`_ files, except those that are defined by the
 Category code of `Nonspacing Mark`_ (``Mn``).
 
-Any characters of Modifier Symbol category, ``'Sk'`` where ``'FULLWIDTH'`` is
-present in comment of unicode data file, aprox. 3 characters.
+Any characters of `Modifier Symbol`_ category, ``'Sk'`` where ``'FULLWIDTH'`` is
+present in comment of `UnicodeData.txt`_, aprox. 3 characters.
 
 Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 `emoji-variation-sequences.txt`_ as ``emoji style``.
+
+Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
+character when measured in sequence by :func:`wcwidth.wcswidth`. The ``Mc``
+character adds +1 to the total width, reflecting its *positive advance width*
+as defined in `General Category`_ (Table 4-4).
 
 
 .. _`U+0000`: https://codepoints.net/U+0000
@@ -89,7 +95,12 @@ Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
 .. _`Prepended_Concatenation_Mark`: https://www.unicode.org/reports/tr44/#Prepended_Concatenation_Mark
 .. _`Default_Ignorable_Code_Point`: https://www.unicode.org/reports/tr44/#Default_Ignorable_Code_Point
 .. _`General Category`: https://www.unicode.org/reports/tr44/#General_Category
-.. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/ch04.pdf#G134153
-.. _`Unicode specification`: https://www.unicode.org/versions/latest/
+.. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
+.. _`Enclosing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
+.. _`Format`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
+.. _`Modifier Symbol`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
+.. _`Hangul Jamo`: https://www.unicode.org/charts/PDF/U1100.pdf
+.. _`U+D7FF`: https://codepoints.net/U+D7FF
+.. _`UnicodeData.txt`: https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 .. _`East Asian`: https://www.unicode.org/reports/tr11/
-.. _`Nonspacing Mark`: https://www.unicode.org/versions/Unicode17.0.0/core-spec/chapter-5/#G1095
+.. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
