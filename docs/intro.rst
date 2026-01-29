@@ -89,8 +89,7 @@ Measures width of a single codepoint,
 
 Use function `wcwidth()`_ to determine the length of a *single unicode character*.
 
-See `Specification <Specification_from_pypi_>`_ of character measurements. Note that ``-1`` is
-returned for control codes.
+See specification_ of character measurements. Note that ``-1`` is returned for control codes.
 
 wcswidth()
 ----------
@@ -105,8 +104,8 @@ Measures width of a string, returns -1 for control codes.
 
 Use function `wcswidth()`_ to determine the length of many, a *string of unicode characters*.
 
-See `Specification <Specification_from_pypi_>`_ of character measurements. Note that
-``-1`` is returned if control codes occurs anywhere in the string.
+See specification_ of character measurements. Note that ``-1`` is returned if control codes occurs
+anywhere in the string.
 
 width()
 -------
@@ -458,8 +457,9 @@ History
 
 0.5.2 *unreleased*
   * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
-    codepoints, has a more nuanced `Specification <Specification_from_pypi_>`_, and may be
-    categorized as both zero or wide.
+    codepoints, has a more nuanced specification_, and may be categorized as both zero or wide.
+    `PR #200`.
+  * **Updated** Data files used in some automatic tests are no longer distributed. `PR #199`_
 
 0.5.1 *2026-01-27*
   * **Updated** generated zero and wide code tables to length of 1 to complete the previously
@@ -532,13 +532,12 @@ History
 0.2.10 *2023-11-13*
   * **Bugfix** accounting of some kinds of emoji sequences using U+FE0F
     Variation Selector 16 (`PR #97`_).
-  * **Updated** `Specification <Specification_from_pypi_>`_.
+  * **Updated** specification_.
 
 0.2.9 *2023-10-30*
   * **Bugfix** zero-width characters used in Emoji ZWJ sequences, Balinese,
     Jamo, Devanagari, Tamil, Kannada and others (`PR #91`_).
-  * **Updated** to include `Specification <Specification_from_pypi_>`_ of
-    character measurements.
+  * **Updated** to include specification_ of character measurements.
 
 0.2.8 *2023-09-30*
   * Include requirements files in the source distribution (`PR #82`_).
@@ -620,7 +619,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * disclaims all warranties with regard to this software.
 
 .. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/ch04.pdf#G134153
-.. _`Specification_from_pypi`: https://wcwidth.readthedocs.io/en/latest/specs.html
+.. _`specification`: https://wcwidth.readthedocs.io/en/latest/specs.html
 .. _`tox`: https://tox.wiki/en/latest/
 .. _`prospector`: https://github.com/landscapeio/prospector
 .. _`combining`: https://en.wikipedia.org/wiki/Combining_character
@@ -665,6 +664,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #194`: https://github.com/jquast/wcwidth/pull/194
 .. _`PR #195`: https://github.com/jquast/wcwidth/pull/195
 .. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
+.. _`PR #199`: https://github.com/jquast/wcwidth/pull/199
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
