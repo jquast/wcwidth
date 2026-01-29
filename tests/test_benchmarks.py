@@ -1,13 +1,11 @@
 """Performance benchmarks for wcwidth module."""
 # std imports
 import os
+import sys
 import unicodedata
 
 # 3rd party
 import pytest
-
-# std imports
-import sys
 
 # local
 import wcwidth
@@ -376,11 +374,12 @@ def test_width_wcswidth_consistency_udhr(benchmark, text, lines, widths):
 @_udhr_skip
 @pytest.mark.parametrize("text, lines, widths", UDHR_CHUNKS)
 def test_width_fastpath_integrity_udhr(benchmark, text, lines, widths):
-    """Verify width() produces identical results with and without the fast path.
+    """
+    Verify width() produces identical results with and without the fast path.
 
-    The fast path (for strings longer than _WIDTH_FAST_PATH_MIN_LEN) delegates to
-    wcswidth().  The parse path processes character-by-character.  Both must
-    produce the same total across all UDHR lines.
+    The fast path (for strings longer than _WIDTH_FAST_PATH_MIN_LEN) delegates to wcswidth().  The
+    parse path processes character-by-character.  Both must produce the same total across all UDHR
+    lines.
     """
     saved = _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN
 

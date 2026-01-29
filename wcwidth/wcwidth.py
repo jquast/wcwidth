@@ -101,9 +101,11 @@ _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 _CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
 
-# Minimum string length for width() to attempt the fast path that bypasses
-# character-by-character parse mode and delegates to wcswidth() instead.
-_FAST_PATH_MIN_LEN = 20
+# In 'parse' mode, strings longer than this are checked for cursor-movement
+# controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
+# 'ignore' to skip character-by-character parsing. The detection scan cost is
+# negligible for long strings but wasted on short ones like labels or headings.
+_WIDTH_FAST_PATH_MIN_LEN = 20
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
 _CONTROL_CHAR_TABLE = str.maketrans('', '', (
@@ -135,7 +137,11 @@ __all__ = (
 )
 
 
-@lru_cache(maxsize=2000)
+# maxsize=1024: western scripts need ~64 unique codepoints per session, but
+# CJK sessions may use ~2000 of ~3500 common hanzi/kanji. 1024 accommodates
+# heavy CJK use. Performance floor at 32; bisearch is ~100ns per miss.
+
+@lru_cache(maxsize=1024)
 def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
@@ -436,7 +442,7 @@ def width(
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check for longer strings - the detection overhead hurts short string performance.
-    if control_codes == 'parse' and len(text) > _FAST_PATH_MIN_LEN:
+    if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences - if none, or only non-cursor-movement sequences
