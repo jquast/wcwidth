@@ -33,13 +33,22 @@ Any characters defined by `General Category`_ codes in `DerivedGeneralCategory.t
   `Prepended_Concatenation_Mark`_ characters, aprox. 147 characters.
 - 'Zl': `U+2028`_ LINE SEPARATOR only
 - 'Zp': `U+2029`_ PARAGRAPH SEPARATOR only
-- 'Sk': `Modifier Symbol`_, aprox. 4 characters of only those where phrase
-  ``'EMOJI MODIFIER'`` is present in comment of `UnicodeData.txt`_.
+- 'Sk': `Modifier Symbol`_, aprox. 1 character with ``'FULLWIDTH'`` in comment
+  of `UnicodeData.txt`_ (see `Width of 2`_). `Emoji Modifier`_ Fitzpatrick
+  symbols (`U+1F3FB`_ through `U+1F3FF`_) are zero-width only when following
+  an emoji base character in sequence; see `Width of 2`_ for standalone.
 
 The NULL character (`U+0000`_).
 
-Any character following ZWJ (`U+200D`_) when in sequence by
-function :func:`wcwidth.wcswidth`.
+Any character following ZWJ (`U+200D`_) when preceded by an emoji
+(`Extended_Pictographic`_ property) or `Regional Indicator`_ in sequence by
+function :func:`wcwidth.wcswidth`. When ZWJ follows a non-emoji character
+(including CJK), only the ZWJ itself is zero-width; the following character
+is measured normally.
+
+The second `Regional Indicator`_ symbol (`U+1F1E6`_ through `U+1F1FF`_) in a
+consecutive pair, when measured in sequence by :func:`wcwidth.wcswidth` or
+:func:`wcwidth.width`. The first indicator of the pair is `Width of 2`_.
 
 `Hangul Jamo`_ Jungseong and "Extended-B" code blocks, `U+1160`_ through
 `U+11FF`_ and `U+D7B0`_ through `U+D7FF`_.
@@ -61,6 +70,15 @@ Width of 2
 Any character defined by `East Asian`_ Fullwidth (``F``) or Wide (``W``)
 properties in `EastAsianWidth.txt`_ files, except those that are defined by the
 Category code of `Nonspacing Mark`_ (``Mn``).
+
+`Regional Indicator`_ symbols (`U+1F1E6`_ through `U+1F1FF`_). Though
+classified as Neutral in `EastAsianWidth.txt`_, terminals universally render
+these as double-width. A consecutive pair of Regional Indicators forms a flag
+emoji and is measured as width 2 total (first indicator is 2, second is 0).
+
+`Emoji Modifier`_ Fitzpatrick symbols (`U+1F3FB`_ through `U+1F3FF`_) when
+measured standalone (not following an emoji base character). When following
+an emoji base, they combine with the base and add 0 to total width.
 
 Any characters of `Modifier Symbol`_ category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of `UnicodeData.txt`_, aprox. 3 characters.
@@ -105,4 +123,11 @@ by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 .. _`U+D7FF`: https://codepoints.net/U+D7FF
 .. _`UnicodeData.txt`: https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 .. _`East Asian`: https://www.unicode.org/reports/tr11/
+.. _`U+1F1E6`: https://codepoints.net/U+1F1E6
+.. _`U+1F1FF`: https://codepoints.net/U+1F1FF
+.. _`U+1F3FB`: https://codepoints.net/U+1F3FB
+.. _`U+1F3FF`: https://codepoints.net/U+1F3FF
+.. _`Regional Indicator`: https://www.unicode.org/charts/PDF/U1F100.pdf
+.. _`Emoji Modifier`: https://unicode.org/reports/tr51/#Emoji_Modifiers
+.. _`Extended_Pictographic`: https://www.unicode.org/reports/tr51/#def_extended_pictographic
 .. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
