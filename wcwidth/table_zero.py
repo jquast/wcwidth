@@ -345,7 +345,9 @@ ZERO_WIDTH = {
         (0x1e6f5, 0x1e6f5,),  # Tai Yo Sign Om
         (0x1e8d0, 0x1e8d6,),  # Mende Kikakui Combining ..Mende Kikakui Combining
         (0x1e944, 0x1e94a,),  # Adlam Alif Lengthener   ..Adlam Nukta
-        (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
+        # Emoji Modifier Fitzpatrick types (U+1F3FB..U+1F3FF) excluded:
+        # standalone they display as wide (2 cells), only zero-width
+        # when following an emoji base character in sequence.
         (0xe0000, 0xe0fff,),  # (nil)
     ),
 }

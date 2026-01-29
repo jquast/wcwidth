@@ -61,6 +61,31 @@ def test_wcswidth_emoji_sequence(benchmark):
     benchmark(wcwidth.wcswidth, text)
 
 
+# Regional Indicator benchmarks - paired flags and unpaired RI
+RI_FLAGS_PAIRED = '🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵' * 100
+RI_FLAGS_UNPAIRED = '🇺🇸🇬🇧🇫' * 100
+
+
+def test_wcswidth_ri_flags_paired(benchmark):
+    """Benchmark wcswidth() with paired regional indicator flags."""
+    benchmark(wcwidth.wcswidth, RI_FLAGS_PAIRED)
+
+
+def test_wcswidth_ri_flags_unpaired(benchmark):
+    """Benchmark wcswidth() with mixed paired and unpaired regional indicators."""
+    benchmark(wcwidth.wcswidth, RI_FLAGS_UNPAIRED)
+
+
+def test_width_ri_flags_paired(benchmark):
+    """Benchmark width() with paired regional indicator flags."""
+    benchmark(wcwidth.width, RI_FLAGS_PAIRED)
+
+
+def test_width_ri_flags_unpaired(benchmark):
+    """Benchmark width() with mixed paired and unpaired regional indicators."""
+    benchmark(wcwidth.width, RI_FLAGS_UNPAIRED)
+
+
 # NFC vs NFD comparison - text with combining marks
 DIACRITICS_COMPOSED = 'café résumé naïve ' * 100
 DIACRITICS_DECOMPOSED = unicodedata.normalize('NFD', DIACRITICS_COMPOSED)

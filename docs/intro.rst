@@ -455,10 +455,10 @@ languages.
 History
 =======
 
-0.5.2 *unreleased*
-  * **Bugfix** Specification and result of category ``Mc`` (`Spacing Combining Mark`_), approx. 443
-    codepoints, has a more nuanced specification_, and may be categorized as both zero or wide.
-    `PR #200`.
+0.5.2 *2026-01-29*
+  * **Bugfix** Measurement of category ``Mc`` (`Spacing Combining Mark`_), approx.  443, has a more
+    nuanced specification_, and may be categorized as either zero or wide. `PR #200`_.
+  * **Bugfix** Measurement of "standalone" modifiers and regional indicators, `PR #202`_.
   * **Updated** Data files used in some automatic tests are no longer distributed. `PR #199`_
 
 0.5.1 *2026-01-27*
@@ -666,6 +666,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
 .. _`PR #199`: https://github.com/jquast/wcwidth/pull/199
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
+.. _`PR #202`: https://github.com/jquast/wcwidth/pull/202
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
