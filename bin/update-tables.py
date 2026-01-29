@@ -470,9 +470,9 @@ def fetch_table_category_mc_data() -> UnicodeTableRenderCtx:
     """
     Fetch Spacing Combining Mark (Mc) character table for the latest Unicode version.
 
-    Characters with General_Category=Mc are combining marks that typically occupy
-    a cell width when following a base character, but should be zero-width when
-    standalone. This table is used for context-aware width measurement.
+    Characters with General_Category=Mc are combining marks that typically occupy a cell width when
+    following a base character, but should be zero-width when standalone. This table is used for
+    context-aware width measurement.
     """
     table: dict[UnicodeVersion, TableDef] = {}
     version = fetch_unicode_versions()[-1]

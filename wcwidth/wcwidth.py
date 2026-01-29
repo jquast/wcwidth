@@ -71,12 +71,12 @@ from typing import TYPE_CHECKING
 # local
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
+from .table_mc import CATEGORY_MC
 from .sgr_state import (_SGR_PATTERN,
                         _SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
-from .table_mc import CATEGORY_MC
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -284,7 +284,6 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:  # pragma: no cover
 def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argument
     """
     Return the supported Unicode version level.
-
 
     .. deprecated:: 0.3.0
         This function now always returns the latest version.
