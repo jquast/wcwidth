@@ -101,10 +101,12 @@ _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[next(iter(AMBIGUOUS_EASTASIAN))]
 _CATEGORY_MC_TABLE = CATEGORY_MC[_LATEST_VERSION]
-_EXTENDED_PICTOGRAPHIC_SET = frozenset(
-    cp for lo, hi in EXTENDED_PICTOGRAPHIC for cp in range(lo, hi + 1)
+_REGIONAL_INDICATOR_SET = frozenset(
+    range(GRAPHEME_REGIONAL_INDICATOR[0][0], GRAPHEME_REGIONAL_INDICATOR[0][1] + 1)
 )
-_REGIONAL_INDICATOR_TABLE = GRAPHEME_REGIONAL_INDICATOR
+_EMOJI_ZWJ_SET = frozenset(
+    cp for lo, hi in EXTENDED_PICTOGRAPHIC for cp in range(lo, hi + 1)
+) | _REGIONAL_INDICATOR_SET
 _FITZPATRICK_RANGE = (0x1F3FB, 0x1F3FF)
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
@@ -244,10 +246,6 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     last_measured_idx = -2  # Track index of last measured char for VS16
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
     ri_count = 0  # Track consecutive Regional Indicator count
-    _ep_set = _EXTENDED_PICTOGRAPHIC_SET
-    _ri_table = _REGIONAL_INDICATOR_TABLE
-    _fitz_lo = _FITZPATRICK_RANGE[0]
-    _fitz_hi = _FITZPATRICK_RANGE[1]
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
@@ -255,8 +253,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             # Zero Width Joiner: only skip next character when preceded
             # by an emoji (Extended_Pictographic), not after CJK or ASCII.
             if idx + 1 < end and (
-                last_measured_ucs in _ep_set
-                or _bisearch(last_measured_ucs, _ri_table)
+                last_measured_ucs in _EMOJI_ZWJ_SET
             ):
                 idx += 2
             else:
@@ -276,7 +273,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         # Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
         is_ri = False
         if ucs > 0xFFFF:
-            is_ri = bool(_bisearch(ucs, _ri_table))
+            is_ri = bool(ucs in _REGIONAL_INDICATOR_SET)
             if is_ri:
                 ri_count += 1
                 if ri_count % 2 == 0:
@@ -286,9 +283,8 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
                     continue
                 # First or unpaired RI: measured normally (width 2 from table)
             # Fitzpatrick modifier: zero-width when following emoji base
-            elif (_fitz_lo <= ucs <= _fitz_hi and (
-                last_measured_ucs in _ep_set
-                or _bisearch(last_measured_ucs, _ri_table)
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1] and (
+                last_measured_ucs in _EMOJI_ZWJ_SET
             )):
                 idx += 1
                 continue
@@ -510,10 +506,6 @@ def width(
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
     ri_count = 0  # Track consecutive Regional Indicator count
     text_len = len(text)
-    _ep_set = _EXTENDED_PICTOGRAPHIC_SET
-    _ri_table = _REGIONAL_INDICATOR_TABLE
-    _fitz_lo = _FITZPATRICK_RANGE[0]
-    _fitz_hi = _FITZPATRICK_RANGE[1]
 
     # Select wcwidth call pattern for best lru_cache performance:
     # - ambiguous_width=1 (default): single-arg calls share cache with direct wcwidth() calls
@@ -573,8 +565,7 @@ def width(
         # 4. Handle ZWJ: only skip next char when preceded by emoji
         if char == '\u200D':
             if idx + 1 < text_len and (
-                last_measured_ucs in _ep_set
-                or _bisearch(last_measured_ucs, _ri_table)
+                last_measured_ucs in _EMOJI_ZWJ_SET
             ):
                 idx += 2
             else:
@@ -601,7 +592,7 @@ def width(
         # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
         is_ri = False
         if ucs > 0xFFFF:
-            is_ri = bool(_bisearch(ucs, _ri_table))
+            is_ri = bool(ucs in _REGIONAL_INDICATOR_SET)
             if is_ri:
                 ri_count += 1
                 if ri_count % 2 == 0:
@@ -609,9 +600,8 @@ def width(
                     idx += 1
                     continue
             # 6c. Fitzpatrick modifier: zero-width when following emoji base
-            elif (_fitz_lo <= ucs <= _fitz_hi and (
-                last_measured_ucs in _ep_set
-                or _bisearch(last_measured_ucs, _ri_table)
+            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1] and (
+                last_measured_ucs in _EMOJI_ZWJ_SET
             )):
                 idx += 1
                 continue
