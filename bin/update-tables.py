@@ -167,7 +167,7 @@ class TableEntry:
         # Cf Format
         # Zl Line Separator
         # Zp Paragraph Separator
-        if self.properties[0] in ('Me', 'Mn', 'Cf', 'Zl', 'Zp'):
+        if self.properties[0] in ('Me', 'Mn', 'Mc', 'Cf', 'Zl', 'Zp'):
             return wide == 0
         # F  Fullwidth
         # W  Wide
@@ -379,7 +379,7 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
                                     wide=2)
 
     # subtract(!) wide characters that were defined above as 'W' category in EastAsianWidth,
-    # but also zero-width category 'Mn' in DerivedGeneralCategory!
+    # but also zero-width category 'Mn' or 'Mc' in DerivedGeneralCategory!
     table[version].values = table[version].values.difference(parse_category(
         fname=UnicodeDataFile.DerivedGeneralCategory(version),
         wide=0).values)
@@ -464,6 +464,33 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
             property_name='Prepended_Concatenation_Mark'))
 
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
+
+
+def fetch_table_category_mc_data() -> UnicodeTableRenderCtx:
+    """
+    Fetch Spacing Combining Mark (Mc) character table for the latest Unicode version.
+
+    Characters with General_Category=Mc are combining marks that typically occupy
+    a cell width when following a base character, but should be zero-width when
+    standalone. This table is used for context-aware width measurement.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    version = fetch_unicode_versions()[-1]
+
+    fname = UnicodeDataFile.DerivedGeneralCategory(version)
+    print(f'parsing {fname}, category=Mc: ', end='', flush=True)
+
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_unicode_table(f)
+        file_version = next(table_iter).comment.strip()
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+        values = {n
+                  for entry in table_iter
+                  if entry.code_range is not None and entry.properties[0] == 'Mc'
+                  for n in range(entry.code_range[0], entry.code_range[1])}
+    print('ok')
+    table[version] = TableDef(file_version, date, values)
+    return UnicodeTableRenderCtx('CATEGORY_MC', table)
 
 
 def fetch_table_ambiguous_data() -> UnicodeTableRenderCtx:
@@ -1175,6 +1202,7 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
+        yield UnicodeTableRenderDef.new('table_mc.py', fetch_table_category_mc_data())
         yield UnicodeTableRenderDef.new('table_ambiguous.py', fetch_table_ambiguous_data())
         yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
