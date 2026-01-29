@@ -617,6 +617,8 @@ def width(
                 idx += 2
             else:
                 idx += 1
+            # ZWJ after virama is used in Sinhala/Devanagari for specific conjunct
+            # forms — the ZWJ+next char are already consumed, reset virama state.
             last_was_virama = False
             continue
 
