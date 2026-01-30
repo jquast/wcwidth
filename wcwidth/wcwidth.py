@@ -285,15 +285,18 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
         char = pwcs[idx]
         ucs = ord(char)
         if ucs == 0x200D:
-            # Zero Width Joiner: skip next character unconditionally.
-            # Non-emoji + ZWJ is undefined so we don't care the cost to check.
-            if idx + 1 < end:
+            if last_was_virama:
+                # ZWJ after virama requests explicit half-form rendering but
+                # does not change cell count — consume ZWJ only, let the next
+                # consonant be handled by the virama conjunct rule.
+                idx += 1
+            elif idx + 1 < end:
+                # Emoji ZWJ: skip next character unconditionally.
                 idx += 2
+                last_was_virama = False
             else:
                 idx += 1
-            # ZWJ after virama is used in Sinhala/Devanagari for specific conjunct
-            # forms — the ZWJ+next char are already consumed, reset virama state.
-            last_was_virama = False
+                last_was_virama = False
             continue
         if ucs == 0xFE0F and last_measured_idx >= 0:
             # VS16 following a measured character: add 1 if that character is
@@ -355,9 +358,6 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             last_was_virama = False
             conjunct_pending = False
         else:
-            if conjunct_pending and ucs not in _ISC_VIRAMA_SET:
-                total_width += 1
-                conjunct_pending = False
             last_was_virama = ucs in _ISC_VIRAMA_SET
         total_width += wcw
         idx += 1
@@ -623,15 +623,20 @@ def width(
             idx += 1
             continue
 
-        # 4. Handle ZWJ: skip next char unconditionally.
+        # 4. Handle ZWJ
         if char == '\u200D':
-            if idx + 1 < text_len:
+            if last_was_virama:
+                # ZWJ after virama requests explicit half-form rendering but
+                # does not change cell count — consume ZWJ only, let the next
+                # consonant be handled by the virama conjunct rule.
+                idx += 1
+            elif idx + 1 < text_len:
+                # Emoji ZWJ: skip next character unconditionally.
                 idx += 2
+                last_was_virama = False
             else:
                 idx += 1
-            # ZWJ after virama is used in Sinhala/Devanagari for specific conjunct
-            # forms — the ZWJ+next char are already consumed, reset virama state.
-            last_was_virama = False
+                last_was_virama = False
             continue
 
         # 5. Handle other zero-width characters (control chars)
@@ -699,10 +704,6 @@ def width(
             last_was_virama = False
             conjunct_pending = False
         else:
-            if conjunct_pending and ucs not in _ISC_VIRAMA_SET:
-                current_col += 1
-                max_extent = max(max_extent, current_col)
-                conjunct_pending = False
             last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 

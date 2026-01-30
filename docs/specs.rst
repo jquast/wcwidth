@@ -97,19 +97,21 @@ by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 Virama Conjunct Formation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In Brahmic scripts, a ``Virama`` (as defined by `Indic_Syllabic_Category`_ in
-`IndicSyllabicCategory.txt`_) between two consonants triggers conjunct formation:
-the terminal's shaping engine (HarfBuzz/CoreText) merges the consonants into a
-single ligature glyph. A ``Consonant`` (also defined by
+In `Brahmic scripts`_, a `Virama`_ (as defined by `Indic_Syllabic_Category`_ in
+`IndicSyllabicCategory.txt`_) between two consonants triggers `conjunct`_
+formation: the terminal's shaping engine (HarfBuzz/CoreText) merges the
+consonants into a single ligature glyph. A ``Consonant`` (also defined by
 `Indic_Syllabic_Category`_) immediately following a ``Virama`` is measured at 0
-width with a **deferred +1** that is added unless a following ``Mc`` (Spacing
-Combining Mark) absorbs it. The conjunct occupies the same number of cells as
-the original base consonant, but a following ``Mc`` vowel sign does not add an
-additional cell because it replaces the conjunct's trailing advance.
+width with a **deferred +1** that is added unless a following ``Mc``
+(`Spacing Combining Mark`_) absorbs it. The conjunct occupies the same number of
+cells as the original base consonant, but a following ``Mc`` vowel sign does not
+add an additional cell because it replaces the conjunct's trailing advance.
 
 Chained conjuncts (C + virama + C + virama + C) collapse recursively — each
 virama-consonant pair reduces by one cell, and the deferred +1 carries through
-the chain until the conjunct ends.
+the chain until the conjunct ends. Zero-width combining marks (``Mn``) such as
+dependent vowel signs do not break the conjunct context — the deferred +1
+carries through ``Mn`` marks within the same `aksara`_ (orthographic syllable).
 
 This rule applies across all Brahmic scripts including Devanagari, Bengali,
 Gujarati, Gurmukhi, Oriya, Tamil, Telugu, Kannada, Malayalam, and Sinhala.
@@ -154,4 +156,8 @@ See `L2/2023/23107`_ for background on complex script support in terminals.
 .. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
 .. _`IndicSyllabicCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
 .. _`Indic_Syllabic_Category`: https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+.. _`Brahmic scripts`: https://en.wikipedia.org/wiki/Brahmic_scripts
+.. _`Virama`: https://www.unicode.org/glossary/#virama
+.. _`conjunct`: https://www.unicode.org/glossary/#consonant_conjunct
+.. _`aksara`: https://www.unicode.org/glossary/#aksara
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf

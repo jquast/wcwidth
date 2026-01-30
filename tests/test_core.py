@@ -454,6 +454,10 @@ def test_mc_width_consistency(repeat):
     ("\u0938\u094D\u0924\u094D\u0930", 2),
     ("\u0938\u094D\u0924", 2),
     ("\u0915\u094D\u0020", 2),
+    ("\u09A4\u09CD\u200D\u09AA", 2),
+    ("\u0915\u094D\u200D\u0924", 2),
+    ("\u0D15\u0D4D\u0D15\u0D41\u0D02", 2),
+    ("\u0915\u094D\u0924\u0941\u0902", 2),
 ])
 def test_virama_conjunct(phrase, expected):
     assert wcwidth.wcswidth(phrase) == expected
