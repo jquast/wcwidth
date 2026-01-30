@@ -456,9 +456,7 @@ History
 =======
 
 0.5.3 *2026-01-29*
-  * **Bugfix** Virama conjunct formation overcorrected bare conjuncts (C+virama+C) to 1
-    cell instead of 2. A deferred +1 is now flushed at end of conjunct unless an ``Mc``
-    vowel sign absorbs it. `Issue #155`_, `PR #203`_.
+  * **Bugfix** Brahmic using Virama conjunct formation. `Issue #155`_, `PR #204`_.
 
 0.5.2 *2026-01-29*
   * **Bugfix** Measurement of category ``Mc`` (`Spacing Combining Mark`_), approx.  443, has a more
@@ -671,8 +669,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #196`: https://github.com/jquast/wcwidth/pull/196
 .. _`PR #199`: https://github.com/jquast/wcwidth/pull/199
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
-.. _`PR #203`: https://github.com/jquast/wcwidth/pull/203
 .. _`PR #202`: https://github.com/jquast/wcwidth/pull/202
+.. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
