@@ -152,9 +152,10 @@ class TableEntry:
             return False
         elif self.properties[0] == 'Sk':
             if 'EMOJI MODIFIER' in self.comment:
-                # These codepoints are fullwidth when used without emoji, 0-width with.
-                # Generate code that expects the best case, that is always combined
-                return wide == 0
+                # Standalone Fitzpatrick modifiers display as wide (2 cells).
+                # Zero-width when following an emoji base is handled contextually
+                # in wcswidth() and width().
+                return wide == 2
             elif 'FULLWIDTH' in self.comment:
                 # Some codepoints in 'Sk' categories are fullwidth(!)
                 # at this time just 3, FULLWIDTH: CIRCUMFLEX ACCENT, GRAVE ACCENT, and MACRON
@@ -399,6 +400,13 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     # finally, join with atypical 'wide' characters defined by category 'Sk',
     fname = UnicodeDataFile.DerivedGeneralCategory(version)
     table[version].values.update(parse_category(fname=fname, wide=2).values)
+
+    # Add Regional Indicator symbols (U+1F1E6..U+1F1FF). Though classified as
+    # Neutral in EastAsianWidth.txt, terminals universally render these as
+    # double-width. Pairing (flag emoji) is handled contextually in wcswidth()
+    # and width().
+    table[version].values.update(range(0x1F1E6, 0x1F1FF + 1))
+
     return UnicodeTableRenderCtx('WIDE_EASTASIAN', table)
 
 
