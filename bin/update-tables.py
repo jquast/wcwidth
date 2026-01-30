@@ -800,11 +800,7 @@ def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
     """
     Parse IndicSyllabicCategory.txt for Consonant property.
 
-    Virama is not generated here — it is a small, stable set maintained as a hardcoded frozenset
-    (_ISC_VIRAMA_SET) in wcwidth.py for O(1) lookup.
-
-    See
-    https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+    See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
     """
     print(f'parsing {fname} for ISC: ', end='', flush=True)
     values_by_isc: dict[str, set[int]] = {val: set() for val in ISC_VALUES}

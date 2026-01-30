@@ -244,13 +244,11 @@ def wcswidth(
 
     :param pwcs: Measure width of given unicode string.
     :param n: When ``n`` is None (default), return the length of the entire
-        string, otherwise only the first ``n`` characters are measured. This
-        argument exists only for compatibility with the C POSIX function
-        signature.
+        string, otherwise only the first ``n`` characters are measured.
 
-        Suggested to always use python's string slicing capability, ``wcswidth(pwcs[:n])`` This
-        argument is a holdover from the POSIX function for matching signatures. Be careful that
-        ``n`` is at grapheme boundaries.
+        Better to use string slicing capability, ``wcswidth(pwcs[:n])``, instead,
+        for performance.  This argument is a holdover from the POSIX function for
+        matching signatures. Be careful that ``n`` is at grapheme boundaries.
 
     :param unicode_version: Ignored. Retained for backwards compatibility.
 

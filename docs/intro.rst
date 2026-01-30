@@ -455,7 +455,7 @@ languages.
 History
 =======
 
-0.5.3 *2026-01-29*
+0.5.3 *2026-01-30*
   * **Bugfix** Brahmic using Virama conjunct formation. `Issue #155`_, `PR #204`_.
 
 0.5.2 *2026-01-29*

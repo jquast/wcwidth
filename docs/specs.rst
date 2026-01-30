@@ -6,7 +6,7 @@ Specification
 
 This document defines how this Python wcwidth library measures the printable width of characters of
 a string. This is not meant to an official standard, but as a terse description of the lowest level
-API functions, currently this is just :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
+API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
 
 The :func:`wcwidth.iter_graphemes` function is mainly specified by `Unicode Standard Annex #29`_.
 
@@ -117,7 +117,7 @@ formation: the font engine merges the consonants into a single ligature glyph.
 - ZWJ (`U+200D`_) after a virama is consumed without breaking conjunct state,
   supporting explicit half-form requests (virama + ZWJ + consonant).
 
-See also: `L2/2023/23107`_ Proper Complex Script Support in Text Terminals.
+See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
