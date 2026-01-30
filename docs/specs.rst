@@ -4,8 +4,11 @@
 Specification
 =============
 
-This document defines how the wcwidth library measures the printable width
-of characters of a string.
+This document defines how this Python wcwidth library measures the printable width of characters of
+a string. This is not meant to an official standard, but as a terse description of the lowest level
+API functions, currently this is just :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
+
+The :func:`wcwidth.iter_graphemes` function is mainly specified by `Unicode Standard Annex #29`_.
 
 Width of -1
 -----------
@@ -53,7 +56,6 @@ consecutive pair, when measured in sequence by :func:`wcwidth.wcswidth` or
 `Hangul Jamo`_ Jungseong and "Extended-B" code blocks, `U+1160`_ through
 `U+11FF`_ and `U+D7B0`_ through `U+D7FF`_.
 
-
 Any characters of category ``Mc`` (`Spacing Combining Mark`_), aprox. 443
 characters, for the single-character function :func:`wcwidth.wcwidth`.
 When measured in sequence by :func:`wcwidth.wcswidth`, see `Width of 2`_.
@@ -95,27 +97,25 @@ and the ``Mc`` do not break the association — for example, a consonant followe
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
 Virama Conjunct Formation
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
-In `Brahmic scripts`_, a `Virama`_ (as defined by `Indic_Syllabic_Category`_ in
+In `Brahmic scripts`_, a `Virama`_ (``Indic_Syllabic_Category=Virama`` in
 `IndicSyllabicCategory.txt`_) between two consonants triggers `conjunct`_
-formation: the terminal's shaping engine (HarfBuzz/CoreText) merges the
-consonants into a single ligature glyph. A ``Consonant`` (also defined by
-`Indic_Syllabic_Category`_) immediately following a ``Virama`` is measured at 0
-width with a **deferred +1** that is added unless a following ``Mc``
-(`Spacing Combining Mark`_) absorbs it. The conjunct occupies the same number of
-cells as the original base consonant, but a following ``Mc`` vowel sign does not
-add an additional cell because it replaces the conjunct's trailing advance.
+formation: the font engine merges the consonants into a single ligature glyph.
 
-Chained conjuncts (C + virama + C + virama + C) collapse recursively — each
-virama-consonant pair reduces by one cell, and the deferred +1 carries through
-the chain until the conjunct ends. Zero-width combining marks (``Mn``) such as
-dependent vowel signs do not break the conjunct context — the deferred +1
-carries through ``Mn`` marks within the same `aksara`_ (orthographic syllable).
+- A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
+- The conjunct still occupies cells — the next visible advance settles it:
 
-This rule applies across all Brahmic scripts including Devanagari, Bengali,
-Gujarati, Gurmukhi, Oriya, Tamil, Telugu, Kannada, Malayalam, and Sinhala.
-See `L2/2023/23107`_ for background on complex script support in terminals.
+  - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
+    1 cell and closes the conjunct — no extra cell is added.
+  - A following wide character (or end of string) adds 1 cell for the conjunct
+    before counting its own width.
+
+- Chains work the same way: C + virama + C + virama + C collapses each
+  virama+consonant pair.
+- ``Mn`` marks do not break conjunct context within the same `aksara`_.
+
+See also: `L2/2023/23107`_ Proper Complex Script Support in Text Terminals.
 
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
@@ -161,3 +161,4 @@ See `L2/2023/23107`_ for background on complex script support in terminals.
 .. _`conjunct`: https://www.unicode.org/glossary/#consonant_conjunct
 .. _`aksara`: https://www.unicode.org/glossary/#aksara
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
+.. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
