@@ -81,8 +81,7 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import (EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR,
-                             ISC_CONSONANT)
+from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -234,7 +233,7 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     return 1
 
 
-def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branches
+def wcswidth(
     pwcs: str,
     n: int | None = None,
     unicode_version: str = 'auto',
@@ -247,8 +246,12 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     :param n: When ``n`` is None (default), return the length of the entire
         string, otherwise only the first ``n`` characters are measured. This
         argument exists only for compatibility with the C POSIX function
-        signature. It is suggested instead to use python's string slicing
-        capability, ``wcswidth(pwcs[:n])``
+        signature.
+
+        Suggested to always use python's string slicing capability, ``wcswidth(pwcs[:n])`` This
+        argument is a holdover from the POSIX function for matching signatures. Be careful that
+        ``n`` is at grapheme boundaries.
+
     :param unicode_version: Ignored. Retained for backwards compatibility.
 
         .. deprecated:: 0.3.0
@@ -262,8 +265,10 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
 
     See :ref:`Specification` for details of cell measurement.
     """
-    # this 'n' argument is a holdover for POSIX function.
-    # pylint:disable=too-complex
+    # pylint: disable=unused-argument,too-many-locals,too-many-statements
+    # pylint: disable=too-complex,too-many-branches
+    # This function intentionally kept long without delegating functions to reduce function calls in
+    # "hot path", the overhead per-character adds up.
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
