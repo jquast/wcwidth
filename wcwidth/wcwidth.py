@@ -280,6 +280,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
     last_measured_idx = -2  # Track index of last measured char for VS16
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
     last_was_virama = False  # Virama conjunct formation state
+    conjunct_pending = False  # Deferred +1 for bare conjuncts (no trailing Mc)
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
@@ -333,6 +334,7 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             last_measured_idx = idx
             last_measured_ucs = ucs
             last_was_virama = False
+            conjunct_pending = True
             idx += 1
             continue
         wcw = _wcwidth(char)
@@ -340,6 +342,9 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             # early return -1 on C0 and C1 control characters
             return wcw
         if wcw > 0:
+            if conjunct_pending:
+                total_width += 1
+                conjunct_pending = False
             last_measured_idx = idx
             last_measured_ucs = ucs
             last_was_virama = False
@@ -348,10 +353,16 @@ def wcswidth(  # pylint: disable=unused-argument,too-many-locals,too-many-branch
             wcw = 1
             last_measured_idx = -2
             last_was_virama = False
+            conjunct_pending = False
         else:
+            if conjunct_pending and ucs not in _ISC_VIRAMA_SET:
+                total_width += 1
+                conjunct_pending = False
             last_was_virama = ucs in _ISC_VIRAMA_SET
         total_width += wcw
         idx += 1
+    if conjunct_pending:
+        total_width += 1
     return total_width
 
 
@@ -554,6 +565,7 @@ def width(
     last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
     last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
     last_was_virama = False  # Virama conjunct formation state
+    conjunct_pending = False  # Deferred +1 for bare conjuncts (no trailing Mc)
     text_len = len(text)
 
     # Select wcwidth call pattern for best lru_cache performance:
@@ -664,12 +676,16 @@ def width(
             last_measured_idx = idx
             last_measured_ucs = ucs
             last_was_virama = False
+            conjunct_pending = True
             idx += 1
             continue
 
         # 8. Normal characters: measure with wcwidth
         w = _wcwidth(char)
         if w > 0:
+            if conjunct_pending:
+                current_col += 1
+                conjunct_pending = False
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
@@ -681,10 +697,18 @@ def width(
             max_extent = max(max_extent, current_col)
             last_measured_idx = -2
             last_was_virama = False
+            conjunct_pending = False
         else:
+            if conjunct_pending and ucs not in _ISC_VIRAMA_SET:
+                current_col += 1
+                max_extent = max(max_extent, current_col)
+                conjunct_pending = False
             last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
+    if conjunct_pending:
+        current_col += 1
+        max_extent = max(max_extent, current_col)
     return max_extent
 
 

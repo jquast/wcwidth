@@ -100,13 +100,16 @@ Virama Conjunct Formation
 In Brahmic scripts, a ``Virama`` (as defined by `Indic_Syllabic_Category`_ in
 `IndicSyllabicCategory.txt`_) between two consonants triggers conjunct formation:
 the terminal's shaping engine (HarfBuzz/CoreText) merges the consonants into a
-single ligature glyph occupying one cell. A ``Consonant`` (also defined by
-`Indic_Syllabic_Category`_) immediately following a ``Virama`` contributes 0
-width when measured in sequence by :func:`wcwidth.wcswidth` or
-:func:`wcwidth.width`.
+single ligature glyph. A ``Consonant`` (also defined by
+`Indic_Syllabic_Category`_) immediately following a ``Virama`` is measured at 0
+width with a **deferred +1** that is added unless a following ``Mc`` (Spacing
+Combining Mark) absorbs it. The conjunct occupies the same number of cells as
+the original base consonant, but a following ``Mc`` vowel sign does not add an
+additional cell because it replaces the conjunct's trailing advance.
 
 Chained conjuncts (C + virama + C + virama + C) collapse recursively — each
-virama-consonant pair reduces by one cell.
+virama-consonant pair reduces by one cell, and the deferred +1 carries through
+the chain until the conjunct ends.
 
 This rule applies across all Brahmic scripts including Devanagari, Bengali,
 Gujarati, Gurmukhi, Oriya, Tamil, Telugu, Kannada, Malayalam, and Sinhala.

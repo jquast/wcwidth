@@ -382,7 +382,7 @@ def test_kannada_script_2():
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
     expect_length_each = (1, 0, 0, 1)
     # virama conjunct collapses RA(+Nukta)+virama+CA into one cell
-    expect_length_phrase = 1
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -451,8 +451,8 @@ def test_mc_width_consistency(repeat):
     ("\u0915\u094D\u0924\u093F", 2),
     ("\u0915\u094D\u0930\u093F", 2),
     ("\u0A95\u0ACD\u0A95\u0ACB", 2),
-    ("\u0938\u094D\u0924\u094D\u0930", 1),
-    ("\u0938\u094D\u0924", 1),
+    ("\u0938\u094D\u0924\u094D\u0930", 2),
+    ("\u0938\u094D\u0924", 2),
     ("\u0915\u094D\u0020", 2),
 ])
 def test_virama_conjunct(phrase, expected):
