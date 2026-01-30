@@ -108,12 +108,14 @@ formation: the font engine merges the consonants into a single ligature glyph.
 
   - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
     1 cell and closes the conjunct — no extra cell is added.
-  - A following wide character (or end of string) adds 1 cell for the conjunct
-    before counting its own width.
+  - A following character with positive width (or end of string) adds 1 cell
+    for the conjunct before counting its own width.
 
 - Chains work the same way: C + virama + C + virama + C collapses each
   virama+consonant pair.
 - ``Mn`` marks do not break conjunct context within the same `aksara`_.
+- ZWJ (`U+200D`_) after a virama is consumed without breaking conjunct state,
+  supporting explicit half-form requests (virama + ZWJ + consonant).
 
 See also: `L2/2023/23107`_ Proper Complex Script Support in Text Terminals.
 
