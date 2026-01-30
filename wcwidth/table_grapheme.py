@@ -2125,39 +2125,6 @@ INCB_EXTEND = (
     (0xe0100, 0xe01ef,),  # Variation Selector-17   ..Variation Selector-256
 )
 
-ISC_VIRAMA = (
-    # Source: IndicSyllabicCategory
-    # Date: see file
-    #
-    (0x0094d, 0x0094d,),  # Devanagari Sign Virama
-    (0x009cd, 0x009cd,),  # Bengali Sign Virama
-    (0x00a4d, 0x00a4d,),  # Gurmukhi Sign Virama
-    (0x00acd, 0x00acd,),  # Gujarati Sign Virama
-    (0x00b4d, 0x00b4d,),  # Oriya Sign Virama
-    (0x00bcd, 0x00bcd,),  # Tamil Sign Virama
-    (0x00c4d, 0x00c4d,),  # Telugu Sign Virama
-    (0x00ccd, 0x00ccd,),  # Kannada Sign Virama
-    (0x00d4d, 0x00d4d,),  # Malayalam Sign Virama
-    (0x00dca, 0x00dca,),  # Sinhala Sign Al-lakuna
-    (0x01b44, 0x01b44,),  # Balinese Adeg Adeg
-    (0x0a806, 0x0a806,),  # Syloti Nagri Sign Hasanta
-    (0x0a8c4, 0x0a8c4,),  # Saurashtra Sign Virama
-    (0x0a9c0, 0x0a9c0,),  # Javanese Pangkon
-    (0x11046, 0x11046,),  # Brahmi Virama
-    (0x110b9, 0x110b9,),  # Kaithi Sign Virama
-    (0x111c0, 0x111c0,),  # Sharada Sign Virama
-    (0x11235, 0x11235,),  # Khojki Sign Virama
-    (0x1134d, 0x1134d,),  # Grantha Sign Virama
-    (0x11442, 0x11442,),  # Newa Sign Virama
-    (0x114c2, 0x114c2,),  # Tirhuta Sign Virama
-    (0x115bf, 0x115bf,),  # Siddham Sign Virama
-    (0x1163f, 0x1163f,),  # Modi Sign Virama
-    (0x116b6, 0x116b6,),  # Takri Sign Virama
-    (0x11839, 0x11839,),  # Dogra Sign Virama
-    (0x119e0, 0x119e0,),  # Nandinagari Sign Virama
-    (0x11c3f, 0x11c3f,),  # Bhaiksuki Sign Virama
-)
-
 ISC_CONSONANT = (
     # Source: IndicSyllabicCategory
     # Date: see file

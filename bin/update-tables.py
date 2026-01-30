@@ -463,6 +463,12 @@ def fetch_table_zero_data() -> UnicodeTableRenderCtx:
             fname=UnicodeDataFile.PropList(version),
             property_name='Prepended_Concatenation_Mark'))
 
+    # Remove Emoji Modifier Fitzpatrick types (U+1F3FB..U+1F3FF) from zero-width.
+    # Standalone they display as wide (2 cells); they are only zero-width when
+    # following an emoji base character in sequence, handled contextually in
+    # wcswidth() and width().
+    table[version].values -= set(range(0x1F3FB, 0x1F3FF + 1))
+
     return UnicodeTableRenderCtx('ZERO_WIDTH', table)
 
 
@@ -779,11 +785,14 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     }
 
 
-ISC_VALUES = ('Virama', 'Consonant')
+ISC_VALUES = ('Consonant',)
 
 
 def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
-    """Parse IndicSyllabicCategory.txt for Virama and Consonant properties.
+    """Parse IndicSyllabicCategory.txt for Consonant property.
+
+    Virama is not generated here — it is a small, stable set maintained as a
+    hardcoded frozenset (_ISC_VIRAMA_SET) in wcwidth.py for O(1) lookup.
 
     See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
     """
