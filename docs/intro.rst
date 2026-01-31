@@ -59,8 +59,9 @@ Discrepancies
 You may find that support *varies* for complex unicode sequences or codepoints.
 
 A companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
-character support and version level, language support, zero-width joiner, and variation-16 support
-as a `General Tabulated Summary`_ by terminal emulator software and version.
+character, language/grapheme clustering and complex script support, emojis and zero-width joiner,
+variations, and regional indicator (flags) as a `General Tabulated Summary`_ by terminal emulator
+software and version.
 
 ========
 Overview
