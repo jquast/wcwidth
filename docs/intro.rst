@@ -455,6 +455,9 @@ languages.
 History
 =======
 
+0.5.3 *2026-01-30*
+  * **Bugfix** Brahmic using Virama conjunct formation. `Issue #155`_, `PR #204`_.
+
 0.5.2 *2026-01-29*
   * **Bugfix** Measurement of category ``Mc`` (`Spacing Combining Mark`_), approx.  443, has a more
     nuanced specification_, and may be categorized as either zero or wide. `PR #200`_.
@@ -667,7 +670,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #199`: https://github.com/jquast/wcwidth/pull/199
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`PR #202`: https://github.com/jquast/wcwidth/pull/202
+.. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
+.. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`selectel/pyte`: https://github.com/selectel/pyte
