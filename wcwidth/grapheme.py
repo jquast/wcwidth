@@ -10,10 +10,15 @@ https://www.unicode.org/reports/tr29/
 from __future__ import annotations
 
 # std imports
+import sys
+import unicodedata
 from enum import IntEnum
 from functools import lru_cache
 
 from typing import TYPE_CHECKING, NamedTuple
+
+# check for python 3.15 for new iter_graphemes() function
+_HAS_PYTHON315_ITER_GRAPHEMES = (sys.version_info >= (3, 15) and hasattr(unicodedata, 'iter_graphemes'))
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -245,13 +250,13 @@ def _should_break(
     return BreakResult(should_break=True, ri_count=ri_count)
 
 
-def iter_graphemes(
+def _iter_graphemes_stdlib(
     unistr: str,
     start: int = 0,
     end: int | None = None,
 ) -> Iterator[str]:
     r"""
-    Iterate over grapheme clusters in a Unicode string.
+    Iterate over grapheme clusters using :func:`unicodedata.iter_graphemes`.
 
     Grapheme clusters are "user-perceived characters" - what a user would
     consider a single character, which may consist of multiple Unicode
@@ -273,6 +278,30 @@ def iter_graphemes(
 
     .. versionadded:: 0.3.0
     """
+    if not unistr:
+        return
+
+    length = len(unistr)
+
+    if end is None:
+        end = length
+
+    if start >= end or start >= length:
+        return
+
+    end = min(end, length)
+
+    full_segment = unistr[start:end]
+    for seg in unicodedata.iter_graphemes(full_segment):
+        yield full_segment[seg.start:seg.end]
+
+
+def _iter_graphemes_python(
+    unistr: str,
+    start: int = 0,
+    end: int | None = None,
+) -> Iterator[str]:
+    """Pure-Python grapheme cluster iteration following UAX #29."""
     if not unistr:
         return
 
@@ -426,3 +455,10 @@ def iter_graphemes_reverse(
             break
         yield unistr[cluster_start:pos]
         pos = cluster_start
+
+
+# Bind iter_graphemes at module level to avoid per-call dispatch overhead.
+iter_graphemes = (
+    _iter_graphemes_stdlib if _HAS_PYTHON315_ITER_GRAPHEMES
+    else _iter_graphemes_python
+)
