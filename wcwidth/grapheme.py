@@ -17,9 +17,6 @@ from functools import lru_cache
 
 from typing import TYPE_CHECKING, NamedTuple
 
-# check for python 3.15 for new iter_graphemes() function
-_HAS_PYTHON315_ITER_GRAPHEMES = (sys.version_info >= (3, 15) and hasattr(unicodedata, 'iter_graphemes'))
-
 # local
 from .bisearch import bisearch as _bisearch
 from .table_grapheme import (GRAPHEME_L,
@@ -40,6 +37,12 @@ from .table_grapheme import (GRAPHEME_L,
 if TYPE_CHECKING:  # pragma: no cover
     # std imports
     from collections.abc import Iterator
+
+# check for python 3.15 for new iter_graphemes() function
+_HAS_PYTHON315_ITER_GRAPHEMES = (
+    sys.version_info >= (3, 15)
+    and hasattr(unicodedata, 'iter_graphemes')
+)
 
 # Maximum backward scan distance when finding grapheme cluster boundaries.
 # Covers all known Unicode grapheme clusters with margin; longer sequences are pathological.
@@ -292,7 +295,7 @@ def _iter_graphemes_stdlib(
     end = min(end, length)
 
     full_segment = unistr[start:end]
-    for seg in unicodedata.iter_graphemes(full_segment):
+    for seg in unicodedata.iter_graphemes(full_segment):  # type: ignore[attr-defined]  # pylint: disable=no-member
         yield full_segment[seg.start:seg.end]
 
 
