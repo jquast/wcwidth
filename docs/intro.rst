@@ -456,6 +456,11 @@ languages.
 History
 =======
 
+0.6.0 *2026-02-06*
+  * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,
+    ``drop_whitespace``, ``max_lines``, and ``placeholder`` for `wrap()`_, completing stdlib
+    `textwrap.wrap()`_ compatibility.
+
 0.5.3 *2026-01-30*
   * **Bugfix** Brahmic using Virama conjunct formation. `Issue #155`_, `PR #204`_.
 
