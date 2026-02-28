@@ -306,7 +306,7 @@ mode is to display an ambiguous character surrounded by a pair of Cursor Positio
 queries with a terminal in cooked or raw mode, and to parse the responses for their ``(y, x)``
 locations and measure the difference ``x``.
 
-This code should also be careful check whether it is attached to a terminal and be careful of
+This code should also be careful to check whether it is attached to a terminal and be careful of
 possible timeout, slow network, or non-response when working with "dumb terminals" like a CI build.
 
 `jquast/blessed`_ library provides such a helping `Terminal.detect_ambiguous_width()`_ method:
