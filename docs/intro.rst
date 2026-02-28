@@ -402,6 +402,13 @@ This library is used in:
 - `prompt-toolkit/python-prompt-toolkit`_: a Library for building powerful
   interactive command lines in Python.
 
+- `urwid/urwid`_: Console user interface library for Python
+
+- `prettytable/prettytable`_:  Display tabular data in a visually appealing ASCII table format
+
+- `leviathan0992/Pylsy`_:  Pylsy is a simple python library draw tables in the Terminal. Just two
+  lines of code.
+
 - `dbcli/pgcli`_: Postgres CLI with autocompletion and syntax highlighting.
 
 - `thomasballinger/curtsies`_: a Curses-like terminal wrapper with a display
@@ -418,8 +425,8 @@ This library is used in:
 - `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG
   animations.
 
-- `peterbrittain/asciimatics`_: Package to help people create full-screen text
-  UIs.
+- `peterbrittain/asciimatics`_: A cross platform package to do curses-like operations, plus higher
+  level APIs and widgets to create text UIs and ASCII art animations
 
 - `python-cmd2/cmd2`_: A tool for building interactive command line apps
 
@@ -709,6 +716,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
+.. _`urwid/urwid`: https://github.com/urwid/urwid
+.. _`prettytable/prettytable`: https://github.com/urwid/urwid
+.. _`leviathan0992/Pylsy`: https://github.com/leviathan0992/Pylsy
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
