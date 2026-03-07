@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+"""Strip terminal escape sequences from a file or stdin."""
+import sys
+
+from wcwidth import strip_sequences
+
+if len(sys.argv) > 1:
+    with open(sys.argv[1], "r", encoding="utf-8", errors="replace") as f:
+        sys.stdout.write(strip_sequences(f.read()))
+else:
+    sys.stdout.write(strip_sequences(sys.stdin.read()))
