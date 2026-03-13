@@ -399,6 +399,8 @@ This library is used in:
 - `jquast/blessed`_: a thin, practical wrapper around terminal capabilities in
   Python.
 
+- `jquast/telix`_:  A Modern telnet client especially designed for BBSs and MUDs.
+
 - `prompt-toolkit/python-prompt-toolkit`_: a Library for building powerful
   interactive command lines in Python.
 
@@ -688,6 +690,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
+.. _`jquast/telix`: https://github.com/jquast/telix
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
 .. _`dbcli/pgcli`: https://github.com/dbcli/pgcli
