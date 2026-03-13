@@ -4,8 +4,13 @@ import sys
 
 from wcwidth import strip_sequences
 
+# some care is taken regarding '\r\n' because this program is meant to show
+# raw terminal data to terminals that are *not* in raw mode, so different
+# interpretation of '\r\n' is needed.
+
 if len(sys.argv) > 1:
-    with open(sys.argv[1], "r", encoding="utf-8", errors="replace") as f:
-        sys.stdout.write(strip_sequences(f.read()))
+    with open(sys.argv[1], "rb") as f:
+        text = f.read().replace(b"\r\n", b"\n").replace(b"\r", b"").decode()
 else:
-    sys.stdout.write(strip_sequences(sys.stdin.read()))
+    text = sys.stdin.buffer.read().replace(b"\r\n", b"\n").replace(b"\r", b"").decode()
+sys.stdout.write(strip_sequences(text))
