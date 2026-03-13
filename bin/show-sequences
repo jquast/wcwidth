@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Show terminal escape sequences in a file or stdin as repr() literals."""
+# std imports
 import sys
 
+# local
 from wcwidth import iter_sequences
 
 

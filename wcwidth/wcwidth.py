@@ -245,7 +245,7 @@ def wcswidth(
     :param pwcs: Measure width of given unicode string.
     :param n: When ``n`` is None (default), return the length of the entire
         string, otherwise only the first ``n`` characters are measured.
-        
+
     :param unicode_version: Ignored. Retained for backwards compatibility.
 
         .. deprecated:: 0.3.0
