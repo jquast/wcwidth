@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Show terminal escape sequences in a file or stdin as repr() literals."""
+# std imports
+import sys
+
+# local
+from wcwidth import iter_sequences
+
+
+def _read_input():
+    # some care is taken regarding '\r\n' because this program is meant to show
+    # raw terminal data to terminals that are *not* in raw mode, so different
+    # interpretation of '\r\n' is needed.
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "rb") as f:
+            return f.read().replace(b"\r\n", b"\n").decode()
+    return sys.stdin.buffer.read().replace(b"\r\n", b"\n").decode()
+
+
+for line in _read_input().split("\n"):
+    for item, is_seq in iter_sequences(line):
+        print(repr(item) if is_seq else item.replace("\r", repr("\r")), end="")
+    print("", flush=True)

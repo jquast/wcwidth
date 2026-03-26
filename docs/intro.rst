@@ -306,7 +306,7 @@ mode is to display an ambiguous character surrounded by a pair of Cursor Positio
 queries with a terminal in cooked or raw mode, and to parse the responses for their ``(y, x)``
 locations and measure the difference ``x``.
 
-This code should also be careful check whether it is attached to a terminal and be careful of
+This code should also be careful to check whether it is attached to a terminal and be careful of
 possible timeout, slow network, or non-response when working with "dumb terminals" like a CI build.
 
 `jquast/blessed`_ library provides such a helping `Terminal.detect_ambiguous_width()`_ method:
@@ -399,8 +399,17 @@ This library is used in:
 - `jquast/blessed`_: a thin, practical wrapper around terminal capabilities in
   Python.
 
+- `jquast/telix`_:  A Modern telnet client especially designed for BBSs and MUDs.
+
 - `prompt-toolkit/python-prompt-toolkit`_: a Library for building powerful
   interactive command lines in Python.
+
+- `urwid/urwid`_: Console user interface library for Python
+
+- `prettytable/prettytable`_:  Display tabular data in a visually appealing ASCII table format
+
+- `leviathan0992/Pylsy`_:  Pylsy is a simple python library draw tables in the Terminal. Just two
+  lines of code.
 
 - `dbcli/pgcli`_: Postgres CLI with autocompletion and syntax highlighting.
 
@@ -418,8 +427,8 @@ This library is used in:
 - `nbedos/termtosvg`_: Terminal recorder that renders sessions as SVG
   animations.
 
-- `peterbrittain/asciimatics`_: Package to help people create full-screen text
-  UIs.
+- `peterbrittain/asciimatics`_: A cross platform package to do curses-like operations, plus higher
+  level APIs and widgets to create text UIs and ASCII art animations
 
 - `python-cmd2/cmd2`_: A tool for building interactive command line apps
 
@@ -681,6 +690,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
 .. _`jquast/blessed`: https://github.com/jquast/blessed
+.. _`jquast/telix`: https://github.com/jquast/telix
 .. _`selectel/pyte`: https://github.com/selectel/pyte
 .. _`thomasballinger/curtsies`: https://github.com/thomasballinger/curtsies
 .. _`dbcli/pgcli`: https://github.com/dbcli/pgcli
@@ -709,6 +719,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
+.. _`urwid/urwid`: https://github.com/urwid/urwid
+.. _`prettytable/prettytable`: https://github.com/urwid/urwid
+.. _`leviathan0992/Pylsy`: https://github.com/leviathan0992/Pylsy
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
