@@ -84,9 +84,13 @@ from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WI
 from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
+                               OSC66_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
+from .osc66 import (parse_osc66_metadata,
+                    osc66_width as _osc66_width,
+                    _replace_osc66_with_padding)
 from .unicode_versions import list_versions
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -463,7 +467,10 @@ def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
     Fast path for width() with control_codes='ignore'.
 
     Strips escape sequences and control characters, then measures remaining text.
+    OSC 66 sequences are replaced with padding of correct width before stripping.
     """
+    if '\x1b]66;' in text:
+        text = _replace_osc66_with_padding(text, ambiguous_width)
     return wcswidth(
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width
@@ -577,6 +584,17 @@ def width(
 
         # 1. Handle ESC sequences
         if char == '\x1b':
+            # 1a. OSC 66 (text sizing) has positive width — check before zero-width path
+            if text[idx:idx + 5] == '\x1b]66;':
+                osc66_match = OSC66_PATTERN.match(text, idx)
+                if osc66_match:
+                    meta = parse_osc66_metadata(osc66_match.group(1))
+                    current_col += _osc66_width(
+                        meta, osc66_match.group(2), ambiguous_width
+                    )
+                    idx = osc66_match.end()
+                    max_extent = max(max_extent, current_col)
+                    continue
             match = ZERO_WIDTH_PATTERN.match(text, idx)
             if match:
                 seq = match.group()
@@ -861,6 +879,8 @@ def strip_sequences(text: str) -> str:
         >>> strip_sequences('\x1b[1m\x1b[31mbold red\x1b[0m text')
         'bold red text'
     """
+    if '\x1b]66;' in text:
+        text = OSC66_PATTERN.sub(r'\2', text)
     return ZERO_WIDTH_PATTERN.sub('', text)
 
 
@@ -958,16 +978,44 @@ def clip(
             break
 
         # Handle escape sequences
-        if char == '\x1b' and (match := ZERO_WIDTH_PATTERN.match(text, idx)):
-            seq = match.group()
-            if propagate_sgr and _SGR_PATTERN.match(seq):
-                # Update SGR state; will be applied as prefix when visible content starts
-                sgr = _sgr_state_update(sgr, seq)
-            else:
-                # Non-SGR sequences always preserved
-                output.append(seq)
-            idx = match.end()
-            continue
+        if char == '\x1b':
+            # OSC 66 (text sizing) has positive width — handle before zero-width path
+            if text[idx:idx + 5] == '\x1b]66;':
+                osc66_match = OSC66_PATTERN.match(text, idx)
+                if osc66_match:
+                    meta = parse_osc66_metadata(osc66_match.group(1))
+                    w = _osc66_width(
+                        meta, osc66_match.group(2), ambiguous_width
+                    )
+                    if w == 0:
+                        if start <= col < end:
+                            output.append(osc66_match.group())
+                    elif col >= start and col + w <= end:
+                        output.append(osc66_match.group())
+                        if propagate_sgr and sgr_at_clip_start is None:
+                            sgr_at_clip_start = sgr
+                        col += w
+                    elif col < end and col + w > start:
+                        visible = min(end, col + w) - max(start, col)
+                        output.append(fillchar * visible)
+                        if propagate_sgr and sgr_at_clip_start is None:
+                            sgr_at_clip_start = sgr
+                        col += w
+                    else:
+                        col += w
+                    idx = osc66_match.end()
+                    continue
+
+            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
+                seq = match.group()
+                if propagate_sgr and _SGR_PATTERN.match(seq):
+                    # Update SGR state; will be applied as prefix when visible content starts
+                    sgr = _sgr_state_update(sgr, seq)
+                else:
+                    # Non-SGR sequences always preserved
+                    output.append(seq)
+                idx = match.end()
+                continue
 
         # Handle bare ESC (not a valid sequence)
         if char == '\x1b':

@@ -119,6 +119,57 @@ formation: the font engine merges the consonants into a single ligature glyph.
 
 See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 
+OSC 66 (Kitty Text Sizing Protocol)
+------------------------------------
+
+The `Kitty Text Sizing Protocol`_ (OSC 66) allows applications to explicitly
+declare how many terminal cells text occupies, using the escape sequence::
+
+    ESC ] 66 ; metadata ; text BEL/ST
+
+Where ``metadata`` is colon-separated ``key=value`` pairs and the terminator
+is either BEL (``0x07``) or ST (``ESC \``).
+
+Metadata parameters:
+
+- ``s``: Scale factor (1--7, default 1). Text occupies ``s`` rows tall and
+  ``s * w`` columns wide.
+- ``w``: Width in cells (0--7, default 0). When 0, width is auto-calculated
+  from the inner text.
+- ``n``: Fractional scaling numerator (0--15, default 0).
+- ``d``: Fractional scaling denominator (0--15, default 0).
+- ``v``: Vertical alignment (0=top, 1=bottom, 2=center; default 0).
+- ``h``: Horizontal alignment (0=left, 1=right, 2=center; default 0).
+
+Width calculation by :func:`wcwidth.width`:
+
+- When ``w > 0``: the sequence occupies exactly ``s * w`` cells, regardless
+  of the inner text content.
+- When ``w == 0``: the sequence occupies ``s * inner_text_width`` cells, where
+  ``inner_text_width`` is the measured width of the text payload.
+
+The fractional scaling parameters (``n`` and ``d``) adjust the rendered font
+size within the allocated cells but do not change the cell count.
+
+OSC 66 sequences are handled in all ``control_codes`` modes (``'parse'``,
+``'strict'``, ``'ignore'``), since they declare explicit width rather than
+causing indeterminate cursor movement.
+
+:func:`wcwidth.strip_sequences` extracts the inner text payload from OSC 66
+sequences while stripping the escape wrapper.
+
+:func:`wcwidth.clip` treats each OSC 66 sequence as an atomic unit of its
+declared width. If the sequence straddles a clip boundary, it is replaced
+with fill characters.
+
+Generation functions :func:`wcwidth.osc66_wrap` and :func:`wcwidth.osc66_scale`
+produce correctly formatted OSC 66 sequences. The text payload is limited to
+4096 bytes (UTF-8 encoded) per the protocol specification.
+
+See also: `Kitty Text Sizing Protocol`_.
+
+.. _`Kitty Text Sizing Protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
+
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F
