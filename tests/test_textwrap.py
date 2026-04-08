@@ -221,8 +221,8 @@ SEQUENCE_CASES = [
     # Sequences in long word breaking - red starts after 'x', continues across lines
     ('x\x1b[31mabcdefghij\x1b[0m', 3,
      ['x\x1b[31mab\x1b[0m', '\x1b[31mcde\x1b[0m', '\x1b[31mfgh\x1b[0m', '\x1b[31mij\x1b[0m']),
-    # Lone ESC - not a valid SGR sequence, stays with preceding text
-    ('abc\x1bdefghij', 3, ['abc\x1b', 'def', 'ghi', 'j']),
+    # Fs sequence (ESC d) - zero-width, stays with preceding text
+    ('abc\x1bdefghij', 3, ['abc\x1bd', 'efg', 'hij']),
 ]
 
 SEQUENCE_CASES_NO_PROPAGATE = [
