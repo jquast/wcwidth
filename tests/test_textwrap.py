@@ -521,3 +521,9 @@ def test_wrap_replace_whitespace_false_newlines_zero_width():
     """Newlines have zero display width, so more text fits per line than stdlib."""
     assert wrap('hello\nworld foo\nbar', 10, replace_whitespace=False) == [
         'hello\nworld', 'foo\nbar']
+
+
+def test_wrap_bare_esc():
+    """Bare ESC not part of a recognized sequence is treated as zero-width."""
+    assert wrap('ab\x1bcd ef', 5) == ['ab\x1bcd', 'ef']
+    assert wrap('ab\x1b\x00cdef', 3) == ['ab\x1b\x00c', 'def']

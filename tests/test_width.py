@@ -4,7 +4,7 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
+from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN, INDETERMINATE_EFFECT_SEQUENCE
 
 BASIC_WIDTH_CASES = [
     ('', 0, 'empty'),
@@ -88,6 +88,7 @@ STRICT_INDETERMINATE_SEQUENCES = [
     ('\x1b[1X', 'erase_chars'),
     ('\x1b[1S', 'parm_index'),
     ('\x1b[1T', 'parm_rindex'),
+    ('\x1bc', 'full_reset'),
 ]
 
 
@@ -505,7 +506,7 @@ NF_SEQUENCE_CASES = [
 
 @pytest.mark.parametrize('seq,name', NF_SEQUENCE_CASES)
 def test_nf_sequences_matched(seq, name):
-    """nF (multi-byte) escape sequences are matched as zero-width."""
+    """NF (multi-byte) escape sequences are matched as zero-width."""
     segments = list(wcwidth.iter_sequences(seq))
     assert segments == [(seq, True)]
     assert wcwidth.width(seq) == 0
@@ -519,19 +520,18 @@ def test_fs_sequence_embedded_in_text():
 
 
 def test_nf_sequence_embedded_in_text():
-    """nF sequence surrounded by text is correctly segmented."""
+    """NF sequence surrounded by text is correctly segmented."""
     segments = list(wcwidth.iter_sequences('abc\x1b#8def'))
     assert segments == [('abc', False), ('\x1b#8', True), ('def', False)]
     assert wcwidth.width('abc\x1b#8def') == 6
 
 
 def test_screen_title_sequences():
-    """Screen/tmux ESC k ... ESC \\ title sequences."""
+    """Screen/tmux title sequence ESC k hello ST."""
     segments = list(wcwidth.iter_sequences('\x1bkhello\x1b\\'))
     assert segments[0] == ('\x1bk', True)
 
 
 def test_ris_indeterminate():
     """RIS (ESC c) is flagged as indeterminate effect."""
-    from wcwidth.escape_sequences import INDETERMINATE_EFFECT_SEQUENCE
     assert INDETERMINATE_EFFECT_SEQUENCE.match('\x1bc')

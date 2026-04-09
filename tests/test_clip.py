@@ -236,6 +236,7 @@ CLIP_CONTROL_CHAR_CASES = [
     ('abc\rde', 0, 5, 'abc\rde'),
     ('\a\b\rHello', 0, 5, '\a\b\rHello'),
     ('ab\x01\x02cd', 0, 4, 'ab\x01\x02cd'),
+    ('ab\x1b\x00cd', 0, 4, 'ab\x1b\x00cd'),
 ]
 
 
