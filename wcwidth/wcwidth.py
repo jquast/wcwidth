@@ -84,13 +84,13 @@ from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WI
 from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
-                               OSC66_PATTERN,
+                               TEXT_SIZING_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
-from .osc66 import (parse_osc66_metadata,
-                    osc66_width as _osc66_width,
-                    _replace_osc66_with_padding)
+from .text_sizing import (parse_text_sizing_params,
+                         text_sizing_width as _text_sizing_width,
+                         _replace_text_sizing_with_padding)
 from .unicode_versions import list_versions
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -470,7 +470,7 @@ def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
     OSC 66 sequences are replaced with padding of correct width before stripping.
     """
     if '\x1b]66;' in text:
-        text = _replace_osc66_with_padding(text, ambiguous_width)
+        text = _replace_text_sizing_with_padding(text, ambiguous_width)
     return wcswidth(
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width
@@ -586,13 +586,13 @@ def width(
         if char == '\x1b':
             # 1a. OSC 66 (text sizing) has positive width — check before zero-width path
             if text[idx:idx + 5] == '\x1b]66;':
-                osc66_match = OSC66_PATTERN.match(text, idx)
-                if osc66_match:
-                    meta = parse_osc66_metadata(osc66_match.group(1))
-                    current_col += _osc66_width(
-                        meta, osc66_match.group(2), ambiguous_width
+                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
+                if ts_match:
+                    meta = parse_text_sizing_params(ts_match.group(1))
+                    current_col += _text_sizing_width(
+                        meta, ts_match.group(2), ambiguous_width
                     )
-                    idx = osc66_match.end()
+                    idx = ts_match.end()
                     max_extent = max(max_extent, current_col)
                     continue
             match = ZERO_WIDTH_PATTERN.match(text, idx)
@@ -880,7 +880,7 @@ def strip_sequences(text: str) -> str:
         'bold red text'
     """
     if '\x1b]66;' in text:
-        text = OSC66_PATTERN.sub(r'\2', text)
+        text = TEXT_SIZING_PATTERN.sub(r'\2', text)
     return ZERO_WIDTH_PATTERN.sub('', text)
 
 
@@ -981,17 +981,17 @@ def clip(
         if char == '\x1b':
             # OSC 66 (text sizing) has positive width — handle before zero-width path
             if text[idx:idx + 5] == '\x1b]66;':
-                osc66_match = OSC66_PATTERN.match(text, idx)
-                if osc66_match:
-                    meta = parse_osc66_metadata(osc66_match.group(1))
-                    w = _osc66_width(
-                        meta, osc66_match.group(2), ambiguous_width
+                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
+                if ts_match:
+                    meta = parse_text_sizing_params(ts_match.group(1))
+                    w = _text_sizing_width(
+                        meta, ts_match.group(2), ambiguous_width
                     )
                     if w == 0:
                         if start <= col < end:
-                            output.append(osc66_match.group())
+                            output.append(ts_match.group())
                     elif col >= start and col + w <= end:
-                        output.append(osc66_match.group())
+                        output.append(ts_match.group())
                         if propagate_sgr and sgr_at_clip_start is None:
                             sgr_at_clip_start = sgr
                         col += w
@@ -1003,7 +1003,7 @@ def clip(
                         col += w
                     else:
                         col += w
-                    idx = osc66_match.end()
+                    idx = ts_match.end()
                     continue
 
             if (match := ZERO_WIDTH_PATTERN.match(text, idx)):

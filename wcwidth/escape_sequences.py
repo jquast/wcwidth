@@ -8,10 +8,10 @@ should first check that the character at the current position is ESC for optimal
 # std imports
 import re
 
-# OSC 66 (Kitty Text Sizing Protocol) — has positive width, must be checked before ZERO_WIDTH_PATTERN.
+# Text Sizing Protocol (OSC 66) — has positive width, must be checked before ZERO_WIDTH_PATTERN.
 # Groups: (1) metadata, (2) inner text, (3) terminator (BEL or ST).
 # https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
-OSC66_PATTERN = re.compile(
+TEXT_SIZING_PATTERN = re.compile(
     r'\x1b\]66;([^;\x07\x1b]*);([^\x07\x1b]*)(\x07|\x1b\\)'
 )
 

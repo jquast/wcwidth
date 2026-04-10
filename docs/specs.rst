@@ -162,9 +162,8 @@ sequences while stripping the escape wrapper.
 declared width. If the sequence straddles a clip boundary, it is replaced
 with fill characters.
 
-Generation functions :func:`wcwidth.osc66_wrap` and :func:`wcwidth.osc66_scale`
-produce correctly formatted OSC 66 sequences. The text payload is limited to
-4096 bytes (UTF-8 encoded) per the protocol specification.
+Sequence generation (emitting OSC 66) is handled by terminal libraries such
+as ``blessed``, not by this width-measurement library.
 
 See also: `Kitty Text Sizing Protocol`_.
 
