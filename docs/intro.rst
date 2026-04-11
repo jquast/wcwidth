@@ -133,6 +133,9 @@ Use function `width()`_ to measure a string with improved handling of ``control_
     >>> # as well as sequences with "indeterminate" effects like Home + Clear
     >>> wcwidth.width('\x1b[H\x1b[2J')
     0
+    >>> # Kitty text sizing protocol (OSC 66): 2x-scaled "Hello" occupies 10 cells
+    >>> wcwidth.width('\x1b]66;s=2;Hello\x07')
+    10
     >>> # or, raise ValueError for "indeterminate" effects using control_codes='strict'
     >>> wcwidth.width('\n', control_codes='strict')
     Traceback (most recent call last):
