@@ -493,9 +493,10 @@ def width(
     :param text: String to measure.
     :param control_codes: How to handle control characters and sequences:
 
-        - ``'parse'`` (default): Track horizontal cursor movement from BS ``\b``, CR ``\r``, TAB
-          ``\t``, and cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
-          indeterminate sequences are zero-width. Never raises.
+        - ``'parse'`` (default): Track horizontal cursor movement like BS ``\b``, CR ``\r``, TAB
+          ``\t``, cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
+          indeterminate terminal sequences are zero-width. OSC 66 Kitty Text Sizing protocol, OSC 8
+          Hyperlink, and many other kinds of output sequences are parsed for displayed measurements.
         - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters with
           indeterminate results of the screen or cursor, like clear or vertical movement. Generally,
           these should be handled with a virtual terminal emulator (like 'pyte').
