@@ -1,24 +1,26 @@
 r"""
-Text Sizing Protocol (OSC 66) parsing and measurement.
+`Kitty Text Sizing Protocol`_ (OSC 66) parsing and measurement.
 
-The `Kitty Text Sizing Protocol`_ allows applications to explicitly tell
+The `Kitty Text Sizing Protocol`_ allows terminal apps to explicitly tell
 terminals how many cells text occupies, using the escape sequence::
 
     ESC ] 66 ; metadata ; text BEL/ST
 
 Metadata is colon-separated ``key=value`` pairs:
 
-- ``s``: scale (1--7, default 1)
-- ``w``: width in cells (0--7, default 0; 0 means auto-calculate from inner text)
-- ``n``: fractional numerator (0--15, default 0)
-- ``d``: fractional denominator (0--15, default 0)
-- ``v``: vertical alignment (0--2, default 0: top, 1: bottom, 2: center)
-- ``h``: horizontal alignment (0--2, default 0: left, 1: right, 2: center)
+- ``s``: scale
+- ``w``: width in cells
+- ``n``: fractional numerator
+- ``d``: fractional denominator
+- ``v``: vertical alignment
+- ``h``: horizontal alignment
 
-Width calculation: if ``w > 0``, the sequence occupies ``s * w`` cells.
-If ``w == 0``, the sequence occupies ``s * inner_text_width`` cells.
+Parsing is pretty straight-forward:
 
-.. _`Kitty Text Sizing Protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
+- When ``w > 0``, return ``s * w``.
+- Otherwise ``w == 0``, ``s * wcswidth(inner_text_width)`` cells.
+
+.. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 
 .. versionadded:: 0.6.0
 """
@@ -26,9 +28,9 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from .escape_sequences import TEXT_SIZING_PATTERN
+from .escape_sequences import text_sizing_pattern
 
-# Metadata key → (NamedTuple field, min, max, default)
+# Metadata key (field, min, max, default)
 _META_FIELDS = {
     's': ('scale', 1, 7, 1),
     'w': ('width', 0, 7, 0),
@@ -83,10 +85,7 @@ def parse_text_sizing_params(raw: str) -> TextSizingParams:
         if key not in _META_FIELDS:
             continue
         field, lo, hi, default = _META_FIELDS[key]
-        try:
-            kwargs[field] = max(lo, min(hi, int(val_str)))
-        except (ValueError, OverflowError):
-            kwargs[field] = default
+        kwargs[field] = max(lo, min(hi, int(val_str)))
     return TextSizingParams(**kwargs)
 
 
@@ -101,8 +100,8 @@ def parse_text_sizing(seq: str) -> tuple[TextSizingParams, str, str] | None:
 
         >>> parse_text_sizing('\x1b]66;s=2;hello\x07')
         (TextSizingParams(scale=2, ...), 'hello', '\x07')
-        >>> parse_text_sizing('\x1b[31m') is None
-        True
+        >>> parse_text_sizing('\x1b[31m')
+        None
     """
     match = TEXT_SIZING_PATTERN.fullmatch(seq)
     if not match:
@@ -131,8 +130,9 @@ def text_sizing_width(
     """
     if params.width > 0:
         return params.scale * params.width
-    # Lazy import to avoid circular dependency (wcwidth -> text_sizing -> wcwidth)
-    from .wcwidth import wcswidth  # pylint: disable=import-outside-toplevel
+    # Lazy import to avoid circular dependency
+    # pylint: disable=import-outside-toplevel
+    from .wcwidth import wcswidth
     inner_w = wcswidth(inner_text, ambiguous_width=ambiguous_width)
     return params.scale * max(0, inner_w)
 

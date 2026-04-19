@@ -467,10 +467,7 @@ def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
     Fast path for width() with control_codes='ignore'.
 
     Strips escape sequences and control characters, then measures remaining text.
-    OSC 66 sequences are replaced with padding of correct width before stripping.
     """
-    if '\x1b]66;' in text:
-        text = _replace_text_sizing_with_padding(text, ambiguous_width)
     return wcswidth(
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width
@@ -502,8 +499,8 @@ def width(
           these should be handled with a virtual terminal emulator (like 'pyte').
         - ``'ignore'``: All C0 and C1 control characters and escape sequences are measured as
           width 0. This is the fastest measurement for text already filtered or known not to contain
-          any kinds of control codes or sequences. TAB ``\t`` is zero-width; for tab expansion,
-          pre-process: ``text.replace('\t', ' ' * 8)``.
+          any kinds of control codes or sequences. TAB ``\t`` is zero-width; to ensure
+          tab expansion, pre-process text using :func:`str.expandtabs`.
 
     :param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
         Must be positive. Has no effect when ``control_codes='ignore'``.
@@ -548,7 +545,7 @@ def width(
         return len(text)
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
-    # Only check for longer strings - the detection overhead hurts short string performance.
+    # Only check longer strings - the detection overhead hurts short string performance.
     if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
@@ -559,7 +556,7 @@ def width(
             ):
                 control_codes = 'ignore'
 
-    # Fast path for ignore mode -- this is useful if you know the text is already "clean"
+    # Fast path for ignore mode, useful if you know the text is already free of control codes
     if control_codes == 'ignore':
         return _width_ignored_codes(text, ambiguous_width)
 
@@ -585,7 +582,7 @@ def width(
 
         # 1. Handle ESC sequences
         if char == '\x1b':
-            # 1a. OSC 66 (text sizing) has positive width — check before zero-width path
+            # 1a. OSC 66 (kitty text sizing) positive width
             if text[idx:idx + 5] == '\x1b]66;':
                 ts_match = TEXT_SIZING_PATTERN.match(text, idx)
                 if ts_match:
@@ -596,6 +593,7 @@ def width(
                     idx = ts_match.end()
                     max_extent = max(max_extent, current_col)
                     continue
+            # 1b. Check all other "zero-width" terminal sequences
             match = ZERO_WIDTH_PATTERN.match(text, idx)
             if match:
                 seq = match.group()
@@ -864,6 +862,9 @@ def strip_sequences(text: str) -> str:
     r"""
     Return text with all terminal escape sequences removed.
 
+    For sequences containing printable text, OSC 66 (Text sizing protocol) and OSC 8 (hyperlink),
+    the inner text is preserved.
+
     Unknown or incomplete ESC sequences are preserved.
 
     :param text: String that may contain terminal escape sequences.
@@ -879,6 +880,10 @@ def strip_sequences(text: str) -> str:
         'hello'
         >>> strip_sequences('\x1b[1m\x1b[31mbold red\x1b[0m text')
         'bold red text'
+        >>> strip_sequences('\x1b]66;s=2;hello\x07')
+        'hello'
+        >>> strip_sequences('\x1b]8;id=34;https://example.com\x1b\\[view]\x1b]8;;\x1b\\')
+        '[view]'
     """
     if '\x1b]66;' in text:
         text = TEXT_SIZING_PATTERN.sub(r'\2', text)
