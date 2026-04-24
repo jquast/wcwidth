@@ -30,8 +30,7 @@ from .grapheme import grapheme_boundary_before  # noqa
 from .grapheme import iter_graphemes, iter_graphemes_reverse
 from .textwrap import SequenceTextWrapper, wrap
 from .sgr_state import propagate_sgr
-from .text_sizing import (TextSizingParams,
-                         parse_text_sizing)
+from .text_sizing import TextSizingParams, parse_text_sizing
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".

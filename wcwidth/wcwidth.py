@@ -80,6 +80,8 @@ from .sgr_state import (_SGR_PATTERN,
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .text_sizing import text_sizing_width as _text_sizing_width
+from .text_sizing import parse_text_sizing_params, _replace_text_sizing_with_padding
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
@@ -88,9 +90,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE)
-from .text_sizing import (parse_text_sizing_params,
-                         text_sizing_width as _text_sizing_width,
-                         _replace_text_sizing_with_padding)
 from .unicode_versions import list_versions
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -549,10 +548,11 @@ def width(
     if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
-            # Check for escape sequences - if none, or only non-cursor-movement sequences
+            # Check for escape sequences that can't be ignored, if present
             if '\x1b' not in text or (
                 not CURSOR_RIGHT_SEQUENCE.search(text) and
-                not CURSOR_LEFT_SEQUENCE.search(text)
+                not CURSOR_LEFT_SEQUENCE.search(text) and
+                not TEXT_SIZING_PATTERN.search(text)
             ):
                 control_codes = 'ignore'
 

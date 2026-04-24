@@ -6,18 +6,23 @@ Specification
 
 This document defines how this Python wcwidth library measures the printable width of characters of
 a string. This is not meant to an official standard, but as a terse description of the lowest level
-API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
+API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` and its relation to higher level
+API function :func:`wcwidth.wcwidth`.
 
-The higher level functions :func:`wcwidth.iter_graphemes` function is mainly specified by `Unicode
-Standard Annex #29`_.  It is designed that :func:`wcwidth.wcswidth` should be used with each result
-of smallest atomic "unit" of text yielded by :func:`wcwidth.iter_graphemes`.
+Scope
+-----
 
-The highest level :func:`wcwidth.width` is Terminal-aware, and no specific specification is
-declared or referenced. The default arguments ``control_codes='parse'``, ``tabsize=8``, and 
-``ambiguous_width=1`` are described only by their docstrings, or specification of related control
-codes parsed, such as `Kitty Text Sizing Protocol`_.
+The lowest level functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` return -1 when any
+control codes are present.  The higher level function :func:`wcwidth.width` never returns -1,
+accepting default arguments, ``control_codes='parse'`` and its behavior and options are described by
+its docstring and specifications of related control codes, `XTerm Control Sequences`_ and `Kitty
+Text Sizing Protocol`_.
 
-This specification applies only to :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
+:func:`wcwidth.iter_graphemes` is specified by `Unicode Standard Annex #29`_ and each string yielded
+by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth`. Although it matches
+behavior of Python 3.15 `uncodedata.iter_graphemes()`_ it differs in its return value,
+:func:`wcwidth.iter_graphemes` yields only strings, while :func:`wcwidth.iter_graphemes` yields
+``unicodedata.Segment`` class objects.
 
 Width of -1
 -----------
@@ -128,7 +133,9 @@ formation: the font engine merges the consonants into a single ligature glyph.
 
 See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 
+.. _`Hyperlinks in Terminal Emulators`: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
 .. _`Kitty Text Sizing Protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
+.. _`XTerm Control Sequences`: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F
@@ -174,3 +181,4 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`aksara`: https://www.unicode.org/glossary/#aksara
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`uncodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes

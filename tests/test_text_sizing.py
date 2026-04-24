@@ -4,14 +4,12 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth.text_sizing import (
-    TextSizingParams,
-    parse_text_sizing_params,
-    parse_text_sizing,
-    text_sizing_width,
-    _replace_text_sizing_with_padding,
-)
-
+from wcwidth.text_sizing import (TextSizingParams,
+                                 parse_text_sizing,
+                                 text_sizing_width,
+                                 parse_text_sizing_params,
+                                 _replace_text_sizing_with_padding,
+                                 _META_FIELDS)
 
 # -- Test-only helpers for generating OSC 66 sequences --
 
@@ -79,17 +77,19 @@ def test_parse_text_sizing_params_clamp(raw, expected):
 PARSE_PARAMS_EDGE_CASES = [
     ('unknown=5', TextSizingParams()),
     ('s=2:unknown=5:w=3', TextSizingParams(scale=2, width=3)),
-    ('s=abc', TextSizingParams()),
-    ('s=', TextSizingParams()),
     ('noequalssign', TextSizingParams()),
     ('s=2:w=3:', TextSizingParams(scale=2, width=3)),
     (':s=2', TextSizingParams(scale=2)),
 ]
 
-
 @pytest.mark.parametrize('raw,expected', PARSE_PARAMS_EDGE_CASES)
 def test_parse_text_sizing_params_edge(raw, expected):
     assert parse_text_sizing_params(raw) == expected
+
+# TODO: assert ValueError for all such values, when control_codes='parse', ignore,
+# when control_codes='strict', raise decorated ValueError, 's', 'w', etc.
+#    ('s=', TextSizingParams()),
+#    ('s=abc', TextSizingParams()),
 
 
 PARAMS_ROUNDTRIP_CASES = [
@@ -110,6 +110,10 @@ def test_params_roundtrip(params):
 PARSE_SEQUENCE_CASES = [
     ('\x1b]66;s=2;hello\x07',
      (TextSizingParams(scale=2), 'hello', '\x07')),
+    ('\x1b]66;s=99;hello\x07',
+     (TextSizingParams(scale=_META_FIELDS['s'].high), 'hello', '\x07')),
+    ('\x1b]66;s=-99;hello\x07',
+     (TextSizingParams(scale=_META_FIELDS['s'].low), 'hello', '\x07')),
     ('\x1b]66;s=2;hello\x1b\\',
      (TextSizingParams(scale=2), 'hello', '\x1b\\')),
     ('\x1b]66;;text\x07',
@@ -118,6 +122,8 @@ PARSE_SEQUENCE_CASES = [
      (TextSizingParams(scale=3, width=2), '', '\x07')),
     ('\x1b]66;w=5;AB\x07',
      (TextSizingParams(width=5), 'AB', '\x07')),
+    ('\x1b]66;s=7;' + ('X' * 30) + '\x07',
+     (TextSizingParams(scale=7), 'X' * 30, '\x07')),
 ]
 
 
@@ -133,6 +139,7 @@ PARSE_SEQUENCE_NONE_CASES = [
     'plain text',
     '',
     '\x1b]66;missing_second_semi\x07',
+
 ]
 
 
@@ -224,7 +231,7 @@ WIDTH_PARSE_CASES = [
     ('\x1b]66;w=3;x\x07', 3),
     ('\x1b]66;s=1:w=0;AB\x07', 2),
     ('\x1b]66;s=2:w=0;AB\x07', 4),
-    ('\x1b]66;s=2:w=0;\u4e2d\x07', 4),
+    ('\x1b]66;s=2:w=0;\u4e2d\x07', 4),  # '中'
     ('\x1b]66;s=1:w=0;\x07', 0),
     ('abc\x1b]66;w=3;x\x07def', 9),
     ('\x1b]66;w=2;A\x07\x1b]66;w=3;B\x07', 5),
@@ -238,8 +245,22 @@ def test_width_text_sizing_parse(text, expected):
     assert wcwidth.width(text) == expected
 
 
-@pytest.mark.parametrize('text,expected', WIDTH_PARSE_CASES)
-def test_width_text_sizing_ignore(text, expected):
+WIDTH_PARSE_IGNORED_CASES = [
+    # when ignored, only the 'inner text' width is measured
+    ('\x1b]66;s=2:w=3;anything\x07', 8),
+    ('\x1b]66;w=3;x\x07', 1),
+    ('\x1b]66;s=1:w=0;AB\x07', 2),
+    ('\x1b]66;s=2:w=0;AB\x07', 2),
+    ('\x1b]66;s=2:w=0;\u4e2d\x07', 2),  # '中'
+    ('\x1b]66;s=1:w=0;\x07', 0),
+    ('abc\x1b]66;w=3;x\x07def', 7),
+    ('\x1b]66;w=2;A\x07\x1b]66;w=3;B\x07', 2),
+    ('\x1b]66;s=2:w=3;text\x1b\\', 4),
+    ('\x1b[31m\x1b]66;w=2;AB\x07\x1b[0m', 2),
+]
+
+@pytest.mark.parametrize('text,expected', WIDTH_PARSE_IGNORED_CASES)
+def test_width_text_sizing_ignored(text, expected):
     assert wcwidth.width(text, control_codes='ignore') == expected
 
 
