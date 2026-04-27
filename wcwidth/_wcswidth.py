@@ -1,5 +1,4 @@
 """This is a python implementation of wcswidth()."""
-# std imports
 import typing
 
 # local

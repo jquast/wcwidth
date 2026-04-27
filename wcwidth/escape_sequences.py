@@ -7,6 +7,7 @@ should first check that the character at the current position is ESC for optimal
 """
 # std imports
 import re
+
 import typing
 
 # Text Sizing Protocol (OSC 66) — has positive width, must be checked before ZERO_WIDTH_PATTERN.

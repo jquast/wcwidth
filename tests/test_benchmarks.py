@@ -3,7 +3,6 @@
 import os
 import sys
 import unicodedata
-import platform
 
 # 3rd party
 import pytest
@@ -375,8 +374,8 @@ _udhr_skip = pytest.mark.skipif(
 )
 
 _py38_skip_pedantic = pytest.mark.skipif(
-        sys.version_info[:2] < (3, 9),
-        reason=f'benchmark.pedantic() not supported in python 3.8 or earlier')
+    sys.version_info[:2] < (3, 9),
+    reason='benchmark.pedantic() not supported in python 3.8 or earlier')
 
 
 @_udhr_skip
