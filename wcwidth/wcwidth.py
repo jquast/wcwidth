@@ -80,8 +80,7 @@ from .sgr_state import (_SGR_PATTERN,
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .text_sizing import text_sizing_width as _text_sizing_width
-from .text_sizing import parse_text_sizing_params, _replace_text_sizing_with_padding
+from .text_sizing import TextSizing
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
@@ -535,8 +534,8 @@ def width(
         1
     """
     # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals
-    # This could be broken into sub-functions (#1, #3, and 6 especially), but for reduced overhead
-    # considering this function is a likely "hot path", they are inlined, breaking many of our
+    # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
+    # in consideration of this function a likely "hot path", they are inline, breaking many pylint
     # complexity rules.
 
     # Fast path for ASCII printable (no tabs, escapes, or control chars)
@@ -583,16 +582,12 @@ def width(
         # 1. Handle ESC sequences
         if char == '\x1b':
             # 1a. OSC 66 (kitty text sizing) positive width
-            if text[idx:idx + 5] == '\x1b]66;':
-                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
-                if ts_match:
-                    meta = parse_text_sizing_params(ts_match.group(1))
-                    current_col += _text_sizing_width(
-                        meta, ts_match.group(2), ambiguous_width
-                    )
-                    idx = ts_match.end()
-                    max_extent = max(max_extent, current_col)
-                    continue
+            if (ts_match := TEXT_SIZING_PATTERN.match(text, idx)):
+                text_size = TextSizing.from_match(ts_match, control_codes=control_codes)
+                current_col += text_size.display_width(ambiguous_width)
+                max_extent = max(max_extent, current_col)
+                idx = ts_match.end()
+                continue
             # 1b. Check all other "zero-width" terminal sequences
             match = ZERO_WIDTH_PATTERN.match(text, idx)
             if match:
@@ -985,32 +980,29 @@ def clip(
 
         # Handle escape sequences
         if char == '\x1b':
-            # OSC 66 (text sizing) has positive width — handle before zero-width path
-            if text[idx:idx + 5] == '\x1b]66;':
-                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
-                if ts_match:
-                    meta = parse_text_sizing_params(ts_match.group(1))
-                    w = _text_sizing_width(
-                        meta, ts_match.group(2), ambiguous_width
-                    )
-                    if w == 0:
-                        if start <= col < end:
-                            output.append(ts_match.group())
-                    elif col >= start and col + w <= end:
-                        output.append(ts_match.group())
-                        if propagate_sgr and sgr_at_clip_start is None:
-                            sgr_at_clip_start = sgr
-                        col += w
-                    elif col < end and col + w > start:
-                        visible = min(end, col + w) - max(start, col)
-                        output.append(fillchar * visible)
-                        if propagate_sgr and sgr_at_clip_start is None:
-                            sgr_at_clip_start = sgr
-                        col += w
-                    else:
-                        col += w
-                    idx = ts_match.end()
-                    continue
+            # OSC 66 (text sizing) has positive width, handle before zero-width path
+            if (ts_match := TEXT_SIZING_PATTERN.match(text, idx)):
+                text_size = TextSizing.from_match(ts_match, control_codes='parse')
+                w = text_size.display_width(ambiguous_width)
+                if col >= start and col + w <= end:
+                    # fits as-is, keep going
+                    output.append(ts_match.group())
+                    if propagate_sgr and sgr_at_clip_start is None:
+                        sgr_at_clip_start = sgr
+                    col += w
+                elif col < end and col + w > start:
+                    # TODO: currently we just replace it entirely with '***',
+                    # when, we should instead "chop up" the text to fit ..
+                    # this function is sparingly used, but it should handle OSC 66 correctly
+                    visible = min(end, col + w) - max(start, col)
+                    output.append(fillchar * visible)
+                    if propagate_sgr and sgr_at_clip_start is None:
+                        sgr_at_clip_start = sgr
+                    col += w
+                else:
+                    col += w
+                idx = ts_match.end()
+                continue
 
             if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
                 seq = match.group()
