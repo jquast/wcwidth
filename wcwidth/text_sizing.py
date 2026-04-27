@@ -1,7 +1,7 @@
 r"""
-`Kitty Text Sizing Protocol`_ (OSC 66) parsing and measurement.
+`kitty text sizing protocol`_ (OSC 66) parsing and measurement.
 
-The `Kitty Text Sizing Protocol`_ allows terminal apps to explicitly tell
+The kitty text sizing protocol allows terminal apps to explicitly tell
 terminals how many cells text occupies, using the escape sequence::
 
     ESC ] 66 ; metadata ; text BEL/ST
@@ -24,21 +24,32 @@ Numerator, denominator, and alignment codes and values are parsed but otherwise 
 and have no effect on measurements made in this library.
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 
-.. versionadded:: 0.6.0
+.. versionadded:: 0.6.1
 """
 from __future__ import annotations
 
+# std imports
+import re
+
 import typing
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    # std imports
-    import re
+# local
+from ._wcswidth import wcswidth
 
 
 class _FieldMeta(typing.NamedTuple):
     name: str
     low: int
     high: int
+
+
+TEXT_FIELD_MAPPING: dict[str, _FieldMeta] = {
+    's': _FieldMeta(name='scale', low=1, high=7),
+    'w': _FieldMeta(name='width', low=0, high=7),
+    'n': _FieldMeta(name='numerator', low=0, high=15),
+    'd': _FieldMeta(name='denominator', low=0, high=15),
+    'v': _FieldMeta(name='vertical_align', low=0, high=2),
+    'h': _FieldMeta(name='horizontal_align', low=0, high=2)}
 
 
 class TextSizingParams(typing.NamedTuple):
@@ -54,6 +65,7 @@ class TextSizingParams(typing.NamedTuple):
     :param vertical_align: Vertical alignment (0=top, 1=bottom, 2=center).
     :param horizontal_align: Horizontal alignment (0=left, 1=right, 2=center).
     """
+
     scale: int = 1
     width: int = 0
     numerator: int = 0
@@ -61,19 +73,12 @@ class TextSizingParams(typing.NamedTuple):
     vertical_align: int = 0
     horizontal_align: int = 0
 
-    FIELD_MAPPING = {'s': _FieldMeta(name='scale', low=1, high=7),
-                     'w': _FieldMeta(name='width', low=0, high=7),
-                     'n': _FieldMeta(name='numerator', low=0, high=15),
-                     'd': _FieldMeta(name='denominator', low=0, high=15),
-                     'v': _FieldMeta(name='vertical_align', low=0, high=2),
-                     'h': _FieldMeta(name='horizontal_align', low=0, high=2)}
-
     def make_sequence(self) -> str:
         """Build and return sub-part of an OSC 66 sequence."""
         parts = []
         default_params = TextSizingParams()
         # build string for all known parameters of non-default values
-        for field_key, field in self.FIELD_MAPPING.items():
+        for field_key, field in TEXT_FIELD_MAPPING.items():
             val = getattr(self, field.name)
             default_val = getattr(default_params, field.name)
             if val != default_val:
@@ -94,22 +99,23 @@ class TextSizingParams(typing.NamedTuple):
 
         Example::
 
-            >>> _parse_text_sizing_params('s=2:w=3')
-            TextSizingParams(scale=2, width=3, numerator=0, denominator=0, vertical_align=0, horizontal_align=0)
-            >>> _parse_text_sizing_params('')
-            TextSizingParams(scale=1, width=0, numerator=0, denominator=0, vertical_align=0, horizontal_align=0)
+            >>> TextSizingParams.from_params('s=2:w=3')
+            TextSizingParams(scale=2, width=3, numerator=0, denominator=0, \
+            vertical_align=0, horizontal_align=0)
         """
-        kwargs: dict[str, int] = {}
+        kwargs: typing.Dict[str, int] = {}
         for part in raw.split(':'):
             if '=' not in part:
                 if control_codes == 'strict':
-                    raise ValueError(f"Expected '=' in text sizing parameter (key=val), got {part!r}")
+                    raise ValueError(f"Expected '=' in text sizing parameter (key=val), "
+                                     f"got {part!r}")
                 continue
             key, _eq, val = part.partition('=')
-            field = TextSizingParams.FIELD_MAPPING.get(key)
+            field = TEXT_FIELD_MAPPING.get(key)
             if field is None:
                 if control_codes == 'strict':
-                    raise ValueError(f"Unknown text sizing field '{key}' in OSC 66 sequence, {raw!r}")
+                    raise ValueError(f"Unknown text sizing field '{key}' "
+                                     f"in OSC 66 sequence, {raw!r}")
                 # ignore unknown fields unless 'strict'
                 continue
             try:
@@ -123,23 +129,26 @@ class TextSizingParams(typing.NamedTuple):
             if control_codes == 'strict' and (value > field.high or value < field.low):
                 raise ValueError(f"Out of bounds text sizing value '{val}' "
                                  f"in OSC 66 sequence, {raw!r}: "
-                                 f"allowed range for '{key}' ({field.name}) is {field.low} to {field.high}")
+                                 f"allowed range for '{key}' ({field.name}) "
+                                 f"is {field.low} to {field.high}")
             kwargs[field.name] = max(field.low, min(field.high, value))
         return cls(**kwargs)
 
 
 class TextSizing(typing.NamedTuple):
+    """Basic horizontal width measurement for kitty text sizing protocol."""
+
     params: TextSizingParams
     text: str
     terminator: str
 
     @classmethod
-    def from_match(cls, match: re.Match, control_codes='parse') -> TextSizing:
-        """
+    def from_match(cls, match: re.Match[str], control_codes: str = 'parse') -> TextSizing:
+        r"""
         Parse using matching OSC 66 Sequence.
 
         :param match: match object from :attr:`wcwidth.escape_sequences.TEXT_SIZING_PATTERN`.
-        :param control_codes: 'parse' or 'strict', same meaning and delegated by
+        :param control_codes: 'parse' or 'strict', same meaning as delegated by
             :func:`wcwidth.width`.
         :raises ValueError: When ``control_codes='strict'`` for unrecognized, invalid, or out of
             bounds text sizing parameters.
@@ -147,10 +156,10 @@ class TextSizing(typing.NamedTuple):
 
         Example::
 
-            >>> _parse_text_sizing_params('s=2:w=3')
-            TextSizingParams(scale=2, width=3, numerator=0, denominator=0, vertical_align=0, horizontal_align=0)
-            >>> _parse_text_sizing_params('')
-            TextSizingParams(scale=1, width=0, numerator=0, denominator=0, vertical_align=0, horizontal_align=0)
+            from wcwidth.escape_sequences import TEXT_SIZING_PATTERN
+            >>> TextSizing.from_match(TEXT_SIZING_PATTERN.match('\x1b]66;w=2;XY\x07'))
+            TextSizing(params=TextSizingParams(scale=1, width=2, numerator=0, denominator=0, \
+            vertical_align=0, horizontal_align=0), text='XY', terminator='\x07')
         """
         return cls(params=TextSizingParams.from_params(match.group(1), control_codes=control_codes),
                    text=match.group(2),
@@ -168,10 +177,7 @@ class TextSizing(typing.NamedTuple):
         """
         if self.params.width > 0:
             return self.params.scale * self.params.width
-        # pylint: disable=import-outside-toplevel
-        # local
-        import wcwidth  # Lazy import to avoid circular dependency
-        w = wcwidth.wcswidth(self.text, ambiguous_width=ambiguous_width)
+        w = wcswidth(self.text, ambiguous_width=ambiguous_width)
         return self.params.scale * max(0, w)
 
     def make_sequence(self) -> str:

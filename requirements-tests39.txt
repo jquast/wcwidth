@@ -4,7 +4,6 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-tests39.txt --strip-extras requirements-tests39.in
 #
-
 cffi==1.17.1
     # via
     #   -r requirements-tests39.in
@@ -13,8 +12,6 @@ coverage==7.10.7
     # via pytest-cov
 exceptiongroup==1.3.1
     # via pytest
-execnet==2.1.2
-    # via pytest-xdist
 importlib-metadata==8.7.0
     # via
     #   -r requirements-tests39.in
@@ -33,25 +30,27 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
+py-cpuinfo==9.0.0
+    # via pytest-benchmark
 pycparser==2.23
     # via cffi
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   pytest
     #   rich
 pytest==8.4.2
     # via
     #   -r requirements-tests39.in
+    #   pytest-benchmark
     #   pytest-codspeed
     #   pytest-cov
-    #   pytest-xdist
-pytest-codspeed==4.2.0
+pytest-benchmark==5.2.3
     # via -r requirements-tests39.in
-pytest-cov==7.0.0
+pytest-codspeed==4.4.0
     # via -r requirements-tests39.in
-pytest-xdist==3.8.0
+pytest-cov==7.1.0
     # via -r requirements-tests39.in
-rich==14.3.1
+rich==15.0.0
     # via pytest-codspeed
 tomli==2.2.1
     # via
@@ -60,5 +59,5 @@ tomli==2.2.1
     #   pytest
 typing-extensions==4.15.0
     # via exceptiongroup
-zipp==3.23.0
+zipp==3.23.1
     # via importlib-metadata

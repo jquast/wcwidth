@@ -7,6 +7,7 @@ should first check that the character at the current position is ESC for optimal
 """
 # std imports
 import re
+import typing
 
 # Text Sizing Protocol (OSC 66) — has positive width, must be checked before ZERO_WIDTH_PATTERN.
 # Groups: (1) metadata, (2) inner text, (3) terminator (BEL or ST).
@@ -74,3 +75,87 @@ INDETERMINATE_EFFECT_SEQUENCE = re.compile(
         r'\x1bM',                    # scroll_reverse (reverse index)
     ))
 )
+
+
+def iter_sequences(text: str) -> typing.Iterator[typing.Tuple[str, bool]]:
+    r"""
+    Iterate through text, yielding segments with sequence identification.
+
+    This generator yields tuples of ``(segment, is_sequence)`` for each part
+    of the input text, where ``is_sequence`` is ``True`` if the segment is
+    a recognized terminal escape sequence.
+
+    :param text: String to iterate through.
+    :returns: Iterator of (segment, is_sequence) tuples.
+
+    .. versionadded:: 0.3.0
+
+    Example::
+
+        >>> list(iter_sequences('hello'))
+        [('hello', False)]
+        >>> list(iter_sequences('\x1b[31mred'))
+        [('\x1b[31m', True), ('red', False)]
+        >>> list(iter_sequences('\x1b[1m\x1b[31m'))
+        [('\x1b[1m', True), ('\x1b[31m', True)]
+    """
+    idx = 0
+    text_len = len(text)
+    segment_start = 0
+
+    while idx < text_len:
+        char = text[idx]
+
+        if char == '\x1b':
+            # Yield any accumulated non-sequence text
+            if idx > segment_start:
+                yield (text[segment_start:idx], False)
+
+            # Try to match an escape sequence
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match:
+                yield (match.group(), True)
+                idx = match.end()
+            else:
+                # Lone ESC or unrecognized - yield as sequence anyway
+                yield (char, True)
+                idx += 1
+            segment_start = idx
+        else:
+            idx += 1
+
+    # Yield any remaining text
+    if segment_start < text_len:
+        yield (text[segment_start:], False)
+
+
+def strip_sequences(text: str) -> str:
+    r"""
+    Return text with all terminal escape sequences removed.
+
+    For sequences containing printable text, OSC 66 (Text sizing protocol) and OSC 8 (hyperlink),
+    the inner text is preserved.
+
+    Unknown or incomplete ESC sequences are preserved.
+
+    :param text: String that may contain terminal escape sequences.
+    :returns: The input text with all escape sequences stripped.
+
+    .. versionadded:: 0.3.0
+
+    Example::
+
+        >>> strip_sequences('\x1b[31mred\x1b[0m')
+        'red'
+        >>> strip_sequences('hello')
+        'hello'
+        >>> strip_sequences('\x1b[1m\x1b[31mbold red\x1b[0m text')
+        'bold red text'
+        >>> strip_sequences('\x1b]66;s=2;hello\x07')
+        'hello'
+        >>> strip_sequences('\x1b]8;id=34;https://example.com\x1b\\[view]\x1b]8;;\x1b\\')
+        '[view]'
+    """
+    if '\x1b]66;' in text:
+        text = TEXT_SIZING_PATTERN.sub(r'\2', text)
+    return ZERO_WIDTH_PATTERN.sub('', text)

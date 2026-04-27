@@ -8,9 +8,10 @@ import pytest
 
 # local
 import wcwidth
+from wcwidth._width import _WIDTH_FAST_PATH_MIN_LEN
 
 _wcwidth_module = sys.modules['wcwidth.wcwidth']
-_WIDTH_FAST_PATH_MIN_LEN = _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN
+# local
 
 
 def test_package_version():
@@ -414,13 +415,12 @@ def test_bengali_nukta_mc():
 
 @pytest.mark.parametrize("repeat", [1, _WIDTH_FAST_PATH_MIN_LEN])
 def test_mc_width_consistency(repeat):
-    # width(), wcswidth(), and per-grapheme width sums must all agree.
-    #
-    # The repeat parameter ensures both the short (parse) and long (fast) code
-    # paths of width() are exercised.  At repeat=1 the phrases are short enough
-    # to go through character-by-character parse mode.  At repeat=_WIDTH_FAST_PATH_MIN_LEN
-    # every phrase exceeds the threshold and takes the fast path that delegates
-    # to wcswidth().
+    """
+    Check width() vs.
+
+    wcswidth() consistency
+    """
+    # repeat value 'WIDTH_FAST_PATH_MIN_LEN' ensures both "fast" and "slow" paths are taken
     phrases = [
         "\u0915\u094D\u0937\u093F",
         "\u0b95\u0bcd\u0bb7\u0bcc",

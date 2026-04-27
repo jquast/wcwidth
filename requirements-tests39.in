@@ -1,9 +1,9 @@
 # For Python 3.9 *and newer*
 pytest>=7.4.2
 pytest-cov>=4.1.0
-pytest-xdist
 pytest-codspeed
 importlib-metadata<8.7.1
 packaging<26.0
 tomli<2.3.0
 cffi<2
+pytest-benchmark

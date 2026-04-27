@@ -468,6 +468,9 @@ languages.
 History
 =======
 
+0.6.1 *2026-04-26*
+  * **New** `width()` now supports `Kitty Text Sizing Protocol`_ (OSC 66).
+
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,
     ``drop_whitespace``, ``max_lines``, and ``placeholder`` for `wrap()`_, completing stdlib

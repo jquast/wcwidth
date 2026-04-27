@@ -3,6 +3,7 @@
 import os
 import sys
 import unicodedata
+import platform
 
 # 3rd party
 import pytest
@@ -10,7 +11,7 @@ import pytest
 # local
 import wcwidth
 
-_wcwidth_module = sys.modules['wcwidth.wcwidth']
+_width_module = sys.modules['wcwidth._width']
 
 
 def test_wcwidth_ascii(benchmark):
@@ -373,8 +374,13 @@ _udhr_skip = pytest.mark.skipif(
     reason=f"{os.path.basename(UDHR_FILE)} is missing; run bin/update-tables.py",
 )
 
+_py38_skip_pedantic = pytest.mark.skipif(
+        sys.version_info[:2] < (3, 9),
+        reason=f'benchmark.pedantic() not supported in python 3.8 or earlier')
+
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_wrap_udhr(benchmark):
     """Benchmark wrap() with multilingual UDHR text."""
     result = benchmark.pedantic(wcwidth.wrap, args=(UDHR_TEXT, 80), rounds=1, iterations=1)
@@ -383,6 +389,7 @@ def test_wrap_udhr(benchmark):
 
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_width_udhr(benchmark):
     """Benchmark width() with multilingual UDHR text."""
     result = benchmark.pedantic(wcwidth.width, args=(UDHR_TEXT,), rounds=1, iterations=1)
@@ -390,6 +397,7 @@ def test_width_udhr(benchmark):
 
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_width_udhr_lines(benchmark):
     """Benchmark width() on individual UDHR lines."""
     result = benchmark.pedantic(lambda: sum(wcwidth.width(line) for line in UDHR_LINES),
@@ -398,6 +406,7 @@ def test_width_udhr_lines(benchmark):
 
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_width_wcswidth_consistency_udhr(benchmark):
     """Verify width() and wcswidth() agree for printable multilingual text."""
     def check():
@@ -415,23 +424,25 @@ def test_width_wcswidth_consistency_udhr(benchmark):
 
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_width_fastpath_integrity_udhr(benchmark):
     """Verify width() produces identical results with and without the fast path."""
-    saved = _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN
+    saved = _width_module._WIDTH_FAST_PATH_MIN_LEN
 
     def check():
-        _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 0
+        _width_module._WIDTH_FAST_PATH_MIN_LEN = 0
         fast_total = sum(wcwidth.width(line) for line in UDHR_LINES)
-        _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = 999_999
+        _width_module._WIDTH_FAST_PATH_MIN_LEN = 999_999
         parse_total = sum(wcwidth.width(line) for line in UDHR_LINES)
         return fast_total, parse_total
 
     fast_total, parse_total = benchmark.pedantic(check, rounds=1, iterations=1)
-    _wcwidth_module._WIDTH_FAST_PATH_MIN_LEN = saved
+    _width_module._WIDTH_FAST_PATH_MIN_LEN = saved
     assert fast_total == parse_total
 
 
 @_udhr_skip
+@_py38_skip_pedantic
 def test_ljust_udhr_lines(benchmark):
     """Benchmark ljust() on UDHR lines."""
     benchmark.pedantic(lambda: [wcwidth.ljust(line, w + 1, UDHR_FILLCHAR)
