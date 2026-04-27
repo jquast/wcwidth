@@ -7,6 +7,18 @@ from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .unicode_versions import list_versions
 
+__all__ = (
+    "_REGIONAL_INDICATOR_SET",
+    "_ISC_VIRAMA_SET",
+    "_LATEST_VERSION",
+    "_CATEGORY_MC_TABLE",
+    "_EMOJI_ZWJ_SET",
+    "_FITZPATRICK_RANGE",
+    "_ZERO_WIDTH_TABLE",
+    "_WIDE_EASTASIAN_TABLE",
+    "_AMBIGUOUS_TABLE",
+)
+
 _REGIONAL_INDICATOR_SET = frozenset(
     range(GRAPHEME_REGIONAL_INDICATOR[0][0], GRAPHEME_REGIONAL_INDICATOR[0][1] + 1)
 )
