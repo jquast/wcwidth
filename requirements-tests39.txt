@@ -34,8 +34,9 @@ py-cpuinfo==9.0.0
     # via pytest-benchmark
 pycparser==2.23
     # via cffi
-pygments==2.20.0
+pygments==2.19.2
     # via
+    #   -r requirements-tests39.in
     #   pytest
     #   rich
 pytest==8.4.2

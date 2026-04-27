@@ -22,6 +22,7 @@ Parsing is pretty straight-forward:
 
 Numerator, denominator, and alignment codes and values are parsed but otherwise ignored
 and have no effect on measurements made in this library.
+
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 
 .. versionadded:: 0.6.1
