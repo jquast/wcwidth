@@ -60,5 +60,7 @@ tomli==2.2.1
     #   pytest
 typing-extensions==4.15.0
     # via exceptiongroup
-zipp==3.23.1
-    # via importlib-metadata
+zipp==3.23.0
+    # via
+    #   -r requirements-tests39.in
+    #   importlib-metadata
