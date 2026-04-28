@@ -388,6 +388,17 @@ def clip(
 
         # Handle escape sequences
         if char == '\x1b':
+            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
+                seq = match.group()
+                if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
+                    # Update SGR state; will be applied as prefix when visible content starts
+                    sgr = _sgr_state_update(sgr, seq)
+                else:
+                    # Non-SGR sequences always preserved
+                    output.append(seq)
+                idx = match.end()
+                continue
+
             # OSC 66 (text sizing) has positive width, handle before zero-width path
             if (ts_match := TEXT_SIZING_PATTERN.match(text, idx)):
                 text_size = TextSizing.from_match(ts_match, control_codes='parse')
@@ -412,16 +423,6 @@ def clip(
                 idx = ts_match.end()
                 continue
 
-            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
-                seq = match.group()
-                if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
-                    # Update SGR state; will be applied as prefix when visible content starts
-                    sgr = _sgr_state_update(sgr, seq)
-                else:
-                    # Non-SGR sequences always preserved
-                    output.append(seq)
-                idx = match.end()
-                continue
 
         # Handle bare ESC (not a valid sequence)
         if char == '\x1b':
