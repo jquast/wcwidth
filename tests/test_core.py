@@ -415,11 +415,7 @@ def test_bengali_nukta_mc():
 
 @pytest.mark.parametrize("repeat", [1, _WIDTH_FAST_PATH_MIN_LEN])
 def test_mc_width_consistency(repeat):
-    """
-    Check width() vs.
-
-    wcswidth() consistency
-    """
+    """Check width() vs.  wcswidth() consistency."""
     # repeat value 'WIDTH_FAST_PATH_MIN_LEN' ensures both "fast" and "slow" paths are taken
     phrases = [
         "\u0915\u094D\u0937\u093F",

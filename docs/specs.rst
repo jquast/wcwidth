@@ -7,7 +7,7 @@ Specification
 This document defines how this Python wcwidth library measures the printable width of characters of
 a string. This is not meant to an official standard, but as a terse description of the lowest level
 API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` and its relation to higher level
-API function :func:`wcwidth.wcwidth`.
+functions :func:`wcwidth.width` and :func:`wcwidth.iter_graphemes`.
 
 Scope
 -----
@@ -18,10 +18,10 @@ accepting default arguments, ``control_codes='parse'`` and its behavior and opti
 its docstring and specifications of related control codes, `XTerm Control Sequences`_ and `Kitty
 Text Sizing Protocol`_.
 
-:func:`wcwidth.iter_graphemes` is specified by `Unicode Standard Annex #29`_ and each string yielded
-by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth`. Although it matches
+Each string yielded by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth` to
+accurately measure the width of a **grapheme**. Although :func:`wcwidth.iter_graphemes` matches
 behavior of Python 3.15 `uncodedata.iter_graphemes()`_ it differs in its return value,
-:func:`wcwidth.iter_graphemes` yields only strings, while :func:`wcwidth.iter_graphemes` yields
+:func:`wcwidth.iter_graphemes` yields only strings, while :func:`unicodedata.iter_graphemes` yields
 ``unicodedata.Segment`` class objects.
 
 Width of -1
