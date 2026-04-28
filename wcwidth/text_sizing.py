@@ -42,15 +42,16 @@ class _FieldMeta(typing.NamedTuple):
     name: str
     low: int
     high: int
+    default: int
 
 
 TEXT_FIELD_MAPPING: dict[str, _FieldMeta] = {
-    's': _FieldMeta(name='scale', low=1, high=7),
-    'w': _FieldMeta(name='width', low=0, high=7),
-    'n': _FieldMeta(name='numerator', low=0, high=15),
-    'd': _FieldMeta(name='denominator', low=0, high=15),
-    'v': _FieldMeta(name='vertical_align', low=0, high=2),
-    'h': _FieldMeta(name='horizontal_align', low=0, high=2)}
+    's': _FieldMeta(name='scale', low=1, high=7, default=1),
+    'w': _FieldMeta(name='width', low=0, high=7, default=0),
+    'n': _FieldMeta(name='numerator', low=0, high=15, default=0),
+    'd': _FieldMeta(name='denominator', low=0, high=15, default=0),
+    'v': _FieldMeta(name='vertical_align', low=0, high=2, default=0),
+    'h': _FieldMeta(name='horizontal_align', low=0, high=2, default=0)}
 
 
 class TextSizingParams(typing.NamedTuple):
@@ -74,15 +75,20 @@ class TextSizingParams(typing.NamedTuple):
     vertical_align: int = 0
     horizontal_align: int = 0
 
+    def __repr__(self):
+        # modified to show values only when non-default
+        repr_fmt = ', '.join(f'{field.name}={getattr(self, field.name)}'
+                             for field in TEXT_FIELD_MAPPING.values()
+                             if getattr(self, field.name) != field.default)
+        return f'{self.__class__.__name__}({repr_fmt})'
+
+
     def make_sequence(self) -> str:
         """Build and return sub-part of an OSC 66 sequence."""
         parts = []
-        default_params = TextSizingParams()
         # build string for all known parameters of non-default values
         for field_key, field in TEXT_FIELD_MAPPING.items():
-            val = getattr(self, field.name)
-            default_val = getattr(default_params, field.name)
-            if val != default_val:
+            if (val := getattr(self, field.name)) != field.default:
                 parts.append(f'{field_key}={val}')
         return ':'.join(parts)
 
@@ -105,11 +111,13 @@ class TextSizingParams(typing.NamedTuple):
             vertical_align=0, horizontal_align=0)
         """
         kwargs: typing.Dict[str, int] = {}
+        if not raw:
+            return cls()
         for part in raw.split(':'):
             if '=' not in part:
                 if control_codes == 'strict':
                     raise ValueError(f"Expected '=' in text sizing parameter (key=val), "
-                                     f"got {part!r}")
+                                     f"got {part!r} in OSC 66 sequence, {raw!r}")
                 continue
             key, _eq, val = part.partition('=')
             field = TEXT_FIELD_MAPPING.get(key)

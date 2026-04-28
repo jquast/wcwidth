@@ -91,7 +91,7 @@ from ._constants import _LATEST_VERSION
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
-from .text_sizing import TextSizing
+from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
@@ -343,6 +343,9 @@ def clip(
     .. versionchanged:: 0.5.0
        Added ``propagate_sgr`` parameter (default True).
 
+    .. versionchanged:: 0.6.1
+       Parses OSC 66 Sequences.
+
     Example::
 
         >>> clip('hello world', 0, 5)
@@ -386,7 +389,7 @@ def clip(
         if col >= end and sgr_at_clip_start is not None and char != '\x1b':
             break
 
-        # Handle escape sequences
+        # 1. Handle escape sequences
         if char == '\x1b':
             if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
                 seq = match.group()
@@ -394,42 +397,75 @@ def clip(
                     # Update SGR state; will be applied as prefix when visible content starts
                     sgr = _sgr_state_update(sgr, seq)
                 else:
-                    # Non-SGR sequences always preserved
-                    output.append(seq)
-                idx = match.end()
-                continue
+                    # Non-SGR and Non-Text Sizing sequences always preserved
+                    # TODO: what about cursor_left and right! preserved, or padded ?!
+                    ts_match = TEXT_SIZING_PATTERN.match(text, idx)
+                    if ts_match is None:
+                        idx = match.end()
+                        continue
 
-            # OSC 66 (text sizing) has positive width, handle before zero-width path
-            if (ts_match := TEXT_SIZING_PATTERN.match(text, idx)):
-                text_size = TextSizing.from_match(ts_match, control_codes='parse')
-                w = text_size.display_width(ambiguous_width)
-                if col >= start and col + w <= end:
-                    # fits as-is, keep going
-                    output.append(ts_match.group())
-                    if propagate_sgr and sgr_at_clip_start is None:
-                        sgr_at_clip_start = sgr
-                    col += w
-                elif col < end and col + w > start:
-                    # TODO: currently we just replace it entirely with '***',
-                    # when, we should instead "chop up" the text to fit ..
-                    # this function is sparingly used, but it should handle OSC 66 correctly
-                    visible = min(end, col + w) - max(start, col)
-                    output.append(fillchar * visible)
-                    if propagate_sgr and sgr_at_clip_start is None:
-                        sgr_at_clip_start = sgr
-                    col += w
-                else:
-                    col += w
-                idx = ts_match.end()
-                continue
+                    # OSC 66 (text sizing) has positive width
+                    text_size = TextSizing.from_match(ts_match, control_codes='parse')
+                    ts_width = text_size.display_width(ambiguous_width)
+                    if col >= start and col + ts_width <= end:
+                        # fits as-is, keep going
+                        output.append(seq)
+                        if propagate_sgr and sgr_at_clip_start is None:
+                            sgr_at_clip_start = sgr
+                        col += ts_width
+                    elif col < end and col + ts_width > start:
+                        # TODO: move to TextSizing.clip(start, end)
+                        # TODO: fillchar padding
+                        next_start = max(0, start - col) // text_size.params.scale
+                        visible_width = (min(end, col + ts_width) - max(start, col))
+                        next_width = (0 if text_size.params.width == 0
+                                      else visible_width // text_size.params.scale)
+                        next_text_size_parms = TextSizingParams(
+                                text_size.params.scale,
+                                next_width,
+                                text_size.params.numerator, 
+                                text_size.params.denominator, 
+                                text_size.params.vertical_align, 
+                                text_size.params.horizontal_align)
 
-        # Handle bare ESC (not a valid sequence)
+                        # RECURSION just one time for clip() of inner text. Text sizing
+                        # sequences cannot further contain any sequences. Although tabsize
+                        # is "extended", the modulo margins are not.
+                        next_inner_text = clip(
+                                text_size.text, next_start, next_start + visible_width // text_size.params.scale,
+                                fillchar=fillchar, tabsize=tabsize, ambiguous_width=ambiguous_width,
+                                propagate_sgr=False)
+                        next_text_size = TextSizing(
+                                next_text_size_parms,
+                                next_inner_text,
+                                text_size.terminator)
+
+                        delta = next_text_size.display_width() - visible_width
+                        #breakpoint()
+                        if delta > 0:
+                            # left-pad ??
+                            output.append(delta * fillchar)
+                        if next_inner_text:
+                            output.append(next_text_size.make_sequence())
+                        if delta < 0:
+                            # or right-pad?? how do we do eeet TODO
+                            output.append(abs(delta) * fillchar)
+                        if propagate_sgr and sgr_at_clip_start is None:
+                            sgr_at_clip_start = sgr
+                        col += ts_width
+                    else:
+                        col += ts_width
+                    idx = ts_match.end()
+                    continue
+
+
+        # 2. Handle bare ESC (not a valid sequence)
         if char == '\x1b':
             output.append(char)
             idx += 1
             continue
 
-        # TAB expansion
+        # 3. TAB expansion
         if char == '\t':
             if tabsize > 0:
                 next_tab = col + (tabsize - (col % tabsize))
@@ -444,27 +480,29 @@ def clip(
             idx += 1
             continue
 
-        # Grapheme clustering for everything else
+        # 4. Grapheme clustering for everything else
         grapheme = next(iter_graphemes(text, start=idx))
-        w = width(grapheme, ambiguous_width=ambiguous_width)
+        grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
 
-        if w == 0:
+        if grapheme_w == 0:
+            # TODO: How is this reachable ??
             if start <= col < end:
                 output.append(grapheme)
-        elif col >= start and col + w <= end:
+        elif col >= start and col + grapheme_w <= end:
             # Fully visible
             output.append(grapheme)
             if propagate_sgr and sgr_at_clip_start is None:
                 sgr_at_clip_start = sgr
-            col += w
-        elif col < end and col + w > start:
+            col += grapheme_w
+        elif col < end and col + grapheme_w > start:
             # Partially visible (wide char at boundary)
-            output.append(fillchar * (min(end, col + w) - max(start, col)))
+            output.append(fillchar * (min(end, col + grapheme_w) - max(start, col)))
             if propagate_sgr and sgr_at_clip_start is None:
                 sgr_at_clip_start = sgr
-            col += w
+            col += grapheme_w
         else:
-            col += w
+            # TODO and this??
+            col += grapheme_w
 
         idx += len(grapheme)
 

@@ -22,7 +22,8 @@ TEXT_SIZING_PATTERN = re.compile(
 ZERO_WIDTH_PATTERN = re.compile(
     # CSI sequences
     r'\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]|'
-    # OSC sequences
+    # OSC sequences, note that text sizing protocol (OSC 66) is special case in width() and clip(),
+    # and contrary to the variable name, it is positive width.
     r'\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|'
     # APC sequences
     r'\x1b_[^\x1b\x07]*(?:\x07|\x1b\\)|'

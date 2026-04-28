@@ -157,29 +157,25 @@ def width(
 
         # 1. Handle ESC sequences
         if char == '\x1b':
-            # 1a. OSC 66 (kitty text sizing) positive width
-            if (ts_match := TEXT_SIZING_PATTERN.match(text, idx)):
-                text_size = TextSizing.from_match(ts_match, control_codes=control_codes)
-                current_col += text_size.display_width(ambiguous_width)
-                max_extent = max(max_extent, current_col)
-                idx = ts_match.end()
-                continue
-            # 1b. Check all other "zero-width" terminal sequences
-            match = ZERO_WIDTH_PATTERN.match(text, idx)
-            if match:
+            # Check for all terminal sequences
+            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
                 seq = match.group()
                 if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
                     raise ValueError(f"Indeterminate cursor sequence at position {idx}")
-                # Apply cursor movement
-                right = CURSOR_RIGHT_SEQUENCE.match(seq)
-                if right:
+
+                # Apply cursor movement,
+                if (right := CURSOR_RIGHT_SEQUENCE.match(seq)):
                     current_col += int(right.group(1) or 1)
-                else:
-                    left = CURSOR_LEFT_SEQUENCE.match(seq)
-                    if left:
-                        current_col = max(0, current_col - int(left.group(1) or 1))
+                elif (left := CURSOR_LEFT_SEQUENCE.match(seq)):
+                    current_col = max(0, current_col - int(left.group(1) or 1))
+                    
+                # Or OSC 66 (kitty text sizing)
+                elif (ts_match := TEXT_SIZING_PATTERN.match(seq)):
+                    text_size = TextSizing.from_match(ts_match, control_codes=control_codes)
+                    current_col += text_size.display_width(ambiguous_width)
                 idx = match.end()
             else:
+                # Errant ESC or unknown sequence: only the first character is zero-width
                 idx += 1
             max_extent = max(max_extent, current_col)
             continue
