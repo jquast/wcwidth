@@ -114,26 +114,26 @@ def test_clip_sequences_after_end():
     # With propagate_sgr=True (default), no style active at start, so no prefix
     assert clip('hello\x1b[31m world\x1b[0m', 0, 5) == 'hello'
     # With propagate_sgr=False, all sequences preserved
-    assert clip('hello\x1b[31m world\x1b[0m', 0, 5, propagate_sgr=False) == 'hello\x1b[31m\x1b[0m'
+    assert repr(clip('hello\x1b[31m world\x1b[0m', 0, 5, propagate_sgr=False)) == repr('hello\x1b[31m\x1b[0m')
 
 
 def test_clip_sequences_multiple():
     # With propagate_sgr=True (default), sequences collapsed to minimal
     assert clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4) == '\x1b[1;31mbold\x1b[0m'
     # With propagate_sgr=False, all sequences preserved separately
-    assert clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4, propagate_sgr=False) == '\x1b[1m\x1b[31mbold\x1b[0m'
+    assert repr(clip('\x1b[1m\x1b[31mbold red\x1b[0m', 0, 4, propagate_sgr=False)) == repr('\x1b[1m\x1b[31mbold\x1b[0m')
 
 
 def test_clip_sequences_only():
     # With propagate_sgr=True (default), no visible text means empty result
     assert clip('\x1b[31m\x1b[0m', 0, 10) == ''
     # With propagate_sgr=False, sequences preserved
-    assert clip('\x1b[31m\x1b[0m', 0, 10, propagate_sgr=False) == '\x1b[31m\x1b[0m'
+    assert repr(clip('\x1b[31m\x1b[0m', 0, 10, propagate_sgr=False)) == repr('\x1b[31m\x1b[0m')
 
 
 def test_clip_sequences_osc_hyperlink():
-    assert clip('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 0, 4) == \
-        '\x1b]8;;https://example.com\x07link\x1b]8;;\x07'
+    assert repr(clip('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 0, 4)) == \
+        repr('\x1b]8;;https://example.com\x07link\x1b]8;;\x07')
 
 
 def test_clip_sequences_cjk_with_sequences():
@@ -248,13 +248,15 @@ CLIP_CURSOR_SEQUENCE_CASES = [
     ('ab\x1b[5Ccd', 0, 4, 'ab\x1b[5Ccd'),
     ('abcde\x1b[2Df', 0, 6, 'abcde\x1b[2Df'),
     ('ab\x1b[10Ccd', 0, 4, 'ab\x1b[10Ccd'),
-    ('ab\x1b[Ccd', 0, 4, 'ab\x1b[Ccd'),
+    ('XY\x1b[Czy', 0, 4, 'XY\x1b[Cz'),
+    ('XY\x1b[Czy', 0, 5, 'XY\x1b[Czy'),
+    ('XY\x1b[Czy', 1, 3, 'XY '),
+    ('XY\x1b[Czy', 1, 4, 'XY\x1b[C'),
 ]
-
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_CURSOR_SEQUENCE_CASES)
 def test_clip_cursor_sequences_zero_width(text, start, end, expected):
-    assert clip(text, start, end) == expected
+    assert repr(clip(text, start, end)) == repr(expected)
 
 
 def test_clip_tab_first_visible_with_sgr():

@@ -466,50 +466,40 @@ def clip(
                     # we've consumed the sequence; advance index and continue
                     idx = match.end()
                     continue
-                # Non-SGR and Non-Text Sizing sequences always preserved
-                # TODO: what about cursor_left and right! preserved, or padded ?!
-                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
-                if ts_match is None:
-                    # Handle cursor movement sequences specially to simulate visible
-                    # effects (fillchar padding for rightward moves, overwrite for left).
-                    if CURSOR_RIGHT_SEQUENCE.match(seq):
-                        # parse numeric argument (default 1)
-                        try:
-                            n = int(seq.lstrip('\x1b[').rstrip('C'))
-                        except ValueError:
-                            n = 1
-                        # If movement crosses into the clip window, emit fillchars
-                        move_start = col
-                        move_end = col + n
-                        if move_start < end and move_end > start:
-                            overlap_start = max(move_start, start)
-                            overlap_end = min(move_end, end)
-                            overlap = overlap_end - overlap_start
-                            if overlap > 0:
-                                _append_visible(fillchar * overlap, overlap)
-                        col += n
-                        idx = match.end()
-                        continue
-                    if CURSOR_LEFT_SEQUENCE.match(seq):
-                        try:
-                            n = int(seq.lstrip('\x1b[').rstrip('D'))
-                        except ValueError:
-                            n = 1
-                        prev_col = col
-                        col = max(0, col - n)
-                        # If we moved left and had emitted visible columns beyond
-                        # the new col, they are now potentially overwritten.
-                        if prev_col > col:
-                            to_remove = min(prev_col - col, visible_count)
-                            if to_remove > 0:
-                                _remove_visible_tail(to_remove)
-                        idx = match.end()
-                        continue
-                    # Preserve other non-SGR zero-width sequences (OSC hyperlinks, CSI others, etc.)
-                    _append_seq(seq)
+
+                # Handle cursor movement sequences specially to simulate visible
+                # effects (fillchar padding for rightward moves, overwrite for left).
+                if (match_cleft := CURSOR_RIGHT_SEQUENCE.match(seq)):
+                    # parse numeric argument (default 1)
+                    digit_txt = match_cleft.group(1)
+                    n_left = int(digit_txt) if digit_txt else 1
+                    # If movement crosses into the clip window, emit fillchars
+                    move_start = col
+                    move_end = col + n_left
+                    if move_start < end and move_end > start:
+                        overlap_start = max(move_start, start)
+                        overlap_end = min(move_end, end)
+                        overlap = overlap_end - overlap_start
+                        if overlap > 0:
+                            _append_visible(fillchar * overlap, overlap)
+                    col += n_left
                     idx = match.end()
                     continue
 
+                if (match_cright := CURSOR_LEFT_SEQUENCE.match(seq)):
+                    digit_txt = match_cright.group(1)
+                    n_right = int(digit_txt) if digit_txt else 1
+                    prev_col = col
+                    col = max(0, col - n_right)
+                    # If we moved left and had emitted visible columns beyond
+                    # the new col, they are now potentially overwritten.
+                    if prev_col > col:
+                        to_remove = min(prev_col - col, visible_count)
+                        if to_remove > 0:
+                            _remove_visible_tail(to_remove)
+                    idx = match.end()
+                    continue
+                if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
                     # OSC 66 (text sizing) has positive width
                     text_size = TextSizing.from_match(ts_match, control_codes='parse')
                     ts_width = text_size.display_width(ambiguous_width)
@@ -598,6 +588,7 @@ def clip(
 
                         col += ts_width
                     else:
+                        # XXX nothing to clip? TODO breakpoint() and verify
                         col += ts_width
                     idx = ts_match.end()
                     continue
