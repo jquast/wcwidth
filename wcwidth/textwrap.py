@@ -14,10 +14,10 @@ import textwrap
 from typing import TYPE_CHECKING, NamedTuple
 
 # local
+from ._width import width as wcwidth_width
 from .grapheme import iter_graphemes
 from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences
-from ._width import width
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
@@ -98,8 +98,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _width(self, text: str) -> int:
         """Measure text width accounting for sequences."""
-        return width(text, control_codes=self.control_codes, tabsize=self.tabsize,
-                     ambiguous_width=self.ambiguous_width)
+        return wcwidth_width(text, control_codes=self.control_codes, tabsize=self.tabsize,
+                             ambiguous_width=self.ambiguous_width)
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""

@@ -263,6 +263,7 @@ OSC_END_ST = '\x1b]8;;\x1b\\'
 OSC_START_BEL = '\x1b]8;;http://example.com\x07'
 OSC_END_BEL = '\x1b]8;;\x07'
 
+
 @pytest.mark.parametrize('text,w,expected', [
     (   # standard, ST-variant,
         f'{OSC_START_ST}link{OSC_END_ST}more',
@@ -417,7 +418,7 @@ def test_wrap_hyperlink_word_boundary(text, w, expected):
      {'width': 10, 'subsequent_indent': '  ', 'max_lines': 2, 'placeholder': '...'}),
     ('hello world foo bar',
      {'width': 10, 'initial_indent': '> ', 'max_lines': 2, 'placeholder': '...'}),
-    ])
+])
 def test_wrap_max_lines_matches_stdlib(text, kwargs):
     expected = _adjust_stdlib_result(textwrap.wrap(text, **kwargs), kwargs)
     assert wrap(text, **kwargs) == expected
@@ -440,7 +441,7 @@ def test_wrap_placeholder_too_large():
     ('\u4e2d\u6587 \u5b57\u7b26 hello', 5, 1, '~', ['\u4e2d\u6587~']),
     ('\u4e2d\u6587 \u5b57\u7b26 hello world', 5, 2, '~', ['\u4e2d\u6587', '\u5b57\u7b26~']),
     ('\u4e2d\u6587\u5b57\u7b26 hello', 12, 1, '...', ['\u4e2d\u6587\u5b57\u7b26...']),
-    ])
+])
 def test_wrap_max_lines_sequences(text, w, ml, ph, expected):
     assert wrap(text, w, max_lines=ml, placeholder=ph) == expected
 
@@ -468,7 +469,7 @@ def test_wrap_max_lines_hyperlink_close_on_prev_line():
     ('a\t b\n c', {'width': 20, 'replace_whitespace': False}),
     ('Hello world. This is a test.  More text.', {'width': 20, 'fix_sentence_endings': True}),
     ('Dr. Smith went to Washington. He left.', {'width': 20, 'fix_sentence_endings': True}),
-    ])
+])
 def test_wrap_stdlib_params(text, kwargs):
     assert wrap(text, **kwargs) == textwrap.wrap(text, **kwargs)
 

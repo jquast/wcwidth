@@ -423,7 +423,6 @@ def clip(
                 idx = ts_match.end()
                 continue
 
-
         # Handle bare ESC (not a valid sequence)
         if char == '\x1b':
             output.append(char)
