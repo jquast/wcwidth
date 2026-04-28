@@ -168,7 +168,7 @@ def width(
                     current_col += int(right.group(1) or 1)
                 elif (left := CURSOR_LEFT_SEQUENCE.match(seq)):
                     current_col = max(0, current_col - int(left.group(1) or 1))
-                    
+
                 # Or OSC 66 (kitty text sizing)
                 elif (ts_match := TEXT_SIZING_PATTERN.match(seq)):
                     text_size = TextSizing.from_match(ts_match, control_codes=control_codes)

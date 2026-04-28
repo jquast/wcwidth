@@ -76,12 +76,15 @@ class TextSizingParams(typing.NamedTuple):
     horizontal_align: int = 0
 
     def __repr__(self):
+        """Return a compact representation including only non-default fields.
+
+        This avoids verbose output when most fields are defaults.
+        """
         # modified to show values only when non-default
         repr_fmt = ', '.join(f'{field.name}={getattr(self, field.name)}'
                              for field in TEXT_FIELD_MAPPING.values()
                              if getattr(self, field.name) != field.default)
         return f'{self.__class__.__name__}({repr_fmt})'
-
 
     def make_sequence(self) -> str:
         """Build and return sub-part of an OSC 66 sequence."""

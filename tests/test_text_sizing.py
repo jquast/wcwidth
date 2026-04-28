@@ -30,6 +30,7 @@ CONTROL_CODES_PARAMS_CASES = [
     ('h=3', "h=2", "Out of bounds text sizing value '3' in "),
 ]
 
+
 @pytest.mark.parametrize('given_params,expected_remainder,expected_exc,', CONTROL_CODES_PARAMS_CASES)
 def test_text_sizing_params_control_codes(given_params, expected_remainder, expected_exc):
     """Verify control_codes='strict' and 'parse' behavior in TextSizingParams.from_params()."""
@@ -123,6 +124,7 @@ def test_text_sizing_sequence(given_sequence, expected_text, expected_params, ex
     assert wcwidth.width(given_sequence, control_codes='strict') == expected_width
     assert wcwidth.width(given_sequence, control_codes='ignore') == wcwidth.wcswidth(expected_text)
 
+
 @pytest.mark.parametrize('text,expected', [
     ('\x1b]66;s=2:w=3:n=1:d=2:v=1:h=2;x!yzzy\x1b\\', 6),
     ('\x1b]66;s=2:w=3;anything\x07', 6),
@@ -171,10 +173,11 @@ def test_iter_sequences_text_sizing(text, expected_segs):
     ('ab\x1b]66;w=2;XY\x07cd', 0, 3, 'ab\x1b]66;w=1;X\x07'),
     ('ab\x1b]66;w=2;XY\x07cd', 3, 6, '\x1b]66;w=1;Y\x07cd'),
     ('ab\x1b]66;w=2;XY\x07cd', 4, 6, 'cd'),
-    ])
+])
 def test_clip_text_sizing_basic(text, start, end, expected):
-    """Test basic support of clip() with text sizing sequence.""" 
+    """Test basic support of clip() with text sizing sequence."""
     assert repr(wcwidth.clip(text, start, end)) == repr(expected)
+
 
 @pytest.mark.parametrize('text,start,end,expected', [
     ('\x1b]66;s=2;ABC\x07', 0, 0, ''),
@@ -184,17 +187,18 @@ def test_clip_text_sizing_basic(text, start, end, expected):
     ('\x1b]66;s=2;ABC\x07', 0, 6, '\x1b]66;s=2;ABC\x07'),
     ('\x1b]66;s=2;ABC\x07', 2, 6, '\x1b]66;s=2;BC\x07'),
     ('\x1b]66;s=2;ABC\x07', 4, 6, '\x1b]66;s=2;C\x07'),
-    ])
+])
 def test_clip_text_sizing_scaled(text, start, end, expected):
-    """Test support of clip() with scale=N arguments.""" 
+    """Test support of clip() with scale=N arguments."""
     assert repr(wcwidth.clip(text, start, end)) == repr(expected)
+
 
 @pytest.mark.parametrize('text,start,end,expected', [
     #  a   b   c
     # === === ===
     # 012 345 678
-    # .     
-    # ..      
+    # .
+    # ..
     # *a*
     # *a* .
     # ... *b*
@@ -223,15 +227,15 @@ def test_clip_text_sizing_scaled(text, start, end, expected):
     #  .. *b* .      1, 7
     #  .. *b* ..     1, 8
     #  .. *b* *c*    1, 9
-    ('\x1b]66;s=3;ABC\x07', 1, 1,  ''),
-    ('\x1b]66;s=3;ABC\x07', 1, 2,  '.'),
-    ('\x1b]66;s=3;ABC\x07', 1, 3,  '..'),
-    ('\x1b]66;s=3;ABC\x07', 1, 4,  '...'),
-    ('\x1b]66;s=3;ABC\x07', 1, 5,  '....'),
-    ('\x1b]66;s=3;ABC\x07', 1, 6,  '..\x1b]66;s=3;B\x07'),
-    ('\x1b]66;s=3;ABC\x07', 1, 7,  '..\x1b]66;s=3;B\x07.'),
-    ('\x1b]66;s=3;ABC\x07', 1, 8,  '..\x1b]66;s=3;BC\x07..'),
-    ('\x1b]66;s=3;ABC\x07', 1, 9,  '..\x1b]66;s=3;BC\x07'),
+    ('\x1b]66;s=3;ABC\x07', 1, 1, ''),
+    ('\x1b]66;s=3;ABC\x07', 1, 2, '.'),
+    ('\x1b]66;s=3;ABC\x07', 1, 3, '..'),
+    ('\x1b]66;s=3;ABC\x07', 1, 4, '...'),
+    ('\x1b]66;s=3;ABC\x07', 1, 5, '....'),
+    ('\x1b]66;s=3;ABC\x07', 1, 6, '..\x1b]66;s=3;B\x07'),
+    ('\x1b]66;s=3;ABC\x07', 1, 7, '..\x1b]66;s=3;B\x07.'),
+    ('\x1b]66;s=3;ABC\x07', 1, 8, '..\x1b]66;s=3;B\x07..'),
+    ('\x1b]66;s=3;ABC\x07', 1, 9, '..\x1b]66;s=3;BC\x07'),
     ('\x1b]66;s=3;ABC\x07', 1, 10, '..\x1b]66;s=3;BC\x07'),
     # two-thirds of string 'A' and half of string 'B' is fillchar
     # ('\x1b]66;s=3;ABC\x07', 2, 4, '..'),
@@ -264,28 +268,7 @@ def test_clip_text_sizing_scaled(text, start, end, expected):
     ('\x1b]66;s=3;ABC\x07', 3, 8, '\x1b]66;s=3;B\x07..'),
     ('\x1b]66;s=3;ABC\x07', 3, 9, '\x1b]66;s=3;BC\x07'),
     ('\x1b]66;s=3;ABC\x07', 3, 10, '\x1b]66;s=3;BC\x07'),
-    ])
+])
 def test_clip_text_sizing_scaled_with_fillchar(text, start, end, expected):
-    """Test support of clip() with scale=N and fillchar is needed to fill remainder.""" 
+    """Test support of clip() with scale=N and fillchar is needed to fill remainder."""
     assert repr(wcwidth.clip(text, start, end, fillchar='.')) == repr(expected)
-
-
-
-# TODO wrap() cases,
-#
-# WRAP_CASES = [
-#    (TextSizingParams(scale=2, width=2),
-#     '\x1b]66;s=2:w=2;ABC\x1b\\'),
-#    (TextSizingParams(scale=2, width=2),
-#     '\x1b]66;s=2:w=2;ABC\x1b\\'),
-#    (TextSizingParams(scale=1),
-#     '\x1b]66;;ABC\x1b\\'),
-#    (TextSizingParams(scale=3, width=1, numerator=1, denominator=2,
-#                      vertical_align=1, horizontal_align=2),
-#     '\x1b]66;s=3:w=1:n=1:d=2:v=1:h=2;ABC\x1b\\'),
-# ]
-#
-#
-# @pytest.mark.parametrize('seq,expected', PARSE_SEQUENCE_CASES)
-# def test_parse_text_sizing(seq, expected):
-#    assert parse_text_sizing(seq) == expected

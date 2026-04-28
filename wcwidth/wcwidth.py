@@ -355,7 +355,7 @@ def clip(
         >>> clip('a\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
+    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks,W0101
     # Again, for 'hot path', we avoid additional delegate functions and accept the cost
     # of complexity for improved python performance.
     start = max(start, 0)
@@ -378,9 +378,76 @@ def clip(
     if propagate_sgr:
         sgr = _SGR_STATE_DEFAULT
 
-    output: list[str] = []
+    # output_tokens stores tuples ('vis', text) for visible content and ('seq', seq)
+    # for preserved zero-width sequences. This allows cursor-left overwrites to
+    # remove previously emitted visible characters while keeping the sequence order.
+    # For visible tokens we store ('vis', text, width_in_columns)
+    # For sequences we store ('seq', seq)
+    output_tokens: list[tuple[str, ...]] = []
+    visible_count = 0  # number of visible columns emitted so far
     col = 0
     idx = 0
+
+    def _append_visible(s: str, w: int, start_col: int | None = None) -> None:
+        nonlocal visible_count, sgr_at_clip_start
+        if w <= 0:
+            return
+        if start_col is None:
+            start_col = col
+        prev = output_tokens[-1] if (output_tokens and output_tokens[-1][0] == 'vis') else None
+        if prev is not None and prev[3] + prev[2] == start_col:
+            # merge with previous contiguous visible token: append text and add widths
+            prev_s = prev[1]
+            prev_w = prev[2]
+            prev_start = prev[3]
+            output_tokens[-1] = ('vis', prev_s + s, prev_w + w, prev_start)
+        else:
+            output_tokens.append(('vis', s, w, start_col))
+        visible_count += w
+        if propagate_sgr and sgr_at_clip_start is None:
+            sgr_at_clip_start = sgr
+
+    def _append_seq(seq: str) -> None:
+        nonlocal sgr_at_clip_start
+        output_tokens.append(('seq', seq))
+        if propagate_sgr and sgr_at_clip_start is None:
+            sgr_at_clip_start = sgr
+
+    def _remove_visible_tail(n: int) -> None:
+        """Remove n visible columns from the end of output_tokens (overwrite semantics)."""
+        nonlocal visible_count
+        to_remove = n
+        while to_remove > 0 and visible_count > 0:
+            # find last visible token
+            i = len(output_tokens) - 1
+            while i >= 0 and output_tokens[i][0] != 'vis':
+                i -= 1
+            if i < 0:
+                break
+            tok = output_tokens[i]
+            tok_s = tok[1]
+            tok_w = tok[2]
+            tok_start = tok[3]
+            if tok_w <= to_remove:
+                # remove entire token
+                output_tokens.pop(i)
+                to_remove -= tok_w
+                visible_count -= tok_w
+            else:
+                # shorten token by removing columns from the end
+                keep_cols = tok_w - to_remove
+                # slice the string by grapheme widths
+                kept_text = ''
+                acc = 0
+                for g in iter_graphemes(tok_s):
+                    gw = width(g, ambiguous_width=ambiguous_width)
+                    if acc + gw > keep_cols:
+                        break
+                    kept_text += g
+                    acc += gw
+                output_tokens[i] = ('vis', kept_text, acc, tok_start)
+                visible_count -= to_remove
+                to_remove = 0
 
     while idx < len(text):
         char = text[idx]
@@ -396,72 +463,148 @@ def clip(
                 if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
                     # Update SGR state; will be applied as prefix when visible content starts
                     sgr = _sgr_state_update(sgr, seq)
-                else:
-                    # Non-SGR and Non-Text Sizing sequences always preserved
-                    # TODO: what about cursor_left and right! preserved, or padded ?!
-                    ts_match = TEXT_SIZING_PATTERN.match(text, idx)
-                    if ts_match is None:
+                    # we've consumed the sequence; advance index and continue
+                    idx = match.end()
+                    continue
+                # Non-SGR and Non-Text Sizing sequences always preserved
+                # TODO: what about cursor_left and right! preserved, or padded ?!
+                ts_match = TEXT_SIZING_PATTERN.match(text, idx)
+                if ts_match is None:
+                    # Handle cursor movement sequences specially to simulate visible
+                    # effects (fillchar padding for rightward moves, overwrite for left).
+                    if CURSOR_RIGHT_SEQUENCE.match(seq):
+                        # parse numeric argument (default 1)
+                        try:
+                            n = int(seq.lstrip('\x1b[').rstrip('C'))
+                        except ValueError:
+                            n = 1
+                        # If movement crosses into the clip window, emit fillchars
+                        move_start = col
+                        move_end = col + n
+                        if move_start < end and move_end > start:
+                            overlap_start = max(move_start, start)
+                            overlap_end = min(move_end, end)
+                            overlap = overlap_end - overlap_start
+                            if overlap > 0:
+                                _append_visible(fillchar * overlap, overlap)
+                        col += n
                         idx = match.end()
                         continue
+                    if CURSOR_LEFT_SEQUENCE.match(seq):
+                        try:
+                            n = int(seq.lstrip('\x1b[').rstrip('D'))
+                        except ValueError:
+                            n = 1
+                        prev_col = col
+                        col = max(0, col - n)
+                        # If we moved left and had emitted visible columns beyond
+                        # the new col, they are now potentially overwritten.
+                        if prev_col > col:
+                            to_remove = min(prev_col - col, visible_count)
+                            if to_remove > 0:
+                                _remove_visible_tail(to_remove)
+                        idx = match.end()
+                        continue
+                    # Preserve other non-SGR zero-width sequences (OSC hyperlinks, CSI others, etc.)
+                    _append_seq(seq)
+                    idx = match.end()
+                    continue
 
                     # OSC 66 (text sizing) has positive width
                     text_size = TextSizing.from_match(ts_match, control_codes='parse')
                     ts_width = text_size.display_width(ambiguous_width)
                     if col >= start and col + ts_width <= end:
                         # fits as-is, keep going
-                        output.append(seq)
-                        if propagate_sgr and sgr_at_clip_start is None:
-                            sgr_at_clip_start = sgr
+                        _append_seq(seq)
                         col += ts_width
                     elif col < end and col + ts_width > start:
-                        # TODO: move to TextSizing.clip(start, end)
-                        # TODO: fillchar padding
-                        next_start = max(0, start - col) // text_size.params.scale
-                        visible_width = (min(end, col + ts_width) - max(start, col))
-                        next_width = (0 if text_size.params.width == 0
-                                      else visible_width // text_size.params.scale)
-                        next_text_size_parms = TextSizingParams(
-                                text_size.params.scale,
-                                next_width,
-                                text_size.params.numerator, 
-                                text_size.params.denominator, 
-                                text_size.params.vertical_align, 
-                                text_size.params.horizontal_align)
+                        # Clip inside the text-sizing block. Only include whole inner units
+                        # (scaled slots) as sequences. Partial units are represented by
+                        # fillchar characters covering the visible columns.
+                        rel_start = max(0, start - col)
+                        rel_end = min(end, col + ts_width) - col
+                        scale = text_size.params.scale
 
-                        # RECURSION just one time for clip() of inner text. Text sizing
-                        # sequences cannot further contain any sequences. Although tabsize
-                        # is "extended", the modulo margins are not.
-                        next_inner_text = clip(
-                                text_size.text, next_start, next_start + visible_width // text_size.params.scale,
-                                fillchar=fillchar, tabsize=tabsize, ambiguous_width=ambiguous_width,
-                                propagate_sgr=False)
-                        next_text_size = TextSizing(
-                                next_text_size_parms,
-                                next_inner_text,
-                                text_size.terminator)
+                        # Build unit list: for width>0, units are declared slots (one per width)
+                        # otherwise units are grapheme clusters of inner text.
+                        units: list[tuple[str, int]] = []
+                        if text_size.params.width > 0:
+                            inner_graphemes = list(iter_graphemes(text_size.text))
+                            for j in range(text_size.params.width):
+                                g = inner_graphemes[j] if j < len(inner_graphemes) else ''
+                                # declared slots each occupy exactly `scale` columns
+                                units.append((g, scale))
+                        else:
+                            for g in iter_graphemes(text_size.text):
+                                inner_w = width(g, ambiguous_width=ambiguous_width)
+                                units.append((g, inner_w * scale))
 
-                        delta = next_text_size.display_width() - visible_width
-                        #breakpoint()
-                        if delta > 0:
-                            # left-pad ??
-                            output.append(delta * fillchar)
-                        if next_inner_text:
-                            output.append(next_text_size.make_sequence())
-                        if delta < 0:
-                            # or right-pad?? how do we do eeet TODO
-                            output.append(abs(delta) * fillchar)
-                        if propagate_sgr and sgr_at_clip_start is None:
-                            sgr_at_clip_start = sgr
+                        pos = 0
+                        pending_run_texts: list[str] = []
+                        pending_run_count = 0
+
+                        def emit_pending_run():
+                            nonlocal pending_run_texts, pending_run_count
+                            if pending_run_count == 0:
+                                return
+                            inner_text = ''.join(pending_run_texts)
+                            if text_size.params.width > 0:
+                                params = TextSizingParams(
+                                    scale,
+                                    pending_run_count,
+                                    text_size.params.numerator,
+                                    text_size.params.denominator,
+                                    text_size.params.vertical_align,
+                                    text_size.params.horizontal_align)
+                            else:
+                                params = TextSizingParams(
+                                    scale,
+                                    0,
+                                    text_size.params.numerator,
+                                    text_size.params.denominator,
+                                    text_size.params.vertical_align,
+                                    text_size.params.horizontal_align)
+                            ts = TextSizing(params, inner_text, text_size.terminator)
+                            _append_seq(ts.make_sequence())
+                            pending_run_texts = []
+                            pending_run_count = 0
+
+                        for unit_text, unit_scaled_w in units:
+                            unit_start = pos
+                            unit_end = pos + unit_scaled_w
+                            if unit_end <= rel_start:
+                                pos = unit_end
+                                continue
+                            if unit_start >= rel_end:
+                                break
+                            overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
+
+                            # If overlap covers entire unit, include it in pending run.
+                            if overlap == unit_scaled_w and unit_scaled_w > 0:
+                                pending_run_texts.append(unit_text)
+                                pending_run_count += 1
+                            else:
+                                # Partial unit or gap: flush pending run and emit fillchars
+                                emit_pending_run()
+                                if overlap > 0:
+                                    # absolute start column of this overlap inside the ts block
+                                    abs_start = col + max(unit_start, rel_start)
+                                    _append_visible(fillchar * overlap, overlap, abs_start)
+
+                            pos = unit_end
+
+                        # flush remaining run if any
+                        emit_pending_run()
+
                         col += ts_width
                     else:
                         col += ts_width
                     idx = ts_match.end()
                     continue
 
-
         # 2. Handle bare ESC (not a valid sequence)
         if char == '\x1b':
-            output.append(char)
+            _append_seq(char)
             idx += 1
             continue
 
@@ -471,12 +614,11 @@ def clip(
                 next_tab = col + (tabsize - (col % tabsize))
                 while col < next_tab:
                     if start <= col < end:
-                        output.append(' ')
-                        if propagate_sgr and sgr_at_clip_start is None:
-                            sgr_at_clip_start = sgr
+                        _append_visible(' ', 1)
                     col += 1
             else:
-                output.append(char)
+                # preserve tab as-is
+                _append_seq(char)
             idx += 1
             continue
 
@@ -485,28 +627,65 @@ def clip(
         grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
 
         if grapheme_w == 0:
-            # TODO: How is this reachable ??
+            # combining/zero-width grapheme; preserve as sequence-like token at this column
             if start <= col < end:
-                output.append(grapheme)
+                _append_seq(grapheme)
         elif col >= start and col + grapheme_w <= end:
             # Fully visible
-            output.append(grapheme)
-            if propagate_sgr and sgr_at_clip_start is None:
-                sgr_at_clip_start = sgr
+            _append_visible(grapheme, grapheme_w)
             col += grapheme_w
         elif col < end and col + grapheme_w > start:
-            # Partially visible (wide char at boundary)
-            output.append(fillchar * (min(end, col + grapheme_w) - max(start, col)))
-            if propagate_sgr and sgr_at_clip_start is None:
-                sgr_at_clip_start = sgr
+            # Partially visible (wide char at boundary) -> emit fillchars for visible portion
+            overlap = min(end, col + grapheme_w) - max(start, col)
+            abs_start = max(start, col)
+            _append_visible(fillchar * overlap, overlap, abs_start)
             col += grapheme_w
         else:
-            # TODO and this??
             col += grapheme_w
 
         idx += len(grapheme)
 
-    result = ''.join(output)
+    # Reconstruct result from output_tokens, slicing visible content to [start,end)
+    parts: list[str] = []
+    for tok in output_tokens:
+        if tok[0] == 'seq':
+            parts.append(tok[1])
+        else:
+            # visible chunk: ('vis', text, width_in_cols, start_col)
+            _, text, tok_w, tok_start = tok
+            chunk_len = tok_w
+            chunk_start = tok_start
+            chunk_end = chunk_start + chunk_len
+            if chunk_end <= start:
+                continue
+            if chunk_start >= end:
+                continue
+            s0 = max(0, start - chunk_start)
+            s1 = min(chunk_len, end - chunk_start)
+            # slice `text` for columns [s0, s1)
+            acc = 0
+            slice_text = ''
+            for g in iter_graphemes(text):
+                gw = width(g, ambiguous_width=ambiguous_width)
+                next_acc = acc + gw
+                if next_acc <= s0:
+                    acc = next_acc
+                    continue
+                if acc >= s1:
+                    break
+                # include this grapheme (or part of it)
+                # graphemes are atomic; if they partially overlap, use fillchar instead
+                if acc < s0 or next_acc > s1:
+                    # partial grapheme -> fill with appropriate number of fillchars
+                    left = max(0, s0 - acc)
+                    right = min(gw, s1 - acc)
+                    slice_text += fillchar * (right - left)
+                else:
+                    slice_text += g
+                acc = next_acc
+            parts.append(slice_text)
+
+    result = ''.join(parts)
 
     # Apply SGR prefix/suffix
     if sgr_at_clip_start is not None:
