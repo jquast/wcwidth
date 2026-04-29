@@ -11,20 +11,12 @@ import re
 
 import typing
 
-# Text Sizing Protocol (OSC 66) — has positive width, must be checked before ZERO_WIDTH_PATTERN.
-# Groups: (1) metadata, (2) inner text, (3) terminator (BEL or ST).
-# https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
-TEXT_SIZING_PATTERN = re.compile(
-    r'\x1b\]66;([^;\x07\x1b]*);([^\x07\x1b]*)(\x07|\x1b\\)'
-)
-
 # Zero-width escape sequences (SGR, OSC, CSI, etc.). This table, like INDETERMINATE_EFFECT_SEQUENCE,
 # originated from the 'blessed' library.
 ZERO_WIDTH_PATTERN = re.compile(
     # CSI sequences
     r'\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]|'
-    # OSC sequences, note that text sizing protocol (OSC 66) is special case in width() and clip(),
-    # and contrary to the variable name, it is positive width.
+    # OSC sequences
     r'\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|'
     # APC sequences
     r'\x1b_[^\x1b\x07]*(?:\x07|\x1b\\)|'
@@ -136,9 +128,6 @@ def strip_sequences(text: str) -> str:
     r"""
     Return text with all terminal escape sequences removed.
 
-    For sequences containing printable text, OSC 66 (Text sizing protocol) and OSC 8 (hyperlink),
-    the inner text is preserved.
-
     Unknown or incomplete ESC sequences are preserved.
 
     :param text: String that may contain terminal escape sequences.
@@ -154,11 +143,7 @@ def strip_sequences(text: str) -> str:
         'hello'
         >>> strip_sequences('\x1b[1m\x1b[31mbold red\x1b[0m text')
         'bold red text'
-        >>> strip_sequences('\x1b]66;s=2;hello\x07')
-        'hello'
         >>> strip_sequences('\x1b]8;id=34;https://example.com\x1b\\[view]\x1b]8;;\x1b\\')
         '[view]'
     """
-    if '\x1b]66;' in text:
-        text = TEXT_SIZING_PATTERN.sub(r'\2', text)
     return ZERO_WIDTH_PATTERN.sub('', text)
