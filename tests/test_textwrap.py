@@ -1,4 +1,5 @@
 """Tests for sequence-aware text wrapping functions."""
+
 # std imports
 import sys
 import platform

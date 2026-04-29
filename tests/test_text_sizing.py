@@ -1,4 +1,5 @@
 """Tests for Text Sizing Protocol (OSC 66) support."""
+
 # 3rd party
 import pytest
 

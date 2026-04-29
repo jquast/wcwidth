@@ -1,4 +1,5 @@
 """Shared data tables and constants for wcwidth.py, _wcwidth.py, and _wcswidth.py."""
+
 # local
 from .table_mc import CATEGORY_MC
 from .table_wide import WIDE_EASTASIAN

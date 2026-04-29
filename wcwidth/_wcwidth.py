@@ -1,4 +1,5 @@
 """This is a python implementation of wcwidth()."""
+
 # std
 # std imports
 from functools import lru_cache

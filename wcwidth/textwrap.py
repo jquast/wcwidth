@@ -4,6 +4,7 @@ Sequence-aware text wrapping functions.
 This module provides functions for wrapping text that may contain terminal escape sequences, with
 proper handling of Unicode grapheme clusters and character display widths.
 """
+
 from __future__ import annotations
 
 # std imports

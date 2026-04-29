@@ -13,6 +13,7 @@ platforms -- usually conforming only to unicode specification 1.0 or 2.0.
 This program accepts one optional command-line argument, the unicode version
 level for our library to use when comparing to libc.
 """
+
 # pylint: disable=C0103
 #         Invalid module name "wcwidth-libc-comparator"
 

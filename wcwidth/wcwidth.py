@@ -481,7 +481,7 @@ def clip(
                         overlap_end = min(move_end, end)
                         overlap = overlap_end - overlap_start
                         if overlap > 0:
-                            _append_visible(fillchar * overlap, overlap)
+                            _append_visible(fillchar * overlap, overlap, overlap_start)
                     col += n_left
                     idx = match.end()
                     continue
@@ -501,97 +501,22 @@ def clip(
                     continue
                 if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
                     # OSC 66 (text sizing) has positive width
-                    text_size = TextSizing.from_match(ts_match, control_codes='parse')
-                    ts_width = text_size.display_width(ambiguous_width)
-                    if col >= start and col + ts_width <= end:
-                        # fits as-is, keep going
-                        _append_seq(seq)
-                        col += ts_width
-                    elif col < end and col + ts_width > start:
-                        # Clip inside the text-sizing block. Only include whole inner units
-                        # (scaled slots) as sequences. Partial units are represented by
-                        # fillchar characters covering the visible columns.
-                        rel_start = max(0, start - col)
-                        rel_end = min(end, col + ts_width) - col
-                        scale = text_size.params.scale
-
-                        # Build unit list: for width>0, units are declared slots (one per width)
-                        # otherwise units are grapheme clusters of inner text.
-                        units: list[tuple[str, int]] = []
-                        if text_size.params.width > 0:
-                            inner_graphemes = list(iter_graphemes(text_size.text))
-                            for j in range(text_size.params.width):
-                                g = inner_graphemes[j] if j < len(inner_graphemes) else ''
-                                # declared slots each occupy exactly `scale` columns
-                                units.append((g, scale))
-                        else:
-                            for g in iter_graphemes(text_size.text):
-                                inner_w = width(g, ambiguous_width=ambiguous_width)
-                                units.append((g, inner_w * scale))
-
-                        pos = 0
-                        pending_run_texts: list[str] = []
-                        pending_run_count = 0
-
-                        def emit_pending_run():
-                            nonlocal pending_run_texts, pending_run_count
-                            if pending_run_count == 0:
-                                return
-                            inner_text = ''.join(pending_run_texts)
-                            if text_size.params.width > 0:
-                                params = TextSizingParams(
-                                    scale,
-                                    pending_run_count,
-                                    text_size.params.numerator,
-                                    text_size.params.denominator,
-                                    text_size.params.vertical_align,
-                                    text_size.params.horizontal_align)
-                            else:
-                                params = TextSizingParams(
-                                    scale,
-                                    0,
-                                    text_size.params.numerator,
-                                    text_size.params.denominator,
-                                    text_size.params.vertical_align,
-                                    text_size.params.horizontal_align)
-                            ts = TextSizing(params, inner_text, text_size.terminator)
-                            _append_seq(ts.make_sequence())
-                            pending_run_texts = []
-                            pending_run_count = 0
-
-                        for unit_text, unit_scaled_w in units:
-                            unit_start = pos
-                            unit_end = pos + unit_scaled_w
-                            if unit_end <= rel_start:
-                                pos = unit_end
-                                continue
-                            if unit_start >= rel_end:
-                                break
-                            overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
-
-                            # If overlap covers entire unit, include it in pending run.
-                            if overlap == unit_scaled_w and unit_scaled_w > 0:
-                                pending_run_texts.append(unit_text)
-                                pending_run_count += 1
-                            else:
-                                # Partial unit or gap: flush pending run and emit fillchars
-                                emit_pending_run()
-                                if overlap > 0:
-                                    # absolute start column of this overlap inside the ts block
-                                    abs_start = col + max(unit_start, rel_start)
-                                    _append_visible(fillchar * overlap, overlap, abs_start)
-
-                            pos = unit_end
-
-                        # flush remaining run if any
-                        emit_pending_run()
-
-                        col += ts_width
-                    else:
-                        # XXX nothing to clip? TODO breakpoint() and verify
-                        col += ts_width
-                    idx = ts_match.end()
+                    col, visible_count = _text_sizing_clip(
+                        TextSizing.from_match(ts_match),
+                        col=col, start=start, end=end,
+                        output_tokens=output_tokens,
+                        visible_count=visible_count,
+                        fillchar=fillchar, ambiguous_width=ambiguous_width,
+                    )
+                    if propagate_sgr and sgr_at_clip_start is None:
+                        sgr_at_clip_start = sgr
+                    idx = match.end()
                     continue
+
+                # Other zero-width sequences (OSC hyperlinks, etc.) — preserve as-is
+                _append_seq(seq)
+                idx = match.end()
+                continue
 
         # 2. Handle bare ESC (not a valid sequence)
         if char == '\x1b':
@@ -686,3 +611,87 @@ def clip(
             result += '\x1b[0m'
 
     return result
+
+
+def _text_sizing_clip(
+    ts: TextSizing,
+    *,
+    col: int,
+    start: int,
+    end: int,
+    output_tokens: list[tuple],
+    visible_count: int,
+    fillchar: str = ' ',
+    ambiguous_width: int = 1,
+) -> tuple[int, int]:
+    """
+    Emit tokens for a text-sizing sequence into ``output_tokens``, clipped to ``[start, end)``.
+
+    Returns ``(new_col, new_visible_count)``.
+
+    This was formerly ``TextSizing.clip()`` in :mod:`wcwidth.text_sizing`.  It was moved here to
+    break a circular dependency loop (:mod:`text_sizing` imported :mod:`_width`, and :mod:`_width`
+    imported :mod:`text_sizing`).
+    """
+    # pylint: disable=too-many-locals
+    ts_width = ts.display_width(ambiguous_width)
+    if col >= start and col + ts_width <= end:
+        output_tokens.append(('seq', ts.make_sequence()))
+        return col + ts_width, visible_count
+    if col >= end or col + ts_width <= start:
+        return col + ts_width, visible_count
+
+    # Partial overlap: decompose into units (graphemes at `scale` cells each),
+    # emit whole units as sequences and partial units as fillchars.
+    rel_start = max(0, start - col)
+    rel_end = min(end, col + ts_width) - col
+    scale = ts.params.scale
+
+    units: list[tuple[str, int]] = []
+    if ts.params.width > 0:
+        inner_graphemes = list(iter_graphemes(ts.text))
+        for j in range(ts.params.width):
+            g = inner_graphemes[j] if j < len(inner_graphemes) else ''
+            units.append((g, scale))
+    else:
+        for g in iter_graphemes(ts.text):
+            units.append((g, width(g, ambiguous_width=ambiguous_width) * scale))
+
+    pos = 0
+    pending_texts: list[str] = []
+
+    def flush():
+        if not pending_texts:
+            return
+        params = TextSizingParams(
+            scale,
+            len(pending_texts) if ts.params.width > 0 else 0,
+            ts.params.numerator,
+            ts.params.denominator,
+            ts.params.vertical_align,
+            ts.params.horizontal_align)
+        output_tokens.append(
+            ('seq', TextSizing(params, ''.join(pending_texts), ts.terminator).make_sequence()))
+        pending_texts.clear()
+
+    for unit_text, unit_w in units:
+        unit_start = pos
+        unit_end = pos + unit_w
+        if unit_end <= rel_start:
+            pos = unit_end
+            continue
+        if unit_start >= rel_end:
+            break
+        overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
+        if overlap == unit_w and unit_w > 0:
+            pending_texts.append(unit_text)
+        else:
+            flush()
+            if overlap > 0:
+                abs_start = col + max(unit_start, rel_start)
+                output_tokens.append(('vis', fillchar * overlap, overlap, abs_start))
+                visible_count += overlap
+        pos = unit_end
+
+    flush()
+    return col + ts_width, visible_count

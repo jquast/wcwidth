@@ -5,6 +5,7 @@ This module provides functions for tracking and propagating terminal styling (bo
 etc.) via public API propagate_sgr(), and its dependent functions, cut() and wrap(). It only has
 attributes necessary to perform its functions, eg 'RED' and 'BLUE' attributes are not defined.
 """
+
 from __future__ import annotations
 
 # std imports

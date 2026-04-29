@@ -14,6 +14,7 @@ Means that chr(12752) through chr(12754) are new WIDE values
 for Unicode version 5.0.0, and were not WIDE values for the
 previous version (4.1.0).
 """
+
 # std imports
 import sys
 import json

@@ -72,16 +72,6 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-          # jquast: pypy disabled 4/28/26 when installing requirements-tests39.txt, "ERROR: Could not
-          # install packages due to an OSError: ('Connection broken: IncompleteRead(14094 bytes
-          # read, 554 more expected)', Occur *only* with pypy versions 3.10 and 3.11, and *only* on
-          # the Windows platform.  Microsoft's is an international crime ring designed to keep
-          # mediocre middle-aged men employed doing barely any work at all, tracking and working
-          # around bullshit just like this, I'm not paid and I won't be played.
-          # - "pypy-3.8"
-          # - "pypy-3.9"
-          # - "pypy-3.10"
-          # - "pypy-3.11"
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}

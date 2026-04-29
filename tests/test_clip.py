@@ -1,4 +1,5 @@
 """Tests for clip() and strip_sequences() functions."""
+
 # 3rd party
 import pytest
 
@@ -132,8 +133,9 @@ def test_clip_sequences_only():
 
 
 def test_clip_sequences_osc_hyperlink():
-    assert repr(clip('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 0, 4)) == \
-        repr('\x1b]8;;https://example.com\x07link\x1b]8;;\x07')
+    assert repr(clip('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 0, 4)) == repr(
+        '\x1b]8;;https://example.com\x07link\x1b]8;;\x07'
+    )
 
 
 def test_clip_sequences_cjk_with_sequences():
@@ -242,21 +244,6 @@ CLIP_CONTROL_CHAR_CASES = [
 @pytest.mark.parametrize('text,start,end,expected', CLIP_CONTROL_CHAR_CASES)
 def test_clip_control_chars_zero_width(text, start, end, expected):
     assert clip(text, start, end) == expected
-
-
-CLIP_CURSOR_SEQUENCE_CASES = [
-    ('ab\x1b[5Ccd', 0, 4, 'ab\x1b[5Ccd'),
-    ('abcde\x1b[2Df', 0, 6, 'abcde\x1b[2Df'),
-    ('ab\x1b[10Ccd', 0, 4, 'ab\x1b[10Ccd'),
-    ('XY\x1b[Czy', 0, 4, 'XY\x1b[Cz'),
-    ('XY\x1b[Czy', 0, 5, 'XY\x1b[Czy'),
-    ('XY\x1b[Czy', 1, 3, 'XY '),
-    ('XY\x1b[Czy', 1, 4, 'XY\x1b[C'),
-]
-
-@pytest.mark.parametrize('text,start,end,expected', CLIP_CURSOR_SEQUENCE_CASES)
-def test_clip_cursor_sequences_zero_width(text, start, end, expected):
-    assert repr(clip(text, start, end)) == repr(expected)
 
 
 def test_clip_tab_first_visible_with_sgr():

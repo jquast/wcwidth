@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 """
-Update the Unicode code tables for wcwidth.  This is code generation using jinja2.
+Update the Unicode code tables for wcwidth.
 
-This is typically executed through tox,
+This is code generation using jinja2. This is typically executed through tox,
 
 $ tox -e update
 
 https://github.com/jquast/wcwidth
 """
+
 from __future__ import annotations
 
 # std imports
@@ -108,6 +109,7 @@ def _bisearch(ucs, table):
 @dataclass(order=True, frozen=True)
 class UnicodeVersion:
     """A class for comparable unicode version."""
+
     major: int
     minor: int
     micro: int | None
@@ -138,6 +140,7 @@ class UnicodeVersion:
 @dataclass(frozen=True)
 class TableEntry:
     """An entry of a unicode table."""
+
     code_range: tuple[int, int] | None
     properties: tuple[str, ...]
     comment: str
@@ -255,6 +258,7 @@ class UnicodeTableRenderCtx(RenderContext):
 @dataclass
 class RenderDefinition:
     """Base class, do not instantiate it directly."""
+
     jinja_filename: str
     output_filename: str
     render_context: RenderContext
@@ -330,6 +334,7 @@ class UnicodeTableRenderDef(RenderDefinition):
 @dataclass(frozen=True)
 class GraphemeTableRenderCtx(RenderContext):
     """Render context for grapheme tables (latest version only)."""
+
     unicode_version: str
     tables: Mapping[str, TableDef]
 
@@ -880,7 +885,6 @@ def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:
     tables.update(parse_indic_syllabic_category(
         UnicodeDataFile.IndicSyllabicCategory(latest_version)
     ))
-
     return GraphemeTableRenderCtx(str(latest_version), tables)
 
 
@@ -895,6 +899,7 @@ class UnicodeDataFile:
     TestEmojiVariationSequences, these files should be forcefully re-fetched CLI argument '--no-
     check-last-modified'.
     """
+
     URL_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
     URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
     URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'

@@ -5,6 +5,7 @@ These ensure wide graphemes (CJK / emoji / ZWJ sequences) are clipped correctly:
 - Partial columns of a wide grapheme are replaced by fillchar.
 - Full grapheme included when fully inside slice.
 """
+
 # 3rd party
 import pytest
 

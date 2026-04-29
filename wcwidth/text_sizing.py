@@ -27,6 +27,7 @@ and have no effect on measurements made in this library.
 
 .. versionadded:: 0.6.1
 """
+
 from __future__ import annotations
 
 # std imports
@@ -58,10 +59,9 @@ class TextSizingParams(typing.NamedTuple):
     """
     Parsed parameters from a text sizing escape sequence (OSC 66).
 
-    :param scale: Scale factor (1-7). Text occupies ``scale`` rows tall
-        and ``scale * width`` columns wide.
-    :param width: Width in cells (0-7). When 0, width is auto-calculated
-        from the inner text.
+    :param scale: Scale factor (1-7). Text occupies ``scale`` rows tall and ``scale * width``
+        columns wide.
+    :param width: Width in cells (0-7). When 0, width is auto-calculated from the inner text.
     :param numerator: Fractional scaling numerator (0-15).
     :param denominator: Fractional scaling denominator (0-15).
     :param vertical_align: Vertical alignment (0=top, 1=bottom, 2=center).
@@ -76,7 +76,8 @@ class TextSizingParams(typing.NamedTuple):
     horizontal_align: int = 0
 
     def __repr__(self):
-        """Return a compact representation including only non-default fields.
+        """
+        Return a compact representation including only non-default fields.
 
         This avoids verbose output when most fields are defaults.
         """
@@ -182,10 +183,8 @@ class TextSizing(typing.NamedTuple):
         Calculate the display width of a text sizing sequence.
 
         :param ambiguous_width: Width for East Asian Ambiguous characters.
-        :returns: Display width in terminal cells.
-
-        When ``width > 0``, returns ``params.scale * params.width``.
-        When ``width == 0``, returns ``params.scale * measured_inner_width``.
+        :returns: Display width in terminal cells. When ``width > 0``, returns ``params.scale *
+            params.width``. When ``width == 0``, returns ``params.scale * measured_inner_width``.
         """
         if self.params.width > 0:
             return self.params.scale * self.params.width

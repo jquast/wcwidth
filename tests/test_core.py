@@ -1,4 +1,5 @@
 """Core tests for wcwidth module."""
+
 # std imports
 import sys
 import importlib.metadata
@@ -69,9 +70,8 @@ def test_hello_jp():
     """
     Width of Japanese phrase: コンニチハ, セカイ!
 
-    Given a phrase of 5 and 3 Katakana ideographs, joined with
-    3 English-ASCII punctuation characters, totaling 11, this
-    phrase consumes 19 cells of a terminal emulator.
+    Given a phrase of 5 and 3 Katakana ideographs, joined with 3 English-ASCII punctuation
+    characters, totaling 11, this phrase consumes 19 cells of a terminal emulator.
     """
     # given,
     phrase = 'コンニチハ, セカイ!'
@@ -91,8 +91,7 @@ def test_wcswidth_substr():
     """
     Test wcswidth() optional 2nd parameter, ``n``.
 
-    ``n`` determines at which position of the string
-    to stop counting length.
+    ``n`` determines at which position of the string to stop counting length.
     """
     # given,
     phrase = 'コンニチハ, セカイ!'

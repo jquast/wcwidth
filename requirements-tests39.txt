@@ -30,8 +30,6 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-py-cpuinfo==9.0.0
-    # via pytest-benchmark
 pycparser==2.23
     # via cffi
 pygments==2.19.2
@@ -42,12 +40,9 @@ pygments==2.19.2
 pytest==8.4.2
     # via
     #   -r requirements-tests39.in
-    #   pytest-benchmark
     #   pytest-codspeed
     #   pytest-cov
-pytest-benchmark==5.2.3
-    # via -r requirements-tests39.in
-pytest-codspeed==4.4.0
+pytest-codspeed==4.5.0
     # via -r requirements-tests39.in
 pytest-cov==7.1.0
     # via -r requirements-tests39.in
