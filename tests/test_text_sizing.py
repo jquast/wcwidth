@@ -4,12 +4,17 @@
 import pytest
 
 # local
-from wcwidth import TextSizing, TextSizingParams, width, wcswidth, clip, iter_sequences, strip_sequences
+from wcwidth import (TextSizing,
+                     TextSizingParams,
+                     clip,
+                     width,
+                     wcswidth,
+                     iter_sequences,
+                     strip_sequences)
 from wcwidth.text_sizing import TEXT_FIELD_MAPPING
 from wcwidth.escape_sequences import TEXT_SIZING_PATTERN
 
 _W_HI = TEXT_FIELD_MAPPING['w'].high
-_S_HI = TEXT_FIELD_MAPPING['s'].high
 _N_HI = TEXT_FIELD_MAPPING['n'].high
 _D_HI = TEXT_FIELD_MAPPING['d'].high
 
