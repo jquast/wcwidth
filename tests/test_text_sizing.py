@@ -4,8 +4,7 @@
 import pytest
 
 # local
-import wcwidth
-from wcwidth import TextSizing, TextSizingParams
+from wcwidth import TextSizing, TextSizingParams, width, wcswidth, clip, iter_sequences, strip_sequences
 from wcwidth.text_sizing import TEXT_FIELD_MAPPING
 from wcwidth.escape_sequences import TEXT_SIZING_PATTERN
 
@@ -52,7 +51,7 @@ def test_text_sizing_width_control_codes(given_params, expected_remainder, expec
     seq2 = '\x1b]66;' + given_params + ';ABC' + '\x1b\\'
     for seq in (seq1, seq2):
         with pytest.raises(ValueError) as exc_info:
-            wcwidth.width(seq, control_codes='strict')
+            width(seq, control_codes='strict')
         assert exc_info.value.args[0].startswith(expected_exc)
 
 
@@ -87,16 +86,16 @@ def test_text_sizing_width(params, text, expected_width):
     assert TextSizing.from_match(ts_match2) == TextSizing(params, text, terminator='\x1b\\')
 
     # and external width(),
-    assert wcwidth.width(seq1) == expected_width
-    assert wcwidth.width(seq2) == expected_width
+    assert width(seq1) == expected_width
+    assert width(seq2) == expected_width
 
     # verify 'strict' does not raise ValueError
-    wcwidth.width(seq1, control_codes='strict')
-    wcwidth.width(seq2, control_codes='strict')
+    width(seq1, control_codes='strict')
+    width(seq2, control_codes='strict')
 
     # and verify 'ignore' measures only inner_text (does not parse scale or width)
-    assert wcwidth.width(seq1, control_codes='ignore') == wcwidth.wcswidth(text)
-    assert wcwidth.width(seq2, control_codes='ignore') == wcwidth.wcswidth(text)
+    assert width(seq1, control_codes='ignore') == wcswidth(text)
+    assert width(seq2, control_codes='ignore') == wcswidth(text)
 
 
 @pytest.mark.parametrize('given_sequence,expected_text,expected_params,expected_width', [
@@ -121,9 +120,9 @@ def test_text_sizing_sequence(given_sequence, expected_text, expected_params, ex
     text_size = TextSizing.from_match(ts_match)
     assert text_size.params.make_sequence() == expected_params
     assert text_size.text == expected_text
-    assert wcwidth.width(given_sequence, control_codes='parse') == expected_width
-    assert wcwidth.width(given_sequence, control_codes='strict') == expected_width
-    assert wcwidth.width(given_sequence, control_codes='ignore') == wcwidth.wcswidth(expected_text)
+    assert width(given_sequence, control_codes='parse') == expected_width
+    assert width(given_sequence, control_codes='strict') == expected_width
+    assert width(given_sequence, control_codes='ignore') == wcswidth(expected_text)
 
 
 @pytest.mark.parametrize('text,expected', [
@@ -141,8 +140,8 @@ def test_text_sizing_sequence(given_sequence, expected_text, expected_params, ex
 ])
 def test_strings_with_text_sizing(text, expected):
     """Verify measured width strings containing OSC66."""
-    assert wcwidth.width(text) == expected
-    assert wcwidth.width(text, control_codes='strict') == expected
+    assert width(text) == expected
+    assert width(text, control_codes='strict') == expected
 
 
 @pytest.mark.parametrize('text,expected', [
@@ -155,7 +154,7 @@ def test_strings_with_text_sizing(text, expected):
     ('\x1b]66;w=1;A\x07\x1b]66;w=1;B\x07', 'AB'),
 ])
 def test_strip_strings_with_text_sizing(text, expected):
-    assert wcwidth.strip_sequences(text) == expected
+    assert strip_sequences(text) == expected
 
 
 @pytest.mark.parametrize('text,expected_segs', [
@@ -163,7 +162,7 @@ def test_strip_strings_with_text_sizing(text, expected):
     ('abc\x1b]66;s=2;n=1,d=2,w=3;hello\x1b\\def', [('abc', False), ('\x1b]66;s=2;n=1,d=2,w=3;hello\x1b\\', True), ('def', False)]),
 ])
 def test_iter_sequences_text_sizing(text, expected_segs):
-    assert list(wcwidth.iter_sequences(text)) == expected_segs
+    assert list(iter_sequences(text)) == expected_segs
 
 
 @pytest.mark.parametrize('text,start,end,expected', [
@@ -177,7 +176,7 @@ def test_iter_sequences_text_sizing(text, expected_segs):
 ])
 def test_clip_text_sizing_basic(text, start, end, expected):
     """Test basic support of clip() with text sizing sequence."""
-    assert repr(wcwidth.clip(text, start, end)) == repr(expected)
+    assert repr(clip(text, start, end)) == repr(expected)
 
 
 @pytest.mark.parametrize('text,start,end,expected', [
@@ -191,7 +190,7 @@ def test_clip_text_sizing_basic(text, start, end, expected):
 ])
 def test_clip_text_sizing_scaled(text, start, end, expected):
     """Test support of clip() with scale=N arguments."""
-    assert repr(wcwidth.clip(text, start, end)) == repr(expected)
+    assert repr(clip(text, start, end)) == repr(expected)
 
 
 @pytest.mark.parametrize('text,start,end,expected', [
@@ -272,4 +271,4 @@ def test_clip_text_sizing_scaled(text, start, end, expected):
 ])
 def test_clip_text_sizing_scaled_with_fillchar(text, start, end, expected):
     """Test support of clip() with scale=N and fillchar is needed to fill remainder."""
-    assert repr(wcwidth.clip(text, start, end, fillchar='.')) == repr(expected)
+    assert repr(clip(text, start, end, fillchar='.')) == repr(expected)
