@@ -43,16 +43,4 @@ __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places
 # Prefer the installed distribution version when available (helps test environments)
-try:
-    # std imports
-    from importlib import metadata as importlib_metadata
-except ImportError:  # pragma: no cover - fallback for very old Pythons
-    importlib_metadata = None  # type: ignore[assignment]
-
-if importlib_metadata is not None:
-    try:
-        __version__ = importlib_metadata.version('wcwidth')
-    except importlib_metadata.PackageNotFoundError:
-        __version__ = '0.6.1'
-else:
-    __version__ = '0.6.1'  # don't forget to also update pyproject.toml:version
+__version__ = '0.6.1'  # don't forget to also update pyproject.toml:version

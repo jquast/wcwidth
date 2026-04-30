@@ -64,7 +64,7 @@ from __future__ import annotations
 # std imports
 from functools import lru_cache
 
-from typing import Union, Literal, NamedTuple
+from typing import Callable, Union, Literal, NamedTuple
 
 # local
 # pylint: disable=unused-import
@@ -415,24 +415,15 @@ def clip(
     def _write_cells(s: str, w: int, write_col: int) -> None:
         nonlocal sgr_at_clip_start
         if w > 0:
-            # 1. Overwriting the right half of a wide char leaves left half as fillchar
-            if write_col > 0 and write_col - 1 in cells and cells[write_col - 1][1] == 2:
-                cells[write_col - 1] = (fillchar, 1)
-
-            # 2. Overwriting the left half of a wide char leaves right half as fillchar
-            if w == 1 and write_col in cells and cells[write_col][1] == 2:
-                cells[write_col + 1] = (fillchar, 1)
-
-            if w == 2 and write_col + 1 in cells and cells[write_col + 1][1] == 2:
-                cells[write_col + 2] = (fillchar, 1)
-
-            # 3. Clean up the cells we are fully overwriting
-            for i in range(w):
-                if write_col + i in cells:
-                    del cells[write_col + i]
-
+            # Fix up wide-char orphans and clear overwritten cells in one pass
+            for offset in range(w):
+                src_col = write_col + offset
+                if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
+                    cells[src_col - 1] = (fillchar, 1)
+                if cells.get(src_col, ('', 0))[1] == 2:
+                    cells[src_col + 1] = (fillchar, 1)
+                cells.pop(src_col, None)
             cells[write_col] = (s, w)
-
         if propagate_sgr and sgr_at_clip_start is None:
             sgr_at_clip_start = sgr
 
@@ -451,39 +442,34 @@ def clip(
         if col >= end and sgr_at_clip_start is not None and char != '\x1b':
             break
 
-        # 1. Handle escape sequences
+        # 1. Handle escape sequences and bare ESC
         if char == '\x1b':
             if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
                 seq = match.group()
                 if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
                     # Update SGR state; will be applied as prefix when visible content starts
                     sgr = _sgr_state_update(sgr, seq)
-                    # we've consumed the sequence; advance index and continue
                     idx = match.end()
                     continue
 
-                # Handle cursor movement sequences specially to simulate visible
-                # effects (fillchar padding for rightward moves, overwrite for left).
-                if (match_cleft := CURSOR_RIGHT_SEQUENCE.match(seq)):
-                    # parse numeric argument (default 1)
-                    digit_txt = match_cleft.group(1)
-                    n_left = int(digit_txt) if digit_txt else 1
-                    # If movement crosses into the clip window, emit fillchars
-                    move_start = col
-                    move_end = col + n_left
-                    if move_start < end and move_end > start:
-                        overlap_start = max(move_start, start)
-                        overlap_end = min(move_end, end)
-                        for i in range(overlap_start, overlap_end):
+                # Cursor-forward sequences (e.g. CSI n C) advance the column;
+                # simulate by emitting fillchars for the visible portion.
+                if (match_cforward := CURSOR_RIGHT_SEQUENCE.match(seq)):
+                    digit_txt = match_cforward.group(1)
+                    n_forward = int(digit_txt) if digit_txt else 1
+                    move_end = col + n_forward
+                    if col < end and move_end > start:
+                        for i in range(max(col, start), min(move_end, end)):
                             _write_cells(fillchar, 1, i)
-                    col += n_left
+                    col = move_end
                     idx = match.end()
                     continue
 
-                if (match_cright := CURSOR_LEFT_SEQUENCE.match(seq)):
-                    digit_txt = match_cright.group(1)
-                    n_right = int(digit_txt) if digit_txt else 1
-                    col = max(0, col - n_right)
+                # Cursor-backward sequences (e.g. CSI n D) retreat the column.
+                if (match_cbackward := CURSOR_LEFT_SEQUENCE.match(seq)):
+                    digit_txt = match_cbackward.group(1)
+                    n_backward = int(digit_txt) if digit_txt else 1
+                    col = max(0, col - n_backward)
                     idx = match.end()
                     continue
 
@@ -500,16 +486,15 @@ def clip(
                     idx = match.end()
                     continue
 
-                # Other zero-width sequences (OSC hyperlinks, etc.) — preserve as-is
+                # Other zero-width sequences (OSC hyperlinks, etc.) are preserved as-is
                 _append_seq(seq)
                 idx = match.end()
                 continue
-
-        # 2. Handle bare ESC (not a valid sequence)
-        if char == '\x1b':
-            _append_seq(char)
-            idx += 1
-            continue
+            else:
+                # Bare ESC not matching any recognized sequence pattern
+                _append_seq(char)
+                idx += 1
+                continue
 
         # 3. TAB expansion
         if char == '\t':
@@ -530,46 +515,43 @@ def clip(
         grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
 
         if grapheme_w == 0:
-            # combining/zero-width grapheme; preserve as sequence-like token at this column
+            # combining/zero-width grapheme; preserve as token at this column
             if start <= col < end:
                 _append_seq(grapheme)
         elif col >= start and col + grapheme_w <= end:
             # Fully visible
             _write_cells(grapheme, grapheme_w, col)
-            col += grapheme_w
         elif col < end and col + grapheme_w > start:
-            # Partially visible (wide char at boundary) -> emit fillchars for visible portion
-            overlap = min(end, col + grapheme_w) - max(start, col)
-            abs_start = max(start, col)
-            for i in range(overlap):
-                _write_cells(fillchar, 1, abs_start + i)
-            col += grapheme_w
-        else:
-            col += grapheme_w
-
+            # Partially visible (wide char at boundary) — emit fillchars
+            clip_start = max(start, col)
+            for i in range(min(end, col + grapheme_w) - clip_start):
+                _write_cells(fillchar, 1, clip_start + i)
+        # advance column whether visible or not
+        col += grapheme_w
         idx += len(grapheme)
 
-    # Reconstruct result from painter's algorithm grid.
-    parts: list[str] = []
-
+    # ── Reconstruct result from painter's algorithm grid ──────────────────
+    # Build column→sorted sequences index
     seqs_by_col: dict[int, list[tuple[int, str]]] = {}
-    for seq_col, seq_ord, seq_text in sequences:
-        if seq_col not in seqs_by_col:
-            seqs_by_col[seq_col] = []
-        seqs_by_col[seq_col].append((seq_ord, seq_text))
+    for col_pos, order, seq_text in sequences:
+        seqs_by_col.setdefault(col_pos, []).append((order, seq_text))
+    for entries in seqs_by_col.values():
+        entries.sort()
 
-    for c in seqs_by_col:
-        seqs_by_col[c].sort()
+    max_cell_col = max(cells.keys()) if cells else -1
+    max_seq_col = max(seqs_by_col.keys()) if seqs_by_col else -1
+    max_col = max(max_cell_col, max_seq_col)
 
-    max_col = max((max(cells.keys()) + 1 if cells else 0),
-                  (max(seqs_by_col.keys()) if seqs_by_col else 0))
-
+    # Walk columns 0..min(max_col, end), emitting sequences then any cell
+    # or fillchar occupying each position.  Visits *inclusive* of
+    # min(max_col, end) so sequences at `end` are preserved.
+    parts: list[str] = []
     walk_col = 0
-    # walk_col reaches exactly up to end, to ensure sequences at `end` are processed
-    while walk_col <= max_col and walk_col <= end:
-        if walk_col in seqs_by_col:
-            for _, seq_text in seqs_by_col[walk_col]:
-                parts.append(seq_text)
+    col_limit = min(max_col, end)
+    while walk_col <= col_limit:
+        # Zero-width sequences at this column
+        for _, seq_text in seqs_by_col.get(walk_col, ()):
+            parts.append(seq_text)
 
         if walk_col >= end:
             walk_col += 1
@@ -577,34 +559,27 @@ def clip(
 
         if walk_col in cells:
             cell_text, cell_w = cells[walk_col]
-
-            # Calculate overlap with [start, end)
-            cell_start = walk_col
             cell_end = walk_col + cell_w
 
-            overlap_start = max(start, cell_start)
-            overlap_end = min(end, cell_end)
-
-            if overlap_start < overlap_end:
-                if cell_start >= start and cell_end <= end:
-                    # Fully inside
-                    parts.append(cell_text)
-                else:
-                    # Partially inside (split wide char)
-                    parts.append(fillchar * (overlap_end - overlap_start))
+            if walk_col >= start and cell_end <= end:
+                # Fully inside clip window
+                parts.append(cell_text)
+            elif cell_end > start:
+                # Partial overlap (wide char split at boundary)
+                parts.append(fillchar * (min(cell_end, end) - max(walk_col, start)))
+            # else: cell entirely before start — skip
 
             walk_col += cell_w
         else:
-            # It's a hole. Only emit fillchar if we are inside the clip window
-            # AND if we are within the bounds of where visible text was written.
-            if walk_col >= start and cells and walk_col < max(cells.keys()) + 1:
+            # Hole: emit fillchar for columns inside [start, end) that
+            # lie within the written cell area
+            if walk_col >= start and walk_col <= max_cell_col:
                 parts.append(fillchar)
             walk_col += 1
 
-    # Append any remaining sequences that occurred past the clip end boundary
-    # This preserves SGR resets and trailing hyperlinks if the loop broke early
+    # Trailing sequences past col_limit (SGR resets after short text, etc.)
     for c in sorted(seqs_by_col.keys()):
-        if c > end or (c == end and c > max_col):
+        if c > col_limit:
             for _, seq_text in seqs_by_col[c]:
                 parts.append(seq_text)
 
@@ -626,79 +601,100 @@ def _text_sizing_clip(
     col: int,
     start: int,
     end: int,
-    write_cells,
+    write_cells: Callable[[str, int, int], None],
     fillchar: str = ' ',
     ambiguous_width: int = 1,
 ) -> int:
     """
-    Emit tokens for a text-sizing sequence, clipped to ``[start, end)``.
+    Emit tokens for a text-sizing (OSC 66) sequence, clipped to ``[start, end)``.
 
-    Returns ``new_col``.
+    Returns ``new_col`` (column position after the sequence).
     """
     # pylint: disable=too-many-locals
     ts_width = ts.display_width(ambiguous_width)
+
+    # Sequence fully visible or fully outside: simple cases
     if col >= start and col + ts_width <= end:
         write_cells(ts.make_sequence(), ts_width, col)
         return col + ts_width
     if col >= end or col + ts_width <= start:
         return col + ts_width
 
-    # Partial overlap: decompose into units (graphemes at `scale` cells each),
-    # emit whole units as sequences and partial units as fillchars.
+    # Partial overlap: the sequence straddles a clip boundary.
+    # Decompose into unit cells (each grapheme occupies `scale` cells),
+    # emit as many whole units as fit inside [start, end), filling the
+    # remainder with `fillchar`.
     rel_start = max(0, start - col)
     rel_end = min(end, col + ts_width) - col
     scale = ts.params.scale
 
+    # Build the list of (grapheme, cell_width) units
     units: list[tuple[str, int]] = []
     if ts.params.width > 0:
-        inner_graphemes = list(iter_graphemes(ts.text))
-        for j in range(ts.params.width):
-            g = inner_graphemes[j] if j < len(inner_graphemes) else ''
+        # Fixed-width mode: explicit count at `scale` cells each.
+        # Use itertools.islice to avoid materializing the full grapheme list.
+        from itertools import islice
+        for j, g in enumerate(islice(iter_graphemes(ts.text), ts.params.width)):
             units.append((g, scale))
+        # Pad with empty graphemes if text had fewer than width
+        for _ in range(ts.params.width - len(units)):
+            units.append(('', scale))
     else:
+        # Auto-width mode: grapheme count derived from content, width varies
         for g in iter_graphemes(ts.text):
             units.append((g, width(g, ambiguous_width=ambiguous_width) * scale))
 
-    pos = 0
-    pending_texts: list[str] = []
+    # Batch of consecutive fully-visible units that can be emitted as a
+    # single text-sizing sequence.
+    pending_units: list[tuple[str, int]] = []  # (grapheme_text, cell_width)
 
-    def flush(flush_col: int, flush_width: int):
-        if not pending_texts:
+    def flush(flush_col: int) -> None:
+        """Emit accumulated graphemes as one text-sizing sequence."""
+        if not pending_units:
             return
+        texts = [u[0] for u in pending_units]
+        total_w = sum(u[1] for u in pending_units)
         params = TextSizingParams(
             scale,
-            len(pending_texts) if ts.params.width > 0 else 0,
+            len(texts) if ts.params.width > 0 else 0,
             ts.params.numerator,
             ts.params.denominator,
             ts.params.vertical_align,
             ts.params.horizontal_align)
-        write_cells(TextSizing(params, ''.join(pending_texts), ts.terminator).make_sequence(), flush_width, flush_col)
-        pending_texts.clear()
+        write_cells(
+            TextSizing(params, ''.join(texts), ts.terminator).make_sequence(),
+            total_w,
+            flush_col)
+        pending_units.clear()
 
+    # Walk units in cell-coordinate space, collecting consecutive fully-visible
+    # ones into a batch (flushed as one sequence) and emitting fillchars for
+    # partial units at the boundaries.
     flush_col_pos = col + rel_start
-    flush_width = 0
+    unit_pos = 0  # current position in cell-coordinates within the sequence
     for unit_text, unit_w in units:
-        unit_start = pos
-        unit_end = pos + unit_w
+        unit_end = unit_pos + unit_w
         if unit_end <= rel_start:
-            pos = unit_end
+            # Unit is entirely before the clip window
+            unit_pos = unit_end
             continue
-        if unit_start >= rel_end:
+        if unit_pos >= rel_end:
+            # Unit is entirely past the clip window
             break
-        overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
+
+        overlap = min(unit_end, rel_end) - max(unit_pos, rel_start)
         if overlap == unit_w and unit_w > 0:
-            if not pending_texts:
-                flush_col_pos = col + max(unit_start, rel_start)
-                flush_width = 0
-            pending_texts.append(unit_text)
-            flush_width += overlap
+            # Unit fits completely — batch it with others
+            if not pending_units:
+                flush_col_pos = col + max(unit_pos, rel_start)
+            pending_units.append((unit_text, unit_w))
         else:
-            flush(flush_col_pos, flush_width)
-            flush_width = 0
-            abs_start = col + max(unit_start, rel_start)
+            # Unit is partially clipped — flush batch, emit fillchars for remainder
+            flush(flush_col_pos)
+            abs_start = col + max(unit_pos, rel_start)
             for i in range(overlap):
                 write_cells(fillchar, 1, abs_start + i)
-        pos = unit_end
+        unit_pos = unit_end
 
-    flush(flush_col_pos, flush_width)
+    flush(flush_col_pos)
     return col + ts_width

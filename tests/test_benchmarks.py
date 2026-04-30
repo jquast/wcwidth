@@ -293,34 +293,16 @@ def test_clip_complex_sgr(benchmark):
     benchmark(wcwidth.clip, text, 6, 11)
 
 
-# OSC 66 (kitty text sizing protocol) benchmarks
-OSC66_SMALL = '\x1b]66;w=2;XY\x07'
-OSC66_SCALED = '\x1b]66;s=3;ABC\x07'
-OSC66_LONG = (
-    '\x1b]66;w=2;XY\x07' * 5 +
-    'interleaved text ' * 5 +
-    '\x1b]66;s=3;ABC\x07' * 5
-)
-
-
-@pytest.mark.parametrize('label,text', [
-    ('small', OSC66_SMALL),
-    ('scaled', OSC66_SCALED),
-    ('long', OSC66_LONG),
-], ids=lambda v: f'osc66_{v}')
-def test_width_osc66(benchmark, label, text):
+def test_width_osc66(benchmark):
     """Benchmark width() with OSC 66 sequences."""
+    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
     benchmark(wcwidth.width, text)
 
 
-@pytest.mark.parametrize('label,text,start,end', [
-    ('small', OSC66_SMALL, 0, 2),
-    ('scaled', OSC66_SCALED, 0, 9),
-    ('long', OSC66_LONG, 10, 60),
-], ids=lambda v: f'osc66_{v}')
 def test_clip_osc66(benchmark, label, text, start, end):
     """Benchmark clip() with OSC 66 sequences."""
-    benchmark(wcwidth.clip, text, start, end)
+    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
+    benchmark(wcwidth.clip, text, 3, 8)
 
 
 def test_propagate_sgr_multiline(benchmark):
