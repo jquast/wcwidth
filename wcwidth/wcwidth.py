@@ -64,7 +64,7 @@ from __future__ import annotations
 # std imports
 from functools import lru_cache
 
-from typing import Callable, Union, Literal, NamedTuple
+from typing import Union, Literal, Callable, NamedTuple
 
 # local
 # pylint: disable=unused-import
@@ -633,6 +633,7 @@ def _text_sizing_clip(
     if ts.params.width > 0:
         # Fixed-width mode: explicit count at `scale` cells each.
         # Use itertools.islice to avoid materializing the full grapheme list.
+        # std imports
         from itertools import islice
         for j, g in enumerate(islice(iter_graphemes(ts.text), ts.params.width)):
             units.append((g, scale))
