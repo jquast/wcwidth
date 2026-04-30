@@ -9,14 +9,14 @@ https://github.com/jquast/wcwidth
 # documented as public API
 
 # local
-from .clip import clip
+from ._clip import clip
 from .align import ljust, rjust, center
-from .width import width
-from .wcwidth import wcwidth, _wcmatch_version, _wcversion_value
+from ._width import width
+from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
-from .wcswidth import wcswidth
+from ._wcswidth import wcswidth
 from .sgr_state import propagate_sgr
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN

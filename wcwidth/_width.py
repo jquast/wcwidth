@@ -3,9 +3,9 @@
 from typing import Literal
 
 # local
-from .wcwidth import wcwidth
+from ._wcwidth import wcwidth
 from .bisearch import bisearch
-from .wcswidth import wcswidth
+from ._wcswidth import wcswidth
 from ._constants import (_EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,

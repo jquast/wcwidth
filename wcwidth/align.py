@@ -2,7 +2,7 @@
 from typing import Literal
 
 # local
-from .width import width
+from ._width import width
 
 
 def ljust(

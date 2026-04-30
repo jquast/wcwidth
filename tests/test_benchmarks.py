@@ -11,7 +11,7 @@ import pytest
 # local
 import wcwidth
 
-_width_module = sys.modules['wcwidth.width']
+_width_module = sys.modules['wcwidth._width']
 
 
 def test_wcwidth_ascii(benchmark):

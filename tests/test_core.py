@@ -9,9 +9,9 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth.width import _WIDTH_FAST_PATH_MIN_LEN
+from wcwidth._width import _WIDTH_FAST_PATH_MIN_LEN
 
-_wcwidth_module = sys.modules['wcwidth.wcwidth']
+_wcwidth_module = sys.modules['wcwidth._wcwidth']
 # local
 
 

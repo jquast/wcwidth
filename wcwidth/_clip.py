@@ -4,7 +4,7 @@
 from typing import Optional, NamedTuple
 
 # local
-from .width import width
+from ._width import width
 from .grapheme import iter_graphemes
 from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
