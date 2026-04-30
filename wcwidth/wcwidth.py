@@ -103,6 +103,7 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                strip_sequences)
 from .unicode_versions import list_versions
 
+
 # Token types for output_tokens used by clip().
 # NamedTuple subclasses provide named attribute access while remaining
 # plain tuples at runtime — zero overhead over the old bare-tuple approach,
@@ -399,68 +400,49 @@ def clip(
     if propagate_sgr:
         sgr = _SGR_STATE_DEFAULT
 
-    # output_tokens stores VisToken for visible content and SeqToken for preserved
-    # zero-width sequences. This allows cursor-left overwrites to remove previously
-    # emitted visible characters while keeping the sequence order.
-    output_tokens: list[Token] = []
-    visible_count = 0  # number of visible columns emitted so far
+    # Painter's algorithm data structures:
+    # 1. cells: maps column integer to a visible character (with its width)
+    #    cells that are part of a wide character's right half are not populated.
+    # 2. sequences: maps column integer to a list of zero-width sequences emitted at that position
+    #    and their chronological order number.
+    cells: dict[int, tuple[str, int]] = {}
+    sequences: list[tuple[int, int, str]] = []  # (col, seq_order, text)
+    seq_order = 0  # relative ordering of sequences
+
     col = 0
     idx = 0
 
-    def _append_visible(s: str, w: int, start_col: int | None = None) -> None:
-        nonlocal visible_count, sgr_at_clip_start
-        if start_col is None:
-            start_col = col
-        prev = output_tokens[-1] if (output_tokens and isinstance(output_tokens[-1], VisToken)) else None
-        if prev is not None and prev.start_col + prev.width == start_col:
-            # merge with previous contiguous visible token: append text and add widths
-            output_tokens[-1] = VisToken(prev.text + s, prev.width + w, prev.start_col)
-        else:
-            output_tokens.append(VisToken(s, w, start_col))
-        visible_count += w
-        if propagate_sgr and sgr_at_clip_start is None:
-            sgr_at_clip_start = sgr
-
-    def _append_seq(seq: str) -> None:
+    def _write_cells(s: str, w: int, write_col: int) -> None:
         nonlocal sgr_at_clip_start
-        output_tokens.append(SeqToken(seq))
+        if w > 0:
+            # 1. Overwriting the right half of a wide char leaves left half as fillchar
+            if write_col > 0 and write_col - 1 in cells and cells[write_col - 1][1] == 2:
+                cells[write_col - 1] = (fillchar, 1)
+            
+            # 2. Overwriting the left half of a wide char leaves right half as fillchar
+            if w == 1 and write_col in cells and cells[write_col][1] == 2:
+                cells[write_col + 1] = (fillchar, 1)
+                
+            if w == 2 and write_col + 1 in cells and cells[write_col + 1][1] == 2:
+                cells[write_col + 2] = (fillchar, 1)
+
+            # 3. Clean up the cells we are fully overwriting
+            for i in range(w):
+                if write_col + i in cells:
+                    del cells[write_col + i]
+            
+            cells[write_col] = (s, w)
+
         if propagate_sgr and sgr_at_clip_start is None:
             sgr_at_clip_start = sgr
 
-    def _remove_visible_tail(n: int) -> None:
-        """Remove n visible columns from the end of output_tokens (overwrite semantics)."""
-        nonlocal visible_count
-        to_remove = n
-        while to_remove > 0 and visible_count > 0:
-            # find last visible token
-            i = len(output_tokens) - 1
-            while i >= 0 and not isinstance(output_tokens[i], VisToken):
-                i -= 1
-            if i < 0:
-                break
-            tok = output_tokens[i]
-            if tok.width <= to_remove:
-                # remove entire token
-                output_tokens.pop(i)
-                to_remove -= tok.width
-                visible_count -= tok.width
-            else:
-                # shorten token by removing columns from the end
-                keep_cols = tok.width - to_remove
-                # slice the string by grapheme widths
-                kept_text = ''
-                acc = 0
-                g_iter = iter_graphemes(tok.text)
-                while acc < keep_cols:
-                    g = next(g_iter)
-                    gw = width(g, ambiguous_width=ambiguous_width)
-                    if acc + gw > keep_cols:
-                        break
-                    kept_text += g
-                    acc += gw
-                output_tokens[i] = VisToken(kept_text, acc, tok.start_col)
-                visible_count -= to_remove
-                to_remove = 0
+    def _append_seq(seq: str, at_col: int | None = None) -> None:
+        nonlocal sgr_at_clip_start, seq_order
+        c = col if at_col is None else at_col
+        sequences.append((c, seq_order, seq))
+        seq_order += 1
+        if propagate_sgr and sgr_at_clip_start is None:
+            sgr_at_clip_start = sgr
 
     while idx < len(text):
         char = text[idx]
@@ -492,8 +474,8 @@ def clip(
                     if move_start < end and move_end > start:
                         overlap_start = max(move_start, start)
                         overlap_end = min(move_end, end)
-                        _append_visible(fillchar * (overlap_end - overlap_start),
-                                        overlap_end - overlap_start, overlap_start)
+                        for i in range(overlap_start, overlap_end):
+                            _write_cells(fillchar, 1, i)
                     col += n_left
                     idx = match.end()
                     continue
@@ -501,24 +483,16 @@ def clip(
                 if (match_cright := CURSOR_LEFT_SEQUENCE.match(seq)):
                     digit_txt = match_cright.group(1)
                     n_right = int(digit_txt) if digit_txt else 1
-                    prev_col = col
                     col = max(0, col - n_right)
-                    # If we moved left and had emitted visible columns beyond
-                    # the new col, they are now potentially overwritten.
-                    if prev_col > col:
-                        to_remove = min(prev_col - col, visible_count)
-                        if to_remove > 0:
-                            _remove_visible_tail(to_remove)
                     idx = match.end()
                     continue
 
                 if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
                     # OSC 66 (text sizing) has positive width
-                    col, visible_count = _text_sizing_clip(
+                    col = _text_sizing_clip(
                         TextSizing.from_match(ts_match),
                         col=col, start=start, end=end,
-                        output_tokens=output_tokens,
-                        visible_count=visible_count,
+                        write_cells=_write_cells,
                         fillchar=fillchar, ambiguous_width=ambiguous_width,
                     )
                     if propagate_sgr and sgr_at_clip_start is None:
@@ -543,7 +517,7 @@ def clip(
                 next_tab = col + (tabsize - (col % tabsize))
                 while col < next_tab:
                     if start <= col < end:
-                        _append_visible(' ', 1)
+                        _write_cells(' ', 1, col)
                     col += 1
             else:
                 # preserve tab as-is
@@ -561,28 +535,78 @@ def clip(
                 _append_seq(grapheme)
         elif col >= start and col + grapheme_w <= end:
             # Fully visible
-            _append_visible(grapheme, grapheme_w)
+            _write_cells(grapheme, grapheme_w, col)
             col += grapheme_w
         elif col < end and col + grapheme_w > start:
             # Partially visible (wide char at boundary) -> emit fillchars for visible portion
             overlap = min(end, col + grapheme_w) - max(start, col)
             abs_start = max(start, col)
-            _append_visible(fillchar * overlap, overlap, abs_start)
+            for i in range(overlap):
+                _write_cells(fillchar, 1, abs_start + i)
             col += grapheme_w
         else:
             col += grapheme_w
 
         idx += len(grapheme)
 
-    # Reconstruct result from output_tokens.  The emission phase guarantees that
-    # all visible tokens are fully within the clip window, so no sub-token slicing
-    # or boundary checks are needed here.
+    # Reconstruct result from painter's algorithm grid.
     parts: list[str] = []
-    for tok in output_tokens:
-        if isinstance(tok, SeqToken):
-            parts.append(tok.text)
+    
+    seqs_by_col: dict[int, list[tuple[int, str]]] = {}
+    for seq_col, seq_ord, seq_text in sequences:
+        if seq_col not in seqs_by_col:
+            seqs_by_col[seq_col] = []
+        seqs_by_col[seq_col].append((seq_ord, seq_text))
+            
+    for c in seqs_by_col:
+        seqs_by_col[c].sort()
+
+    max_col = max((max(cells.keys()) + 1 if cells else 0),
+                  (max(seqs_by_col.keys()) if seqs_by_col else 0))
+
+    walk_col = 0
+    # walk_col reaches exactly up to end, to ensure sequences at `end` are processed
+    while walk_col <= max_col and walk_col <= end:
+        if walk_col in seqs_by_col:
+            for _, seq_text in seqs_by_col[walk_col]:
+                parts.append(seq_text)
+
+        if walk_col >= end:
+            walk_col += 1
+            continue
+
+        if walk_col in cells:
+            cell_text, cell_w = cells[walk_col]
+            
+            # Calculate overlap with [start, end)
+            cell_start = walk_col
+            cell_end = walk_col + cell_w
+            
+            overlap_start = max(start, cell_start)
+            overlap_end = min(end, cell_end)
+            
+            if overlap_start < overlap_end:
+                if cell_start >= start and cell_end <= end:
+                    # Fully inside
+                    parts.append(cell_text)
+                else:
+                    # Partially inside (split wide char)
+                    parts.append(fillchar * (overlap_end - overlap_start))
+            
+            walk_col += cell_w
         else:
-            parts.append(tok.text)
+            # It's a hole. Only emit fillchar if we are inside the clip window
+            # AND if we are within the bounds of where visible text was written.
+            if walk_col >= start and cells and walk_col < max(cells.keys()) + 1:
+                parts.append(fillchar)
+            walk_col += 1
+
+    # Append any remaining sequences that occurred past the clip end boundary
+    # This preserves SGR resets and trailing hyperlinks if the loop broke early
+    for c in sorted(seqs_by_col.keys()):
+        if c > end or (c == end and c > max_col):
+            for _, seq_text in seqs_by_col[c]:
+                parts.append(seq_text)
 
     result = ''.join(parts)
 
@@ -602,27 +626,22 @@ def _text_sizing_clip(
     col: int,
     start: int,
     end: int,
-    output_tokens: list[Token],
-    visible_count: int,
+    write_cells,
     fillchar: str = ' ',
     ambiguous_width: int = 1,
-) -> tuple[int, int]:
+) -> int:
     """
-    Emit tokens for a text-sizing sequence into ``output_tokens``, clipped to ``[start, end)``.
+    Emit tokens for a text-sizing sequence, clipped to ``[start, end)``.
 
-    Returns ``(new_col, new_visible_count)``.
-
-    This was formerly ``TextSizing.clip()`` in :mod:`wcwidth.text_sizing`.  It was moved here to
-    break a circular dependency loop (:mod:`text_sizing` imported :mod:`_width`, and :mod:`_width`
-    imported :mod:`text_sizing`).
+    Returns ``new_col``.
     """
     # pylint: disable=too-many-locals
     ts_width = ts.display_width(ambiguous_width)
     if col >= start and col + ts_width <= end:
-        output_tokens.append(SeqToken(ts.make_sequence()))
-        return col + ts_width, visible_count
+        write_cells(ts.make_sequence(), ts_width, col)
+        return col + ts_width
     if col >= end or col + ts_width <= start:
-        return col + ts_width, visible_count
+        return col + ts_width
 
     # Partial overlap: decompose into units (graphemes at `scale` cells each),
     # emit whole units as sequences and partial units as fillchars.
@@ -643,7 +662,7 @@ def _text_sizing_clip(
     pos = 0
     pending_texts: list[str] = []
 
-    def flush():
+    def flush(flush_col: int, flush_width: int):
         if not pending_texts:
             return
         params = TextSizingParams(
@@ -653,10 +672,11 @@ def _text_sizing_clip(
             ts.params.denominator,
             ts.params.vertical_align,
             ts.params.horizontal_align)
-        output_tokens.append(
-            SeqToken(TextSizing(params, ''.join(pending_texts), ts.terminator).make_sequence()))
+        write_cells(TextSizing(params, ''.join(pending_texts), ts.terminator).make_sequence(), flush_width, flush_col)
         pending_texts.clear()
 
+    flush_col_pos = col + rel_start
+    flush_width = 0
     for unit_text, unit_w in units:
         unit_start = pos
         unit_end = pos + unit_w
@@ -667,13 +687,18 @@ def _text_sizing_clip(
             break
         overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
         if overlap == unit_w and unit_w > 0:
+            if not pending_texts:
+                flush_col_pos = col + max(unit_start, rel_start)
+                flush_width = 0
             pending_texts.append(unit_text)
+            flush_width += overlap
         else:
-            flush()
+            flush(flush_col_pos, flush_width)
+            flush_width = 0
             abs_start = col + max(unit_start, rel_start)
-            output_tokens.append(VisToken(fillchar * overlap, overlap, abs_start))
-            visible_count += overlap
+            for i in range(overlap):
+                write_cells(fillchar, 1, abs_start + i)
         pos = unit_end
 
-    flush()
-    return col + ts_width, visible_count
+    flush(flush_col_pos, flush_width)
+    return col + ts_width
