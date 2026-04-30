@@ -3,7 +3,7 @@
 import typing
 
 # local
-from ._wcwidth import wcwidth
+from .wcwidth import wcwidth
 from .bisearch import bisearch
 from ._constants import (_EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,

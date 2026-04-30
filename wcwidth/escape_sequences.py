@@ -11,6 +11,9 @@ import re
 
 import typing
 
+# local
+from .sgr_state import _SGR_PATTERN
+
 # Text Sizing Protocol (OSC 66) — has positive width, must be checked before ZERO_WIDTH_PATTERN.
 # Groups: (1) metadata, (2) inner text, (3) terminator (BEL or ST).
 # https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
@@ -45,6 +48,18 @@ CURSOR_RIGHT_SEQUENCE = re.compile(r'\x1b\[(\d*)C')
 
 # Cursor left movement: CSI [n] D, parameter may be parsed by width()
 CURSOR_LEFT_SEQUENCE = re.compile(r'\x1b\[(\d*)D')
+
+# Combined pattern: a single regex that matches any zero-width escape sequence
+# and classifies it via named groups, aprox 2x faster than redundant re.matches
+# in clip() and width().
+_SEQUENCE_CLASSIFY = re.compile(
+    _SGR_PATTERN.pattern.replace('(', '(?P<sgr_params>', 1)
+    + '|' + CURSOR_RIGHT_SEQUENCE.pattern.replace('(', '(?P<cforward_n>', 1)
+    + '|' + CURSOR_LEFT_SEQUENCE.pattern.replace('(', '(?P<cbackward_n>', 1)
+    + '|' +
+    r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*);(?P<ts_text>[^\x07\x1b]*)(?P<ts_term>\x07|\x1b\\)'
+    + '|' + r'(?P<other_seq>(?:' + ZERO_WIDTH_PATTERN.pattern + '))'
+)
 
 # Indeterminate effect sequences - raise ValueError in 'strict' mode. The effects of these sequences
 # are likely to be undesirable, moving the cursor vertically or to any unknown position, and

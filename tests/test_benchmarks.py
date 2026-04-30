@@ -11,7 +11,7 @@ import pytest
 # local
 import wcwidth
 
-_width_module = sys.modules['wcwidth._width']
+_width_module = sys.modules['wcwidth.width']
 
 
 def test_wcwidth_ascii(benchmark):
@@ -299,7 +299,7 @@ def test_width_osc66(benchmark):
     benchmark(wcwidth.width, text)
 
 
-def test_clip_osc66(benchmark, label, text, start, end):
+def test_clip_osc66(benchmark):
     """Benchmark clip() with OSC 66 sequences."""
     text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
     benchmark(wcwidth.clip, text, 3, 8)

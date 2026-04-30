@@ -64,89 +64,9 @@ from __future__ import annotations
 # std imports
 from functools import lru_cache
 
-from typing import Union, Literal, Callable, NamedTuple
-
 # local
-# pylint: disable=unused-import
-# Some CONSTANTS imported are now unused, like _wcversion_value(), they were first defined in this
-# file location, and remain there for API compatibility purposes _wcversion_value and
-# _wcmatch_version are no longer used internally since version 0.5.0 (only the latest Unicode
-# version is shipped), and many global constants, now unused here, were moved to _constants.py in
-# version 0.6.1.
-#
-# They are retained for API compatibility with external tools like ucs-detect
-# that may use these private functions.
-#
-from ._width import width
-from ._wcwidth import wcwidth
-from .bisearch import bisearch as _bisearch
-from .grapheme import iter_graphemes
-from ._wcswidth import wcswidth
-from .sgr_state import (_SGR_PATTERN,
-                        _SGR_STATE_DEFAULT,
-                        _sgr_state_update,
-                        _sgr_state_is_active,
-                        _sgr_state_to_sequence)
-from ._constants import _LATEST_VERSION
-from .table_vs16 import VS16_NARROW_TO_WIDE
-from .table_wide import WIDE_EASTASIAN
-from .table_zero import ZERO_WIDTH
-from .text_sizing import TextSizing, TextSizingParams
-from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import ISC_CONSONANT
-from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .escape_sequences import (ZERO_WIDTH_PATTERN,
-                               TEXT_SIZING_PATTERN,
-                               CURSOR_LEFT_SEQUENCE,
-                               CURSOR_RIGHT_SEQUENCE,
-                               INDETERMINATE_EFFECT_SEQUENCE,
-                               iter_sequences,
-                               strip_sequences)
-from .unicode_versions import list_versions
-
-# Token types for output_tokens used by clip().
-# NamedTuple subclasses provide named attribute access while remaining
-# plain tuples at runtime — zero overhead over the old bare-tuple approach,
-# but with isinstance() type discrimination and meaningful attribute names.
-
-
-class VisToken(NamedTuple):
-    """A visible text segment with its display width and starting column."""
-
-    text: str
-    width: int
-    start_col: int
-
-
-class SeqToken(NamedTuple):
-    """A zero-width terminal sequence (escape sequences, control chars, etc.)."""
-
-    text: str
-
-
-Token = Union[VisToken, SeqToken]
-
-# Unlike wcwidth.__all__, wcwidth.wcwidth.__all__ is NOT for the purpose of defining a public API,
-# or what we prefer to be imported with statement, "from wcwidth.wcwidth import *".  Explicitly
-# re-export imports here for no other reason than to satisfy the type checkers (mypy). Yak shavings.
-__all__ = (
-    'ZERO_WIDTH',
-    'WIDE_EASTASIAN',
-    'AMBIGUOUS_EASTASIAN',
-    'VS16_NARROW_TO_WIDE',
-    'list_versions',
-    'wcwidth',
-    'wcswidth',
-    'width',
-    'iter_sequences',
-    'ljust',
-    'rjust',
-    'center',
-    'clip',
-    'strip_sequences',
-    '_wcmatch_version',
-    '_wcversion_value',
-)
+from .bisearch import bisearch
+from ._constants import _LATEST_VERSION, _AMBIGUOUS_TABLE, _ZERO_WIDTH_TABLE, _WIDE_EASTASIAN_TABLE
 
 
 @lru_cache(maxsize=128)
@@ -183,73 +103,59 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
     return _LATEST_VERSION
 
 
-def ljust(
-    text: str,
-    dest_width: int,
-    fillchar: str = ' ',
-    *,
-    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
-    ambiguous_width: int = 1,
-) -> str:
+# maxsize=1024: western scripts need ~64 unique codepoints per session, but
+# CJK sessions may use ~2000 of ~3500 common hanzi/kanji. 1024 accommodates
+# heavy CJK use. Performance floor at 32; bisearch is ~100ns per miss.
+
+@lru_cache(maxsize=1024)
+def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
     r"""
-    Return text left-justified in a string of given display width.
+    Given one Unicode codepoint, return its printable length on a terminal.
 
-    :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
-    :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
-    :param control_codes: How to handle control sequences when measuring.
-        Passed to :func:`width` for measurement.
+    :param wc: A single Unicode character.
+    :param unicode_version: Ignored. Retained for backwards compatibility.
+
+        .. deprecated:: 0.3.0
+           Only the latest Unicode version is now shipped.
+
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :returns: Text padded on the right to reach ``dest_width``.
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts
+        where ambiguous characters display as double-width. See
+        :ref:`ambiguous_width` for details.
+    :returns: The width, in cells, necessary to display the character of
+        Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
+        not printable, or has an indeterminate effect on the terminal, such as
+        a control character.  Otherwise, the number of column positions the
+        character occupies on a graphic terminal (1 or 2) is returned.
 
-    .. versionadded:: 0.3.0
-
-    Example::
-
-        >>> wcwidth.ljust('hi', 5)
-        'hi   '
-        >>> wcwidth.ljust('\x1b[31mhi\x1b[0m', 5)
-        '\x1b[31mhi\x1b[0m   '
-        >>> wcwidth.ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
-        '👨‍👩‍👧    '
+    See :ref:`Specification` for details of cell measurement.
     """
-    if text.isascii() and text.isprintable():
-        text_width = len(text)
-    else:
-        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
-    padding_cells = max(0, dest_width - text_width)
-    return text + fillchar * padding_cells
+    ucs = ord(wc) if wc else 0
 
+    # small optimization: early return of 1 for printable ASCII, this provides
+    # approximately 40% performance improvement for mostly-ascii documents, with
+    # less than 1% impact to others.
+    if 32 <= ucs < 0x7f:
+        return 1
 
-def rjust(
-    text: str,
-    dest_width: int,
-    fillchar: str = ' ',
-    *,
-    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
-    ambiguous_width: int = 1,
-) -> str:
-    r"""
-    Return text right-justified in a string of given display width.
+    # C0/C1 control characters are -1 for compatibility with POSIX-like calls
+    if ucs and ucs < 32 or 0x07F <= ucs < 0x0A0:
+        return -1
 
-    :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
-    :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
-    :param control_codes: How to handle control sequences when measuring.
-        Passed to :func:`width` for measurement.
-    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :returns: Text padded on the left to reach ``dest_width``.
+    # Zero width
+    if bisearch(ucs, _ZERO_WIDTH_TABLE):
+        return 0
 
-    .. versionadded:: 0.3.0
+    # Wide (F/W categories)
+    if bisearch(ucs, _WIDE_EASTASIAN_TABLE):
+        return 2
 
-    Example::
+    # Ambiguous width (A category) - only when ambiguous_width=2
+    if ambiguous_width == 2 and bisearch(ucs, _AMBIGUOUS_TABLE):
+        return 2
 
+<<<<<<< HEAD
         >>> wcwidth.rjust('hi', 5)
         '   hi'
         >>> wcwidth.rjust('\x1b[31mhi\x1b[0m', 5)
@@ -699,3 +605,6 @@ def _text_sizing_clip(
 
     flush(flush_col_pos)
     return col + ts_width
+=======
+    return 1
+>>>>>>> jq/refactor

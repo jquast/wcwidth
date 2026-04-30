@@ -25,7 +25,7 @@ and have no effect on measurements made in this library.
 
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 
-.. versionadded:: 0.6.1
+.. versionadded:: 0.7.0
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ import re
 import typing
 
 # local
-from ._wcswidth import wcswidth
+from .wcswidth import wcswidth
 
 
 class _FieldMeta(typing.NamedTuple):

@@ -3,24 +3,19 @@
 from typing import Literal
 
 # local
-from ._wcwidth import wcwidth
+from .wcwidth import wcwidth
 from .bisearch import bisearch
-from ._wcswidth import wcswidth
+from .wcswidth import wcswidth
 from ._constants import (_EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
-from .text_sizing import TextSizing
+from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
-from .escape_sequences import (ZERO_WIDTH_PATTERN,
-                               TEXT_SIZING_PATTERN,
-                               CURSOR_LEFT_SEQUENCE,
-                               CURSOR_RIGHT_SEQUENCE,
-                               INDETERMINATE_EFFECT_SEQUENCE,
-                               strip_sequences)
+from .escape_sequences import _SEQUENCE_CLASSIFY, INDETERMINATE_EFFECT_SEQUENCE, strip_sequences
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
@@ -124,11 +119,7 @@ def width(
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
             # Check for escape sequences that can't be ignored, if present
-            if '\x1b' not in text or (
-                not CURSOR_RIGHT_SEQUENCE.search(text) and
-                not CURSOR_LEFT_SEQUENCE.search(text) and
-                not TEXT_SIZING_PATTERN.search(text)
-            ):
+            if '\x1b' not in text or not _SEQUENCE_CLASSIFY.search(text):
                 control_codes = 'ignore'
 
     # Fast path for ignore mode, useful if you know the text is already free of control codes
@@ -155,32 +146,36 @@ def width(
     while idx < text_len:
         char = text[idx]
 
-        # 1. Handle ESC sequences
+        # 1. ESC sequences
         if char == '\x1b':
-            # Check for all terminal sequences
-            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
-                seq = match.group()
-                if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
-                    raise ValueError(f"Indeterminate cursor sequence at position {idx}")
-
-                # Apply cursor movement,
-                if (right := CURSOR_RIGHT_SEQUENCE.match(seq)):
-                    current_col += int(right.group(1) or 1)
-                elif (left := CURSOR_LEFT_SEQUENCE.match(seq)):
-                    current_col = max(0, current_col - int(left.group(1) or 1))
-
-                # Or OSC 66 (kitty text sizing)
-                elif (ts_match := TEXT_SIZING_PATTERN.match(seq)):
-                    text_size = TextSizing.from_match(ts_match, control_codes=control_codes)
-                    current_col += text_size.display_width(ambiguous_width)
-                idx = match.end()
-            else:
-                # Errant ESC or unknown sequence: only the first character is zero-width
+            m = _SEQUENCE_CLASSIFY.match(text, idx)
+            if not m:
+                # 1a. Errant ESC or unknown sequence: only the first character is zero-width
                 idx += 1
+            else:
+                seq = m.group()
+                if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+                    raise ValueError(f"Indeterminate cursor sequence at position {idx}, {seq!r}")
+
+                # 2b. cursor forward, backward, and OSC 66 text sizing width
+                if (cforward_n := m.group('cforward_n')) is not None:
+                    current_col += int(cforward_n) if cforward_n else 1
+                elif (cbackward_n := m.group('cbackward_n')) is not None:
+                    current_col = max(0, current_col - (int(cbackward_n) if cbackward_n else 1))
+                elif (ts_meta := m.group('ts_meta')) is not None:
+                    ts_text = m.group('ts_text')
+                    ts_term = m.group('ts_term')
+                    assert ts_text is not None and ts_term is not None
+                    text_size = TextSizing(
+                        TextSizingParams.from_params(ts_meta, control_codes=control_codes),
+                        ts_text, ts_term)
+                    current_col += text_size.display_width(ambiguous_width)
+                # 2c. SGR and other zero-width sequences -- no column advance
+                idx = m.end()
             max_extent = max(max_extent, current_col)
             continue
 
-        # 2. Handle illegal and vertical control characters (zero width, error in strict)
+        # 2. Vertical or Illegal control characters zero width or error when 'strict'
         if char in ILLEGAL_CTRL:
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
@@ -193,7 +188,7 @@ def width(
             idx += 1
             continue
 
-        # 3. Handle horizontal movement characters
+        # 3. Horizontal movement characters
         if char in HORIZONTAL_CTRL:
             if char == '\x09' and tabsize > 0:  # Tab
                 current_col += tabsize - (current_col % tabsize)
@@ -206,7 +201,7 @@ def width(
             idx += 1
             continue
 
-        # 4. Handle ZWJ
+        # 4. Zero-Width Joiner (ZWJ)
         if char == '\u200D':
             if last_was_virama:
                 # ZWJ after virama requests explicit half-form rendering but
@@ -222,14 +217,14 @@ def width(
                 last_was_virama = False
             continue
 
-        # 5. Handle other zero-width characters (control chars)
+        # 5. Other zero-width characters (control chars)
         if char in ZERO_WIDTH_CTRL:
             idx += 1
             continue
 
         ucs = ord(char)
 
-        # 6. Handle VS16: converts preceding narrow character to wide
+        # 6. VS16: converts preceding narrow character to wide
         if ucs == 0xFE0F:
             if last_measured_idx == idx - 1:
                 if bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):

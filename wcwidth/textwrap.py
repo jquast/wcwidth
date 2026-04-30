@@ -12,10 +12,10 @@ import re
 import secrets
 import textwrap
 
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Optional, NamedTuple
 
 # local
-from ._width import width as wcwidth_width
+from .width import width as wcwidth_width
 from .grapheme import iter_graphemes
 from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences
@@ -36,7 +36,7 @@ class _HyperlinkState(NamedTuple):
 _HYPERLINK_OPEN_RE = re.compile(r'\x1b]8;([^;]*);([^\x07\x1b]*)(\x07|\x1b\\)')
 
 
-def _parse_hyperlink_open(seq: str) -> _HyperlinkState | None:
+def _parse_hyperlink_open(seq: str) -> Optional[_HyperlinkState]:
     """Parse OSC 8 open sequence, return state or None."""
     if (m := _HYPERLINK_OPEN_RE.match(seq)):
         return _HyperlinkState(url=m.group(2), params=m.group(1), terminator=m.group(3))
@@ -241,9 +241,9 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         lines: list[str] = []
         is_first_line = True
 
-        hyperlink_state: _HyperlinkState | None = None
+        hyperlink_state: Optional[_HyperlinkState] = None
         # Track the id we're using for the current hyperlink continuation
-        current_hyperlink_id: str | None = None
+        current_hyperlink_id: Optional[str] = None
 
         # Arrange in reverse order so items can be efficiently popped
         chunks = list(reversed(chunks))
@@ -395,7 +395,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _track_hyperlink_state(
             self, text: str,
-            state: _HyperlinkState | None) -> _HyperlinkState | None:
+            state: Optional[_HyperlinkState]) -> Optional[_HyperlinkState]:
         """
         Track hyperlink state through text.
 
@@ -545,7 +545,7 @@ def wrap(text: str, width: int = 70, *,
          break_long_words: bool = True,
          break_on_hyphens: bool = True,
          drop_whitespace: bool = True,
-         max_lines: int | None = None,
+         max_lines: Optional[int] = None,
          placeholder: str = ' [...]',
          propagate_sgr: bool = True) -> list[str]:
     r"""
