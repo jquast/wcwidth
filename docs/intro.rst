@@ -1,3 +1,4 @@
+
 |pypi_downloads| |codecov| |license|
 
 ============
@@ -35,28 +36,39 @@ Some examples of **incorrect results**:
 Solution
 --------
 
-The lowest-level functions in this library are the POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
-`wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_ and `wcswidth()`_.
-These functions return -1 when C0 and C1 control codes are present.
+The lowest-level functions in this library are derived from POSIX.1-2001 and POSIX.1-2008
+`wcwidth(3)`_ and `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_
+and `wcswidth()`_.  These functions return -1 when C0 and C1 control codes are present.
 
 An easy-to-use `width()`_ function is provided as a wrapper of `wcswidth()`_ that is also capable of
 measuring most terminal control codes and sequences, like colors, bold, tabstops, and horizontal
 cursor movement.
 
-Text-justification is solved by the grapheme and sequence-aware functions `ljust()`_,
-`rjust()`_, `center()`_, and `wrap()`_, serving as drop-in replacements to python standard functions
-of the same names.
+Text-justification is solved by the  thesequence-aware functions `ljust()`_,
+`rjust()`_, `center()`_, and and grapheme-aware function `wrap()`_, serving as drop-in replacements
+to python standard functions.
+
+The `clip()`_ function extracts substrings by their displayed column positions, and
+`strip_sequences()`_ removes terminal escape sequences from text altogether.
 
 The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation of
-grapheme and terminal control sequence boundaries.  `iter_graphemes_reverse()`_, and
-`grapheme_boundary_before()`_ are useful for editing and searching of complex unicode.  The
-`clip()`_ function extracts substrings by display column positions, and `strip_sequences()`_ removes
-terminal escape sequences from text altogether.
+grapheme and terminal control sequence boundaries as required by editors or REPLs with cursor
+control.  `iter_graphemes_reverse()`_, and `grapheme_boundary_before()`_ are often necessary for
+backward cursor control over complex unicode.
 
 Discrepancies
 -------------
 
-You may find that support *varies* for complex unicode sequences or codepoints.
+You may find that support *varies* for complex unicode sequences or codepoints. This library may be
+considered to presume the terminal is enabled for DEC Private Mode 2027 ("Grapheme Clustering"), but
+that specification does not fully describe support of varying unicode versions, feature levels, or
+make any interpretation of standards for all languages or complex scripts. See `Grapheme Clusters
+and Terminal Emulators`_ and `terminal-unicode-core.tex`_ for more details about testing and
+enabling mode 2027 support.
+
+This library takes a progressive approach of interpretation of standards (specification_), and
+where interpretation is unclear, to match popular modern terminals. This library does *not* support
+any alternate "legacy width" measurement.
 
 A companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
 character, language/grapheme clustering and complex script support, emojis and zero-width joiner,
@@ -263,9 +275,9 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('\x1b[1;31mHello world\x1b[0m', 6, 11)
     '\x1b[1;31mworld\x1b[0m'
 
-    >>> # Disable SGR propagation to preserve original sequences as-is
-    >>> clip('\x1b[31m中文\x1b[0m', 0, 3, propagate_sgr=False)
-    '\x1b[31m中 \x1b[0m'
+    >>> # Disable SGR propagation to preserve sequence order outside of clip boundary
+    >>> clip('\x1b[31m中文\x1b[32m', 0, 3, propagate_sgr=False)
+    '\x1b[31m中 \x1b[32m'
 
 strip_sequences()
 -----------------
@@ -758,6 +770,9 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
+.. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
+.. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
+
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

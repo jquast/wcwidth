@@ -93,6 +93,10 @@ from wcwidth import clip
     ('\x1b[5GXY', 3, 7, {}, ' XY'),
     # HPA no-param inside clip window
     ('abc\x1b[GXY', 1, 4, {}, 'Yc'),
+    # walk_col >= end with sequences at column == end (line 351)
+    ('\x1b[5C\x1b]8;;http://x.com\x07', 0, 5, {'propagate_sgr': False}, '     \x1b]8;;http://x.com\x07'),
+    # Trailing sequences past col_limit (line 374)
+    ('\x1b[5C\x1b]8;;http://x.com\x07', 0, 3, {'propagate_sgr': False}, '   \x1b]8;;http://x.com\x07'),
 ])
 def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expected):
     """Verify clip() output matches terminal-visible columns after cursor moves."""

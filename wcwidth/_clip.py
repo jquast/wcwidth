@@ -352,14 +352,8 @@ def clip(
 
             if walk_col in cells:
                 cell_text, cell_w = cells[walk_col]
-                cell_end = walk_col + cell_w
-
-                if walk_col >= start and cell_end <= end:
-                    # Fully inside clip window
-                    parts.append(cell_text)
-                elif cell_end > start:
-                    # Partial overlap (wide char split at boundary)
-                    parts.append(fillchar * (min(cell_end, end) - max(walk_col, start)))
+                # All cells satisfy walk_col >= start and walk_col + cell_w <= end
+                parts.append(cell_text)
                 walk_col += cell_w
             else:
                 # Hole: emit fillchar for columns inside (start, end) that lie
