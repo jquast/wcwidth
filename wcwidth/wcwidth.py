@@ -444,57 +444,57 @@ def clip(
 
         # 1. Handle escape sequences and bare ESC
         if char == '\x1b':
-            if (match := ZERO_WIDTH_PATTERN.match(text, idx)):
-                seq = match.group()
-                if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
-                    # Update SGR state; will be applied as prefix when visible content starts
-                    sgr = _sgr_state_update(sgr, seq)
-                    idx = match.end()
-                    continue
-
-                # Cursor-forward sequences (e.g. CSI n C) advance the column;
-                # simulate by emitting fillchars for the visible portion.
-                if (match_cforward := CURSOR_RIGHT_SEQUENCE.match(seq)):
-                    digit_txt = match_cforward.group(1)
-                    n_forward = int(digit_txt) if digit_txt else 1
-                    move_end = col + n_forward
-                    if col < end and move_end > start:
-                        for i in range(max(col, start), min(move_end, end)):
-                            _write_cells(fillchar, 1, i)
-                    col = move_end
-                    idx = match.end()
-                    continue
-
-                # Cursor-backward sequences (e.g. CSI n D) retreat the column.
-                if (match_cbackward := CURSOR_LEFT_SEQUENCE.match(seq)):
-                    digit_txt = match_cbackward.group(1)
-                    n_backward = int(digit_txt) if digit_txt else 1
-                    col = max(0, col - n_backward)
-                    idx = match.end()
-                    continue
-
-                if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
-                    # OSC 66 (text sizing) has positive width
-                    col = _text_sizing_clip(
-                        TextSizing.from_match(ts_match),
-                        col=col, start=start, end=end,
-                        write_cells=_write_cells,
-                        fillchar=fillchar, ambiguous_width=ambiguous_width,
-                    )
-                    if propagate_sgr and sgr_at_clip_start is None:
-                        sgr_at_clip_start = sgr
-                    idx = match.end()
-                    continue
-
-                # Other zero-width sequences (OSC hyperlinks, etc.) are preserved as-is
-                _append_seq(seq)
-                idx = match.end()
-                continue
-            else:
+            if not (match := ZERO_WIDTH_PATTERN.match(text, idx)):
                 # Bare ESC not matching any recognized sequence pattern
                 _append_seq(char)
                 idx += 1
                 continue
+
+            seq = match.group()
+            if (propagate_sgr and sgr) and _SGR_PATTERN.match(seq):
+                # Update SGR state; will be applied as prefix when visible content starts
+                sgr = _sgr_state_update(sgr, seq)
+                idx = match.end()
+                continue
+
+            # Cursor-forward sequences (e.g. CSI n C) advance the column;
+            # simulate by emitting fillchars for the visible portion.
+            if (match_cforward := CURSOR_RIGHT_SEQUENCE.match(seq)):
+                digit_txt = match_cforward.group(1)
+                n_forward = int(digit_txt) if digit_txt else 1
+                move_end = col + n_forward
+                if col < end and move_end > start:
+                    for i in range(max(col, start), min(move_end, end)):
+                        _write_cells(fillchar, 1, i)
+                col = move_end
+                idx = match.end()
+                continue
+
+            # Cursor-backward sequences (e.g. CSI n D) retreat the column.
+            if (match_cbackward := CURSOR_LEFT_SEQUENCE.match(seq)):
+                digit_txt = match_cbackward.group(1)
+                n_backward = int(digit_txt) if digit_txt else 1
+                col = max(0, col - n_backward)
+                idx = match.end()
+                continue
+
+            if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
+                # OSC 66 (text sizing) has positive width
+                col = _text_sizing_clip(
+                    TextSizing.from_match(ts_match),
+                    col=col, start=start, end=end,
+                    write_cells=_write_cells,
+                    fillchar=fillchar, ambiguous_width=ambiguous_width,
+                )
+                if propagate_sgr and sgr_at_clip_start is None:
+                    sgr_at_clip_start = sgr
+                idx = match.end()
+                continue
+
+            # Other zero-width sequences (OSC hyperlinks, etc.) are preserved as-is
+            _append_seq(seq)
+            idx = match.end()
+            continue
 
         # 3. TAB expansion
         if char == '\t':
@@ -573,7 +573,7 @@ def clip(
         else:
             # Hole: emit fillchar for columns inside [start, end) that
             # lie within the written cell area
-            if walk_col >= start and walk_col <= max_cell_col:
+            if start <= walk_col <= max_cell_col:
                 parts.append(fillchar)
             walk_col += 1
 
@@ -634,7 +634,7 @@ def _text_sizing_clip(
         # Fixed-width mode: explicit count at `scale` cells each.
         # Use itertools.islice to avoid materializing the full grapheme list.
         from itertools import islice
-        for j, g in enumerate(islice(iter_graphemes(ts.text), ts.params.width)):
+        for _, g in enumerate(islice(iter_graphemes(ts.text), ts.params.width)):
             units.append((g, scale))
         # Pad with empty graphemes if text had fewer than width
         for _ in range(ts.params.width - len(units)):
