@@ -11,9 +11,6 @@ import pytest
 import wcwidth
 from wcwidth._width import _WIDTH_FAST_PATH_MIN_LEN
 
-_wcwidth_module = sys.modules['wcwidth._wcwidth']
-# local
-
 
 def test_package_version():
     """wcwidth.__version__ is expected value."""
