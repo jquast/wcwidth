@@ -16,7 +16,6 @@ from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WI
 from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                CURSOR_MOVEMENT_SEQUENCE,
-                               CURSOR_HPA_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
                                strip_sequences)
 

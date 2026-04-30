@@ -138,6 +138,120 @@ def test_clip_sequences_osc_hyperlink():
     )
 
 
+# ── OSC 8 hyperlink clipping ──────────────────────────────────────────────────
+
+OSC_START_BEL = '\x1b]8;;http://example.com\x07'
+OSC_END_BEL = '\x1b]8;;\x07'
+OSC_START_ST = '\x1b]8;;http://example.com\x1b\\'
+OSC_END_ST = '\x1b]8;;\x1b\\'
+
+
+CLIP_HYPERLINK_CASES = [
+    # Full hyperlink visible — preserved as-is
+    (f'{OSC_START_BEL}link{OSC_END_BEL}', 0, 4,
+     f'{OSC_START_BEL}link{OSC_END_BEL}'),
+    # Clipping middle of hyperlink text — rebuild around clipped inner text
+    (f'{OSC_START_BEL}Click This link{OSC_END_BEL}', 6, 10,
+     f'{OSC_START_BEL}This{OSC_END_BEL}'),
+    # Clipping from start — only first portion
+    (f'{OSC_START_BEL}Click This{OSC_END_BEL}', 0, 5,
+     f'{OSC_START_BEL}Click{OSC_END_BEL}'),
+    # Clipping from end — only last portion
+    (f'{OSC_START_BEL}Click This{OSC_END_BEL}', 6, 10,
+     f'{OSC_START_BEL}This{OSC_END_BEL}'),
+    # Hyperlink entirely before clip window — dropped
+    (f'{OSC_START_BEL}link{OSC_END_BEL}world', 0, 4,
+     f'{OSC_START_BEL}link{OSC_END_BEL}'),
+    # Hyperlink entirely after clip window — dropped
+    (f'hello{OSC_START_BEL}link{OSC_END_BEL}', 0, 5, 'hello'),
+    # Hyperlink clipped to nothing — empty hyperlink dropped
+    (f'{OSC_START_BEL}link{OSC_END_BEL}', 5, 10, ''),
+    # Empty hyperlink (no inner text) — dropped
+    (f'before{OSC_START_BEL}{OSC_END_BEL}after', 0, 11, 'beforeafter'),
+    # Hyperlink with CJK text clipped
+    (f'{OSC_START_BEL}中文文字{OSC_END_BEL}', 0, 4,
+     f'{OSC_START_BEL}中文{OSC_END_BEL}'),
+    # Hyperlink with CJK text clipped at odd column
+    (f'{OSC_START_BEL}中文文字{OSC_END_BEL}', 0, 3,
+     f'{OSC_START_BEL}中 {OSC_END_BEL}'),
+    # Hyperlink with ST terminator
+    (f'{OSC_START_ST}Click This{OSC_END_ST}', 0, 5,
+     f'{OSC_START_ST}Click{OSC_END_ST}'),
+    # Multiple non-overlapping hyperlinks
+    (f'{OSC_START_BEL}ab{OSC_END_BEL} {OSC_START_ST}cd{OSC_END_ST}', 0, 5,
+     f'{OSC_START_BEL}ab{OSC_END_BEL} {OSC_START_ST}cd{OSC_END_ST}'),
+    # Hyperlink with params preserved
+    ('\x1b]8;id=myid;http://x.com\x07link\x1b]8;;\x07', 1, 3,
+     '\x1b]8;id=myid;http://x.com\x07in\x1b]8;;\x07'),
+    # Hyperlink text before clip window, hyperlink within
+    (f'before{OSC_START_BEL}link{OSC_END_BEL}', 6, 10,
+     f'{OSC_START_BEL}link{OSC_END_BEL}'),
+    # SGR inside hyperlink is preserved
+    (f'{OSC_START_BEL}\x1b[31mred link\x1b[0m{OSC_END_BEL}', 4, 8,
+     f'{OSC_START_BEL}\x1b[31mlink\x1b[0m{OSC_END_BEL}'),
+    # Hyperlink open without matching close — preserved as regular sequence
+    ('\x1b]8;;http://x.com\x07link', 0, 4, '\x1b]8;;http://x.com\x07link'),
+    # Nested hyperlinks
+    ('\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07', 0, 14,
+     '\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07'),
+    # Bare ESC between hyperlink markers
+    ('\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07', 0, 6,
+     '\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07'),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_HYPERLINK_CASES)
+def test_clip_osc_hyperlink_text_clipping(text, start, end, expected):
+    """OSC 8 hyperlink inner text is clipped and hyperlink rebuilt."""
+    assert repr(clip(text, start, end)) == repr(expected)
+
+
+# control_codes variants with cursor movement into hyperlink
+_HLINK_OVERWRITE = f'{OSC_START_BEL}link{OSC_END_BEL}\x1b[2Dxy'
+CLIP_HYPERLINK_CONTROL_CODES_CASES = [
+    ('parse', 0, 4, f'{OSC_START_BEL}link{OSC_END_BEL}'),
+    ('ignore', 0, 6, f'{OSC_START_BEL}link{OSC_END_BEL}\x1b[2Dxy'),
+]
+
+
+@pytest.mark.parametrize('control_codes,start,end,expected',
+                         CLIP_HYPERLINK_CONTROL_CODES_CASES)
+def test_clip_hyperlink_control_codes_overwrite(control_codes, start, end, expected):
+    assert repr(clip(_HLINK_OVERWRITE, start, end, control_codes=control_codes)) == repr(expected)
+
+
+def test_clip_osc_hyperlink_strict_raises():
+    """control_codes='strict' raises ValueError when overwriting hyperlink cells."""
+    with pytest.raises(ValueError, match='OSC 8 hyperlink'):
+        clip(_HLINK_OVERWRITE, 0, 4, control_codes='strict')
+
+
+# Painter-path hyperlink edge cases
+CLIP_HYPERLINK_PAINTER_CASES = [
+    # Empty hyperlink dropped
+    (f'\x1b[2D{OSC_START_BEL}{OSC_END_BEL}xy', 'parse', 0, 4, 'xy'),
+    # Hyperlink entirely after clip window — skipped
+    (f'\x1b[2Dab{OSC_START_BEL}cde{OSC_END_BEL}', 'parse', 0, 2, 'ab'),
+    # Hyperlink entirely before clip window — skipped
+    (f'{OSC_START_BEL}ab{OSC_END_BEL}\x1b[2Dcdef', 'parse', 2, 4, 'ef'),
+    # Hyperlink overlapping clip window — clipped
+    (f'\x1b[2D{OSC_START_BEL}abcdef{OSC_END_BEL}', 'parse', 0, 3,
+     f'{OSC_START_BEL}abc{OSC_END_BEL}'),
+    # Bare ESC inside hyperlink in painter path
+    (f'\x1b[2D{OSC_START_BEL}a\x1bb{OSC_END_BEL}', 'parse', 0, 4,
+     f'{OSC_START_BEL}a\x1bb{OSC_END_BEL}'),
+    # strict mode: non-hyperlink cells don't overlap hyperlink_cells
+    (f'{OSC_START_BEL}link{OSC_END_BEL}\x1b[5Chi', 'strict', 0, 11,
+     f'{OSC_START_BEL}link{OSC_END_BEL}     hi'),
+]
+
+
+@pytest.mark.parametrize('text,control_codes,start,end,expected',
+                         CLIP_HYPERLINK_PAINTER_CASES)
+def test_clip_hyperlink_painter_cases(text, control_codes, start, end, expected):
+    assert repr(clip(text, start, end, control_codes=control_codes)) == repr(expected)
+
+
 def test_clip_sequences_cjk_with_sequences():
     assert clip('\x1b[31m中文\x1b[0m', 0, 3) == '\x1b[31m中 \x1b[0m'
 

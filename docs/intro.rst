@@ -130,33 +130,55 @@ Use function `width()`_ to measure a string with improved handling of ``control_
     >>> # same support as wcswidth(), eg. regional indicator flag:
     >>> wcwidth.width('\U0001F1FF\U0001F1FC')
     2
-    >>> # but also supports SGR colored text, 'WARN', followed by SGR reset
+    >>> # but also supports sequences, like SGR colored text, "WARN", followed by reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
     4
-    >>> # tabs,
+    >>> # tabs are measured as though the string begins at a tabstop,
     >>> wcwidth.width('\t', tabsize=4)
     4
-    >>> # or, tab and all other control characters can be ignored
-    >>> wcwidth.width('\t', control_codes='ignore')
-    0
-    >>> # "vertical" control characters are ignored
-    >>> wcwidth.width('\n')
-    0
-    >>> # as well as sequences with "indeterminate" effects like Home + Clear
-    >>> wcwidth.width('\x1b[H\x1b[2J')
-    0
-    >>> # Kitty text sizing protocol (OSC 66): 2x-scaled "Hello" occupies 10 cells
+    >>> # Kitty text sizing protocol (OSC 66) are measured, eg. 2x-scaled "Hello"
     >>> wcwidth.width('\x1b]66;s=2;Hello\x07')
     10
+    >>> # or, all control characters can be ignored (including tab)
+    >>> wcwidth.width('\t\n\a\r', control_codes='ignore')
+    0
+    >>> # sequences with "indeterminate" effects like Home + Clear are zero-width
+    >>> wcwidth.width('\x1b[H\x1b[2J')
+    0
+    >>> # horizontal cursor movements are parsed, 
+    >>> wcwidth.width('hello\b\b\b\b\bworld')
+    5
+    >>> wcwidth.width('hello\x1b[5Dworld')
+    5
+    >>> # or ignored,
+    >>> wcwidth.width('hello\x1b[5Dworld', control_codes='ignore')
+    10
+
+Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
+terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
+character and is also ignored, you may want to use `str.expandtabs()`_, first.
+
+Use ``control_codes='strict'`` when input is known to contain some control sequences, such as
+SGR color, bold, hyperlinks and cursor movement. Any sequence that cannot be accurately parsed,
+such as clearing the screen, vertical, or absolute cursor movement will raise ``ValueError``:
+
+.. code-block:: python
+
     >>> # or, raise ValueError for "indeterminate" effects using control_codes='strict'
     >>> wcwidth.width('\n', control_codes='strict')
     Traceback (most recent call last):
     ...
     ValueError: Vertical movement character 0xa at position 0
 
-Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
-terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
-character and is also ignored, you may want to use `str.expandtabs()`_, first.
+
+    >>> wcwidth.width('\x1b[H\x1b[2J', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Indeterminate cursor sequence at position 0, '\x1b[H'
+
+TODO: should raise ValueError (out of bounds),
+>>> wcwidth.width('a\x1b[5Da', control_codes='strict')
+
 
 iter_sequences()
 ----------------
