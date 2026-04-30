@@ -45,6 +45,16 @@ CURSOR_RIGHT_SEQUENCE = re.compile(r'\x1b\[(\d*)C')
 # Cursor left movement: CSI [n] D, parameter may be parsed by width()
 CURSOR_LEFT_SEQUENCE = re.compile(r'\x1b\[(\d*)D')
 
+# Combined cursor movement: single regex for fast-path detection of any
+# horizontal cursor movement (left or right).  Avoids two separate search()
+# calls in hot-path width() and clip() pre-checks.
+CURSOR_MOVEMENT_SEQUENCE = re.compile(r'\x1b\[(\d*)[CD]')
+
+# Combined horizontal cursor movement: matches BS, CR, and CSI C/D cursor sequences
+# in a single regex pass. Used by clip() to decide between the simple append path
+# and the painter's algorithm.
+_HORIZONTAL_CURSOR_MOVEMENT = re.compile(r'[\b\r]|\x1b\[(\d*)[CD]')
+
 # Combined pattern: a single regex that matches any zero-width escape sequence
 # and classifies it via named groups, aprox 2x faster than redundant re.matches
 # in clip() and width().

@@ -14,7 +14,10 @@ from ._constants import (_EMOJI_ZWJ_SET,
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
-from .escape_sequences import _SEQUENCE_CLASSIFY, INDETERMINATE_EFFECT_SEQUENCE, strip_sequences
+from .escape_sequences import (_SEQUENCE_CLASSIFY,
+                               CURSOR_MOVEMENT_SEQUENCE,
+                               INDETERMINATE_EFFECT_SEQUENCE,
+                               strip_sequences)
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
@@ -117,8 +120,8 @@ def width(
     if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
-            # Check for escape sequences that can't be ignored, if present
-            if '\x1b' not in text or not _SEQUENCE_CLASSIFY.search(text):
+            # Check for escape sequences - if none contain cursor movement
+            if '\x1b' not in text or not CURSOR_MOVEMENT_SEQUENCE.search(text):
                 control_codes = 'ignore'
 
     # Fast path for ignore mode, useful if you know the text is already free of control codes
