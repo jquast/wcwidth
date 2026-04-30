@@ -502,7 +502,7 @@ TS3 = '\x1b]66;w=3;XYZ\x07'   # explicit width=3
     ('abc' + TS3 + 'def', 8, ['abc', TS3 + 'def']),
     ('abc' + TS3 + 'def', 10, ['abc' + TS3 + 'def']),
     # Sequence stays with preceding word when total stripped width fits
-        ('aa' + TS3 + 'bb', 5, ['aa', TS3 + 'bb']),
+    ('aa' + TS3 + 'bb', 5, ['aa', TS3 + 'bb']),
     ('pre' + TS3 + 'post', 8, ['pre', TS3 + 'post']),
 ])
 def test_wrap_ts_line_fill(text, w, expected):
