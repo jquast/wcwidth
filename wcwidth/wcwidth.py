@@ -63,8 +63,7 @@ from __future__ import annotations
 
 # std imports
 from functools import lru_cache
-
-from typing import Literal
+from typing import Literal, NamedTuple, Union
 
 # local
 # pylint: disable=unused-import
@@ -102,11 +101,27 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                strip_sequences)
 from .unicode_versions import list_versions
 
-# Type aliases for output_tokens used by clip().
-# ('vis', text, width_in_cols, start_col) or ('seq', seq_text)
-VisToken = tuple[Literal['vis'], str, int, int]
-SeqToken = tuple[Literal['seq'], str]
-Token = VisToken | SeqToken
+# Token types for output_tokens used by clip().
+# NamedTuple subclasses provide named attribute access while remaining
+# plain tuples at runtime — zero overhead over the old bare-tuple approach,
+# but with isinstance() type discrimination and meaningful attribute names.
+
+
+class VisToken(NamedTuple):
+    """A visible text segment with its display width and starting column."""
+
+    text: str
+    width: int
+    start_col: int
+
+
+class SeqToken(NamedTuple):
+    """A zero-width terminal sequence (escape sequences, control chars, etc.)."""
+
+    text: str
+
+
+Token = Union[VisToken, SeqToken]
 
 # Unlike wcwidth.__all__, wcwidth.wcwidth.__all__ is NOT for the purpose of defining a public API,
 # or what we prefer to be imported with statement, "from wcwidth.wcwidth import *".  Explicitly
@@ -395,22 +410,19 @@ def clip(
             return
         if start_col is None:
             start_col = col
-        prev = output_tokens[-1] if (output_tokens and output_tokens[-1][0] == 'vis') else None
-        if prev is not None and prev[3] + prev[2] == start_col:
+        prev = output_tokens[-1] if (output_tokens and isinstance(output_tokens[-1], VisToken)) else None
+        if prev is not None and prev.start_col + prev.width == start_col:
             # merge with previous contiguous visible token: append text and add widths
-            prev_s = prev[1]
-            prev_w = prev[2]
-            prev_start = prev[3]
-            output_tokens[-1] = ('vis', prev_s + s, prev_w + w, prev_start)
+            output_tokens[-1] = VisToken(prev.text + s, prev.width + w, prev.start_col)
         else:
-            output_tokens.append(('vis', s, w, start_col))
+            output_tokens.append(VisToken(s, w, start_col))
         visible_count += w
         if propagate_sgr and sgr_at_clip_start is None:
             sgr_at_clip_start = sgr
 
     def _append_seq(seq: str) -> None:
         nonlocal sgr_at_clip_start
-        output_tokens.append(('seq', seq))
+        output_tokens.append(SeqToken(seq))
         if propagate_sgr and sgr_at_clip_start is None:
             sgr_at_clip_start = sgr
 
@@ -421,33 +433,29 @@ def clip(
         while to_remove > 0 and visible_count > 0:
             # find last visible token
             i = len(output_tokens) - 1
-            while i >= 0 and output_tokens[i][0] != 'vis':
+            while i >= 0 and not isinstance(output_tokens[i], VisToken):
                 i -= 1
             if i < 0:
                 break
             tok = output_tokens[i]
-            assert tok[0] == 'vis'  # guaranteed by while loop above
-            tok_s = tok[1]
-            tok_w = tok[2]
-            tok_start = tok[3]
-            if tok_w <= to_remove:
+            if tok.width <= to_remove:
                 # remove entire token
                 output_tokens.pop(i)
-                to_remove -= tok_w
-                visible_count -= tok_w
+                to_remove -= tok.width
+                visible_count -= tok.width
             else:
                 # shorten token by removing columns from the end
-                keep_cols = tok_w - to_remove
+                keep_cols = tok.width - to_remove
                 # slice the string by grapheme widths
                 kept_text = ''
                 acc = 0
-                for g in iter_graphemes(tok_s):
+                for g in iter_graphemes(tok.text):
                     gw = width(g, ambiguous_width=ambiguous_width)
                     if acc + gw > keep_cols:
                         break
                     kept_text += g
                     acc += gw
-                output_tokens[i] = ('vis', kept_text, acc, tok_start)
+                output_tokens[i] = VisToken(kept_text, acc, tok.start_col)
                 visible_count -= to_remove
                 to_remove = 0
 
@@ -552,24 +560,21 @@ def clip(
     # Reconstruct result from output_tokens, slicing visible content to [start,end)
     parts: list[str] = []
     for tok in output_tokens:
-        if tok[0] == 'seq':
-            parts.append(tok[1])
+        if isinstance(tok, SeqToken):
+            parts.append(tok.text)
         else:
-            # visible chunk: ('vis', text, width_in_cols, start_col)
-            _, text, tok_w, tok_start = tok
-            chunk_len = tok_w
-            chunk_start = tok_start
-            chunk_end = chunk_start + chunk_len
+            chunk_start = tok.start_col
+            chunk_end = chunk_start + tok.width
             if chunk_end <= start:
                 continue
             if chunk_start >= end:
                 continue
             s0 = max(0, start - chunk_start)
-            s1 = min(chunk_len, end - chunk_start)
+            s1 = min(tok.width, end - chunk_start)
             # slice `text` for columns [s0, s1)
             acc = 0
             slice_text = ''
-            for g in iter_graphemes(text):
+            for g in iter_graphemes(tok.text):
                 gw = width(g, ambiguous_width=ambiguous_width)
                 next_acc = acc + gw
                 if next_acc <= s0:
