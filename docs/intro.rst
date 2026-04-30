@@ -496,6 +496,10 @@ Other Languages
 There are similar implementations of the `wcwidth()`_ and `wcswidth()`_ functions in other
 languages.
 
+- `contour-terminal/libunicode`_: C++20
+- `ridiculousfish/widecharwidth`_: Python
+- `termux/wcwidth`_: C
+- `powerman/wcwidth-icons`_: C
 - `timoxley/wcwidth`_: JavaScript
 - `janlelis/unicode-display_width`_: Ruby
 - `alecrabbit/php-wcwidth`_: PHP
@@ -505,6 +509,9 @@ languages.
 - `grepsuzette/wcwidth`_: Haxe
 - `aperezdc/lua-wcwidth`_: Lua
 - `joachimschmidt557/zig-wcwidth`_: Zig
+- `mycoboco/wcwidth.js`_: JavaScript
+- `ainame/swift-displaywidth`_: Swift
+- `pmonks/clj-wcwidth`_: Clojure
 - `fumiyas/wcwidth-cjk`_: `LD_PRELOAD` override
 - `joshuarubin/wcwidth9`_: Unicode version 9 in C
 - `spectreconsole/wcwidth`_: C#
@@ -514,15 +521,12 @@ History
 =======
 
 0.7.0 *2026-04-30*
-  * **New** ``control_codes`` parameter for `clip()`_, supporting ``'parse'`` (default),
-    ``'strict'``, and ``'ignore'`` modes for control character and cursor movement handling.
-  * **Improved** `clip()`_ with OSC 8 hyperlink-aware clipping: visible text inside hyperlinks
-    is clipped to the requested column range, and the hyperlink is rebuilt around the clipped text.
+  * **New** `clip()`_ parameter ``control_codes='parse'``, ``'ignore'``, and ``'strict'``. `clip()`_
+    is now able to clip OSC 8 hyperlinks.
   * **Improved** `clip()`_ and `width()`_ to support horizontal cursor sequences (``cub``, ``cuf``,
     ``hpa``). Cursor-left (``cub``) can now overwrite previous text, matching terminal behavior.
-    ``column_address`` (``hpa``) and carriage return (``\r``) are now parsed, or raise
-    ``ValueError`` on ``strict``. Cursor-left movement beyond string start raises ``ValueError``
-    in strict mode.
+    ``column_address`` (``hpa``) and carriage return (``\r``) are now parsed, and some values
+    conditionally raise ``ValueError`` when ``control_codes='parse'``.
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,
@@ -774,6 +778,13 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`fumiyas/wcwidth-cjk`: https://github.com/fumiyas/wcwidth-cjk
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
+.. _`contour-terminal/libunicode`: https://github.com/contour-terminal/libunicode
+.. _`ridiculousfish/widecharwidth`: https://github.com/ridiculousfish/widecharwidth
+.. _`termux/wcwidth`: https://github.com/termux/wcwidth
+.. _`powerman/wcwidth-icons`: https://github.com/powerman/wcwidth-icons
+.. _`mycoboco/wcwidth.js`: https://github.com/mycoboco/wcwidth.js
+.. _`ainame/swift-displaywidth`: https://github.com/ainame/swift-displaywidth
+.. _`pmonks/clj-wcwidth`: https://github.com/pmonks/clj-wcwidth
 .. _`python-cmd2/cmd2`: https://github.com/python-cmd2/cmd2
 .. _`stratis-storage/stratis-cli`: https://github.com/stratis-storage/stratis-cli
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
