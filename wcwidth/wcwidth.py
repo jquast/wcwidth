@@ -63,7 +63,8 @@ from __future__ import annotations
 
 # std imports
 from functools import lru_cache
-from typing import Literal, NamedTuple, Union
+
+from typing import Union, Literal, NamedTuple
 
 # local
 # pylint: disable=unused-import
@@ -102,7 +103,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                iter_sequences,
                                strip_sequences)
 from .unicode_versions import list_versions
-
 
 # Token types for output_tokens used by clip().
 # NamedTuple subclasses provide named attribute access while remaining
@@ -418,11 +418,11 @@ def clip(
             # 1. Overwriting the right half of a wide char leaves left half as fillchar
             if write_col > 0 and write_col - 1 in cells and cells[write_col - 1][1] == 2:
                 cells[write_col - 1] = (fillchar, 1)
-            
+
             # 2. Overwriting the left half of a wide char leaves right half as fillchar
             if w == 1 and write_col in cells and cells[write_col][1] == 2:
                 cells[write_col + 1] = (fillchar, 1)
-                
+
             if w == 2 and write_col + 1 in cells and cells[write_col + 1][1] == 2:
                 cells[write_col + 2] = (fillchar, 1)
 
@@ -430,7 +430,7 @@ def clip(
             for i in range(w):
                 if write_col + i in cells:
                     del cells[write_col + i]
-            
+
             cells[write_col] = (s, w)
 
         if propagate_sgr and sgr_at_clip_start is None:
@@ -551,13 +551,13 @@ def clip(
 
     # Reconstruct result from painter's algorithm grid.
     parts: list[str] = []
-    
+
     seqs_by_col: dict[int, list[tuple[int, str]]] = {}
     for seq_col, seq_ord, seq_text in sequences:
         if seq_col not in seqs_by_col:
             seqs_by_col[seq_col] = []
         seqs_by_col[seq_col].append((seq_ord, seq_text))
-            
+
     for c in seqs_by_col:
         seqs_by_col[c].sort()
 
@@ -577,14 +577,14 @@ def clip(
 
         if walk_col in cells:
             cell_text, cell_w = cells[walk_col]
-            
+
             # Calculate overlap with [start, end)
             cell_start = walk_col
             cell_end = walk_col + cell_w
-            
+
             overlap_start = max(start, cell_start)
             overlap_end = min(end, cell_end)
-            
+
             if overlap_start < overlap_end:
                 if cell_start >= start and cell_end <= end:
                     # Fully inside
@@ -592,7 +592,7 @@ def clip(
                 else:
                     # Partially inside (split wide char)
                     parts.append(fillchar * (overlap_end - overlap_start))
-            
+
             walk_col += cell_w
         else:
             # It's a hole. Only emit fillchar if we are inside the clip window
