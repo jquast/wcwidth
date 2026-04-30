@@ -47,7 +47,7 @@ try:
     # std imports
     from importlib import metadata as importlib_metadata
 except ImportError:  # pragma: no cover - fallback for very old Pythons
-    importlib_metadata = None
+    importlib_metadata = None  # type: ignore[assignment]
 
 if importlib_metadata is not None:
     try:

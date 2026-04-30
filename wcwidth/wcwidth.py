@@ -390,8 +390,6 @@ def clip(
 
     def _append_visible(s: str, w: int, start_col: int | None = None) -> None:
         nonlocal visible_count, sgr_at_clip_start
-        if w <= 0:
-            return
         if start_col is None:
             start_col = col
         prev = output_tokens[-1] if (output_tokens and output_tokens[-1][0] == 'vis') else None
@@ -439,7 +437,9 @@ def clip(
                 # slice the string by grapheme widths
                 kept_text = ''
                 acc = 0
-                for g in iter_graphemes(tok_s):
+                g_iter = iter_graphemes(tok_s)
+                while acc < keep_cols:
+                    g = next(g_iter)
                     gw = width(g, ambiguous_width=ambiguous_width)
                     if acc + gw > keep_cols:
                         break
@@ -479,9 +479,8 @@ def clip(
                     if move_start < end and move_end > start:
                         overlap_start = max(move_start, start)
                         overlap_end = min(move_end, end)
-                        overlap = overlap_end - overlap_start
-                        if overlap > 0:
-                            _append_visible(fillchar * overlap, overlap, overlap_start)
+                        _append_visible(fillchar * (overlap_end - overlap_start),
+                                        overlap_end - overlap_start, overlap_start)
                     col += n_left
                     idx = match.end()
                     continue
@@ -568,38 +567,7 @@ def clip(
             parts.append(tok[1])
         else:
             # visible chunk: ('vis', text, width_in_cols, start_col)
-            _, text, tok_w, tok_start = tok
-            chunk_len = tok_w
-            chunk_start = tok_start
-            chunk_end = chunk_start + chunk_len
-            if chunk_end <= start:
-                continue
-            if chunk_start >= end:
-                continue
-            s0 = max(0, start - chunk_start)
-            s1 = min(chunk_len, end - chunk_start)
-            # slice `text` for columns [s0, s1)
-            acc = 0
-            slice_text = ''
-            for g in iter_graphemes(text):
-                gw = width(g, ambiguous_width=ambiguous_width)
-                next_acc = acc + gw
-                if next_acc <= s0:
-                    acc = next_acc
-                    continue
-                if acc >= s1:
-                    break
-                # include this grapheme (or part of it)
-                # graphemes are atomic; if they partially overlap, use fillchar instead
-                if acc < s0 or next_acc > s1:
-                    # partial grapheme -> fill with appropriate number of fillchars
-                    left = max(0, s0 - acc)
-                    right = min(gw, s1 - acc)
-                    slice_text += fillchar * (right - left)
-                else:
-                    slice_text += g
-                acc = next_acc
-            parts.append(slice_text)
+            parts.append(tok[1])
 
     result = ''.join(parts)
 
@@ -687,10 +655,9 @@ def _text_sizing_clip(
             pending_texts.append(unit_text)
         else:
             flush()
-            if overlap > 0:
-                abs_start = col + max(unit_start, rel_start)
-                output_tokens.append(('vis', fillchar * overlap, overlap, abs_start))
-                visible_count += overlap
+            abs_start = col + max(unit_start, rel_start)
+            output_tokens.append(('vis', fillchar * overlap, overlap, abs_start))
+            visible_count += overlap
         pos = unit_end
 
     flush()

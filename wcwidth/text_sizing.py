@@ -75,7 +75,7 @@ class TextSizingParams(typing.NamedTuple):
     vertical_align: int = 0
     horizontal_align: int = 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a compact representation including only non-default fields.
 
