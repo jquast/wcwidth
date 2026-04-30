@@ -27,12 +27,16 @@ ZERO_WIDTH_PATTERN = re.compile(
     r'\x1bP[^\x1b\x07]*(?:\x07|\x1b\\)|'
     # PM sequences
     r'\x1b\^[^\x1b\x07]*(?:\x07|\x1b\\)|'
-    # Character set designation
+    # Character set designation (subset of nF, handled separately for clarity)
     r'\x1b[()].|'
-    # Fe sequences
+    # nF sequences: ESC + one or more intermediate bytes (0x20-0x2F) + final byte (0x30-0x7E)
+    r'\x1b[\x20-\x2f]+[\x30-\x7e]|'
+    # Fe sequences (C1 controls)
     r'\x1b[\x40-\x5f]|'
-    # Fp sequences
-    r'\x1b[78=>g]'
+    # Fp sequences (private use)
+    r'\x1b[\x30-\x3f]|'
+    # Fs sequences (independent functions)
+    r'\x1b[\x60-\x7e]'
 )
 
 # Cursor right movement: CSI [n] C, parameter may be parsed by width()
@@ -81,6 +85,7 @@ INDETERMINATE_EFFECT_SEQUENCE = re.compile(
         r'\x1b8',                    # restore_cursor
         r'\x1bD',                    # scroll_forward (index)
         r'\x1bM',                    # scroll_reverse (reverse index)
+        r'\x1bc',                    # full_reset (RIS)
     ))
 )
 

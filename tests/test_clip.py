@@ -24,7 +24,7 @@ STRIP_SEQUENCES_CASES = [
     ('\x1b[1m\U0001F468\u200D\U0001F469\u200D\U0001F467\x1b[0m',
      '\U0001F468\u200D\U0001F469\u200D\U0001F467'),
     ('\x1b', '\x1b'),
-    ('a\x1bb', 'a\x1bb'),
+    ('a\x1bb', 'a'),
     ('\x1b[', ''),
     ('text\x1b[mmore', 'textmore'),
 ]
@@ -150,7 +150,7 @@ def test_clip_sequences_between_chars():
     assert clip('a\x1b[31mb\x1b[0mc', 1, 2) == '\x1b[31mb\x1b[0m'
 
 
-def test_clip_sequences_lone_esc():
+def test_clip_sequences_fs_escape():
     assert clip('a\x1bb', 0, 2) == 'a\x1bb'
 
 
@@ -238,6 +238,7 @@ CLIP_CONTROL_CHAR_CASES = [
     ('abc\rde', 0, 5, 'abc\rde'),
     ('\a\b\rHello', 0, 5, '\a\b\rHello'),
     ('ab\x01\x02cd', 0, 4, 'ab\x01\x02cd'),
+    ('ab\x1b\x00cd', 0, 4, 'ab\x1b\x00cd'),
 ]
 
 
