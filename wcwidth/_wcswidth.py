@@ -74,7 +74,7 @@ def wcswidth(
         if ucs == 0x200D:
             if last_was_virama:
                 # ZWJ after virama requests explicit half-form rendering but
-                # does not change cell count — consume ZWJ only, let the next
+                # does not change cell count -- consume ZWJ only, let the next
                 # consonant be handled by the virama conjunct rule.
                 idx += 1
             elif idx + 1 < end:

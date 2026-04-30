@@ -102,3 +102,21 @@ def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expe
     """Verify clip() output matches terminal-visible columns after cursor moves."""
     result = clip(text, start, end, **kwargs)
     assert repr(result) == repr(expected)
+
+
+def test_clip_cursor_left_strict_out_of_bounds():
+    """clip() with control_codes='strict' raises on cursor-left beyond string start."""
+    with pytest.raises(ValueError, match='Cursor left movement'):
+        clip('a\x1b[5Da', 0, 1, control_codes='strict')
+
+
+def test_clip_cursor_left_strict_out_of_bounds_painter():
+    """clip() strict-mode raises on cursor-left beyond start in painter path."""
+    with pytest.raises(ValueError, match='Cursor left movement'):
+        clip('\x1b[2Dab', 0, 2, control_codes='strict')
+
+
+def test_clip_cursor_left_out_of_bounds_parse_no_raise():
+    """clip() parse mode silently clamps cursor-left beyond start."""
+    assert clip('a\x1b[5Da', 0, 1) == 'a'
+    assert clip('ab\x1b[99Dcd', 0, 4) == 'cd'

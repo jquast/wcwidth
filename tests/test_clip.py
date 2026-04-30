@@ -138,7 +138,7 @@ def test_clip_sequences_osc_hyperlink():
     )
 
 
-# ── OSC 8 hyperlink clipping ──────────────────────────────────────────────────
+# OSC 8 hyperlink clipping
 
 OSC_START_BEL = '\x1b]8;;http://example.com\x07'
 OSC_END_BEL = '\x1b]8;;\x07'
@@ -147,26 +147,26 @@ OSC_END_ST = '\x1b]8;;\x1b\\'
 
 
 CLIP_HYPERLINK_CASES = [
-    # Full hyperlink visible — preserved as-is
+    # Full hyperlink visible -- preserved as-is
     (f'{OSC_START_BEL}link{OSC_END_BEL}', 0, 4,
      f'{OSC_START_BEL}link{OSC_END_BEL}'),
-    # Clipping middle of hyperlink text — rebuild around clipped inner text
+    # Clipping middle of hyperlink text -- rebuild around clipped inner text
     (f'{OSC_START_BEL}Click This link{OSC_END_BEL}', 6, 10,
      f'{OSC_START_BEL}This{OSC_END_BEL}'),
-    # Clipping from start — only first portion
+    # Clipping from start -- only first portion
     (f'{OSC_START_BEL}Click This{OSC_END_BEL}', 0, 5,
      f'{OSC_START_BEL}Click{OSC_END_BEL}'),
-    # Clipping from end — only last portion
+    # Clipping from end -- only last portion
     (f'{OSC_START_BEL}Click This{OSC_END_BEL}', 6, 10,
      f'{OSC_START_BEL}This{OSC_END_BEL}'),
-    # Hyperlink entirely before clip window — dropped
+    # Hyperlink entirely before clip window -- dropped
     (f'{OSC_START_BEL}link{OSC_END_BEL}world', 0, 4,
      f'{OSC_START_BEL}link{OSC_END_BEL}'),
-    # Hyperlink entirely after clip window — dropped
+    # Hyperlink entirely after clip window -- dropped
     (f'hello{OSC_START_BEL}link{OSC_END_BEL}', 0, 5, 'hello'),
-    # Hyperlink clipped to nothing — empty hyperlink dropped
+    # Hyperlink clipped to nothing -- empty hyperlink dropped
     (f'{OSC_START_BEL}link{OSC_END_BEL}', 5, 10, ''),
-    # Empty hyperlink (no inner text) — dropped
+    # Empty hyperlink (no inner text) -- dropped
     (f'before{OSC_START_BEL}{OSC_END_BEL}after', 0, 11, 'beforeafter'),
     # Hyperlink with CJK text clipped
     (f'{OSC_START_BEL}中文文字{OSC_END_BEL}', 0, 4,
@@ -189,7 +189,7 @@ CLIP_HYPERLINK_CASES = [
     # SGR inside hyperlink is preserved
     (f'{OSC_START_BEL}\x1b[31mred link\x1b[0m{OSC_END_BEL}', 4, 8,
      f'{OSC_START_BEL}\x1b[31mlink\x1b[0m{OSC_END_BEL}'),
-    # Hyperlink open without matching close — preserved as regular sequence
+    # Hyperlink open without matching close -- preserved as regular sequence
     ('\x1b]8;;http://x.com\x07link', 0, 4, '\x1b]8;;http://x.com\x07link'),
     # Nested hyperlinks
     ('\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07', 0, 14,
@@ -230,11 +230,11 @@ def test_clip_osc_hyperlink_strict_raises():
 CLIP_HYPERLINK_PAINTER_CASES = [
     # Empty hyperlink dropped
     (f'\x1b[2D{OSC_START_BEL}{OSC_END_BEL}xy', 'parse', 0, 4, 'xy'),
-    # Hyperlink entirely after clip window — skipped
+    # Hyperlink entirely after clip window -- skipped
     (f'\x1b[2Dab{OSC_START_BEL}cde{OSC_END_BEL}', 'parse', 0, 2, 'ab'),
-    # Hyperlink entirely before clip window — skipped
+    # Hyperlink entirely before clip window -- skipped
     (f'{OSC_START_BEL}ab{OSC_END_BEL}\x1b[2Dcdef', 'parse', 2, 4, 'ef'),
-    # Hyperlink overlapping clip window — clipped
+    # Hyperlink overlapping clip window -- clipped
     (f'\x1b[2D{OSC_START_BEL}abcdef{OSC_END_BEL}', 'parse', 0, 3,
      f'{OSC_START_BEL}abc{OSC_END_BEL}'),
     # Bare ESC inside hyperlink in painter path

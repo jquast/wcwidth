@@ -44,9 +44,9 @@ An easy-to-use `width()`_ function is provided as a wrapper of `wcswidth()`_ tha
 measuring most terminal control codes and sequences, like colors, bold, tabstops, and horizontal
 cursor movement.
 
-Text-justification is solved by the  thesequence-aware functions `ljust()`_,
-`rjust()`_, `center()`_, and and grapheme-aware function `wrap()`_, serving as drop-in replacements
-to python standard functions.
+Text-justification is solved by the sequence-aware functions `ljust()`_, `rjust()`_, `center()`_,
+and the grapheme-aware function `wrap()`_, serving as drop-in replacements to python standard
+functions.
 
 The `clip()`_ function extracts substrings by their displayed column positions, and
 `strip_sequences()`_ removes terminal escape sequences from text altogether.
@@ -61,19 +61,16 @@ Discrepancies
 
 You may find that support *varies* for complex unicode sequences or codepoints. This library may be
 considered to presume the terminal is enabled for DEC Private Mode 2027 ("Grapheme Clustering"), but
-that specification does not fully describe support of varying unicode versions, feature levels, or
-make any interpretation of standards for all languages or complex scripts. See `Grapheme Clusters
-and Terminal Emulators`_ and `terminal-unicode-core.tex`_ for more details about testing and
-enabling mode 2027 support.
+the specification does not fully describe varying unicode versions, feature levels, or details of
+specific language support.  This library does *not* support any alternate "legacy width" measurement.
 
-This library takes a progressive approach of interpretation of standards (specification_), and
-where interpretation is unclear, to match popular modern terminals. This library does *not* support
-any alternate "legacy width" measurement.
+See `Grapheme Clusters and Terminal Emulators`_ and `terminal-unicode-core.tex`_, and `State of
+Terminal Emulators in 2025`_ for more details on Mode 2027 and unicode-aware terminals.
 
-A companion utility, `jquast/ucs-detect`_ was authored to gather and publish the results of Wide
-character, language/grapheme clustering and complex script support, emojis and zero-width joiner,
-variations, and regional indicator (flags) as a `General Tabulated Summary`_ by terminal emulator
-software and version.
+The `jquast/ucs-detect`_ utility is used to gather and publish the results of compliance to our
+standard for Wide character, Languages, grapheme clustering, complex or combining scripts, emojis,
+zero-width joiner, variations, and regional indicator (flags) as a `General
+Tabulated Summary`_ by terminal emulator software and version.
 
 ========
 Overview
@@ -176,8 +173,12 @@ such as clearing the screen, vertical, or absolute cursor movement will raise ``
     ...
     ValueError: Indeterminate cursor sequence at position 0, '\x1b[H'
 
-TODO: should raise ValueError (out of bounds),
->>> wcwidth.width('a\x1b[5Da', control_codes='strict')
+
+    >>> # cursor left movement beyond string start raises in strict mode,
+    >>> wcwidth.width('a\x1b[5Da', control_codes='strict')
+    Traceback (most recent call last):
+    ...
+    ValueError: Cursor left movement at position 1 would move 5 cells left from column 1, exceeding string start
 
 
 iter_sequences()
@@ -301,6 +302,16 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('\x1b[31m中文\x1b[32m', 0, 3, propagate_sgr=False)
     '\x1b[31m中 \x1b[32m'
 
+
+    >>> # Cursor-left overwrites previous text (painter's algorithm)
+    >>> clip('hello\x1b[2DXY', 0, 5)
+    'helXY'
+    >>> # Carriage return resets to column 0, overwriting earlier cells
+    >>> clip('abc\rXY', 0, 5)
+    'XYc'
+    >>> # OSC 8 hyperlink text is clipped and the hyperlink rebuilt
+    >>> clip('\x1b]8;;http://x.com\x07Click This link\x1b]8;;\x07', 6, 10)
+    '\x1b]8;;http://x.com\x07This\x1b]8;;\x07'
 strip_sequences()
 -----------------
 
@@ -503,10 +514,15 @@ History
 =======
 
 0.7.0 *2026-04-30*
-  * **Improved** `clip()` and `width()` to support horizontal cursor sequences, especially
-    cursor_left (``cub``) can now overwrite previous rows, matching terminal behavior.
-    column_address (``hpa``) and carriage return (``\r``) are now parsed to move to beginning
-    of string, or, raise ValueError on ``strict``.
+  * **New** ``control_codes`` parameter for `clip()`_, supporting ``'parse'`` (default),
+    ``'strict'``, and ``'ignore'`` modes for control character and cursor movement handling.
+  * **Improved** `clip()`_ with OSC 8 hyperlink-aware clipping: visible text inside hyperlinks
+    is clipped to the requested column range, and the hyperlink is rebuilt around the clipped text.
+  * **Improved** `clip()`_ and `width()`_ to support horizontal cursor sequences (``cub``, ``cuf``,
+    ``hpa``). Cursor-left (``cub``) can now overwrite previous text, matching terminal behavior.
+    ``column_address`` (``hpa``) and carriage return (``\r``) are now parsed, or raise
+    ``ValueError`` on ``strict``. Cursor-left movement beyond string start raises ``ValueError``
+    in strict mode.
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,
@@ -794,7 +810,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
-
+.. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

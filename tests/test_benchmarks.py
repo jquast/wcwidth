@@ -328,7 +328,7 @@ def test_iter_sequences_mixed(benchmark):
     benchmark(lambda: list(wcwidth.iter_sequences(text)))
 
 
-# Brahmic script benchmarks — text with virama conjuncts
+# Brahmic script benchmarks -- text with virama conjuncts
 BRAHMIC_DEVANAGARI = 'हिन्दी भाषा में लिखा गया पाठ है। क्षत्रिय स्त्री ' * 20
 BRAHMIC_BENGALI = 'বাংলা ভাষায় লেখা একটি পাঠ। বাঙ্গালী ভাষা ' * 20
 

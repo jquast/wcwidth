@@ -66,7 +66,7 @@ STRICT_ALLOWED_CASES = [
     ('abc\bd', 3, 'backspace'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('a\x1b[2Cb', 4, 'cursor_right'),
-    ('a\x1b[3Db', 1, 'cursor_left'),
+    ('ab\x1b[Db', 2, 'cursor_left'),
     ('\x1b', 0, 'lone_ESC'),
     ('a\x1bb', 1, 'fs_sequence_between'),
     ('\x1b!', 1, 'ESC_unrecognized'),
@@ -292,6 +292,23 @@ def test_hpa_strict_raises():
     """HPA in strict mode raises ValueError (indeterminate starting column)."""
     with pytest.raises(ValueError, match='horizontal position'):
         wcwidth.width('abc\x1b[5Gde', control_codes='strict')
+
+
+def test_cursor_left_strict_out_of_bounds():
+    """Cursor-left beyond string start raises ValueError in strict mode."""
+    with pytest.raises(ValueError, match='Cursor left movement'):
+        wcwidth.width('a\x1b[5Da', control_codes='strict')
+
+
+def test_cursor_left_out_of_bounds_parse_no_raise():
+    """Cursor-left beyond string start is silently clamped in parse mode."""
+    assert wcwidth.width('a\x1b[5Da') == 1
+    assert wcwidth.width('abc\x1b[99Ddef') == 3  # 99D clamped to col 0, then b,c,d overwritten
+
+
+def test_cursor_left_out_of_bounds_ignore_mode():
+    """Cursor-left beyond string start is zero-width in ignore mode."""
+    assert wcwidth.width('a\x1b[5Da', control_codes='ignore') == 2
 
 
 def test_iter_sequences_lone_esc():

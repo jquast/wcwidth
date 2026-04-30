@@ -364,7 +364,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     lines.append(indent + line_content)
                     is_first_line = False
                 else:
-                    # max_lines reached with remaining content —
+                    # max_lines reached with remaining content --
                     # pop chunks until placeholder fits, then break.
                     placeholder_w = self._width(self.placeholder)
                     while current_line:

@@ -87,6 +87,11 @@ def width(
 
     .. versionadded:: 0.3.0
 
+    .. versionchanged:: 0.7.0
+       Expanded strict-mode to raise :exc:`ValueError` when cursor-left movement
+       (CSI D) would move beyond the beginning of the string. Previously, cursor-left
+       was silently clamped to column 0 in all modes.
+
     Examples::
 
         >>> width('hello')
@@ -173,7 +178,14 @@ def width(
                 elif (cforward_n := m.group('cforward_n')) is not None:
                     current_col += int(cforward_n) if cforward_n else 1
                 elif (cbackward_n := m.group('cbackward_n')) is not None:
-                    current_col = max(0, current_col - (int(cbackward_n) if cbackward_n else 1))
+                    n_backward = int(cbackward_n) if cbackward_n else 1
+                    if strict and n_backward > current_col:
+                        raise ValueError(
+                            f"Cursor left movement at position {idx} would move "
+                            f"{n_backward} cells left from column {current_col}, "
+                            f"exceeding string start"
+                        )
+                    current_col = max(0, current_col - n_backward)
                 # 2d. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             max_extent = max(max_extent, current_col)
@@ -214,7 +226,7 @@ def width(
         if char == '\u200D':
             if last_was_virama:
                 # ZWJ after virama requests explicit half-form rendering but
-                # does not change cell count — consume ZWJ only, let the next
+                # does not change cell count -- consume ZWJ only, let the next
                 # consonant be handled by the virama conjunct rule.
                 idx += 1
             elif idx + 1 < text_len:
