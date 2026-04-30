@@ -4,7 +4,7 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN
+from wcwidth.escape_sequences import ZERO_WIDTH_PATTERN, INDETERMINATE_EFFECT_SEQUENCE
 
 BASIC_WIDTH_CASES = [
     ('', 0, 'empty'),
@@ -29,7 +29,7 @@ IGNORE_MODE_CASES = [
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('hello\x80world', 10, 'C1_control'),
     ('\x1b', 0, 'lone_ESC'),
-    ('a\x1bb', 2, 'lone_ESC_between'),
+    ('a\x1bb', 1, 'fs_sequence_between'),
 ]
 
 
@@ -65,7 +65,7 @@ STRICT_ALLOWED_CASES = [
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('a\x1b[2Cb', 4, 'cursor_right'),
     ('\x1b', 0, 'lone_ESC'),
-    ('a\x1bb', 2, 'lone_ESC_between'),
+    ('a\x1bb', 1, 'fs_sequence_between'),
     ('\x1b!', 1, 'ESC_unrecognized'),
 ]
 
@@ -88,6 +88,7 @@ STRICT_INDETERMINATE_SEQUENCES = [
     ('\x1b[1X', 'erase_chars'),
     ('\x1b[1S', 'parm_index'),
     ('\x1b[1T', 'parm_rindex'),
+    ('\x1bc', 'full_reset'),
 ]
 
 
@@ -449,3 +450,88 @@ def test_fitzpatrick_modifier_standalone_width():
     """Standalone Fitzpatrick modifier, however, is wide character in width()."""
     result = wcwidth.width('\U0001F3FB')
     assert result == 2
+
+
+FS_SEQUENCE_CASES = [
+    ('\x1bc', 'ris'),
+    ('\x1bl', 'memory_lock'),
+    ('\x1bm', 'memory_unlock'),
+    ('\x1bn', 'ls2'),
+    ('\x1bo', 'ls3'),
+    ('\x1b|', 'ls3r'),
+    ('\x1b}', 'ls2r'),
+    ('\x1b~', 'ls1r'),
+]
+
+
+@pytest.mark.parametrize('seq,name', FS_SEQUENCE_CASES)
+def test_fs_sequences_matched(seq, name):
+    """Fs (independent function) sequences are matched as zero-width."""
+    segments = list(wcwidth.iter_sequences(seq))
+    assert segments == [(seq, True)]
+    assert wcwidth.width(seq) == 0
+
+
+FP_SEQUENCE_CASES = [
+    ('\x1b7', 'decsc'),
+    ('\x1b8', 'decrc'),
+    ('\x1b=', 'deckpam'),
+    ('\x1b>', 'deckpnm'),
+    ('\x1b0', 'fp_0'),
+    ('\x1b1', 'fp_1'),
+    ('\x1b9', 'fp_9'),
+]
+
+
+@pytest.mark.parametrize('seq,name', FP_SEQUENCE_CASES)
+def test_fp_sequences_matched(seq, name):
+    """Fp (private use) sequences are matched as zero-width."""
+    segments = list(wcwidth.iter_sequences(seq))
+    assert segments == [(seq, True)]
+    assert wcwidth.width(seq) == 0
+
+
+NF_SEQUENCE_CASES = [
+    ('\x1b F', 's7c1t'),
+    ('\x1b G', 's8c1t'),
+    ('\x1b#3', 'decdhl_top'),
+    ('\x1b#4', 'decdhl_bottom'),
+    ('\x1b#5', 'decswl'),
+    ('\x1b#6', 'decdwl'),
+    ('\x1b#8', 'decaln'),
+    ('\x1b%G', 'utf8_designate'),
+    ('\x1b%@', 'iso2022_return'),
+]
+
+
+@pytest.mark.parametrize('seq,name', NF_SEQUENCE_CASES)
+def test_nf_sequences_matched(seq, name):
+    """NF (multi-byte) escape sequences are matched as zero-width."""
+    segments = list(wcwidth.iter_sequences(seq))
+    assert segments == [(seq, True)]
+    assert wcwidth.width(seq) == 0
+
+
+def test_fs_sequence_embedded_in_text():
+    """Fs sequence surrounded by text is correctly segmented."""
+    segments = list(wcwidth.iter_sequences('abc\x1bcdef'))
+    assert segments == [('abc', False), ('\x1bc', True), ('def', False)]
+    assert wcwidth.width('abc\x1bcdef') == 6
+
+
+def test_nf_sequence_embedded_in_text():
+    """NF sequence surrounded by text is correctly segmented."""
+    segments = list(wcwidth.iter_sequences('abc\x1b#8def'))
+    assert segments == [('abc', False), ('\x1b#8', True), ('def', False)]
+    assert wcwidth.width('abc\x1b#8def') == 6
+
+
+def test_screen_title_sequences():
+    """Screen/tmux title sequence ESC k hello ST."""
+    segments = list(wcwidth.iter_sequences('\x1bkhello\x1b\\'))
+    assert segments[0] == ('\x1bk', True)
+
+
+def test_ris_indeterminate():
+    """RIS (ESC c) is flagged as indeterminate effect."""
+    assert INDETERMINATE_EFFECT_SEQUENCE.match('\x1bc')
