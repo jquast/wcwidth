@@ -469,7 +469,10 @@ History
 =======
 
 0.7.0 *2026-04-30*
-  * **Improved** `clip()` to support backward cursor sequence overwrite, "Painter's algorithm".
+  * **Improved** `clip()` and `width()` to support horizontal cursor sequences, especially
+    cursor_left (``cub``) can now overwrite previous rows, matching terminal behavior.
+    column_address (``hpa``) and carriage return (``\r``) are now parsed to move to beginning
+    of string, or, raise ValueError on ``strict``.
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,

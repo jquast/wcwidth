@@ -16,6 +16,7 @@ from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WI
 from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                CURSOR_MOVEMENT_SEQUENCE,
+                               CURSOR_HPA_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
                                strip_sequences)
 
@@ -159,12 +160,22 @@ def width(
                 if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
                     raise ValueError(f"Indeterminate cursor sequence at position {idx}, {seq!r}")
 
-                # 2b. cursor forward, backward
-                if (cforward_n := m.group('cforward_n')) is not None:
+                # 2b. horizontal position absolute (before forward/backward to
+                #     avoid other_seq match in _SEQUENCE_CLASSIFY)
+                if (hpa_n := m.group('hpa_n')) is not None:
+                    target_col = int(hpa_n) if hpa_n else 1
+                    if strict:
+                        raise ValueError(
+                            f"Indeterminate horizontal position at position {idx}, "
+                            f"{seq!r} (absolute column unknown)"
+                        )
+                    current_col = target_col - 1  # HPA is 1-indexed, convert to 0-indexed
+                # 2c. cursor forward, backward
+                elif (cforward_n := m.group('cforward_n')) is not None:
                     current_col += int(cforward_n) if cforward_n else 1
                 elif (cbackward_n := m.group('cbackward_n')) is not None:
                     current_col = max(0, current_col - (int(cbackward_n) if cbackward_n else 1))
-                # 2c. SGR and other zero-width sequences -- no column advance
+                # 2d. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             max_extent = max(max_extent, current_col)
             continue
@@ -190,6 +201,11 @@ def width(
                 if current_col > 0:
                     current_col -= 1
             elif char == '\x0d':  # Carriage return
+                if strict:
+                    raise ValueError(
+                        f"Horizontal movement character \\r at position {idx}: "
+                        "indeterminate starting column"
+                    )
                 current_col = 0
             max_extent = max(max_extent, current_col)
             idx += 1

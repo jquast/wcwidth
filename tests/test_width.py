@@ -46,8 +46,10 @@ STRICT_RAISES_CASES = [
     ('hello\x7fworld', 'DEL'),
     ('hello\x80world', 'C1_control'),
     ('hello\nworld', 'LF'),
+    ('hello\rworld', 'CR'),
     ('hello\x1b[Hworld', 'cursor_home'),
     ('hello\x1b[Aworld', 'cursor_up'),
+    ('hello\x1b[5Gworld', 'hpa'),
 ]
 
 
@@ -62,9 +64,9 @@ STRICT_ALLOWED_CASES = [
     ('hello\x07world', 10, 'BEL'),
     ('hello\x00world', 10, 'NUL'),
     ('abc\bd', 3, 'backspace'),
-    ('abc\rxy', 3, 'CR'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR_sequence'),
     ('a\x1b[2Cb', 4, 'cursor_right'),
+    ('a\x1b[3Db', 1, 'cursor_left'),
     ('\x1b', 0, 'lone_ESC'),
     ('a\x1bb', 1, 'fs_sequence_between'),
     ('\x1b!', 1, 'ESC_unrecognized'),
@@ -108,6 +110,11 @@ PARSE_MODE_CASES = [
     ('abcd\x1b[2De', 4, 'cursor_left'),
     ('\x1b[31mred\x1b[0m', 3, 'SGR'),
     ('ab\x1b[Hcd', 4, 'indeterminate'),
+    ('def\x1b[3Dabc', 3, 'cursor_left_overwrite'),
+    ('def\x1b[10Dabc', 3, 'cursor_left_past_start'),
+    ('abc\x1b[5Gde', 6, 'hpa_parse'),
+    ('abc\x1b[Gde', 3, 'hpa_no_param'),
+    ('\x1b[5Gabc', 7, 'hpa_before_text'),
 ]
 
 
@@ -266,6 +273,25 @@ def test_carriage_return_resets_column():
     """CR resets column, max extent is preserved."""
     assert wcwidth.width('abc\rd') == 3
     assert wcwidth.width('abc\rde') == 3
+
+
+def test_carriage_return_strict_raises():
+    """CR in strict mode raises ValueError (indeterminate starting column)."""
+    with pytest.raises(ValueError, match='Horizontal movement'):
+        wcwidth.width('hello\rworld', control_codes='strict')
+
+
+def test_hpa_parse_best_effort():
+    """HPA in parse mode assumes string begins at column 0."""
+    assert wcwidth.width('abc\x1b[5Gde') == 6
+    assert wcwidth.width('abc\x1b[Gde') == 3
+    assert wcwidth.width('\x1b[10Ghi') == 11
+
+
+def test_hpa_strict_raises():
+    """HPA in strict mode raises ValueError (indeterminate starting column)."""
+    with pytest.raises(ValueError, match='horizontal position'):
+        wcwidth.width('abc\x1b[5Gde', control_codes='strict')
 
 
 def test_iter_sequences_lone_esc():

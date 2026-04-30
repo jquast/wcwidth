@@ -45,21 +45,25 @@ CURSOR_RIGHT_SEQUENCE = re.compile(r'\x1b\[(\d*)C')
 # Cursor left movement: CSI [n] D, parameter may be parsed by width()
 CURSOR_LEFT_SEQUENCE = re.compile(r'\x1b\[(\d*)D')
 
-# Combined cursor movement: single regex for fast-path detection of any
-# horizontal cursor movement (left or right).  Avoids two separate search()
-# calls in hot-path width() and clip() pre-checks.
-CURSOR_MOVEMENT_SEQUENCE = re.compile(r'\x1b\[(\d*)[CD]')
+# Horizontal position absolute: CSI [n] G, parameter may be parsed by width()
+CURSOR_HPA_SEQUENCE = re.compile(r'\x1b\[(\d*)G')
 
-# Combined horizontal cursor movement: matches BS, CR, and CSI C/D cursor sequences
+# Combined cursor movement: single regex for fast-path detection of any
+# horizontal cursor movement (left, right, hpa).  Avoids two separate search()
+# calls in hot-path width() and clip() pre-checks.
+CURSOR_MOVEMENT_SEQUENCE = re.compile(r'\x1b\[(\d*)[CDG]')
+
+# Combined horizontal cursor movement: matches BS, CR, and CSI C/D/G cursor sequences
 # in a single regex pass. Used by clip() to decide between the simple append path
 # and the painter's algorithm.
-_HORIZONTAL_CURSOR_MOVEMENT = re.compile(r'[\x08\r]|\x1b\[(\d*)[CD]')
+_HORIZONTAL_CURSOR_MOVEMENT = re.compile(r'[\x08\r]|\x1b\[(\d*)[CDG]')
 
 # Combined pattern: a single regex that matches any zero-width escape sequence
 # and classifies it via named groups, aprox 2x faster than redundant re.matches
 # in clip() and width().
 _SEQUENCE_CLASSIFY = re.compile(
     _SGR_PATTERN.pattern.replace('(', '(?P<sgr_params>', 1)
+    + '|' + CURSOR_HPA_SEQUENCE.pattern.replace('(', '(?P<hpa_n>', 1)
     + '|' + CURSOR_RIGHT_SEQUENCE.pattern.replace('(', '(?P<cforward_n>', 1)
     + '|' + CURSOR_LEFT_SEQUENCE.pattern.replace('(', '(?P<cbackward_n>', 1)
     + '|' + r'(?P<other_seq>(?:' + ZERO_WIDTH_PATTERN.pattern + '))'
@@ -77,7 +81,6 @@ INDETERMINATE_EFFECT_SEQUENCE = re.compile(
         r'\x1b\[\d+;\d+r',           # change_scroll_region
         r'\x1b\[\d*K',               # erase_in_line (clr_eol, clr_bol)
         r'\x1b\[\d*J',               # erase_in_display (clr_eos, erase_display)
-        r'\x1b\[\d*G',               # column_address
         r'\x1b\[\d+;\d+H',           # cursor_address
         r'\x1b\[\d*H',               # cursor_home
         r'\x1b\[\d*A',               # cursor_up

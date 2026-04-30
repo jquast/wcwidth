@@ -232,11 +232,11 @@ def test_clip_tab_with_sequences():
 
 
 CLIP_CONTROL_CHAR_CASES = [
-    ('abc\bde', 0, 5, 'abc\bde'),
-    ('ab\acd', 0, 4, 'ab\acd'),
+    ('abc\bde', 0, 5, 'abde'),
+    ('ab\acd', 0, 4, 'ab\x07cd'),
     ('ab\x00cd', 0, 4, 'ab\x00cd'),
-    ('abc\rde', 0, 5, 'abc\rde'),
-    ('\a\b\rHello', 0, 5, '\a\b\rHello'),
+    ('abc\rde', 0, 5, 'dec'),
+    ('\a\b\rHello', 0, 5, '\x07Hello'),
     ('ab\x01\x02cd', 0, 4, 'ab\x01\x02cd'),
     ('ab\x1b\x00cd', 0, 4, 'ab\x1b\x00cd'),
 ]

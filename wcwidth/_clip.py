@@ -99,12 +99,15 @@ def clip(
         return text[start:end]
 
     # Fast path: no escape sequences means no SGR tracking needed
-    if propagate_sgr and '\x1b' not in text:
+    has_esc = '\x1b' in text
+    if propagate_sgr and not has_esc:
         propagate_sgr = False
 
-    # Use painter's algorithm only when cursor movement (BS, CR, CSI C/D) can overwrite cells.
-    # Text without any horizontal movement uses a fast direct-append path.
-    use_painter = bool(_HORIZONTAL_CURSOR_MOVEMENT.search(text))
+    # Use painter's algorithm only when cursor movement (BS, CR, CSI C/D) can overwrite
+    # previously emitted cells. Text without any horizontal movement uses the fast simple path.
+    # Use direct char checks to avoid regex scan overhead for the common (no-cursor) case.
+    use_painter = ('\x08' in text or '\r' in text or
+                   (has_esc and bool(_HORIZONTAL_CURSOR_MOVEMENT.search(text))))
 
     # SGR tracking state (only when propagate_sgr=True) sgr_at_clip_start is
     # sgr state when first visible char emitted (None = not yet)
@@ -186,7 +189,7 @@ def clip(
 
         result = ''.join(output)
     else:
-        # Painter's algorithm path: handles cursor movement (BS, CR, CSI C/D)
+        # Painter's algorithm path: handles cursor movement (BS, CR, CSI C/D/G)
         # that can overwrite previously emitted cells.
 
         # map column integer to a visible character (with its width)
@@ -202,16 +205,15 @@ def clip(
 
         def _write_cells(s: str, w: int, write_col: int) -> None:
             nonlocal sgr_at_clip_start
-            if w > 0:
-                # Fix up wide-char orphans and clear overwritten cells in one pass
-                for offset in range(w):
-                    src_col = write_col + offset
-                    if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
-                        cells[src_col - 1] = (fillchar, 1)
-                    if cells.get(src_col, ('', 0))[1] == 2:
-                        cells[src_col + 1] = (fillchar, 1)
-                    cells.pop(src_col, None)
-                cells[write_col] = (s, w)
+            # Fix up wide-char orphans and clear overwritten cells in one pass
+            for offset in range(w):
+                src_col = write_col + offset
+                if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
+                    cells[src_col - 1] = (fillchar, 1)
+                if cells.get(src_col, ('', 0))[1] == 2:
+                    cells[src_col + 1] = (fillchar, 1)
+                cells.pop(src_col, None)
+            cells[write_col] = (s, w)
             if propagate_sgr and sgr_at_clip_start is None:
                 sgr_at_clip_start = sgr
 
@@ -244,7 +246,13 @@ def clip(
                     idx = m.end()
                     continue
 
-                # 1a. Cursor forward,
+                # 1a. HPA: horizontal position absolute (CSI n G)
+                if (hpa_n := m.group('hpa_n')) is not None:
+                    col = int(hpa_n) - 1 if hpa_n else 0
+                    idx = m.end()
+                    continue
+
+                # 1b. Cursor forward,
                 if (cforward_n := m.group('cforward_n')) is not None:
                     n_forward = int(cforward_n) if cforward_n else 1
                     move_end = col + n_forward
@@ -255,19 +263,33 @@ def clip(
                     idx = m.end()
                     continue
 
-                # 1b. Cursor backward,
+                # 1c. Cursor backward,
                 if (cbackward_n := m.group('cbackward_n')) is not None:
                     n_backward = int(cbackward_n) if cbackward_n else 1
                     col = max(0, col - n_backward)
                     idx = m.end()
                     continue
 
-                # 1c. Any other recognized zero-width sequence
+                # 1d. Any other recognized zero-width sequence
                 _append_seq(m.group())
                 idx = m.end()
                 continue
 
-            # 2. TAB expansion
+            # 2. Carriage return and backspace (before TAB/grapheme fallthrough)
+            if char == '\r':
+                # CR: reset column to 0
+                col = 0
+                idx += 1
+                continue
+
+            if char == '\x08':
+                # BS: decrement column
+                if col > 0:
+                    col -= 1
+                idx += 1
+                continue
+
+            # 3. TAB expansion
             if char == '\t':
                 if tabsize > 0:
                     next_tab = col + (tabsize - (col % tabsize))
@@ -281,7 +303,7 @@ def clip(
                 idx += 1
                 continue
 
-            # 3. Grapheme clustering for everything else
+            # 4. Grapheme clustering for everything else
             grapheme = next(iter_graphemes(text, start=idx))
             grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
 

@@ -12,49 +12,89 @@ import pytest
 from wcwidth import clip
 
 
-@pytest.mark.parametrize("text,start,end,expected", [
+@pytest.mark.parametrize("text,start,end,kwargs,expected", [
     # Cursor-right introduces a gap that should be filled with spaces
-    ("hello\x1b[10Cworld", 0, 10, "hello" + " " * 5),
+    ("hello\x1b[10Cworld", 0, 10, {}, "hello" + " " * 5),
     # Clipping just the initial region ignores the later rightward write
-    ("hello\x1b[10Cworld", 0, 5, "hello"),
+    ("hello\x1b[10Cworld", 0, 5, {}, "hello"),
     # Cursor-left overwrites previous characters
-    ("hello\x1b[2DXY", 0, 5, "helXY"),
+    ("hello\x1b[2DXY", 0, 5, {}, "helXY"),
     # Cursor-left overwrites entire visible token
-    ("abc\x1b[3DXY", 0, 5, "XYc"),
+    ("abc\x1b[3DXY", 0, 5, {}, "XYc"),
     # Cursor-left at column 0 (prev_col not > col, no overwrite)
-    ("\x1b[2Dhi", 0, 2, "hi"),
+    ("\x1b[2Dhi", 0, 2, {}, "hi"),
     # Cursor-left with no visible tokens emitted
-    ("\x1b[5C\x1b[2Dhi", 5, 7, ""),
+    ("\x1b[5C\x1b[2Dhi", 5, 7, {}, ""),
     # Cursor-left overwrites text, seq tokens preserve column spatial order
-    ("ab\x1b]8;;http://x.com\x07\x1b[2Dcd", 0, 4, "cd\x1b]8;;http://x.com\x07"),
+    ("ab\x1b]8;;http://x.com\x07\x1b[2Dcd", 0, 4, {}, "cd\x1b]8;;http://x.com\x07"),
     # Cursor-left into wide char twice, second time on empty token triggers i < 0 break
-    ("中\x1b[D\x1b[Da", 0, 4, "a "),
-    ('ab\x1b[5Ccd', 0, 4, 'ab  '),
-    ('abcde\x1b[2Df', 0, 6, 'abcfe'),
-    ('hello\x1b[5Dw', 0, 5, 'wello'),
-    ('ab\x1b[10Ccd', 0, 4, 'ab  '),
-    ('XY\x1b[Czy', 0, 4, 'XY z'),
-    ('XY\x1b[Czy', 0, 5, 'XY zy'),
-    ('XY\x1b[Czy', 1, 3, 'Y '),
-    ('XY\x1b[Czy', 1, 4, 'Y z'),
-    ('LOL\x1b[5Clol', 0, 12, 'LOL     lol'),
-    ('LOL\x1b[5Clol', 1, 11, 'OL     lol'),
-    ('LOL\x1b[5Clol', 2, 11, 'L     lol'),
-    ('LOL\x1b[5Clol', 3, 11, '     lol'),
-    ('LOL\x1b[5Clol', 4, 11, '    lol'),
-    ('LOL\x1b[5Clol', 5, 11, '   lol'),
-    ('LOL\x1b[5Clol', 6, 11, '  lol'),
-    ('LOL\x1b[5Clol', 7, 11, ' lol'),
-    ('LOL\x1b[5Clol', 8, 11, 'lol'),
-    ('LOL\x1b[5Clol', 9, 11, 'ol'),
-
+    ("中\x1b[D\x1b[Da", 0, 4, {}, "a "),
+    ('ab\x1b[5Ccd', 0, 4, {}, 'ab  '),
+    ('abcde\x1b[2Df', 0, 6, {}, 'abcfe'),
+    ('hello\x1b[5Dw', 0, 5, {}, 'wello'),
+    ('ab\x1b[10Ccd', 0, 4, {}, 'ab  '),
+    ('XY\x1b[Czy', 0, 4, {}, 'XY z'),
+    ('XY\x1b[Czy', 0, 5, {}, 'XY zy'),
+    ('XY\x1b[Czy', 1, 3, {}, 'Y '),
+    ('XY\x1b[Czy', 1, 4, {}, 'Y z'),
+    ('LOL\x1b[5Clol', 0, 12, {}, 'LOL     lol'),
+    ('LOL\x1b[5Clol', 1, 11, {}, 'OL     lol'),
+    ('LOL\x1b[5Clol', 2, 11, {}, 'L     lol'),
+    ('LOL\x1b[5Clol', 3, 11, {}, '     lol'),
+    ('LOL\x1b[5Clol', 4, 11, {}, '    lol'),
+    ('LOL\x1b[5Clol', 5, 11, {}, '   lol'),
+    ('LOL\x1b[5Clol', 6, 11, {}, '  lol'),
+    ('LOL\x1b[5Clol', 7, 11, {}, ' lol'),
+    ('LOL\x1b[5Clol', 8, 11, {}, 'lol'),
+    ('LOL\x1b[5Clol', 9, 11, {}, 'ol'),
+    # SGR + cursor movement: SGR state update in painter path (line 245)
+    ('\x1b[31mab\x1b[2Dcd', 0, 4, {}, '\x1b[31mcd\x1b[0m'),
+    # Tab tabsize=0 in painter path (line 272->280 else branch)
+    ('ab\x1b[2D\tcd', 0, 4, {'tabsize': 0}, '\tcd'),
+    # Zero-width grapheme outside clip window in painter (line 290->301)
+    ('\x1b[2D\u0301hello', 1, 4, {}, 'ell'),
+    # Wide char partially clipped in painter (lines 298-299)
+    ('ab\x1b[2D中d', 1, 4, {}, ' d'),
+    # walk_col >= end in painter reconstruction (327->328)
+    ('hello\x1b[2Dxy', 0, 3, {}, 'hel'),
+    # Hole fillchar in painter reconstruction (345->346)
+    ('\x1b[5Chi', 0, 7, {}, '     hi'),
+    # Trailing sequences stored at columns after col_limit (352, 354->355, 355->356)
+    ('abc\x1b[2D', 0, 2, {}, 'ab'),
+    # Bare ESC not part of any sequence, pass through in painter path (239->240)
+    ('a\x1bb\x1b[2Dc', 0, 3, {}, 'c\x1bb'),
+    # Tab with tabsize>0 in painter; `b` falls at col 4, inside (0,5) (277->284, 278->279, 278->280)
+    ('\x1b[2Da\tb', 0, 5, {'tabsize': 4}, 'a   b'),
+    # propagate_sgr=False in painter path (225->226)
+    ('ab\x1b[2Dcd', 0, 4, {'propagate_sgr': False}, 'cd'),
+    # Non-SGR sequence before any visible text in painter (225->226 True)
+    ('\x1b]8;;http://x.com\x07ab\x1b[2Dcd', 0, 4, {}, '\x1b]8;;http://x.com\x07cd'),
+    # Bare ESC at end of text in painter (239->240)
+    ('ab\x1b[2D\x1b', 0, 2, {}, '\x1bab'),
+    # Wide char overwritten from right side (212 orphan fixup)
+    ('a中\x1b[Db', 0, 4, {}, 'a b'),
+    # Tab expansion with col+=1 not inside clip window (277->279, 293)
+    ('\x1b[2Ca\tb', 2, 4, {'tabsize': 8}, 'a '),
+    # CR: carriage return resets column to 0, overwriting earlier cells
+    ('aaa\r\r\rxxx', 0, 4, {}, 'xxx'),
+    ('abc\rXY', 0, 5, {}, 'XYc'),
+    ('hello\rworld', 0, 5, {}, 'world'),
+    # CR moves back to column 0 then writes within clip window
+    ('abc\rde', 1, 3, {}, 'ec'),
+    # BS: backspace overwrites previous character
+    ('abc\bde', 0, 5, {}, 'abde'),
+    ('abc\b\bXY', 0, 5, {}, 'aXY'),
+    ('ab\b\b\bXY', 0, 4, {}, 'XY'),
+    # HPA: horizontal position absolute (CSI n G)
+    ('abc\x1b[GXY', 0, 5, {}, 'XYc'),
+    ('abc\x1b[2GXY', 0, 5, {}, 'aXY'),
+    ('abc\x1b[5GXY', 0, 7, {}, 'abc XY'),
+    ('abc\x1b[5GXY', 0, 5, {}, 'abc X'),
+    ('\x1b[5GXY', 3, 7, {}, ' XY'),
+    # HPA no-param inside clip window
+    ('abc\x1b[GXY', 1, 4, {}, 'Yc'),
 ])
-def test_clip_cursor_sequences_expected_behaviour(text, start, end, expected):
-    """
-    Verify clip() output matches terminal-visible columns after cursor moves.
-
-    These tests capture the desired semantics: cursor-right creates blank cells (fillchar) in
-    the clipped output if the moved-to columns are within the clip window; cursor-left allows
-    subsequent characters to overwrite previous content and the clip should reflect that.
-    """
-    assert repr(clip(text, start, end)) == repr(expected)
+def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expected):
+    """Verify clip() output matches terminal-visible columns after cursor moves."""
+    result = clip(text, start, end, **kwargs)
+    assert repr(result) == repr(expected)
