@@ -8,4 +8,3 @@ tomli<2.3.0
 cffi<2
 pygments<2.20
 zipp<3.23.1
-# pytest-benchmark

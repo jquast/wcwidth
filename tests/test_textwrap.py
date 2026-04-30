@@ -485,36 +485,3 @@ def test_wrap_replace_whitespace_false_newlines_zero_width():
     """Newlines have zero display width, so more text fits per line than stdlib."""
     assert wrap('hello\nworld foo\nbar', 10, replace_whitespace=False) == [
         'hello\nworld', 'foo\nbar']
-
-
-# kitty text sizing protocol (OSC 66) constants for wrap() tests.
-# Width calculation, BEL/ST/scale/auto-width/CJK/SGR interaction with OSC66 are
-# already covered exhaustively in test_text_sizing.py and test_clip_*.py.  These
-# tests verify only the *line-breaking* behaviour that is unique to wrap().
-TS3 = '\x1b]66;w=3;XYZ\x07'   # explicit width=3
-
-
-@pytest.mark.parametrize('text,w,expected', [
-    # Greedy fill: atomic sequence moves to next line when line width exceeded
-    ('abc' + TS3 + 'def', 4, ['abc' + TS3 + 'd', 'ef']),
-    ('abc' + TS3 + 'def', 5, ['abc' + TS3 + 'de', 'f']),
-    ('abc' + TS3 + 'def', 6, ['abc', TS3 + 'def']),
-    ('abc' + TS3 + 'def', 8, ['abc', TS3 + 'def']),
-    ('abc' + TS3 + 'def', 10, ['abc' + TS3 + 'def']),
-    # Sequence stays with preceding word when total stripped width fits
-    ('aa' + TS3 + 'bb', 5, ['aa', TS3 + 'bb']),
-    ('pre' + TS3 + 'post', 8, ['pre', TS3 + 'post']),
-])
-def test_wrap_ts_line_fill(text, w, expected):
-    """OSC 66 sequence width is respected and treated as atomic unit when filling lines."""
-    assert wrap(text, w) == expected
-
-
-@pytest.mark.parametrize('text,w,expected', [
-    # max_lines truncation preserves OSC66 sequence atomically with truncated text
-    ('abc' + TS3 + 'def', 7, ['abc', TS3 + 'def']),
-    ('ab' + TS3 + 'cd', 6, ['ab', TS3 + 'cd']),
-])
-def test_wrap_ts_max_lines(text, w, expected):
-    """max_lines truncation works correctly with OSC 66 sequences."""
-    assert wrap(text, w, max_lines=2, placeholder='~') == expected

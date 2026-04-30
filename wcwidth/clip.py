@@ -1,8 +1,7 @@
 """This is a python implementation of clip()."""
 # std imports
-from itertools import islice
 
-from typing import Union, Callable, Optional, NamedTuple
+from typing import Optional, NamedTuple
 
 # local
 from .width import width
@@ -11,7 +10,6 @@ from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
-from .text_sizing import TextSizing, TextSizingParams
 from .escape_sequences import _SEQUENCE_CLASSIFY
 
 
@@ -27,9 +25,6 @@ class SeqToken(NamedTuple):
     """A zero-width terminal sequence (escape sequences, control chars, etc.)."""
 
     text: str
-
-
-Token = Union[VisToken, SeqToken]
 
 
 def clip(
@@ -84,9 +79,6 @@ def clip(
 
     .. versionchanged:: 0.5.0
        Added ``propagate_sgr`` parameter (default True).
-
-    .. versionchanged:: 0.6.1
-       Parses OSC 66 Sequences.
 
     Example::
 
@@ -192,25 +184,7 @@ def clip(
                 idx = m.end()
                 continue
 
-            # 1c. OSC 66 Text Sizing
-            if (ts_meta := m.group('ts_meta')) is not None:
-                ts_text = m.group('ts_text')
-                ts_term = m.group('ts_term')
-                col = _text_sizing_clip(
-                    TextSizing(
-                        TextSizingParams.from_params(ts_meta),
-                        ts_text,
-                        ts_term),
-                    col=col, start=start, end=end,
-                    write_cells=_write_cells,
-                    fillchar=fillchar, ambiguous_width=ambiguous_width,
-                )
-                if propagate_sgr and sgr_at_clip_start is None:
-                    sgr_at_clip_start = sgr
-                idx = m.end()
-                continue
-
-            # 1d. Any other recognized zero-width sequence
+            # 1c. Any other recognized zero-width sequence
             _append_seq(m.group())
             idx = m.end()
             continue
@@ -310,108 +284,3 @@ def clip(
             result += '\x1b[0m'
 
     return result
-
-
-def _text_sizing_clip(
-    ts: TextSizing,
-    *,
-    col: int,
-    start: int,
-    end: int,
-    write_cells: Callable[[str, int, int], None],
-    fillchar: str = ' ',
-    ambiguous_width: int = 1,
-) -> int:
-    """
-    Emit tokens for a text-sizing (OSC 66) sequence, clipped to ``[start, end)``.
-
-    Returns ``new_col`` (column position after the sequence).
-    """
-    # pylint: disable=too-many-locals,too-many-branches,too-complex
-    ts_width = ts.display_width(ambiguous_width)
-
-    # Sequence fully visible or fully outside: simple cases
-    if col >= start and col + ts_width <= end:
-        write_cells(ts.make_sequence(), ts_width, col)
-        return col + ts_width
-    if col >= end or col + ts_width <= start:
-        return col + ts_width
-
-    # Partial overlap: the sequence straddles a clip boundary.
-    # Decompose into unit cells (each grapheme occupies `scale` cells),
-    # emit as many whole units as fit inside [start, end), filling the
-    # remainder with `fillchar`.
-    rel_start = max(0, start - col)
-    rel_end = min(end, col + ts_width) - col
-    scale = ts.params.scale
-
-    # Build the list of (grapheme, cell_width) units
-    units: list[tuple[str, int]] = []
-    if ts.params.width > 0:
-        # Fixed-width mode: explicit count at `scale` cells each.
-        # Use itertools.islice to avoid materializing the full grapheme list.
-        # std imports
-        for _, g in enumerate(islice(iter_graphemes(ts.text), ts.params.width)):
-            units.append((g, scale))
-        # Pad with empty graphemes if text had fewer than width
-        for _ in range(ts.params.width - len(units)):
-            units.append(('', scale))
-    else:
-        # Auto-width mode: grapheme count derived from content, width varies
-        for g in iter_graphemes(ts.text):
-            units.append((g, width(g, ambiguous_width=ambiguous_width) * scale))
-
-    # Batch of consecutive fully-visible units that can be emitted as a
-    # single text-sizing sequence.
-    pending_units: list[tuple[str, int]] = []  # (grapheme_text, cell_width)
-
-    def flush(flush_col: int) -> None:
-        """Emit accumulated graphemes as one text-sizing sequence."""
-        if not pending_units:
-            return
-        texts = [u[0] for u in pending_units]
-        total_w = sum(u[1] for u in pending_units)
-        params = TextSizingParams(
-            scale,
-            len(texts) if ts.params.width > 0 else 0,
-            ts.params.numerator,
-            ts.params.denominator,
-            ts.params.vertical_align,
-            ts.params.horizontal_align)
-        write_cells(
-            TextSizing(params, ''.join(texts), ts.terminator).make_sequence(),
-            total_w,
-            flush_col)
-        pending_units.clear()
-
-    # Walk units in cell-coordinate space, collecting consecutive fully-visible
-    # ones into a batch (flushed as one sequence) and emitting fillchars for
-    # partial units at the boundaries.
-    flush_col_pos = col + rel_start
-    unit_pos = 0  # current position in cell-coordinates within the sequence
-    for unit_text, unit_w in units:
-        unit_end = unit_pos + unit_w
-        if unit_end <= rel_start:
-            # Unit is entirely before the clip window
-            unit_pos = unit_end
-            continue
-        if unit_pos >= rel_end:
-            # Unit is entirely past the clip window
-            break
-
-        overlap = min(unit_end, rel_end) - max(unit_pos, rel_start)
-        if overlap == unit_w and unit_w > 0:
-            # Unit fits completely — batch it with others
-            if not pending_units:
-                flush_col_pos = col + max(unit_pos, rel_start)
-            pending_units.append((unit_text, unit_w))
-        else:
-            # Unit is partially clipped — flush batch, emit fillchars for remainder
-            flush(flush_col_pos)
-            abs_start = col + max(unit_pos, rel_start)
-            for i in range(overlap):
-                write_cells(fillchar, 1, abs_start + i)
-        unit_pos = unit_end
-
-    flush(flush_col_pos)
-    return col + ts_width

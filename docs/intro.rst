@@ -470,8 +470,6 @@ History
 
 0.7.0 *2026-04-30*
   * **Improved** `clip()` to support backward cursor sequence overwrite, "Painter's algorithm".
-  * **Improved** `width()` and `clip()` to support parsing of `kitty text
-    sizing protocol`_ (OSC 66).
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,

@@ -293,18 +293,6 @@ def test_clip_complex_sgr(benchmark):
     benchmark(wcwidth.clip, text, 6, 11)
 
 
-def test_width_osc66(benchmark):
-    """Benchmark width() with OSC 66 sequences."""
-    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
-    benchmark(wcwidth.width, text)
-
-
-def test_clip_osc66(benchmark):
-    """Benchmark clip() with OSC 66 sequences."""
-    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
-    benchmark(wcwidth.clip, text, 3, 8)
-
-
 def test_propagate_sgr_multiline(benchmark):
     """Benchmark propagate_sgr() with multiple lines."""
     lines = ['\x1b[1;31mline one', 'line two', 'line three\x1b[0m']

@@ -3,4 +3,3 @@ pytest<7
 pytest-cov
 coverage[toml]<6
 packaging<26
-# pytest-benchmark<5

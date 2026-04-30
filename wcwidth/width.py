@@ -12,7 +12,6 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
-from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import _SEQUENCE_CLASSIFY, INDETERMINATE_EFFECT_SEQUENCE, strip_sequences
@@ -61,8 +60,8 @@ def width(
 
         - ``'parse'`` (default): Track horizontal cursor movement like BS ``\b``, CR ``\r``, TAB
           ``\t``, cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
-          indeterminate terminal sequences are zero-width. OSC 66 Kitty Text Sizing protocol, OSC 8
-          Hyperlink, and many other kinds of output sequences are parsed for displayed measurements.
+          indeterminate terminal sequences are zero-width. OSC 8 Hyperlink, and many other kinds
+          of output sequences are parsed for displayed measurements.
         - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters with
           indeterminate results of the screen or cursor, like clear or vertical movement. Generally,
           these should be handled with a virtual terminal emulator (like 'pyte').
@@ -157,19 +156,11 @@ def width(
                 if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
                     raise ValueError(f"Indeterminate cursor sequence at position {idx}, {seq!r}")
 
-                # 2b. cursor forward, backward, and OSC 66 text sizing width
+                # 2b. cursor forward, backward
                 if (cforward_n := m.group('cforward_n')) is not None:
                     current_col += int(cforward_n) if cforward_n else 1
                 elif (cbackward_n := m.group('cbackward_n')) is not None:
                     current_col = max(0, current_col - (int(cbackward_n) if cbackward_n else 1))
-                elif (ts_meta := m.group('ts_meta')) is not None:
-                    ts_text = m.group('ts_text')
-                    ts_term = m.group('ts_term')
-                    assert ts_text is not None and ts_term is not None
-                    text_size = TextSizing(
-                        TextSizingParams.from_params(ts_meta, control_codes=control_codes),
-                        ts_text, ts_term)
-                    current_col += text_size.display_width(ambiguous_width)
                 # 2c. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             max_extent = max(max_extent, current_col)
