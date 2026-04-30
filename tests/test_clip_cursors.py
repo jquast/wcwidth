@@ -19,19 +19,19 @@ from wcwidth import clip
     ("hello\x1b[10Cworld", 0, 5, "hello"),
     # Cursor-left overwrites previous characters
     ("hello\x1b[2DXY", 0, 5, "helXY"),
-    # Cursor-left that removes entire visible token (tok_w <= to_remove path)
-    ("abc\x1b[3DXY", 0, 5, "XY"),
+    # Cursor-left overwrites entire visible token
+    ("abc\x1b[3DXY", 0, 5, "XYc"),
     # Cursor-left at column 0 (prev_col not > col, no overwrite)
     ("\x1b[2Dhi", 0, 2, "hi"),
-    # Cursor-left with no visible tokens emitted (to_remove <= 0 path)
+    # Cursor-left with no visible tokens emitted
     ("\x1b[5C\x1b[2Dhi", 5, 7, ""),
-    # Cursor-left triggers _remove_visible_tail with seq tokens before vis token
-    # exercises the inner while loop that skips past seq tokens (line 422)
-    ("ab\x1b]8;;http://x.com\x07\x1b[2Dcd", 0, 4, "\x1b]8;;http://x.com\x07cd"),
+    # Cursor-left overwrites text, seq tokens preserve column spatial order
+    ("ab\x1b]8;;http://x.com\x07\x1b[2Dcd", 0, 4, "cd\x1b]8;;http://x.com\x07"),
     # Cursor-left into wide char twice, second time on empty token triggers i < 0 break
-    ("中\x1b[D\x1b[Da", 0, 4, "a"),
+    ("中\x1b[D\x1b[Da", 0, 4, "a "),
     ('ab\x1b[5Ccd', 0, 4, 'ab  '),
-    ('abcde\x1b[2Df', 0, 6, 'abcf'),
+    ('abcde\x1b[2Df', 0, 6, 'abcfe'),
+    ('hello\x1b[5Dw', 0, 5, 'wello'),
     ('ab\x1b[10Ccd', 0, 4, 'ab  '),
     ('XY\x1b[Czy', 0, 4, 'XY z'),
     ('XY\x1b[Czy', 0, 5, 'XY zy'),
