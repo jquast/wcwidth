@@ -1,7 +1,5 @@
 """Core tests for wcwidth module."""
-
 # std imports
-import sys
 import importlib.metadata
 
 # 3rd party
