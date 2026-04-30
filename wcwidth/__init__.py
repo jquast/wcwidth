@@ -31,13 +31,14 @@ from .grapheme import grapheme_boundary_before  # noqa
 from .grapheme import iter_graphemes, iter_graphemes_reverse
 from .textwrap import SequenceTextWrapper, wrap
 from .sgr_state import propagate_sgr
+from .text_sizing import TextSizing, TextSizingParams
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
            'iter_graphemes_reverse', 'grapheme_boundary_before',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
-           'list_versions', 'propagate_sgr')
+           'list_versions', 'propagate_sgr', 'TextSizing', 'TextSizingParams')
 
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places

@@ -90,10 +90,12 @@ from ._constants import _LATEST_VERSION
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
+from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
+                               TEXT_SIZING_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
@@ -362,6 +364,9 @@ def clip(
     .. versionchanged:: 0.5.0
        Added ``propagate_sgr`` parameter (default True).
 
+    .. versionchanged:: 0.6.1
+       Parses OSC 66 Sequences.
+
     Example::
 
         >>> clip('hello world', 0, 5)
@@ -394,11 +399,9 @@ def clip(
     if propagate_sgr:
         sgr = _SGR_STATE_DEFAULT
 
-    # output_tokens stores tuples ('vis', text) for visible content and ('seq', seq)
-    # for preserved zero-width sequences. This allows cursor-left overwrites to
-    # remove previously emitted visible characters while keeping the sequence order.
-    # For visible tokens we store ('vis', text, width_in_columns)
-    # For sequences we store ('seq', seq)
+    # output_tokens stores VisToken for visible content and SeqToken for preserved
+    # zero-width sequences. This allows cursor-left overwrites to remove previously
+    # emitted visible characters while keeping the sequence order.
     output_tokens: list[Token] = []
     visible_count = 0  # number of visible columns emitted so far
     col = 0
@@ -406,8 +409,6 @@ def clip(
 
     def _append_visible(s: str, w: int, start_col: int | None = None) -> None:
         nonlocal visible_count, sgr_at_clip_start
-        if w <= 0:
-            return
         if start_col is None:
             start_col = col
         prev = output_tokens[-1] if (output_tokens and isinstance(output_tokens[-1], VisToken)) else None
@@ -449,7 +450,9 @@ def clip(
                 # slice the string by grapheme widths
                 kept_text = ''
                 acc = 0
-                for g in iter_graphemes(tok.text):
+                g_iter = iter_graphemes(tok.text)
+                while acc < keep_cols:
+                    g = next(g_iter)
                     gw = width(g, ambiguous_width=ambiguous_width)
                     if acc + gw > keep_cols:
                         break
@@ -489,9 +492,8 @@ def clip(
                     if move_start < end and move_end > start:
                         overlap_start = max(move_start, start)
                         overlap_end = min(move_end, end)
-                        overlap = overlap_end - overlap_start
-                        if overlap > 0:
-                            _append_visible(fillchar * overlap, overlap, overlap_start)
+                        _append_visible(fillchar * (overlap_end - overlap_start),
+                                        overlap_end - overlap_start, overlap_start)
                     col += n_left
                     idx = match.end()
                     continue
@@ -509,6 +511,21 @@ def clip(
                             _remove_visible_tail(to_remove)
                     idx = match.end()
                     continue
+
+                if (ts_match := TEXT_SIZING_PATTERN.match(seq)):
+                    # OSC 66 (text sizing) has positive width
+                    col, visible_count = _text_sizing_clip(
+                        TextSizing.from_match(ts_match),
+                        col=col, start=start, end=end,
+                        output_tokens=output_tokens,
+                        visible_count=visible_count,
+                        fillchar=fillchar, ambiguous_width=ambiguous_width,
+                    )
+                    if propagate_sgr and sgr_at_clip_start is None:
+                        sgr_at_clip_start = sgr
+                    idx = match.end()
+                    continue
+
                 # Other zero-width sequences (OSC hyperlinks, etc.) — preserve as-is
                 _append_seq(seq)
                 idx = match.end()
@@ -557,42 +574,15 @@ def clip(
 
         idx += len(grapheme)
 
-    # Reconstruct result from output_tokens, slicing visible content to [start,end)
+    # Reconstruct result from output_tokens.  The emission phase guarantees that
+    # all visible tokens are fully within the clip window, so no sub-token slicing
+    # or boundary checks are needed here.
     parts: list[str] = []
     for tok in output_tokens:
         if isinstance(tok, SeqToken):
             parts.append(tok.text)
         else:
-            chunk_start = tok.start_col
-            chunk_end = chunk_start + tok.width
-            if chunk_end <= start:
-                continue
-            if chunk_start >= end:
-                continue
-            s0 = max(0, start - chunk_start)
-            s1 = min(tok.width, end - chunk_start)
-            # slice `text` for columns [s0, s1)
-            acc = 0
-            slice_text = ''
-            for g in iter_graphemes(tok.text):
-                gw = width(g, ambiguous_width=ambiguous_width)
-                next_acc = acc + gw
-                if next_acc <= s0:
-                    acc = next_acc
-                    continue
-                if acc >= s1:
-                    break
-                # include this grapheme (or part of it)
-                # graphemes are atomic; if they partially overlap, use fillchar instead
-                if acc < s0 or next_acc > s1:
-                    # partial grapheme -> fill with appropriate number of fillchars
-                    left = max(0, s0 - acc)
-                    right = min(gw, s1 - acc)
-                    slice_text += fillchar * (right - left)
-                else:
-                    slice_text += g
-                acc = next_acc
-            parts.append(slice_text)
+            parts.append(tok.text)
 
     result = ''.join(parts)
 
@@ -604,3 +594,86 @@ def clip(
             result += '\x1b[0m'
 
     return result
+
+
+def _text_sizing_clip(
+    ts: TextSizing,
+    *,
+    col: int,
+    start: int,
+    end: int,
+    output_tokens: list[Token],
+    visible_count: int,
+    fillchar: str = ' ',
+    ambiguous_width: int = 1,
+) -> tuple[int, int]:
+    """
+    Emit tokens for a text-sizing sequence into ``output_tokens``, clipped to ``[start, end)``.
+
+    Returns ``(new_col, new_visible_count)``.
+
+    This was formerly ``TextSizing.clip()`` in :mod:`wcwidth.text_sizing`.  It was moved here to
+    break a circular dependency loop (:mod:`text_sizing` imported :mod:`_width`, and :mod:`_width`
+    imported :mod:`text_sizing`).
+    """
+    # pylint: disable=too-many-locals
+    ts_width = ts.display_width(ambiguous_width)
+    if col >= start and col + ts_width <= end:
+        output_tokens.append(SeqToken(ts.make_sequence()))
+        return col + ts_width, visible_count
+    if col >= end or col + ts_width <= start:
+        return col + ts_width, visible_count
+
+    # Partial overlap: decompose into units (graphemes at `scale` cells each),
+    # emit whole units as sequences and partial units as fillchars.
+    rel_start = max(0, start - col)
+    rel_end = min(end, col + ts_width) - col
+    scale = ts.params.scale
+
+    units: list[tuple[str, int]] = []
+    if ts.params.width > 0:
+        inner_graphemes = list(iter_graphemes(ts.text))
+        for j in range(ts.params.width):
+            g = inner_graphemes[j] if j < len(inner_graphemes) else ''
+            units.append((g, scale))
+    else:
+        for g in iter_graphemes(ts.text):
+            units.append((g, width(g, ambiguous_width=ambiguous_width) * scale))
+
+    pos = 0
+    pending_texts: list[str] = []
+
+    def flush():
+        if not pending_texts:
+            return
+        params = TextSizingParams(
+            scale,
+            len(pending_texts) if ts.params.width > 0 else 0,
+            ts.params.numerator,
+            ts.params.denominator,
+            ts.params.vertical_align,
+            ts.params.horizontal_align)
+        output_tokens.append(
+            SeqToken(TextSizing(params, ''.join(pending_texts), ts.terminator).make_sequence()))
+        pending_texts.clear()
+
+    for unit_text, unit_w in units:
+        unit_start = pos
+        unit_end = pos + unit_w
+        if unit_end <= rel_start:
+            pos = unit_end
+            continue
+        if unit_start >= rel_end:
+            break
+        overlap = min(unit_end, rel_end) - max(unit_start, rel_start)
+        if overlap == unit_w and unit_w > 0:
+            pending_texts.append(unit_text)
+        else:
+            flush()
+            abs_start = col + max(unit_start, rel_start)
+            output_tokens.append(VisToken(fillchar * overlap, overlap, abs_start))
+            visible_count += overlap
+        pos = unit_end
+
+    flush()
+    return col + ts_width, visible_count

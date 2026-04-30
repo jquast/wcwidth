@@ -12,9 +12,11 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
+from .text_sizing import TextSizing
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
+                               TEXT_SIZING_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
                                CURSOR_RIGHT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
@@ -124,7 +126,8 @@ def width(
             # Check for escape sequences that can't be ignored, if present
             if '\x1b' not in text or (
                 not CURSOR_RIGHT_SEQUENCE.search(text) and
-                not CURSOR_LEFT_SEQUENCE.search(text)
+                not CURSOR_LEFT_SEQUENCE.search(text) and
+                not TEXT_SIZING_PATTERN.search(text)
             ):
                 control_codes = 'ignore'
 
@@ -166,6 +169,10 @@ def width(
                 elif (left := CURSOR_LEFT_SEQUENCE.match(seq)):
                     current_col = max(0, current_col - int(left.group(1) or 1))
 
+                # Or OSC 66 (kitty text sizing)
+                elif (ts_match := TEXT_SIZING_PATTERN.match(seq)):
+                    text_size = TextSizing.from_match(ts_match, control_codes=control_codes)
+                    current_col += text_size.display_width(ambiguous_width)
                 idx = match.end()
             else:
                 # Errant ESC or unknown sequence: only the first character is zero-width
