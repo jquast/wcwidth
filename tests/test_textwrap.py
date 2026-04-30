@@ -211,9 +211,7 @@ def test_wrap_unicode(benchmark, text, w, expected):
      ['x\x1b[31mab\x1b[0m', '\x1b[31mcde\x1b[0m', '\x1b[31mfgh\x1b[0m', '\x1b[31mij\x1b[0m']),
     # Fs sequence (ESC d) - zero-width, stays with preceding text
     ('abc\x1bdefghij', 3, ['abc\x1bd', 'efg', 'hij']),
-]
-
-@pytest.mark.parametrize('text,w,expected', SEQUENCE_CASES)
+])
 def test_wrap_sequences(benchmark, text, w, expected):
     """Escape sequence preservation (with propagate_sgr=True default)"""
     assert benchmark(wrap, text, w) == expected
