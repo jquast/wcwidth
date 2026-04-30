@@ -9,24 +9,22 @@ https://github.com/jquast/wcwidth
 # documented as public API
 
 # local
-from ._clip import clip
-from ._align import ljust, rjust, center
-from ._width import width
-# legacy
-from .unicode_versions import list_versions
-from ._wcwidth import wcwidth
+from .clip import clip
+from .align import ljust, rjust, center
+from .width import width
+from .wcwidth import wcwidth, _wcmatch_version, _wcversion_value
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
-from ._wcswidth import wcswidth
+from .wcswidth import wcswidth
 from .sgr_state import propagate_sgr
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
-# convenience
 from .table_zero import ZERO_WIDTH
 from .text_sizing import TextSizing, TextSizingParams
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences, strip_sequences
+from .unicode_versions import list_versions
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".

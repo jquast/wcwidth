@@ -36,7 +36,7 @@ import re
 import typing
 
 # local
-from ._wcswidth import wcswidth
+from .wcswidth import wcswidth
 
 
 class _FieldMeta(typing.NamedTuple):

@@ -15,7 +15,7 @@ import textwrap
 from typing import TYPE_CHECKING, NamedTuple
 
 # local
-from ._width import width as wcwidth_width
+from .width import width as wcwidth_width
 from .grapheme import iter_graphemes
 from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences

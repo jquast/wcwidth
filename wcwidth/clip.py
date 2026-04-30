@@ -5,9 +5,9 @@ from itertools import islice
 from typing import Union, Callable, NamedTuple
 
 # local
+from .width import width
 from .grapheme import iter_graphemes
-from .sgr_state import (_SGR_PATTERN,
-                        _SGR_STATE_DEFAULT,
+from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
@@ -114,7 +114,7 @@ def clip(
     # sgr state when first visible char emitted (None = not yet)
     sgr_at_clip_start = None
     # current active sgr state
-    sgr = None  # current SGR state, updated by matches of _SGR_PATTERN
+    sgr = None  # current SGR state, updated by SGR matches
     if propagate_sgr:
         sgr = _SGR_STATE_DEFAULT
 

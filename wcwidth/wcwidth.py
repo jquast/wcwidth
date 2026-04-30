@@ -64,12 +64,9 @@ from __future__ import annotations
 # std imports
 from functools import lru_cache
 
-from typing import Literal
-
 # local
-from ._width import width
-from ._wcwidth import wcwidth
-from ._constants import _LATEST_VERSION
+from .bisearch import bisearch
+from ._constants import _LATEST_VERSION, _AMBIGUOUS_TABLE, _ZERO_WIDTH_TABLE, _WIDE_EASTASIAN_TABLE
 
 
 @lru_cache(maxsize=128)
@@ -106,131 +103,56 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
     return _LATEST_VERSION
 
 
-def ljust(
-    text: str,
-    dest_width: int,
-    fillchar: str = ' ',
-    *,
-    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
-    ambiguous_width: int = 1,
-) -> str:
+# maxsize=1024: western scripts need ~64 unique codepoints per session, but
+# CJK sessions may use ~2000 of ~3500 common hanzi/kanji. 1024 accommodates
+# heavy CJK use. Performance floor at 32; bisearch is ~100ns per miss.
+
+@lru_cache(maxsize=1024)
+def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
     r"""
-    Return text left-justified in a string of given display width.
+    Given one Unicode codepoint, return its printable length on a terminal.
 
-    :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
-    :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
-    :param control_codes: How to handle control sequences when measuring.
-        Passed to :func:`width` for measurement.
+    :param wc: A single Unicode character.
+    :param unicode_version: Ignored. Retained for backwards compatibility.
+
+        .. deprecated:: 0.3.0
+           Only the latest Unicode version is now shipped.
+
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :returns: Text padded on the right to reach ``dest_width``.
+        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts
+        where ambiguous characters display as double-width. See
+        :ref:`ambiguous_width` for details.
+    :returns: The width, in cells, necessary to display the character of
+        Unicode string character, ``wc``.  Returns 0 if the ``wc`` argument has
+        no printable effect on a terminal (such as NUL '\0'), -1 if ``wc`` is
+        not printable, or has an indeterminate effect on the terminal, such as
+        a control character.  Otherwise, the number of column positions the
+        character occupies on a graphic terminal (1 or 2) is returned.
 
-    .. versionadded:: 0.3.0
-
-    Example::
-
-        >>> wcwidth.ljust('hi', 5)
-        'hi   '
-        >>> wcwidth.ljust('\x1b[31mhi\x1b[0m', 5)
-        '\x1b[31mhi\x1b[0m   '
-        >>> wcwidth.ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
-        '👨‍👩‍👧    '
+    See :ref:`Specification` for details of cell measurement.
     """
-    if text.isascii() and text.isprintable():
-        text_width = len(text)
-    else:
-        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
-    padding_cells = max(0, dest_width - text_width)
-    return text + fillchar * padding_cells
+    ucs = ord(wc) if wc else 0
 
+    # small optimization: early return of 1 for printable ASCII, this provides
+    # approximately 40% performance improvement for mostly-ascii documents, with
+    # less than 1% impact to others.
+    if 32 <= ucs < 0x7f:
+        return 1
 
-def rjust(
-    text: str,
-    dest_width: int,
-    fillchar: str = ' ',
-    *,
-    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
-    ambiguous_width: int = 1,
-) -> str:
-    r"""
-    Return text right-justified in a string of given display width.
+    # C0/C1 control characters are -1 for compatibility with POSIX-like calls
+    if ucs and ucs < 32 or 0x07F <= ucs < 0x0A0:
+        return -1
 
-    :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
-    :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
-    :param control_codes: How to handle control sequences when measuring.
-        Passed to :func:`width` for measurement.
-    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :returns: Text padded on the left to reach ``dest_width``.
+    # Zero width
+    if bisearch(ucs, _ZERO_WIDTH_TABLE):
+        return 0
 
-    .. versionadded:: 0.3.0
+    # Wide (F/W categories)
+    if bisearch(ucs, _WIDE_EASTASIAN_TABLE):
+        return 2
 
-    Example::
+    # Ambiguous width (A category) - only when ambiguous_width=2
+    if ambiguous_width == 2 and bisearch(ucs, _AMBIGUOUS_TABLE):
+        return 2
 
-        >>> wcwidth.rjust('hi', 5)
-        '   hi'
-        >>> wcwidth.rjust('\x1b[31mhi\x1b[0m', 5)
-        '   \x1b[31mhi\x1b[0m'
-        >>> wcwidth.rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
-        '    👨‍👩‍👧'
-    """
-    if text.isascii() and text.isprintable():
-        text_width = len(text)
-    else:
-        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
-    padding_cells = max(0, dest_width - text_width)
-    return fillchar * padding_cells + text
-
-
-def center(
-    text: str,
-    dest_width: int,
-    fillchar: str = ' ',
-    *,
-    control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
-    ambiguous_width: int = 1,
-) -> str:
-    r"""
-    Return text centered in a string of given display width.
-
-    :param text: String to center, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
-    :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
-    :param control_codes: How to handle control sequences when measuring.
-        Passed to :func:`width` for measurement.
-    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :returns: Text padded on both sides to reach ``dest_width``.
-
-    For odd-width padding, the extra cell goes on the right (matching
-    Python's :meth:`str.center` behavior).
-
-    .. versionadded:: 0.3.0
-
-    Example::
-
-        >>> wcwidth.center('hi', 6)
-        '  hi  '
-        >>> wcwidth.center('\x1b[31mhi\x1b[0m', 6)
-        '  \x1b[31mhi\x1b[0m  '
-        >>> wcwidth.center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
-        '  👨‍👩‍👧  '
-    """
-    if text.isascii() and text.isprintable():
-        text_width = len(text)
-    else:
-        text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width)
-    total_padding = max(0, dest_width - text_width)
-    # matching https://jazcap53.github.io/pythons-eccentric-strcenter.html
-    left_pad = total_padding // 2 + (total_padding & dest_width & 1)
-    right_pad = total_padding - left_pad
-    return fillchar * left_pad + text + fillchar * right_pad
-
+    return 1
