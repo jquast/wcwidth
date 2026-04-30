@@ -2,7 +2,7 @@
 # std imports
 from itertools import islice
 
-from typing import Union, Callable, NamedTuple
+from typing import Union, Callable, Optional, NamedTuple
 
 # local
 from .width import width
@@ -145,7 +145,7 @@ def clip(
         if propagate_sgr and sgr_at_clip_start is None:
             sgr_at_clip_start = sgr
 
-    def _append_seq(seq: str, at_col: int | None = None) -> None:
+    def _append_seq(seq: str, at_col: Optional[int] = None) -> None:
         nonlocal sgr_at_clip_start, seq_order
         c = col if at_col is None else at_col
         sequences.append((c, seq_order, seq))

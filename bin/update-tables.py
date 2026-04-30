@@ -25,7 +25,7 @@ import unicodedata
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
-from typing import Any, Mapping, Iterable, Iterator, Sequence, Collection
+from typing import Any, Mapping, Iterable, Iterator, Optional, Sequence, Collection
 
 try:
     from typing import Self
@@ -112,7 +112,7 @@ class UnicodeVersion:
 
     major: int
     minor: int
-    micro: int | None
+    micro: Optional[int]
 
     @classmethod
     def parse(cls, version_str: str) -> UnicodeVersion:
@@ -141,7 +141,7 @@ class UnicodeVersion:
 class TableEntry:
     """An entry of a unicode table."""
 
-    code_range: tuple[int, int] | None
+    code_range: Optional[tuple[int, int]]
     properties: tuple[str, ...]
     comment: str
 
