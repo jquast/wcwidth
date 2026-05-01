@@ -11,6 +11,7 @@ from ._width import width
 from .grapheme import iter_graphemes
 from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import (_SGR_STATE_DEFAULT,
+                        _SGRState,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
@@ -21,6 +22,7 @@ from .escape_sequences import (_SEQUENCE_CLASSIFY,
 
 class _ClipContext(NamedTuple):
     """Immutable parameters for a clip operation."""
+
     text: str
     start: int
     end: int
@@ -34,6 +36,7 @@ class _ClipContext(NamedTuple):
 
 class _HyperlinkAction(enum.Enum):
     """Outcome of processing an OSC 8 hyperlink unit."""
+
     NO_CLOSE = enum.auto()   # open sequence without matching close
     EMPTY = enum.auto()       # hyperlink with no visible inner text
     OUTSIDE = enum.auto()     # hyperlink entirely outside the clip window
@@ -46,6 +49,7 @@ class _HyperlinkResult(NamedTuple):
 
     Only the fields relevant to each action are populated.
     """
+
     action: _HyperlinkAction
     close_end: int = 0
     inner_width: int = 0
@@ -56,7 +60,7 @@ class _HyperlinkResult(NamedTuple):
     hl_col_end: int = 0
 
 
-def _apply_sgr_wrap(result: str, sgr_at_clip_start: object) -> str:
+def _apply_sgr_wrap(result: str, sgr_at_clip_start: Optional[_SGRState]) -> str:
     """
     Apply SGR prefix/suffix around *result*.
 
@@ -129,6 +133,7 @@ def _process_hyperlink(
     )
 
 
+# pylint: disable=too-many-locals
 def _reconstruct_painter(
     cells: dict[int, tuple[str, int]],
     sequences: list[tuple[int, int, str]],
@@ -183,7 +188,8 @@ def _reconstruct_painter(
     return ''.join(parts)
 
 
-def _clip_simple(ctx: _ClipContext) -> tuple[str, object]:
+# pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements
+def _clip_simple(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
     """
     Clip text without cursor movement (simple append-to-output path).
 
@@ -309,7 +315,8 @@ def _clip_simple(ctx: _ClipContext) -> tuple[str, object]:
     return ''.join(output), sgr_at_clip_start
 
 
-def _clip_painter(ctx: _ClipContext) -> tuple[str, object]:
+# pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements
+def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
     """
     Clip text with cursor movement (painter's algorithm path).
 

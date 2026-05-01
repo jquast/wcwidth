@@ -62,7 +62,8 @@ Discrepancies
 You may find that support *varies* for complex unicode sequences or codepoints. This library may be
 considered to presume the terminal is enabled for DEC Private Mode 2027 ("Grapheme Clustering"), but
 the specification does not fully describe varying unicode versions, feature levels, or details of
-specific language support.  This library does *not* support any alternate "legacy width" measurement.
+specific language support.  This library does *not* support any alternate "legacy width"
+measurement.
 
 See `Grapheme Clusters and Terminal Emulators`_ and `terminal-unicode-core.tex`_, and `State of
 Terminal Emulators in 2025`_ for more details on Mode 2027 and unicode-aware terminals.
@@ -142,7 +143,7 @@ Use function `width()`_ to measure a string with improved handling of ``control_
     >>> # sequences with "indeterminate" effects like Home + Clear are zero-width
     >>> wcwidth.width('\x1b[H\x1b[2J')
     0
-    >>> # horizontal cursor movements are parsed, 
+    >>> # horizontal cursor movements are parsed,
     >>> wcwidth.width('hello\b\b\b\b\bworld')
     5
     >>> wcwidth.width('hello\x1b[5Dworld')

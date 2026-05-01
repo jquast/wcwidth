@@ -29,6 +29,7 @@ class GraphemeMeasurer:
     """
 
     def __init__(self, text: str, end: int, wcwidth_fn: Callable[[str], int]) -> None:
+        """Class initializer."""
         self._text = text
         self._end = end
         self._wcwidth_fn = wcwidth_fn
@@ -37,6 +38,7 @@ class GraphemeMeasurer:
         self._last_was_virama = False
         self.conjunct_pending = False
 
+    # pylint: disable=too-complex,too-many-branches
     def measure_at(self, idx: int) -> tuple[int, int]:
         """
         Process character at ``text[idx]`` and return ``(next_idx, width)``.

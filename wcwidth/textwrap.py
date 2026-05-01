@@ -312,7 +312,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                                     f'id={self._next_hyperlink_id()}:{new_state.params}')
                             else:
                                 current_hyperlink_id = f'id={self._next_hyperlink_id()}'
-                        line_content += HyperlinkParams(terminator=new_state.terminator, url='').make_close()
+                        line_content += HyperlinkParams(
+                            terminator=new_state.terminator, url='').make_close()
 
                         # Also need to inject the id into the opening
                         # sequence if it didn't have one

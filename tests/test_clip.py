@@ -218,11 +218,26 @@ def test_clip_osc_hyperlink_text_clipping(text, start, end, expected):
     assert repr(clip(text, start, end)) == repr(expected)
 
 
-# control_codes variants with cursor movement into hyperlink
+# Control_codes variants with cursor movement into hyperlink
+#
+# Overwriting hyperlink cells causes corrupted "run on" hyperlinks in practical
+# testing with kitty, presumably the hidden "end hyperlink" sequence is
+# overwritten, in any case, we make no attempt to parse overwrite of
+# hyperlinks, we consider it a "glitch sequence
 _HLINK_OVERWRITE = f'{OSC_START_BEL}link{OSC_END_BEL}\x1b[2Dxy'
 CLIP_HYPERLINK_CONTROL_CODES_CASES = [
     ('parse', 0, 4, f'{OSC_START_BEL}link{OSC_END_BEL}'),
-    ('ignore', 0, 6, f'{OSC_START_BEL}link{OSC_END_BEL}\x1b[2Dxy'),
+    ('parse', 0, 3, f'{OSC_START_BEL}lin{OSC_END_BEL}'),
+    ('parse', 0, 2, f'{OSC_START_BEL}li{OSC_END_BEL}'),
+    ('parse', 0, 1, f'{OSC_START_BEL}l{OSC_END_BEL}'),
+    # these next two are certainly "in error"
+    ('parse', 1, 4, f'{OSC_START_BEL}ink{OSC_END_BEL}y'),
+    ('parse', 1, 3, f'{OSC_START_BEL}in{OSC_END_BEL}x'),
+    ('parse', 1, 2, f'{OSC_START_BEL}i{OSC_END_BEL}'),
+    ('ignore', 0, 20, f'{_HLINK_OVERWRITE}'),
+    # and these two, 'xy' are missing entirely, also "in error"
+    ('parse', 0, 20, f'{OSC_START_BEL}link{OSC_END_BEL}'),
+    ('strict', 0, 20, f'{OSC_START_BEL}link{OSC_END_BEL}'),
 ]
 
 
@@ -230,19 +245,6 @@ CLIP_HYPERLINK_CONTROL_CODES_CASES = [
                          CLIP_HYPERLINK_CONTROL_CODES_CASES)
 def test_clip_hyperlink_control_codes_overwrite(control_codes, start, end, expected):
     assert repr(clip(_HLINK_OVERWRITE, start, end, control_codes=control_codes)) == repr(expected)
-
-
-def test_clip_osc_hyperlink_strict_raises():
-    """
-    control_codes='strict' allows hyperlink-cursor interactions.
-
-    Overwriting hyperlink cells causes corrupted "run on" hyperlinks in practical
-    testing with kitty, presumably the hiddden "end hyperlink" is not found, in
-    any case, we make no attempt to parse overwrite of hyperlinks
-    """
-    assert repr(clip(_HLINK_OVERWRITE, 0, 4, control_codes='strict')) == repr(
-        f'{OSC_START_BEL}link{OSC_END_BEL}'
-    )
 
 
 # Painter-path hyperlink edge cases
