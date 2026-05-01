@@ -317,6 +317,18 @@ def test_clip_osc8_hyperlinks(benchmark):
     benchmark(wcwidth.clip, text, 0, 80)
 
 
+def test_width_osc66(benchmark):
+    """Benchmark width() with OSC 66 text sizing sequences."""
+    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
+    benchmark(wcwidth.width, text)
+
+
+def test_clip_osc66(benchmark):
+    """Benchmark clip() with OSC 66 text sizing sequences."""
+    text = '\x1b]66;w=2;XY\x07\x1b]66;s=3;ABC\x07'
+    benchmark(wcwidth.clip, text, 3, 8)
+
+
 def test_clip_cursor_cr_overwrite(benchmark):
     """Benchmark clip() with carriage-return overwrite (painter path)."""
     text = 'hello\rworld ' * 20

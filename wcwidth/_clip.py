@@ -3,8 +3,9 @@ from __future__ import annotations
 
 # std imports
 import enum
+from itertools import islice
 
-from typing import Literal, Optional, NamedTuple
+from typing import Literal, Callable, Optional, NamedTuple
 
 # local
 from ._width import width
@@ -15,6 +16,7 @@ from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
+from .text_sizing import TextSizing, TextSizingParams
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                _HORIZONTAL_CURSOR_MOVEMENT,
                                INDETERMINATE_EFFECT_SEQUENCE)
@@ -272,6 +274,37 @@ def _clip_simple(
                     idx = r.close_end
                 continue
 
+            # OSC 66 Text Sizing.
+            if (ts_meta := m.group('ts_meta')) is not None:
+                ts_text = m.group('ts_text')
+                ts_term = m.group('ts_term')
+                assert ts_text is not None and ts_term is not None
+                ts = TextSizing(
+                    TextSizingParams.from_params(ts_meta, control_codes=control_codes),
+                    ts_text, ts_term)
+                ts_width = ts.display_width(ambiguous_width)
+
+                if col >= start and col + ts_width <= end:
+                    output.append(ts.make_sequence())
+                    if propagate_sgr and captured_style is None:
+                        captured_style = current_style
+                    col += ts_width
+                elif col < end and col + ts_width > start:
+                    ts_parts: list[str] = []
+
+                    def _ts_write(s: str, _w: int, _col: int) -> None:
+                        ts_parts.append(s)
+                    col = _text_sizing_clip(
+                        ts, col, start, end, fillchar, ambiguous_width,
+                        _ts_write)
+                    output.extend(ts_parts)
+                    if propagate_sgr and captured_style is None:
+                        captured_style = current_style
+                else:
+                    col += ts_width
+                idx = m.end()
+                continue
+
             # Indeterminate-effect sequences: raise in strict mode.
             seq = m.group()
             if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
@@ -320,6 +353,91 @@ def _clip_simple(
         idx += len(grapheme)
 
     return ''.join(output), captured_style
+
+
+def _text_sizing_clip(
+    ts: TextSizing,
+    col: int,
+    start: int,
+    end: int,
+    fillchar: str,
+    ambiguous_width: int,
+    write_cells: Callable[[str, int, int], None],
+) -> int:
+    """
+    Emit tokens for a text-sizing (OSC 66) sequence, clipped to ``[start, end)``.
+
+    Calls *write_cells(text, width, col)* for each emitted cell or sequence. Returns new column
+    position.
+    """
+    # pylint: disable=too-many-locals,too-many-branches,too-many-positional-arguments,too-complex
+    ts_width = ts.display_width(ambiguous_width)
+
+    # Fully visible: emit entire sequence
+    if col >= start and col + ts_width <= end:
+        write_cells(ts.make_sequence(), ts_width, col)
+        return col + ts_width
+    # Fully outside: just advance column
+    if col >= end or col + ts_width <= start:
+        return col + ts_width
+
+    # Partial overlap: decompose
+    rel_start = max(0, start - col)
+    rel_end = min(end, col + ts_width) - col
+    scale = ts.params.scale
+
+    units: list[tuple[str, int]] = []
+    if ts.params.width > 0:
+        for g in islice(iter_graphemes(ts.text), ts.params.width):
+            units.append((g, scale))
+        for _ in range(ts.params.width - len(units)):
+            units.append(('', scale))
+    else:
+        for g in iter_graphemes(ts.text):
+            units.append((g, width(g, ambiguous_width=ambiguous_width) * scale))
+
+    pending_units: list[tuple[str, int]] = []
+
+    def flush(flush_col: int) -> None:
+        if not pending_units:
+            return
+        texts = [u[0] for u in pending_units]
+        total_w = sum(u[1] for u in pending_units)
+        params = TextSizingParams(
+            scale,
+            len(texts) if ts.params.width > 0 else 0,
+            ts.params.numerator, ts.params.denominator,
+            ts.params.vertical_align, ts.params.horizontal_align)
+        write_cells(
+            TextSizing(params, ''.join(texts), ts.terminator).make_sequence(),
+            total_w,
+            flush_col)
+        pending_units.clear()
+
+    flush_col_pos = col + rel_start
+    unit_pos = 0
+    for unit_text, unit_w in units:
+        unit_end = unit_pos + unit_w
+        if unit_end <= rel_start:
+            unit_pos = unit_end
+            continue
+        if unit_pos >= rel_end:
+            break
+
+        overlap = min(unit_end, rel_end) - max(unit_pos, rel_start)
+        if overlap == unit_w and unit_w > 0:
+            if not pending_units:
+                flush_col_pos = col + max(unit_pos, rel_start)
+            pending_units.append((unit_text, unit_w))
+        else:
+            flush(flush_col_pos)
+            abs_start = col + max(unit_pos, rel_start)
+            for i in range(overlap):
+                write_cells(fillchar, 1, abs_start + i)
+        unit_pos = unit_end
+
+    flush(flush_col_pos)
+    return col + ts_width
 
 
 def _clip_painter(
@@ -435,6 +553,22 @@ def _clip_painter(
                     seq_order += 1
                     col = r.hl_col_end
                     idx = r.close_end
+                continue
+
+            # OSC 66 Text Sizing.
+            if (ts_meta := m.group('ts_meta')) is not None:
+                ts_text = m.group('ts_text')
+                ts_term = m.group('ts_term')
+                assert ts_text is not None and ts_term is not None
+                ts = TextSizing(
+                    TextSizingParams.from_params(ts_meta, control_codes=control_codes),
+                    ts_text, ts_term)
+                col = _text_sizing_clip(
+                    ts, col, start, end, fillchar, ambiguous_width,
+                    _write_cells)
+                if propagate_sgr and captured_style is None:
+                    captured_style = current_style
+                idx = m.end()
                 continue
 
             # Indeterminate-effect sequences: raise in strict mode.
@@ -625,7 +759,7 @@ def clip(
 
     .. versionchanged:: 0.7.0
        Added ``control_codes`` parameter (default 'parse').
-       OSC 8 hyperlink-aware clipping.
+       OSC 8 hyperlink-aware clipping.  OSC 66 text sizing protocol support.
        Added ``overtyping`` parameter (default None, auto-detect).
 
     Example::

@@ -12,9 +12,11 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
+from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
+                               TEXT_SIZING_PATTERN,
                                CURSOR_MOVEMENT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
                                strip_sequences)
@@ -63,8 +65,8 @@ def width(
 
         - ``'parse'`` (default): Track horizontal cursor movement like BS ``\b``, CR ``\r``, TAB
           ``\t``, cursor left and right movement sequences.  Vertical movement (LF, VT, FF) and
-          indeterminate terminal sequences are zero-width. OSC 8 Hyperlink, and many other kinds
-          of output sequences are parsed for displayed measurements.
+          indeterminate terminal sequences are zero-width. OSC 66 Kitty Text Sizing protocol, OSC 8
+          Hyperlink, and many other kinds of output sequences are parsed for displayed measurements.
         - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters with
           indeterminate results of the screen or cursor, like clear or vertical movement. Generally,
           these should be handled with a virtual terminal emulator (like 'pyte').
@@ -91,6 +93,11 @@ def width(
        Expanded strict-mode to raise :exc:`ValueError` when cursor-left movement
        (CSI D) would move beyond the beginning of the string. Previously, cursor-left
        was silently clamped to column 0 in all modes.
+
+       Support horizontal cursor sequences (``cub``, ``cuf``, ``hpa``). Cursor-left (``cub``) or
+       backspace (``\b``) now overwrites text.  ``column_address`` (``hpa``) and carriage return
+       (``\r``) are now parsed, and some values conditionally raise ``ValueError`` when
+       ``control_codes='parse'``.
 
     Examples::
 
@@ -125,8 +132,12 @@ def width(
     if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
         # Check for cursor-affecting control characters
         if '\b' not in text and '\t' not in text and '\r' not in text:
-            # Check for escape sequences - if none contain cursor movement
-            if '\x1b' not in text or not CURSOR_MOVEMENT_SEQUENCE.search(text):
+            # Check for escape sequences, if none contain cursor movement or
+            # text sizing, downgrade to 'ignore'
+            if '\x1b' not in text or (
+                not CURSOR_MOVEMENT_SEQUENCE.search(text)
+                and not TEXT_SIZING_PATTERN.search(text)
+            ):
                 control_codes = 'ignore'
 
     # Fast path for ignore mode, useful if you know the text is already free of control codes
@@ -188,7 +199,16 @@ def width(
                             f"exceeding string start"
                         )
                     current_col = max(0, current_col - n_backward)
-                # 2d. SGR and other zero-width sequences -- no column advance
+                # 2d. OSC 66 Text Sizing — has positive display width
+                elif (ts_meta := m.group('ts_meta')) is not None:
+                    ts_text = m.group('ts_text')
+                    ts_term = m.group('ts_term')
+                    assert ts_text is not None and ts_term is not None
+                    text_size = TextSizing(
+                        TextSizingParams.from_params(ts_meta, control_codes=control_codes),
+                        ts_text, ts_term)
+                    current_col += text_size.display_width(ambiguous_width)
+                # 2e. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             # Escape sequences break VS16 adjacency: reset last-measured state
             last_measured_idx = -2
@@ -215,12 +235,12 @@ def width(
 
         # 3. Horizontal movement characters
         if char in HORIZONTAL_CTRL:
-            if char == '\x09' and tabsize > 0:  # Tab
+            if char == '\t' and tabsize > 0:
                 current_col += tabsize - (current_col % tabsize)
-            elif char == '\x08':  # Backspace
+            elif char == '\b':
                 if current_col > 0:
                     current_col -= 1
-            elif char == '\x0d':  # Carriage return
+            elif char == '\r':
                 if strict:
                     raise ValueError(
                         f"Horizontal movement character \\r at position {idx}: "
