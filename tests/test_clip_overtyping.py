@@ -1,8 +1,14 @@
 """
-Tests for clip() handling of cursor left/right sequences (CSI <n>C / CSI <n>D).
+Tests for clip()'s overtyping (painter) path.
 
-These tests codify expected visible results when cursor movement sequences affect horizontal
-positions. They are intentionally specific and will drive future implementation changes in clip().
+The painter algorithm is used when the text contains cursor movement sequences
+(CSI n C/D, backspace, carriage return, HPA) that require column-level tracking
+to determine the final visible output.  Auto-detection of the overtyping path
+happens in clip() via the presence of \\x08, \\r, or horizontal cursor movement
+escape sequences, or can be forced with ``overtyping=True``.
+
+These tests codify expected visible results when cursor movement sequences
+affect horizontal positions.
 """
 
 # 3rd party
@@ -120,56 +126,6 @@ def test_clip_cursor_left_out_of_bounds_parse_no_raise():
     """Clip() parse mode silently clamps cursor-left beyond start."""
     assert clip('a\x1b[5Da', 0, 1) == 'a'
     assert clip('ab\x1b[99Dcd', 0, 4) == 'cd'
-
-
-# Indeterminate-effect sequences that raise ValueError in strict mode
-# (matching width() behavior).
-
-INDETERMINATE_SEQUENCES = [
-    ('\x1b[K', 'erase_in_line'),
-    ('\x1b[2K', 'erase_in_line_params'),
-    ('\x1b[J', 'erase_in_display'),
-    ('\x1b[2J', 'erase_in_display_params'),
-    ('\x1b[H', 'cursor_home'),
-    ('\x1b[1;1H', 'cursor_address'),
-    ('\x1b[A', 'cursor_up'),
-    ('\x1b[2A', 'cursor_up_params'),
-    ('\x1b[B', 'cursor_down'),
-    ('\x1b[5B', 'cursor_down_params'),
-    ('\x1b[P', 'delete_character'),
-    ('\x1b[1P', 'parm_dch'),
-    ('\x1b[M', 'delete_line'),
-    ('\x1b[1M', 'parm_delete_line'),
-    ('\x1b[L', 'insert_line'),
-    ('\x1b[1L', 'parm_insert_line'),
-    ('\x1b[@', 'insert_character'),
-    ('\x1b[1X', 'erase_chars'),
-    ('\x1b[S', 'scroll_up'),
-    ('\x1b[T', 'scroll_down'),
-    ('\x1b[?1049h', 'enter_fullscreen'),
-    ('\x1b[?1049l', 'exit_fullscreen'),
-    ('\x1bD', 'scroll_forward'),
-    ('\x1bM', 'scroll_reverse'),
-    ('\x1b8', 'restore_cursor'),
-    ('\x1bc', 'full_reset'),
-]
-
-
-@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
-def test_clip_strict_indeterminate_raises(seq, cap_name):
-    """Clip() strict mode raises ValueError on indeterminate-effect sequences."""
-    with pytest.raises(ValueError, match='Indeterminate cursor sequence'):
-        clip(f'hello{seq}world', 0, 10, control_codes='strict')
-
-
-@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
-def test_clip_parse_indeterminate_preserved(seq, cap_name):
-    """Clip() parse mode preserves indeterminate sequences as zero-width."""
-    result = clip(f'hello{seq}world', 0, 10, control_codes='parse')
-    # The sequence is preserved, visible text is hello + world = 10 chars
-    assert 'hello' in result
-    assert 'world' in result
-    assert seq in result
 
 
 def test_clip_strict_cr_allowed():

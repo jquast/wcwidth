@@ -385,3 +385,70 @@ def test_clip_control_chars_zero_width(text, start, end, expected):
 def test_clip_tab_first_visible_with_sgr():
     """Tab as first visible character with SGR propagation."""
     assert clip('\x1b[31m\tb', 0, 4, tabsize=8) == '\x1b[31m    \x1b[0m'
+
+
+def test_clip_overtyping_override_by_control_codes_ignore():
+    """When overtyping=True and control_codes='ignore', overtyping is overridden to False."""
+    # elif entered: overtyping=True + control_codes='ignore' → overtyping=False
+    assert clip('hello world', 0, 5, overtyping=True, control_codes='ignore') == 'hello'
+    # Verify that overtyping is actually disabled: cursor movement chars are
+    # treated as zero-width, so the result is the same as without overtyping.
+    assert clip('ab\x08cd', 0, 4, overtyping=True, control_codes='ignore') == 'ab\x08cd'
+
+
+def test_clip_overtyping_without_ignore():
+    """When overtyping=True and control_codes='parse', elif is not entered."""
+    # elif skipped: overtyping=True + control_codes='parse' → overtyping stays True
+    # The painter path is used, cursor movement sequences affect output.
+    assert clip('ab\x1b[2Dcd', 0, 4, overtyping=True, control_codes='parse') == 'cd'
+
+
+# Indeterminate-effect sequences that raise ValueError in strict mode
+# (matching width() behavior).  These are not cursor-movement sequences,
+# so they exercise the simple (non-overtyping) path.
+
+INDETERMINATE_SEQUENCES = [
+    ('\x1b[K', 'erase_in_line'),
+    ('\x1b[2K', 'erase_in_line_params'),
+    ('\x1b[J', 'erase_in_display'),
+    ('\x1b[2J', 'erase_in_display_params'),
+    ('\x1b[H', 'cursor_home'),
+    ('\x1b[1;1H', 'cursor_address'),
+    ('\x1b[A', 'cursor_up'),
+    ('\x1b[2A', 'cursor_up_params'),
+    ('\x1b[B', 'cursor_down'),
+    ('\x1b[5B', 'cursor_down_params'),
+    ('\x1b[P', 'delete_character'),
+    ('\x1b[1P', 'parm_dch'),
+    ('\x1b[M', 'delete_line'),
+    ('\x1b[1M', 'parm_delete_line'),
+    ('\x1b[L', 'insert_line'),
+    ('\x1b[1L', 'parm_insert_line'),
+    ('\x1b[@', 'insert_character'),
+    ('\x1b[1X', 'erase_chars'),
+    ('\x1b[S', 'scroll_up'),
+    ('\x1b[T', 'scroll_down'),
+    ('\x1b[?1049h', 'enter_fullscreen'),
+    ('\x1b[?1049l', 'exit_fullscreen'),
+    ('\x1bD', 'scroll_forward'),
+    ('\x1bM', 'scroll_reverse'),
+    ('\x1b8', 'restore_cursor'),
+    ('\x1bc', 'full_reset'),
+]
+
+
+@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
+def test_clip_strict_indeterminate_raises(seq, cap_name):
+    """Clip() strict mode raises ValueError on indeterminate-effect sequences."""
+    with pytest.raises(ValueError, match='Indeterminate cursor sequence'):
+        clip(f'hello{seq}world', 0, 10, control_codes='strict')
+
+
+@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
+def test_clip_parse_indeterminate_preserved(seq, cap_name):
+    """Clip() parse mode preserves indeterminate sequences as zero-width."""
+    result = clip(f'hello{seq}world', 0, 10, control_codes='parse')
+    # The sequence is preserved, visible text is hello + world = 10 chars
+    assert 'hello' in result
+    assert 'world' in result
+    assert seq in result

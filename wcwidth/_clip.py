@@ -206,7 +206,15 @@ def _clip_simple(
     output: list[str] = []
     col = 0
     idx = 0
-    captured_style = None  # snapshot of current_style at first visible character
+    # captured_style is a frozen snapshot of current_style taken at the first
+    # visible character emitted within the clip window (start, end).  It stays
+    # None until that point.  current_style, by contrast, is continuously
+    # updated by SGR sequences throughout the scan.  The snapshot is what the
+    # caller uses to wrap the result in the correct SGR state.
+    #
+    # When propagate_sgr is False, current_style (and therefore captured_style)
+    # remain None, and SGR sequences pass through as literal text.
+    captured_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
 
     while idx < len(text):
@@ -216,12 +224,15 @@ def _clip_simple(
         if col >= end and char not in '\r\x08\t\x1b':
             if captured_style is not None:
                 break
-            if not propagate_sgr:
-                next_esc = text.find('\x1b', idx + 1)
-                if next_esc == -1:
-                    break
-                idx = next_esc
-                continue
+            # propagate_sgr is always False here: with propagate_sgr=True,
+            # captured_style is set on the first visible emission in the
+            # clip window and we would have broken above.  The skip-ahead
+            # optimization is only needed (and safe) when SGR tracking is off.
+            next_esc = text.find('\x1b', idx + 1)
+            if next_esc == -1:
+                break
+            idx = next_esc
+            continue
 
         if char == '\x1b':
             m = _SEQUENCE_CLASSIFY.match(text, idx)
@@ -339,7 +350,14 @@ def _clip_painter(
 
     col = 0
     idx = 0
-    captured_style = None  # snapshot of current_style at first visible character
+    # captured_style is a frozen snapshot of current_style taken at the first
+    # visible character emitted within the clip window (start, end).  It stays
+    # None until that point.  current_style, by contrast, is continuously
+    # updated by SGR sequences throughout the scan.
+    #
+    # When propagate_sgr is False, current_style (and therefore captured_style)
+    # remain None, and SGR sequences pass through as literal text.
+    captured_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
 
     def _write_cells(s: str, w: int, write_col: int,
@@ -515,10 +533,7 @@ def _clip_painter(
         col += grapheme_w
         idx += len(grapheme)
 
-    result = _reconstruct_painter(
-        cells, sequences, start, end, fillchar,
-    )
-    return result, captured_style
+    return _reconstruct_painter(cells, sequences, start, end, fillchar), captured_style
 
 
 def clip(
@@ -647,7 +662,6 @@ def clip(
         )
     elif overtyping and control_codes == 'ignore':
         overtyping = False  # control_codes='ignore' overrides
-
     fn_clip = _clip_painter if overtyping else _clip_simple
 
     return _apply_sgr_wrap(*fn_clip(
