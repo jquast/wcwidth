@@ -60,17 +60,17 @@ class _HyperlinkResult(NamedTuple):
     hl_col_end: int = 0
 
 
-def _apply_sgr_wrap(result: str, sgr_at_clip_start: Optional[_SGRState]) -> str:
+def _apply_sgr_wrap(result: str, captured_style: Optional[_SGRState]) -> str:
     """
     Apply SGR prefix/suffix around *result*.
 
     If an SGR state was captured at the first visible character, prefix the result with the
     corresponding SGR sequence and suffix with a reset if any styles are active.
     """
-    if sgr_at_clip_start is not None:
-        if prefix := _sgr_state_to_sequence(sgr_at_clip_start):
+    if captured_style is not None:
+        if prefix := _sgr_state_to_sequence(captured_style):
             result = prefix + result
-        if _sgr_state_is_active(sgr_at_clip_start):
+        if _sgr_state_is_active(captured_style):
             result += '\x1b[0m'
     return result
 
@@ -193,62 +193,29 @@ def _clip_simple(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
     """
     Clip text without cursor movement (simple append-to-output path).
 
-    Returns ``(result, sgr_at_clip_start)``.  The caller applies SGR wrapping.
+    Returns ``(result, captured_style)``.  The caller applies SGR wrapping.
     """
     # Bind hot-path attributes to locals (LOAD_FAST instead of LOAD_ATTR).
     _text = ctx.text
     _end = ctx.end
     _start = ctx.start
-    _propg = ctx.propagate_sgr
+    _track_sgr = ctx.propagate_sgr
     _ambw = ctx.ambiguous_width
-    _fillchar = ctx.fillchar
-    _tabsize = ctx.tabsize
-    _strict = ctx.strict
 
     output: list[str] = []
     col = 0
     idx = 0
-    sgr_at_clip_start = None
-    sgr = _SGR_STATE_DEFAULT if _propg else None
-
-    def _mark() -> None:
-        nonlocal sgr_at_clip_start
-        if _propg and sgr_at_clip_start is None:
-            sgr_at_clip_start = sgr
-
-    def _emit_tab(col: int) -> int:
-        """Expand tab, appending spaces to output list."""
-        if _tabsize > 0:
-            next_tab = col + (_tabsize - (col % _tabsize))
-            while col < next_tab:
-                if _start <= col < _end:
-                    output.append(' ')
-                    _mark()
-                col += 1
-        else:
-            output.append('\t')
-        return col
-
-    def _handle_grapheme(grapheme: str, gw: int, col: int) -> None:
-        """Emit grapheme to output list based on visibility."""
-        if gw == 0:
-            if _start <= col < _end:
-                output.append(grapheme)
-        elif col >= _start and col + gw <= _end:
-            output.append(grapheme)
-            _mark()
-        elif col < _end and col + gw > _start:
-            output.append(_fillchar * (min(_end, col + gw) - max(_start, col)))
-            _mark()
+    captured_style = None  # snapshot of current_style at first visible character
+    current_style = _SGR_STATE_DEFAULT if _track_sgr else None
 
     while idx < len(_text):
         char = _text[idx]
 
         # Early exit: past visible region.
         if col >= _end and char not in '\r\x08\t\x1b':
-            if sgr_at_clip_start is not None:
+            if captured_style is not None:
                 break
-            if not _propg:
+            if not _track_sgr:
                 next_esc = _text.find('\x1b', idx + 1)
                 if next_esc == -1:
                     break
@@ -262,9 +229,9 @@ def _clip_simple(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
                 idx += 1
                 continue
 
-            # SGR: update state, do not emit.
-            if m.group('sgr_params') is not None and _propg and sgr is not None:
-                sgr = _sgr_state_update(sgr, m.group())
+            # SGR: update current_style, do not emit.
+            if m.group('sgr_params') is not None and _track_sgr and current_style is not None:
+                current_style = _sgr_state_update(current_style, m.group())
                 idx = m.end()
                 continue
 
@@ -283,14 +250,15 @@ def _clip_simple(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
                     output.append(r.open_seq)
                     output.append(r.clipped_inner)
                     output.append(r.close_seq)
-                    _mark()
+                    if _track_sgr and captured_style is None:
+                        captured_style = current_style
                     col += r.inner_width
                     idx = r.close_end
                 continue
 
             # Indeterminate-effect sequences: raise in strict mode.
             seq = m.group()
-            if _strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+            if ctx.strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
                 raise ValueError(
                     f"Indeterminate cursor sequence at position {idx}, "
                     f"{seq!r}"
@@ -302,17 +270,40 @@ def _clip_simple(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
             continue
 
         if char == '\t':
-            col = _emit_tab(col)
+            # Expand tab, filling clip window with spaces.
+            if ctx.tabsize > 0:
+                next_tab = col + (ctx.tabsize - (col % ctx.tabsize))
+                while col < next_tab:
+                    if _start <= col < _end:
+                        output.append(' ')
+                        if _track_sgr and captured_style is None:
+                            captured_style = current_style
+                    col += 1
+            else:
+                output.append('\t')
             idx += 1
             continue
 
         grapheme = next(iter_graphemes(_text, start=idx))
         grapheme_w = width(grapheme, ambiguous_width=_ambw)
-        _handle_grapheme(grapheme, grapheme_w, col)
+
+        # Emit grapheme or fillchar depending on visibility within clip window.
+        if grapheme_w == 0:
+            if _start <= col < _end:
+                output.append(grapheme)
+        elif col >= _start and col + grapheme_w <= _end:
+            output.append(grapheme)
+            if _track_sgr and captured_style is None:
+                captured_style = current_style
+        elif col < _end and col + grapheme_w > _start:
+            output.append(ctx.fillchar * (min(_end, col + grapheme_w) - max(_start, col)))
+            if _track_sgr and captured_style is None:
+                captured_style = current_style
+
         col += grapheme_w
         idx += len(grapheme)
 
-    return ''.join(output), sgr_at_clip_start
+    return ''.join(output), captured_style
 
 
 # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements
@@ -320,17 +311,15 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
     """
     Clip text with cursor movement (painter's algorithm path).
 
-    Returns ``(result, sgr_at_clip_start)``.  The caller applies SGR wrapping.
+    Returns ``(result, captured_style)``.  The caller applies SGR wrapping.
     """
     # Bind hot-path attributes to locals (LOAD_FAST instead of LOAD_ATTR).
     _text = ctx.text
     _end = ctx.end
     _start = ctx.start
-    _propg = ctx.propagate_sgr
+    _track_sgr = ctx.propagate_sgr
     _ambw = ctx.ambiguous_width
     _fillchar = ctx.fillchar
-    _tabsize = ctx.tabsize
-    _strict = ctx.strict
 
     cells: dict[int, tuple[str, int]] = {}
     hyperlink_cells: set[int] = set()
@@ -339,17 +328,13 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
 
     col = 0
     idx = 0
-    sgr_at_clip_start = None
-    sgr = _SGR_STATE_DEFAULT if _propg else None
-
-    def _mark() -> None:
-        nonlocal sgr_at_clip_start
-        if _propg and sgr_at_clip_start is None:
-            sgr_at_clip_start = sgr
+    captured_style = None  # snapshot of current_style at first visible character
+    current_style = _SGR_STATE_DEFAULT if _track_sgr else None
 
     def _write_cells(s: str, w: int, write_col: int,
                      is_hyperlink: bool = False) -> None:
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
+        nonlocal captured_style
         for offset in range(w):
             src_col = write_col + offset
             if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
@@ -364,60 +349,30 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
         if is_hyperlink:
             for offset in range(w):
                 hyperlink_cells.add(write_col + offset)
-        _mark()
-
-    def _append_seq(seq: str, at_col: Optional[int] = None) -> None:
-        """Append a zero-width escape sequence anchored at the current column."""
-        nonlocal seq_order
-        c = col if at_col is None else at_col
-        sequences.append((c, seq_order, seq))
-        seq_order += 1
-        _mark()
-
-    def _emit_tab(col: int) -> int:
-        """Expand tab for painter-path."""
-        if _tabsize > 0:
-            next_tab = col + (_tabsize - (col % _tabsize))
-            while col < next_tab:
-                if _start <= col < _end:
-                    _write_cells(' ', 1, col)
-                col += 1
-        else:
-            _append_seq('\t')
-        return col
-
-    def _handle_grapheme(grapheme: str, gw: int, col: int) -> None:
-        """Emit grapheme to painter-path based on visibility."""
-        if gw == 0:
-            if _start <= col < _end:
-                _append_seq(grapheme)
-        elif col >= _start and col + gw <= _end:
-            _write_cells(grapheme, gw, col)
-        elif col < _end and col + gw > _start:
-            clip_start = max(_start, col)
-            for offset in range(min(_end, col + gw) - clip_start):
-                _write_cells(_fillchar, 1, clip_start + offset)
+        if _track_sgr and captured_style is None:
+            captured_style = current_style
 
     while idx < len(_text):
         char = _text[idx]
 
         # Early exit: past visible region, SGR captured, no escape ahead.
-        # Note: unlike _clip_simple, we cannot skip past non-escape chars when
-        # propagate_sgr is False, because cursor movements (\r, \x08, CSI C/D)
-        # depend on accurate column tracking and may move back into the visible region.
-        if col >= _end and sgr_at_clip_start is not None and char != '\x1b':
+        if col >= _end and captured_style is not None and char != '\x1b':
             break
 
         if char == '\x1b':
             m = _SEQUENCE_CLASSIFY.match(_text, idx)
             if not m:
-                _append_seq(char)
+                # Record lone ESC as a zero-width sequence at current column.
+                sequences.append((col, seq_order, char))
+                seq_order += 1
+                if _track_sgr and captured_style is None:
+                    captured_style = current_style
                 idx += 1
                 continue
 
-            # SGR: update state, do not emit.
-            if m.group('sgr_params') is not None and _propg and sgr is not None:
-                sgr = _sgr_state_update(sgr, m.group())
+            # SGR: update current_style, do not emit.
+            if m.group('sgr_params') is not None and _track_sgr and current_style is not None:
+                current_style = _sgr_state_update(current_style, m.group())
                 idx = m.end()
                 continue
 
@@ -425,7 +380,10 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
             if hl_state := HyperlinkParams.parse(m.group()):
                 r = _process_hyperlink(ctx, hl_state, m.end(), col)
                 if r.action is _HyperlinkAction.NO_CLOSE:
-                    _append_seq(m.group())
+                    sequences.append((col, seq_order, m.group()))
+                    seq_order += 1
+                    if _track_sgr and captured_style is None:
+                        captured_style = current_style
                     idx = m.end()
                 elif r.action is _HyperlinkAction.EMPTY:
                     idx = r.close_end
@@ -433,18 +391,22 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
                     col += r.inner_width
                     idx = r.close_end
                 else:
-                    _append_seq(r.open_seq)
+                    sequences.append((col, seq_order, r.open_seq))
+                    seq_order += 1
+                    if _track_sgr and captured_style is None:
+                        captured_style = current_style
                     _write_cells(r.clipped_inner, r.clipped_width, col,
                                  is_hyperlink=True)
                     col += r.clipped_width
-                    _append_seq(r.close_seq, at_col=col)
+                    sequences.append((col, seq_order, r.close_seq))
+                    seq_order += 1
                     col = r.hl_col_end
                     idx = r.close_end
                 continue
 
             # Indeterminate-effect sequences: raise in strict mode.
             seq = m.group()
-            if _strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+            if ctx.strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
                 raise ValueError(
                     f"Indeterminate cursor sequence at position {idx}, "
                     f"{seq!r}"
@@ -470,7 +432,7 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
             # Cursor Backward (CSI n D).
             if (cbackward_n := m.group('cbackward_n')) is not None:
                 n_backward = int(cbackward_n) if cbackward_n else 1
-                if _strict and n_backward > col:
+                if ctx.strict and n_backward > col:
                     raise ValueError(
                         f"Cursor left movement at position {idx} would move "
                         f"{n_backward} cells left from column {col}, "
@@ -481,7 +443,10 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
                 continue
 
             # Any other recognized sequence: preserve as-is.
-            _append_seq(m.group())
+            sequences.append((col, seq_order, m.group()))
+            seq_order += 1
+            if _track_sgr and captured_style is None:
+                captured_style = current_style
             idx = m.end()
             continue
 
@@ -500,21 +465,45 @@ def _clip_painter(ctx: _ClipContext) -> tuple[str, Optional[_SGRState]]:
 
         # Tab expansion.
         if char == '\t':
-            col = _emit_tab(col)
+            if ctx.tabsize > 0:
+                next_tab = col + (ctx.tabsize - (col % ctx.tabsize))
+                while col < next_tab:
+                    if _start <= col < _end:
+                        _write_cells(_fillchar, 1, col)
+                    col += 1
+            else:
+                sequences.append((col, seq_order, '\t'))
+                seq_order += 1
+                if _track_sgr and captured_style is None:
+                    captured_style = current_style
             idx += 1
             continue
 
         # Grapheme cluster.
         grapheme = next(iter_graphemes(_text, start=idx))
         grapheme_w = width(grapheme, ambiguous_width=_ambw)
-        _handle_grapheme(grapheme, grapheme_w, col)
+
+        # Emit grapheme or fillchar depending on visibility within clip window.
+        if grapheme_w == 0:
+            if _start <= col < _end:
+                sequences.append((col, seq_order, grapheme))
+                seq_order += 1
+                if _track_sgr and captured_style is None:
+                    captured_style = current_style
+        elif col >= _start and col + grapheme_w <= _end:
+            _write_cells(grapheme, grapheme_w, col)
+        elif col < _end and col + grapheme_w > _start:
+            clip_start = max(_start, col)
+            for offset in range(min(_end, col + grapheme_w) - clip_start):
+                _write_cells(_fillchar, 1, clip_start + offset)
+
         col += grapheme_w
         idx += len(grapheme)
 
     result = _reconstruct_painter(
         cells, sequences, _start, _end, _fillchar,
     )
-    return result, sgr_at_clip_start
+    return result, captured_style
 
 
 def clip(
