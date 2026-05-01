@@ -514,6 +514,8 @@ _py38_skip_pedantic = pytest.mark.skipif(
 @_py38_skip_pedantic
 def test_wrap_udhr(benchmark):
     """Benchmark wrap() with multilingual UDHR text."""
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     result = benchmark.pedantic(wcwidth.wrap, args=(UDHR_TEXT, 80), rounds=1, iterations=1)
     assert len(result)
     assert all(0 <= wcwidth.width(_l) <= 80 for _l in result)
@@ -523,6 +525,8 @@ def test_wrap_udhr(benchmark):
 @_py38_skip_pedantic
 def test_width_udhr(benchmark):
     """Benchmark width() with multilingual UDHR text."""
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     result = benchmark.pedantic(wcwidth.width, args=(UDHR_TEXT,), rounds=1, iterations=1)
     assert result > 0
 
@@ -531,6 +535,8 @@ def test_width_udhr(benchmark):
 @_py38_skip_pedantic
 def test_width_udhr_lines(benchmark):
     """Benchmark width() on individual UDHR lines."""
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     result = benchmark.pedantic(lambda: sum(wcwidth.width(line) for line in UDHR_LINES),
                                 rounds=1, iterations=1)
     assert result > 0
@@ -551,6 +557,8 @@ def test_width_wcswidth_consistency_udhr(benchmark):
             if w != wcs:
                 failures.append((line[:60], w, wcs))
         return failures
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     failures = benchmark.pedantic(check, rounds=1, iterations=1)
     assert not failures
 
@@ -568,6 +576,8 @@ def test_width_fastpath_integrity_udhr(benchmark):
         parse_total = sum(wcwidth.width(line) for line in UDHR_LINES)
         return fast_total, parse_total
 
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     fast_total, parse_total = benchmark.pedantic(check, rounds=1, iterations=1)
     _width_module._WIDTH_FAST_PATH_MIN_LEN = saved
     assert fast_total == parse_total
@@ -577,6 +587,8 @@ def test_width_fastpath_integrity_udhr(benchmark):
 @_py38_skip_pedantic
 def test_ljust_udhr_lines(benchmark):
     """Benchmark ljust() on UDHR lines."""
+    if not hasattr(benchmark, 'pedantic'):
+        pytest.skip('pytest-codspeed not installed')
     benchmark.pedantic(lambda: [wcwidth.ljust(line, w + 1, UDHR_FILLCHAR)
                                 for line, w in zip(UDHR_LINES, UDHR_WIDTHS)],
                        rounds=1, iterations=1)

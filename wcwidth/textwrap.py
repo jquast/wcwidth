@@ -306,8 +306,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                             if 'id=' in new_state.params:
                                 current_hyperlink_id = new_state.params
                             elif new_state.params:
-                                # Prepend id to existing params (per OSC 8 spec, params can have
-                                # multiple key=value pairs separated by :)
+                                # Prepend id to existing params. Per OSC 8 spec, params can have
+                                # multiple key=value pairs separated by ':'.
                                 current_hyperlink_id = (
                                     f'id={self._next_hyperlink_id()}:{new_state.params}')
                             else:
