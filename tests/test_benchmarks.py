@@ -359,6 +359,71 @@ def test_clip_dense_ansi_no_propagate_no_overtype(benchmark):
     benchmark(wcwidth.clip, text, 6, 30, propagate_sgr=False, overtyping=False)
 
 
+def test_clip_dense_ansi_overtype(benchmark):
+    """Benchmark clip() with dense ANSI, overtyping forced (painter path)."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, overtyping=True)
+
+
+def test_clip_long_cjk_overtype(benchmark):
+    """Benchmark clip() with long CJK, overtyping forced (painter path)."""
+    text = '中文测试字符串' * 100
+    benchmark(wcwidth.clip, text, 0, 50, overtyping=True)
+
+
+def test_width_dense_ansi_control_codes_ignore(benchmark):
+    """Benchmark width() with dense ANSI and control_codes='ignore'."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.width, text, control_codes='ignore')
+
+
+def test_width_complex_ansi_control_codes_ignore(benchmark):
+    """Benchmark width() with complex ANSI and control_codes='ignore'."""
+    text = '\x1b[38;2;255;150;100mWARN\x1b[0m: \x1b[1mBold\x1b[0m \x1b[4mUnderline\x1b[0m'
+    benchmark(wcwidth.width, text, control_codes='ignore')
+
+
+def test_clip_dense_ansi_control_codes_ignore(benchmark):
+    """Benchmark clip() with dense ANSI, control_codes='ignore' (skips painter/OSC)."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, control_codes='ignore')
+
+
+def test_clip_long_cjk_control_codes_ignore(benchmark):
+    """Benchmark clip() with long CJK and control_codes='ignore' (early-exit path)."""
+    text = '中文测试字符串' * 100
+    benchmark(wcwidth.clip, text, 0, 50, control_codes='ignore')
+
+
+def test_clip_cursor_cr_control_codes_ignore(benchmark):
+    """Benchmark clip() with CR overwrite and control_codes='ignore' (painter skipped)."""
+    text = 'hello\rworld ' * 20
+    benchmark(wcwidth.clip, text, 0, 50, control_codes='ignore')
+
+
+def test_clip_dense_ansi_no_propagate_control_codes_ignore(benchmark):
+    """Benchmark clip() with dense ANSI, propagate_sgr=False and control_codes='ignore'."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, propagate_sgr=False, control_codes='ignore')
+
+
+def test_clip_long_ascii_control_codes_ignore(benchmark):
+    """Benchmark clip() with long ASCII and control_codes='ignore' (fast-path slice)."""
+    text = 'hello world ' * 1000
+    benchmark(wcwidth.clip, text, 500, 600, control_codes='ignore')
+
+
+def test_wrap_with_ansi_control_codes_ignore(benchmark):
+    """Benchmark wrap() with ANSI sequences and control_codes='ignore'."""
+    text = '\x1b[31mThe quick brown fox jumps over the lazy dog.\x1b[0m Did it really? ' * 20
+    benchmark(wcwidth.wrap, text, 40, control_codes='ignore')
+
+
+def test_ljust_ascii_control_codes_ignore(benchmark):
+    """Benchmark ljust() with ASCII and control_codes='ignore'."""
+    benchmark(wcwidth.ljust, 'hello', 20, control_codes='ignore')
+
+
 def test_propagate_sgr_multiline(benchmark):
     """Benchmark propagate_sgr() with multiple lines."""
     lines = ['\x1b[1;31mline one', 'line two', 'line three\x1b[0m']
