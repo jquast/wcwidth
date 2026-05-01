@@ -1,10 +1,7 @@
 """This is a python implementation of clip()."""
 from __future__ import annotations
 
-# std imports
-import re
-
-from typing import Literal, Optional, NamedTuple
+from typing import Literal, Optional
 
 # local
 from ._width import width
@@ -13,33 +10,10 @@ from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
-from .escape_sequences import _SEQUENCE_CLASSIFY, _HORIZONTAL_CURSOR_MOVEMENT
-
-# OSC 8 hyperlink parsing (mirrors textwrap.py to avoid circular import)
-_HYPERLINK_OPEN_RE = re.compile(r'\x1b]8;([^;]*);([^\x07\x1b]*)(\x07|\x1b\\)')
-_HYPERLINK_CLOSE_RE = re.compile(r'\x1b]8;;(?:\x07|\x1b\\)')
-
-
-class _HyperlinkState(NamedTuple):
-    """Open OSC 8 hyperlink: url, params, terminator (BEL or ST)."""
-
-    url: str
-    params: str
-    terminator: str
-
-
-def _parse_hyperlink_open(seq: str) -> Optional[_HyperlinkState]:
-    if (m := _HYPERLINK_OPEN_RE.match(seq)):
-        return _HyperlinkState(url=m.group(2), params=m.group(1), terminator=m.group(3))
-    return None
-
-
-def _make_hyperlink_open(state: _HyperlinkState) -> str:
-    return f'\x1b]8;{state.params};{state.url}{state.terminator}'
-
-
-def _make_hyperlink_close(terminator: str) -> str:
-    return f'\x1b]8;;{terminator}'
+from .escape_sequences import (_SEQUENCE_CLASSIFY, _HORIZONTAL_CURSOR_MOVEMENT,
+                               _HYPERLINK_OPEN_RE, _HYPERLINK_CLOSE_RE,
+                               _HyperlinkState, _parse_hyperlink_open,
+                               _make_hyperlink_open, _make_hyperlink_close)
 
 
 def _find_hyperlink_close(text: str, open_end: int) -> Optional[tuple[int, int]]:
@@ -212,7 +186,7 @@ def clip(
           action='empty'     -> data is close_end (skip entirely)
           action='outside'   -> data is (inner_width, close_end) (advance col, skip)
           action='visible'   -> data is (open_seq, clipped_inner, close_seq,
-                                         inner_width, hl_col_end, close_end)
+                                         inner_width, clipped_width, hl_col_end, close_end)
         """
         close_span = _find_hyperlink_close(text, match_end)
         if close_span is None:
@@ -245,11 +219,18 @@ def clip(
             control_codes=control_codes,
         )
 
+        # Compute clipped width once here; avoids a second width() call in the painter path.
+        clipped_width = width(
+            clipped_inner, control_codes=control_codes,
+            tabsize=tabsize, ambiguous_width=ambiguous_width,
+        )
+
         return ('visible', (
-            _make_hyperlink_open(hl_state),
+            _make_hyperlink_open(hl_state.url, hl_state.params, hl_state.terminator),
             clipped_inner,
             _make_hyperlink_close(hl_state.terminator),
             inner_width,
+            clipped_width,
             hl_col_end,
             close_end,
         ))
@@ -358,7 +339,7 @@ def clip(
                         col += inner_width
                         idx = close_end
                     else:  # 'visible'
-                        open_seq, clipped_inner, close_seq, inner_width, _, close_end = data
+                        open_seq, clipped_inner, close_seq, inner_width, clipped_width, _, close_end = data
                         output.append(open_seq)
                         output.append(clipped_inner)
                         output.append(close_seq)
@@ -465,15 +446,11 @@ def clip(
                     col += inner_width
                     idx = close_end
                 else:  # 'visible'
-                    open_seq, clipped_inner, close_seq, inner_width, hl_col_end, close_end = data
+                    open_seq, clipped_inner, close_seq, inner_width, clipped_width, hl_col_end, close_end = data
                     _append_seq(open_seq)
-                    inner_clipped_width = width(
-                        clipped_inner, control_codes=control_codes,
-                        tabsize=tabsize, ambiguous_width=ambiguous_width,
-                    )
-                    _write_cells(clipped_inner, inner_clipped_width, col,
+                    _write_cells(clipped_inner, clipped_width, col,
                                  is_hyperlink=True)
-                    col += inner_clipped_width
+                    col += clipped_width
                     _append_seq(close_seq, at_col=col)
                     # Advance past the original hyperlink content
                     col = hl_col_end

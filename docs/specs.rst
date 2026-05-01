@@ -99,8 +99,9 @@ an emoji base, they combine with the base and add 0 to total width.
 Any characters of `Modifier Symbol`_ category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of `UnicodeData.txt`_, aprox. 3 characters.
 
-Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
-`emoji-variation-sequences.txt`_ as ``emoji style``.
+Any character with `U+FE0F`_ (Variation Selector 16) defined as ``emoji style``
+in `emoji-variation-sequences.txt`_: VS16 adds 1 cell to the narrow character
+it directly follows, making the pair width 2. Wide characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or

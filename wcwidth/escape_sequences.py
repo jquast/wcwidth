@@ -10,9 +10,37 @@ should first check that the character at the current position is ESC for optimal
 import re
 
 import typing
+from typing import Optional, NamedTuple
 
 # local
 from .sgr_state import _SGR_PATTERN
+
+_HYPERLINK_OPEN_RE = re.compile(r'\x1b]8;([^;]*);([^\x07\x1b]*)(\x07|\x1b\\)')
+_HYPERLINK_CLOSE_RE = re.compile(r'\x1b]8;;(?:\x07|\x1b\\)')
+
+class _HyperlinkState(NamedTuple):
+    """Open OSC 8 hyperlink: url, params, terminator (BEL or ST)."""
+
+    url: str
+    params: str
+    terminator: str
+
+
+def _parse_hyperlink_open(seq: str) -> Optional[_HyperlinkState]:
+    """Parse OSC 8 open sequence; return state or None."""
+    if (m := _HYPERLINK_OPEN_RE.match(seq)):
+        return _HyperlinkState(url=m.group(2), params=m.group(1), terminator=m.group(3))
+    return None
+
+
+def _make_hyperlink_open(url: str, params: str, terminator: str) -> str:
+    """Generate OSC 8 open sequence."""
+    return f'\x1b]8;{params};{url}{terminator}'
+
+
+def _make_hyperlink_close(terminator: str) -> str:
+    """Generate OSC 8 close sequence."""
+    return f'\x1b]8;;{terminator}'
 
 # Zero-width escape sequences (SGR, OSC, CSI, etc.). This table, like INDETERMINATE_EFFECT_SEQUENCE,
 # originated from the 'blessed' library.

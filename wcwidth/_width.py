@@ -4,16 +4,8 @@ from typing import Literal
 
 # local
 from ._wcwidth import wcwidth
-from .bisearch import bisearch
-from ._wcswidth import wcswidth
-from ._constants import (_EMOJI_ZWJ_SET,
-                         _ISC_VIRAMA_SET,
-                         _CATEGORY_MC_TABLE,
-                         _FITZPATRICK_RANGE,
-                         _REGIONAL_INDICATOR_SET)
-from .table_vs16 import VS16_NARROW_TO_WIDE
+from ._wcswidth import wcswidth, GraphemeMeasurer
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                CURSOR_MOVEMENT_SEQUENCE,
                                INDETERMINATE_EFFECT_SEQUENCE,
@@ -139,16 +131,13 @@ def width(
     current_col = 0
     max_extent = 0
     idx = 0
-    last_measured_idx = -2  # Track index of last measured char for VS16; -2 can never match idx-1
-    last_measured_ucs = -1  # Codepoint of last measured char (for deferred emoji check)
-    last_was_virama = False  # Virama conjunct formation state
-    conjunct_pending = False  # Deferred +1 for bare conjuncts (no trailing Mc)
     text_len = len(text)
 
     # Select wcwidth call pattern for best lru_cache performance:
     # - ambiguous_width=1 (default): single-arg calls share cache with direct wcwidth() calls
     # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
+    measurer = GraphemeMeasurer(text, text_len, _wcwidth)
 
     while idx < text_len:
         char = text[idx]
@@ -188,6 +177,8 @@ def width(
                     current_col = max(0, current_col - n_backward)
                 # 2d. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
+            # Escape sequences break VS16 adjacency: reset last-measured state
+            measurer.reset_adjacency()
             max_extent = max(max_extent, current_col)
             continue
 
@@ -196,12 +187,14 @@ def width(
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
             idx += 1
+            measurer.reset_adjacency()
             continue
 
         if char in VERTICAL_CTRL:
             if strict:
                 raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
             idx += 1
+            measurer.reset_adjacency()
             continue
 
         # 3. Horizontal movement characters
@@ -220,93 +213,22 @@ def width(
                 current_col = 0
             max_extent = max(max_extent, current_col)
             idx += 1
+            measurer.reset_adjacency()
             continue
 
-        # 4. Zero-Width Joiner (ZWJ)
-        if char == '\u200D':
-            if last_was_virama:
-                # ZWJ after virama requests explicit half-form rendering but
-                # does not change cell count -- consume ZWJ only, let the next
-                # consonant be handled by the virama conjunct rule.
-                idx += 1
-            elif idx + 1 < text_len:
-                # Emoji ZWJ: skip next character unconditionally.
-                idx += 2
-                last_was_virama = False
-            else:
-                idx += 1
-                last_was_virama = False
-            continue
-
-        # 5. Other zero-width characters (control chars)
+        # 4. Zero-width control characters
         if char in ZERO_WIDTH_CTRL:
             idx += 1
+            measurer.reset_adjacency()
             continue
 
-        ucs = ord(char)
-
-        # 6. VS16: converts preceding narrow character to wide
-        if ucs == 0xFE0F:
-            if last_measured_idx == idx - 1:
-                if bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE["9.0.0"]):
-                    current_col += 1
-                    max_extent = max(max_extent, current_col)
-            # VS16 preserves emoji context: last_measured_ucs stays as the base
-            idx += 1
-            continue
-
-        # 6b. Regional Indicator & Fitzpatrick: both above BMP (U+1F1E6+)
-        if ucs > 0xFFFF:
-            if ucs in _REGIONAL_INDICATOR_SET:
-                # Lazy RI pairing: count preceding consecutive RIs
-                ri_before = 0
-                j = idx - 1
-                while j >= 0 and ord(text[j]) in _REGIONAL_INDICATOR_SET:
-                    ri_before += 1
-                    j -= 1
-                if ri_before % 2 == 1:
-                    last_measured_ucs = ucs
-                    idx += 1
-                    continue
-            # 6c. Fitzpatrick modifier: zero-width when following emoji base
-            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]
-                  and last_measured_ucs in _EMOJI_ZWJ_SET):
-                idx += 1
-                continue
-
-        # 7. Virama conjunct formation: consonant following virama contributes 0 width.
-        # See https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
-        if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            last_measured_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-            conjunct_pending = True
-            idx += 1
-            continue
-
-        # 8. Normal characters: measure with wcwidth
-        w = _wcwidth(char)
+        # 5. ZWJ, VS16, Regional Indicators, Fitzpatrick, Virama conjuncts, Mc, wcwidth
+        idx, w = measurer.measure_at(idx)
         if w > 0:
-            if conjunct_pending:
-                current_col += 1
-                conjunct_pending = False
             current_col += w
             max_extent = max(max_extent, current_col)
-            last_measured_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-        elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
-            # Spacing Combining Mark (Mc) following a base character adds 1
-            current_col += 1
-            max_extent = max(max_extent, current_col)
-            last_measured_idx = -2
-            last_was_virama = False
-            conjunct_pending = False
-        else:
-            last_was_virama = ucs in _ISC_VIRAMA_SET
-        idx += 1
 
-    if conjunct_pending:
+    if measurer.conjunct_pending:
         current_col += 1
         max_extent = max(max_extent, current_col)
     return max_extent

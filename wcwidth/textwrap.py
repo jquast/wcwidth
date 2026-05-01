@@ -8,49 +8,22 @@ proper handling of Unicode grapheme clusters and character display widths.
 from __future__ import annotations
 
 # std imports
-import re
 import secrets
 import textwrap
 
-from typing import TYPE_CHECKING, Optional, NamedTuple
+from typing import TYPE_CHECKING, Optional
 
 # local
 from ._width import width as wcwidth_width
 from .grapheme import iter_graphemes
 from .sgr_state import propagate_sgr as _propagate_sgr
-from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences
+from .escape_sequences import (ZERO_WIDTH_PATTERN, iter_sequences,
+                               _HYPERLINK_OPEN_RE, _HyperlinkState,
+                               _parse_hyperlink_open, _make_hyperlink_open,
+                               _make_hyperlink_close)
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
-
-
-class _HyperlinkState(NamedTuple):
-    """State for tracking an open OSC 8 hyperlink across line breaks."""
-
-    url: str  # hyperlink target URL
-    params: str  # id=xxx and other key=value pairs separated by :
-    terminator: str  # BEL (\x07) or ST (\x1b\\)
-
-
-# Hyperlink parsing: captures (params, url, terminator)
-_HYPERLINK_OPEN_RE = re.compile(r'\x1b]8;([^;]*);([^\x07\x1b]*)(\x07|\x1b\\)')
-
-
-def _parse_hyperlink_open(seq: str) -> Optional[_HyperlinkState]:
-    """Parse OSC 8 open sequence, return state or None."""
-    if (m := _HYPERLINK_OPEN_RE.match(seq)):
-        return _HyperlinkState(url=m.group(2), params=m.group(1), terminator=m.group(3))
-    return None
-
-
-def _make_hyperlink_open(url: str, params: str, terminator: str) -> str:
-    """Generate OSC 8 open sequence."""
-    return f'\x1b]8;{params};{url}{terminator}'
-
-
-def _make_hyperlink_close(terminator: str) -> str:
-    """Generate OSC 8 close sequence."""
-    return f'\x1b]8;;{terminator}'
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):

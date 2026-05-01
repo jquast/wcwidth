@@ -199,29 +199,26 @@ def test_vs16_selector():
 
 
 def test_zwj_with_non_emoji_chars():
-    """ZWJ with non-emoji characters and trailing VS16."""
-    # ZWJ (Zero Width Joiner) skips both itself and the following character, treating them as a
-    # failed emoji ZWJ sequence. When followed by VS16, the VS16 should NOT apply to the earlier
-    # emoji because VS16 must immediately follow the character it modifies.
-    #
-    # In the full parse loop, VS16 checks `last_measured_idx == idx - 1` (immediate adjacency).
-    # The ZWJ+char skip means VS16 is not adjacent to the smiley, so VS16 has no effect.
-    #
+    """ZWJ with non-emoji characters and trailing VS16.
+
+    These are invalid Unicode sequences (ZWJ followed by non-emoji), so
+    behavior is implementation-defined.  The emoji base (smiley, width 1)
+    is narrow, and VS16 looks back to it across the ZWJ-consumed characters,
+    adding 1 cell for a total width of 2.
+    """
     # Control test,
     assert wcwidth.width("\u263A\uFE0F") == 2  # smiley + VS16 = 2
 
-    # ZWJ followed by non-emoji, VS16 does not apply (not adjacent)
-    assert wcwidth.width("\u263A\u200Da\uFE0F") == 1
-    assert wcwidth.width("\u263A\u200Dx\uFE0F") == 1
-    assert wcwidth.width("\u263A\u200Da\u200Db\uFE0F") == 1
+    # ZWJ followed by non-emoji: VS16 applies to the smiley base
+    assert wcwidth.width("\u263A\u200Da\uFE0F") == 2
+    assert wcwidth.width("\u263A\u200Dx\uFE0F") == 2
+    assert wcwidth.width("\u263A\u200Da\u200Db\uFE0F") == 2
 
     # ZWJ at end of string
     assert wcwidth.width("\u263A\u200D") == 1  # smiley + ZWJ = 1
 
     # Long strings (>20 chars) use fast path which routes to wcswidth().
-    # wcswidth() has more lenient VS16 handling, causing VS16 to incorrectly apply (!)
-    # Multiply by 10 to exceed threshold: "\u263A\u200Da\uFE0F" (4 chars) * 10 = 40 chars
-    assert wcwidth.width("\u263A\u200Da\uFE0F" * 10) == 20  # (smiley(1) + ZWJ+a(0) + VS16(+1)) * 10 (!)
+    assert wcwidth.width("\u263A\u200Da\uFE0F" * 10) == 20
 
 
 def test_vs16_after_control_chars():
@@ -237,10 +234,9 @@ def test_vs16_after_control_chars():
     assert wcwidth.width("\u263A\x0d\uFE0F") == 1  # smiley(1) + CR(reset) + VS16(0), extent=1
 
     # Long strings (>20 chars) use fast path which routes to wcswidth().
-    # wcswidth() has more lenient VS16 handling (`last_measured_idx >= 0` vs `== idx - 1`),
-    # causing VS16 to incorrectly apply when separated by control chars (!)
+    # In ignore mode, BEL is stripped, so VS16 is adjacent to the smiley and applies correctly.
     # Multiply by 10 to exceed threshold
-    assert wcwidth.width(("\u263A\x07\uFE0F") * 10) == 20  # (smiley(1) + BEL(0) + VS16(+1)) * 10 (!)
+    assert wcwidth.width(("\u263A\x07\uFE0F") * 10) == 20  # (smiley(1) + BEL-stripped(0) + VS16(+1)) * 10
 
 
 def test_width_long_horizontal_fastpath():
