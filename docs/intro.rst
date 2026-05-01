@@ -311,6 +311,11 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07', 8, 15)
     '\x1b]8;;http://example.com\x07is link\x1b]8;;\x07'
 
+Use ``overtyping=False`` when the input is known not to contain any cursor movement characters
+(``\b``, ``\r``, ``CSI C``, ``CSI D``, ``CSI G``) for improved performance.  When
+``overtyping=None`` (default), a slower "Painter's algorithm" may be used after testing for the
+presence of these characters. ``overtyping`` has no effect when ``control_codes='ignore'``.
+
 strip_sequences()
 -----------------
 

@@ -335,6 +335,30 @@ def test_clip_long_ascii_fastpath(benchmark):
     benchmark(wcwidth.clip, text, 500, 600)
 
 
+def test_clip_with_ansi_no_overtype(benchmark):
+    """Benchmark clip() with ANSI sequences, overtyping disabled."""
+    text = '\x1b[31m中文字\x1b[0m'
+    benchmark(wcwidth.clip, text, 0, 3, overtyping=False)
+
+
+def test_clip_complex_sgr_no_overtype(benchmark):
+    """Benchmark clip() with complex SGR, overtyping disabled."""
+    text = '\x1b[1;38;5;208mHello world text\x1b[0m'
+    benchmark(wcwidth.clip, text, 6, 11, overtyping=False)
+
+
+def test_clip_dense_ansi_no_overtype(benchmark):
+    """Benchmark clip() with dense ANSI, overtyping disabled."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, overtyping=False)
+
+
+def test_clip_dense_ansi_no_propagate_no_overtype(benchmark):
+    """Benchmark clip() with dense ANSI, SGR propagation and overtyping disabled."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, propagate_sgr=False, overtyping=False)
+
+
 def test_propagate_sgr_multiline(benchmark):
     """Benchmark propagate_sgr() with multiple lines."""
     lines = ['\x1b[1;31mline one', 'line two', 'line three\x1b[0m']
