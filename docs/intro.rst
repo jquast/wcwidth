@@ -303,16 +303,17 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('\x1b[31m中文\x1b[32m', 0, 3, propagate_sgr=False)
     '\x1b[31m中 \x1b[32m'
 
-
     >>> # Cursor-left overwrites previous text (painter's algorithm)
     >>> clip('hello\x1b[2DXY', 0, 5)
     'helXY'
     >>> # Carriage return resets to column 0, overwriting earlier cells
     >>> clip('abc\rXY', 0, 5)
     'XYc'
-    >>> # OSC 8 hyperlink text is clipped and the hyperlink rebuilt
-    >>> clip('\x1b]8;;http://x.com\x07Click This link\x1b]8;;\x07', 6, 10)
-    '\x1b]8;;http://x.com\x07This\x1b]8;;\x07'
+
+    >>> # even OSC 8 hyperlink text may be clipped, 'Click This link' -> 'is link' !
+    >>> clip('\x1b]8;;http://x.com\x07Click This link\x1b]8;;\x07', 8, 15)
+    '\x1b]8;;http://example.com\x07is link\x1b]8;;\x07'
+
 strip_sequences()
 -----------------
 
