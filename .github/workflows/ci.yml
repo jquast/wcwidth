@@ -90,6 +90,7 @@ jobs:
         shell: bash
         run: |
           V=${{ matrix.python-version }}
+          V=py$(echo $V | tr -d .)
           echo TOX_PYTHON=$V >>$GITHUB_ENV
           python -Im pip install tox
 
