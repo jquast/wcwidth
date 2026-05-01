@@ -295,7 +295,7 @@ def test_clip_text_sizing_scaled_with_fillchar(text, start, end, expected):
 def test_clip_simple_path_padding():
     """Simple-path clip with w=N larger than text length exercises padding loop."""
     # w=4 but only 1 grapheme 'X' — 3 empty units are padded.
-    # Clip window [0, 1) forces partial overlap, triggering
+    # Clip window (0, 1) forces partial overlap, triggering
     # _text_sizing_clip_simple's padding branch.
     assert repr(clip('\x1b]66;w=4;X\x07', 0, 1)) == repr('\x1b]66;w=1;X\x07')
 

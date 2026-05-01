@@ -365,7 +365,7 @@ def _text_sizing_clip(
     write_cells: Callable[[str, int, int], None],
 ) -> int:
     """
-    Emit tokens for a text-sizing (OSC 66) sequence, clipped to ``[start, end)``.
+    Emit tokens for a text-sizing (OSC 66) sequence, clipped to (start, end).
 
     Calls *write_cells(text, width, col)* for each emitted cell or sequence. Returns new column
     position.
@@ -683,7 +683,7 @@ def clip(
     overtyping: Optional[bool] = None,
 ) -> str:
     r"""
-    Clip text to display columns ``(start, end)`` while preserving all terminal sequences.
+    Clip text to display columns (start, end) while preserving all terminal sequences.
 
     This function extracts a substring based on visible column positions rather than
     character indices. Terminal escape sequences are preserved in the output since
@@ -737,7 +737,7 @@ def clip(
         characters.  Set to ``True`` to force the painter's algorithm (useful
         for testing).  Has no effect when ``control_codes='ignore'``.
 
-    :returns: Substring of ``text`` spanning display columns ``(start, end)``,
+    :returns: Substring of ``text`` spanning display columns (start, end),
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
 
