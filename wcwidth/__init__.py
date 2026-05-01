@@ -12,20 +12,6 @@ https://github.com/jquast/wcwidth
 from ._clip import clip
 from .align import ljust, rjust, center
 from ._width import width
-
-# Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is
-# populated during package initialization.  This matches the 0.6.0 behavior
-# where ``from .wcwidth import wcwidth`` would have already loaded the
-# submodule.  Without this, a later ``import wcwidth.wcwidth`` triggers
-# on-disk file discovery which rebinds wcwidth.wcwidth from the function to
-# the module object.
-#
-# NOTE: this must precede ``from ._wcwidth import wcwidth`` — if wcwidth
-# already exists as a package attribute, Python short-circuits and returns
-# the existing attribute instead of loading the submodule.
-from . import wcwidth as _wcwidth_module  # isort:skip
-
-from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
@@ -38,6 +24,17 @@ from .table_zero import ZERO_WIDTH
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences, strip_sequences
 from .unicode_versions import list_versions
+
+# Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is
+# populated during package initialization.  This matches the 0.6.0 behavior
+# where ``from .wcwidth import wcwidth`` would have already loaded the
+# submodule.  Without this, a later ``import wcwidth.wcwidth`` triggers
+# on-disk file discovery which rebinds wcwidth.wcwidth from the function to
+# the module object.
+#
+# NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
+from . import wcwidth as _wcwidth_module  # isort:skip
+from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip
 
 
 # The __all__ attribute defines the items exported from statement,
