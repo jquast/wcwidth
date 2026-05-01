@@ -6,6 +6,7 @@ compatibility.  This module exists solely to support legacy import paths::
 
     from wcwidth.wcwidth import iter_graphemes
     from wcwidth.wcwidth import _SGR_PATTERN
+    import wcwidth.wcwidth as legacy
 """
 # pylint: disable=unused-import
 

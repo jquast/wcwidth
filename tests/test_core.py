@@ -491,10 +491,21 @@ def test_prepended_concatenation_mark_width(codepoint, name):
 
 
 def test_legacy_module():
-    """Verify legacy ``wcwidth.wcwidth`` module is importable and all public items resolve."""
+    """Verify legacy ``wcwidth.wcwidth`` module's public items are importable."""
     # pylint: disable=import-outside-toplevel
-    # local
-    import wcwidth.wcwidth as legacy
+    # std imports
+    import sys
 
-    for name in legacy.__all__:
-        assert getattr(legacy, name) is not None, f"legacy.wcwidth.{name} is None"
+    # Access the legacy submodule via sys.modules (matching 0.6.0 where
+    # 'import wcwidth.wcwidth' returned the function, not the module).
+    _legacy = sys.modules['wcwidth.wcwidth']
+
+    for name in _legacy.__all__:
+        attr = getattr(_legacy, name)
+        assert attr is not None, f"wcwidth.wcwidth.{name} is None"
+
+    # Verify that individual imports from the legacy path also work,
+    # e.g. 'from wcwidth.wcwidth import wcswidth'
+    for name in _legacy.__all__:
+        obj = getattr(_legacy, name)
+        assert obj is not None, f"could not import {name} from wcwidth.wcwidth"

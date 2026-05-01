@@ -26,13 +26,19 @@ from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences, strip_sequences
 from .unicode_versions import list_versions
 
+# Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is populated during package
+# initialization.  This matches the 0.6.0 behavior where 'from .wcwidth import wcwidth' would have
+# already loaded the submodule.  Without this, a later 'import wcwidth.wcwidth' triggers on-disk
+# file discovery which rebinds wcwidth.wcwidth from the function to the module object.
+from . import wcwidth as _wcwidth_module  # isort:skip
+
+
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
            'iter_graphemes_reverse', 'grapheme_boundary_before',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
-           'list_versions', 'propagate_sgr',
-           'Hyperlink', 'HyperlinkParams')
+           'list_versions', 'propagate_sgr', 'Hyperlink', 'HyperlinkParams')
 
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places
