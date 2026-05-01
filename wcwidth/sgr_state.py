@@ -308,7 +308,7 @@ def propagate_sgr(lines: Sequence[str]) -> list[str]:
         ['\x1b[31mhello\x1b[0m', '\x1b[31mworld\x1b[0m']
 
     This is useful in cases of making special editors and viewers, and is used for the
-    default modes (propagate_sgr=True) of :func:`wcwidth.width` and :func:`wcwidth.clip`.
+    default modes (propagate_sgr=True) of :func:`wcwidth.wrap` and :func:`wcwidth.clip`.
 
     When wrapping and clipping text containing SGR sequences, maybe a previous line enabled the BLUE
     color--if we are viewing *only* the line following, we would want the carry over the BLUE color,

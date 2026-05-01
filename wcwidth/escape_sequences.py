@@ -159,9 +159,6 @@ def strip_sequences(text: str) -> str:
     r"""
     Return text with all terminal escape sequences removed.
 
-    For sequences containing printable text, such as OSC 8 (hyperlink),
-    the inner text is preserved.
-
     Unknown or incomplete ESC sequences are preserved.
 
     :param text: String that may contain terminal escape sequences.

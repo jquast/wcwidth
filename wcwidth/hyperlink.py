@@ -101,7 +101,7 @@ class Hyperlink(typing.NamedTuple):
 
         Example::
 
-            >>> hl = Hyperlink.parse('\x1b]8;;http://ex.com\x07Hello\x1b]8;;\x07', 0)
+            >>> hl = Hyperlink.parse('\x1b]8;;http://example.com\x07Hello\x1b]8;;\x07', 0)
             >>> hl.display_width()
             5
         """
@@ -123,8 +123,8 @@ class Hyperlink(typing.NamedTuple):
 
         Example::
 
-            >>> Hyperlink.parse('\x1b]8;;http://ex.com\x07Hello\x1b]8;;\x07')
-            Hyperlink(params=HyperlinkParams(url='http://ex.com', ...), text='Hello')
+            >>> Hyperlink.parse('\x1b]8;;http://example.com\x07Hello\x1b]8;;\x07')
+            Hyperlink(params=HyperlinkParams(url='http://example.com', ...), text='Hello')
         """
         m = _SEQUENCE_CLASSIFY.match(text, start)
         if m is None:

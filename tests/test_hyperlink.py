@@ -8,7 +8,7 @@ from wcwidth.hyperlink import Hyperlink, HyperlinkParams
 
 PARAMS_PARSE_VALID = [
     ('\x1b]8;;http://example.com\x07', 'http://example.com', '', '\x07'),
-    ('\x1b]8;id=a;http://x.com\x1b\\', 'http://x.com', 'id=a', '\x1b\\'),
+    ('\x1b]8;id=a;http://example.com\x1b\\', 'http://example.com', 'id=a', '\x1b\\'),
 ]
 
 
@@ -33,27 +33,27 @@ def test_hyperlinkparams_parse_invalid(seq):
 
 
 def test_hyperlinkparams_make_open():
-    assert HyperlinkParams(url='http://x.com', params='id=a', terminator='\x07').make_open() == '\x1b]8;id=a;http://x.com\x07'
+    assert HyperlinkParams(url='http://example.com', params='id=a', terminator='\x07').make_open() == '\x1b]8;id=a;http://example.com\x07'
 
 
 def test_hyperlinkparams_make_close():
-    assert HyperlinkParams(url='http://x.com', terminator='\x07').make_close() == '\x1b]8;;\x07'
+    assert HyperlinkParams(url='http://example.com', terminator='\x07').make_close() == '\x1b]8;;\x07'
 
 
-_HL = '\x1b]8;;http://ex.com\x07Hello\x1b]8;;\x07'
+_HL = '\x1b]8;;http://example.com\x07Hello\x1b]8;;\x07'
 
 
 def test_hyperlink_parse_valid():
     hl = Hyperlink.parse(_HL)
     assert hl is not None
     assert hl.text == 'Hello'
-    assert hl.params.url == 'http://ex.com'
+    assert hl.params.url == 'http://example.com'
 
 
 @pytest.mark.parametrize('text,start', [
     ('Hello world', 0),
     ('\x1b[31mHello\x1b[0m', 0),   # SGR, not OSC 8
-    ('\x1b]8;;http://x.com\x07Hello', 0),  # open without close
+    ('\x1b]8;;http://example.com\x07Hello', 0),  # open without close
 ])
 def test_hyperlink_parse_returns_none(text, start):
     assert Hyperlink.parse(text, start) is None

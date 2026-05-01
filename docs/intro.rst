@@ -134,9 +134,6 @@ Use function `width()`_ to measure a string with improved handling of ``control_
     >>> # tabs are measured as though the string begins at a tabstop,
     >>> wcwidth.width('\t', tabsize=4)
     4
-    >>> # Kitty text sizing protocol (OSC 66) are measured, eg. 2x-scaled "Hello"
-    >>> wcwidth.width('\x1b]66;s=2;Hello\x07')
-    10
     >>> # or, all control characters can be ignored (including tab)
     >>> wcwidth.width('\t\n\a\r', control_codes='ignore')
     0
@@ -311,7 +308,7 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     'XYc'
 
     >>> # even OSC 8 hyperlink text may be clipped, 'Click This link' -> 'is link' !
-    >>> clip('\x1b]8;;http://x.com\x07Click This link\x1b]8;;\x07', 8, 15)
+    >>> clip('\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07', 8, 15)
     '\x1b]8;;http://example.com\x07is link\x1b]8;;\x07'
 
 strip_sequences()

@@ -181,8 +181,8 @@ CLIP_HYPERLINK_CASES = [
     (f'{OSC_START_BEL}ab{OSC_END_BEL} {OSC_START_ST}cd{OSC_END_ST}', 0, 5,
      f'{OSC_START_BEL}ab{OSC_END_BEL} {OSC_START_ST}cd{OSC_END_ST}'),
     # Hyperlink with params preserved
-    ('\x1b]8;id=myid;http://x.com\x07link\x1b]8;;\x07', 1, 3,
-     '\x1b]8;id=myid;http://x.com\x07in\x1b]8;;\x07'),
+    ('\x1b]8;id=myid;http://example.com\x07link\x1b]8;;\x07', 1, 3,
+     '\x1b]8;id=myid;http://example.com\x07in\x1b]8;;\x07'),
     # Hyperlink text before clip window, hyperlink within
     (f'before{OSC_START_BEL}link{OSC_END_BEL}', 6, 10,
      f'{OSC_START_BEL}link{OSC_END_BEL}'),
@@ -190,7 +190,7 @@ CLIP_HYPERLINK_CASES = [
     (f'{OSC_START_BEL}\x1b[31mred link\x1b[0m{OSC_END_BEL}', 4, 8,
      f'{OSC_START_BEL}\x1b[31mlink\x1b[0m{OSC_END_BEL}'),
     # Hyperlink open without matching close -- preserved as regular sequence
-    ('\x1b]8;;http://x.com\x07link', 0, 4, '\x1b]8;;http://x.com\x07link'),
+    ('\x1b]8;;http://example.com\x07link', 0, 4, '\x1b]8;;http://example.com\x07link'),
     # Bare ESC between hyperlink markers
     ('\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07', 0, 6,
      '\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07'),

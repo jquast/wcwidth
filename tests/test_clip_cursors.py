@@ -26,7 +26,7 @@ from wcwidth import clip
     # Cursor-left with no visible tokens emitted
     ("\x1b[5C\x1b[2Dhi", 5, 7, {}, ""),
     # Cursor-left overwrites text, seq tokens preserve column spatial order
-    ("ab\x1b]8;;http://x.com\x07\x1b[2Dcd", 0, 4, {}, "cd\x1b]8;;http://x.com\x07"),
+    ("ab\x1b]8;;http://example.com\x07\x1b[2Dcd", 0, 4, {}, "cd\x1b]8;;http://example.com\x07"),
     # Cursor-left into wide char twice, second time on empty token triggers i < 0 break
     ("中\x1b[D\x1b[Da", 0, 4, {}, "a "),
     ('ab\x1b[5Ccd', 0, 4, {}, 'ab  '),
@@ -68,7 +68,7 @@ from wcwidth import clip
     # propagate_sgr=False in painter path (225->226)
     ('ab\x1b[2Dcd', 0, 4, {'propagate_sgr': False}, 'cd'),
     # Non-SGR sequence before any visible text in painter (225->226 True)
-    ('\x1b]8;;http://x.com\x07ab\x1b[2Dcd', 0, 4, {}, '\x1b]8;;http://x.com\x07cd'),
+    ('\x1b]8;;http://example.com\x07ab\x1b[2Dcd', 0, 4, {}, '\x1b]8;;http://example.com\x07cd'),
     # Bare ESC at end of text in painter (239->240)
     ('ab\x1b[2D\x1b', 0, 2, {}, '\x1bab'),
     # Wide char overwritten from right side (212 orphan fixup)
@@ -94,9 +94,9 @@ from wcwidth import clip
     # HPA no-param inside clip window
     ('abc\x1b[GXY', 1, 4, {}, 'Yc'),
     # walk_col >= end with sequences at column == end (line 351)
-    ('\x1b[5C\x1b]8;;http://x.com\x07', 0, 5, {'propagate_sgr': False}, '     \x1b]8;;http://x.com\x07'),
+    ('\x1b[5C\x1b]8;;http://example.com\x07', 0, 5, {'propagate_sgr': False}, '     \x1b]8;;http://example.com\x07'),
     # Trailing sequences past col_limit (line 374)
-    ('\x1b[5C\x1b]8;;http://x.com\x07', 0, 3, {'propagate_sgr': False}, '   \x1b]8;;http://x.com\x07'),
+    ('\x1b[5C\x1b]8;;http://example.com\x07', 0, 3, {'propagate_sgr': False}, '   \x1b]8;;http://example.com\x07'),
 ])
 def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expected):
     """Verify clip() output matches terminal-visible columns after cursor moves."""

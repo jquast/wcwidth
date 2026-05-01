@@ -109,8 +109,10 @@ def center(
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :returns: Text padded on both sides to reach ``dest_width``.
 
-    For odd-width padding, the extra cell goes on the right (matching
-    Python's :meth:`str.center` behavior).
+    For odd-width padding, the extra cell fills in the same cell position as
+    Python's :meth:`str.center` behavior (the left side when ``dest_width`` is
+    odd, the right side when ``dest_width`` is even).
+    See `the eccentric str.center <https://jazcap53.github.io/pythons-eccentric-strcenter.html>`_.
 
     .. versionadded:: 0.3.0
 
