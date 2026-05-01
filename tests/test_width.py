@@ -199,12 +199,12 @@ def test_vs16_selector():
 
 
 def test_zwj_with_non_emoji_chars():
-    """ZWJ with non-emoji characters and trailing VS16.
+    """
+    ZWJ with non-emoji characters and trailing VS16.
 
-    These are invalid Unicode sequences (ZWJ followed by non-emoji), so
-    behavior is implementation-defined.  The emoji base (smiley, width 1)
-    is narrow, and VS16 looks back to it across the ZWJ-consumed characters,
-    adding 1 cell for a total width of 2.
+    These are invalid Unicode sequences (ZWJ followed by non-emoji), so behavior is implementation-
+    defined.  The emoji base (smiley, width 1) is narrow, and VS16 looks back to it across the ZWJ-
+    consumed characters, adding 1 cell for a total width of 2.
     """
     # Control test,
     assert wcwidth.width("\u263A\uFE0F") == 2  # smiley + VS16 = 2

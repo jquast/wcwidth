@@ -17,6 +17,7 @@ from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
 from ._wcswidth import wcswidth
+from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import propagate_sgr
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
@@ -30,7 +31,8 @@ from .unicode_versions import list_versions
 __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
            'iter_graphemes_reverse', 'grapheme_boundary_before',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
-           'list_versions', 'propagate_sgr')
+           'list_versions', 'propagate_sgr',
+           'Hyperlink', 'HyperlinkParams')
 
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places

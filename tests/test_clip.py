@@ -191,12 +191,24 @@ CLIP_HYPERLINK_CASES = [
      f'{OSC_START_BEL}\x1b[31mlink\x1b[0m{OSC_END_BEL}'),
     # Hyperlink open without matching close -- preserved as regular sequence
     ('\x1b]8;;http://x.com\x07link', 0, 4, '\x1b]8;;http://x.com\x07link'),
-    # Nested hyperlinks
-    ('\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07', 0, 14,
-     '\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07'),
     # Bare ESC between hyperlink markers
     ('\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07', 0, 6,
      '\x1b]8;;url\x07ab\x1bxcd\x1b]8;;\x07'),
+    # Per OSC 8 spec "A note on opening/closing hyperlinks": terminal
+    # emulators treat hyperlinks as a state attribute, not nested anchors.
+    # Opening a new hyperlink replaces the current one; a single close
+    # terminates the hyperlink regardless of how many opens preceded it.
+    #
+    # Two opens, one close: URL "b" replaces "a", close terminates.
+    ('\x1b]8;;a\x07AB\x1b]8;;b\x07CD\x1b]8;;\x07EF', 0, 6,
+     '\x1b]8;;a\x07AB\x1b]8;;b\x07CD\x1b]8;;\x07EF'),
+    # URL switch without closing: "b" replaces "a", no close in input.
+    ('\x1b]8;;a\x07AB\x1b]8;;b\x07CD', 0, 4,
+     '\x1b]8;;a\x07AB\x1b]8;;b\x07CD'),
+    # Multiple opens, close, bare close: "b" replaces "a", first close
+    # terminates, trailing close is harmless (closing when not open).
+    ('\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07', 0, 10,
+     '\x1b]8;;a\x07ABCD \x1b]8;;b\x07XY\x1b]8;;\x07 EF\x1b]8;;\x07'),
 ]
 
 
@@ -221,9 +233,16 @@ def test_clip_hyperlink_control_codes_overwrite(control_codes, start, end, expec
 
 
 def test_clip_osc_hyperlink_strict_raises():
-    """control_codes='strict' raises ValueError when overwriting hyperlink cells."""
-    with pytest.raises(ValueError, match='OSC 8 hyperlink'):
-        clip(_HLINK_OVERWRITE, 0, 4, control_codes='strict')
+    """
+    control_codes='strict' allows hyperlink-cursor interactions.
+
+    Overwriting hyperlink cells causes corrupted "run on" hyperlinks in practical
+    testing with kitty, presumably the hiddden "end hyperlink" is not found, in
+    any case, we make no attempt to parse overwrite of hyperlinks
+    """
+    assert repr(clip(_HLINK_OVERWRITE, 0, 4, control_codes='strict')) == repr(
+        f'{OSC_START_BEL}link{OSC_END_BEL}'
+    )
 
 
 # Painter-path hyperlink edge cases

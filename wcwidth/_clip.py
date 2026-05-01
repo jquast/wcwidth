@@ -1,46 +1,513 @@
 """This is a python implementation of clip()."""
 from __future__ import annotations
 
-from typing import Literal, Optional
+# std imports
+import enum
+
+from typing import Literal, Optional, NamedTuple
 
 # local
 from ._width import width
 from .grapheme import iter_graphemes
+from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import (_SGR_STATE_DEFAULT,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
-from .escape_sequences import (_SEQUENCE_CLASSIFY, _HORIZONTAL_CURSOR_MOVEMENT,
-                               _HYPERLINK_OPEN_RE, _HYPERLINK_CLOSE_RE,
-                               _HyperlinkState, _parse_hyperlink_open,
-                               _make_hyperlink_open, _make_hyperlink_close)
+from .escape_sequences import (_SEQUENCE_CLASSIFY,
+                               _HORIZONTAL_CURSOR_MOVEMENT,
+                               INDETERMINATE_EFFECT_SEQUENCE)
 
 
-def _find_hyperlink_close(text: str, open_end: int) -> Optional[tuple[int, int]]:
+class _ClipContext(NamedTuple):
+    """Immutable parameters for a clip operation."""
+    text: str
+    start: int
+    end: int
+    fillchar: str
+    tabsize: int
+    ambiguous_width: int
+    control_codes: Literal['parse', 'strict', 'ignore']
+    strict: bool
+    propagate_sgr: bool
+
+
+class _HyperlinkAction(enum.Enum):
+    """Outcome of processing an OSC 8 hyperlink unit."""
+    NO_CLOSE = enum.auto()   # open sequence without matching close
+    EMPTY = enum.auto()       # hyperlink with no visible inner text
+    OUTSIDE = enum.auto()     # hyperlink entirely outside the clip window
+    VISIBLE = enum.auto()     # hyperlink overlaps the clip window
+
+
+class _HyperlinkResult(NamedTuple):
     """
-    Find matching OSC 8 close, handling nesting.
+    Result of processing an OSC 8 hyperlink.
 
-    Returns (start, end) or None.
+    Only the fields relevant to each action are populated.
     """
-    depth = 1
-    idx = open_end
-    while idx < len(text):
-        if text[idx] != '\x1b':
+    action: _HyperlinkAction
+    close_end: int = 0
+    inner_width: int = 0
+    open_seq: str = ''
+    clipped_inner: str = ''
+    close_seq: str = ''
+    clipped_width: int = 0
+    hl_col_end: int = 0
+
+
+def _apply_sgr_wrap(result: str, sgr_at_clip_start: object) -> str:
+    """
+    Apply SGR prefix/suffix around *result*.
+
+    If an SGR state was captured at the first visible character, prefix the result with the
+    corresponding SGR sequence and suffix with a reset if any styles are active.
+    """
+    if sgr_at_clip_start is not None:
+        if prefix := _sgr_state_to_sequence(sgr_at_clip_start):
+            result = prefix + result
+        if _sgr_state_is_active(sgr_at_clip_start):
+            result += '\x1b[0m'
+    return result
+
+
+def _process_hyperlink(
+    ctx: _ClipContext,
+    params: HyperlinkParams,
+    match_end: int,
+    col: int,
+) -> _HyperlinkResult:
+    """
+    Process an OSC 8 hyperlink unit.
+
+    Finds the matching close sequence, measures the inner text width, and determines whether the
+    hyperlink is empty, outside the clip window, or visible (requiring inner-text clipping).
+    """
+    close_start, close_end = Hyperlink.find_close(ctx.text, match_end)
+    if (close_start, close_end) == (-1, -1):
+        return _HyperlinkResult(_HyperlinkAction.NO_CLOSE)
+    inner_text = ctx.text[match_end:close_start]
+    inner_width = width(
+        inner_text, control_codes=ctx.control_codes,
+        tabsize=ctx.tabsize, ambiguous_width=ctx.ambiguous_width,
+    )
+
+    if inner_width == 0:
+        return _HyperlinkResult(_HyperlinkAction.EMPTY, close_end=close_end)
+
+    hl_col_end = col + inner_width
+
+    if hl_col_end <= ctx.start or col >= ctx.end:
+        return _HyperlinkResult(_HyperlinkAction.OUTSIDE, close_end=close_end,
+                                inner_width=inner_width)
+
+    inner_clip_start = max(0, ctx.start - col)
+    inner_clip_end = ctx.end - col
+
+    clipped_inner = clip(
+        inner_text, inner_clip_start, inner_clip_end,
+        fillchar=ctx.fillchar, tabsize=ctx.tabsize,
+        ambiguous_width=ctx.ambiguous_width,
+        propagate_sgr=False,
+        control_codes=ctx.control_codes,
+    )
+
+    clipped_width = width(
+        clipped_inner, control_codes=ctx.control_codes,
+        tabsize=ctx.tabsize, ambiguous_width=ctx.ambiguous_width,
+    )
+
+    return _HyperlinkResult(
+        _HyperlinkAction.VISIBLE,
+        close_end=close_end,
+        inner_width=inner_width,
+        open_seq=params.make_open(),
+        clipped_inner=clipped_inner,
+        close_seq=params.make_close(),
+        clipped_width=clipped_width,
+        hl_col_end=hl_col_end,
+    )
+
+
+def _reconstruct_painter(
+    cells: dict[int, tuple[str, int]],
+    sequences: list[tuple[int, int, str]],
+    start: int,
+    end: int,
+    fillchar: str,
+) -> str:
+    """
+    Reconstruct the output string from painter's algorithm state.
+
+    Walks columns left-to-right, interleaving escape sequences and cell content, filling gaps with
+    *fillchar*.
+    """
+    # Group and sort sequences by column, preserving insertion order within each.
+    seqs_by_col: dict[int, list[tuple[int, str]]] = {}
+    for col_pos, order, seq_text in sequences:
+        seqs_by_col.setdefault(col_pos, []).append((order, seq_text))
+    for entries in seqs_by_col.values():
+        entries.sort()
+
+    max_cell_col = max(cells.keys()) if cells else -1
+    max_seq_col = max(seqs_by_col.keys()) if seqs_by_col else -1
+    max_col = max(max_cell_col, max_seq_col)
+
+    parts: list[str] = []
+    walk_col = 0
+    col_limit = min(max_col, end)
+    while walk_col <= col_limit:
+        # Emit any sequences anchored at this column.
+        for _, seq_text in seqs_by_col.get(walk_col, ()):
+            parts.append(seq_text)
+
+        if walk_col >= end:
+            walk_col += 1
+            continue
+
+        if walk_col in cells:
+            cell_text, cell_w = cells[walk_col]
+            parts.append(cell_text)
+            walk_col += cell_w
+        else:
+            if start <= walk_col <= max_cell_col:
+                parts.append(fillchar)
+            walk_col += 1
+
+    # Emit sequences anchored beyond the visible region.
+    for c in sorted(seqs_by_col.keys()):
+        if c > col_limit:
+            for _, seq_text in seqs_by_col[c]:
+                parts.append(seq_text)
+
+    return ''.join(parts)
+
+
+def _clip_simple(ctx: _ClipContext) -> tuple[str, object]:
+    """
+    Clip text without cursor movement (simple append-to-output path).
+
+    Returns ``(result, sgr_at_clip_start)``.  The caller applies SGR wrapping.
+    """
+    # Bind hot-path attributes to locals (LOAD_FAST instead of LOAD_ATTR).
+    _text = ctx.text
+    _end = ctx.end
+    _start = ctx.start
+    _propg = ctx.propagate_sgr
+    _ambw = ctx.ambiguous_width
+    _fillchar = ctx.fillchar
+    _tabsize = ctx.tabsize
+    _strict = ctx.strict
+
+    output: list[str] = []
+    col = 0
+    idx = 0
+    sgr_at_clip_start = None
+    sgr = _SGR_STATE_DEFAULT if _propg else None
+
+    def _mark() -> None:
+        nonlocal sgr_at_clip_start
+        if _propg and sgr_at_clip_start is None:
+            sgr_at_clip_start = sgr
+
+    def _emit_tab(col: int) -> int:
+        """Expand tab, appending spaces to output list."""
+        if _tabsize > 0:
+            next_tab = col + (_tabsize - (col % _tabsize))
+            while col < next_tab:
+                if _start <= col < _end:
+                    output.append(' ')
+                    _mark()
+                col += 1
+        else:
+            output.append('\t')
+        return col
+
+    def _handle_grapheme(grapheme: str, gw: int, col: int) -> None:
+        """Emit grapheme to output list based on visibility."""
+        if gw == 0:
+            if _start <= col < _end:
+                output.append(grapheme)
+        elif col >= _start and col + gw <= _end:
+            output.append(grapheme)
+            _mark()
+        elif col < _end and col + gw > _start:
+            output.append(_fillchar * (min(_end, col + gw) - max(_start, col)))
+            _mark()
+
+    while idx < len(_text):
+        char = _text[idx]
+
+        # Early exit: past visible region.
+        if col >= _end and char not in '\r\x08\t\x1b':
+            if sgr_at_clip_start is not None:
+                break
+            if not _propg:
+                next_esc = _text.find('\x1b', idx + 1)
+                if next_esc == -1:
+                    break
+                idx = next_esc
+                continue
+
+        if char == '\x1b':
+            m = _SEQUENCE_CLASSIFY.match(_text, idx)
+            if not m:
+                output.append(char)
+                idx += 1
+                continue
+
+            # SGR: update state, do not emit.
+            if m.group('sgr_params') is not None and _propg and sgr is not None:
+                sgr = _sgr_state_update(sgr, m.group())
+                idx = m.end()
+                continue
+
+            # OSC 8 hyperlink.
+            if hl_state := HyperlinkParams.parse(m.group()):
+                r = _process_hyperlink(ctx, hl_state, m.end(), col)
+                if r.action is _HyperlinkAction.NO_CLOSE:
+                    output.append(m.group())
+                    idx = m.end()
+                elif r.action is _HyperlinkAction.EMPTY:
+                    idx = r.close_end
+                elif r.action is _HyperlinkAction.OUTSIDE:
+                    col += r.inner_width
+                    idx = r.close_end
+                else:
+                    output.append(r.open_seq)
+                    output.append(r.clipped_inner)
+                    output.append(r.close_seq)
+                    _mark()
+                    col += r.inner_width
+                    idx = r.close_end
+                continue
+
+            # Indeterminate-effect sequences: raise in strict mode.
+            seq = m.group()
+            if _strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+                raise ValueError(
+                    f"Indeterminate cursor sequence at position {idx}, "
+                    f"{seq!r}"
+                )
+
+            # Any other recognized sequence: preserve as-is.
+            output.append(seq)
+            idx = m.end()
+            continue
+
+        if char == '\t':
+            col = _emit_tab(col)
             idx += 1
             continue
-        m = _SEQUENCE_CLASSIFY.match(text, idx)
-        if not m:
+
+        grapheme = next(iter_graphemes(_text, start=idx))
+        grapheme_w = width(grapheme, ambiguous_width=_ambw)
+        _handle_grapheme(grapheme, grapheme_w, col)
+        col += grapheme_w
+        idx += len(grapheme)
+
+    return ''.join(output), sgr_at_clip_start
+
+
+def _clip_painter(ctx: _ClipContext) -> tuple[str, object]:
+    """
+    Clip text with cursor movement (painter's algorithm path).
+
+    Returns ``(result, sgr_at_clip_start)``.  The caller applies SGR wrapping.
+    """
+    # Bind hot-path attributes to locals (LOAD_FAST instead of LOAD_ATTR).
+    _text = ctx.text
+    _end = ctx.end
+    _start = ctx.start
+    _propg = ctx.propagate_sgr
+    _ambw = ctx.ambiguous_width
+    _fillchar = ctx.fillchar
+    _tabsize = ctx.tabsize
+    _strict = ctx.strict
+
+    cells: dict[int, tuple[str, int]] = {}
+    hyperlink_cells: set[int] = set()
+    sequences: list[tuple[int, int, str]] = []
+    seq_order = 0
+
+    col = 0
+    idx = 0
+    sgr_at_clip_start = None
+    sgr = _SGR_STATE_DEFAULT if _propg else None
+
+    def _mark() -> None:
+        nonlocal sgr_at_clip_start
+        if _propg and sgr_at_clip_start is None:
+            sgr_at_clip_start = sgr
+
+    def _write_cells(s: str, w: int, write_col: int,
+                     is_hyperlink: bool = False) -> None:
+        """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
+        for offset in range(w):
+            src_col = write_col + offset
+            if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
+                cells[src_col - 1] = (_fillchar, 1)
+                hyperlink_cells.discard(src_col - 1)
+            if cells.get(src_col, ('', 0))[1] == 2:
+                cells[src_col + 1] = (_fillchar, 1)
+                hyperlink_cells.discard(src_col + 1)
+            cells.pop(src_col, None)
+            hyperlink_cells.discard(src_col)
+        cells[write_col] = (s, w)
+        if is_hyperlink:
+            for offset in range(w):
+                hyperlink_cells.add(write_col + offset)
+        _mark()
+
+    def _append_seq(seq: str, at_col: Optional[int] = None) -> None:
+        """Append a zero-width escape sequence anchored at the current column."""
+        nonlocal seq_order
+        c = col if at_col is None else at_col
+        sequences.append((c, seq_order, seq))
+        seq_order += 1
+        _mark()
+
+    def _emit_tab(col: int) -> int:
+        """Expand tab for painter-path."""
+        if _tabsize > 0:
+            next_tab = col + (_tabsize - (col % _tabsize))
+            while col < next_tab:
+                if _start <= col < _end:
+                    _write_cells(' ', 1, col)
+                col += 1
+        else:
+            _append_seq('\t')
+        return col
+
+    def _handle_grapheme(grapheme: str, gw: int, col: int) -> None:
+        """Emit grapheme to painter-path based on visibility."""
+        if gw == 0:
+            if _start <= col < _end:
+                _append_seq(grapheme)
+        elif col >= _start and col + gw <= _end:
+            _write_cells(grapheme, gw, col)
+        elif col < _end and col + gw > _start:
+            clip_start = max(_start, col)
+            for offset in range(min(_end, col + gw) - clip_start):
+                _write_cells(_fillchar, 1, clip_start + offset)
+
+    while idx < len(_text):
+        char = _text[idx]
+
+        # Early exit: past visible region, SGR captured, no escape ahead.
+        # Note: unlike _clip_simple, we cannot skip past non-escape chars when
+        # propagate_sgr is False, because cursor movements (\r, \x08, CSI C/D)
+        # depend on accurate column tracking and may move back into the visible region.
+        if col >= _end and sgr_at_clip_start is not None and char != '\x1b':
+            break
+
+        if char == '\x1b':
+            m = _SEQUENCE_CLASSIFY.match(_text, idx)
+            if not m:
+                _append_seq(char)
+                idx += 1
+                continue
+
+            # SGR: update state, do not emit.
+            if m.group('sgr_params') is not None and _propg and sgr is not None:
+                sgr = _sgr_state_update(sgr, m.group())
+                idx = m.end()
+                continue
+
+            # OSC 8 hyperlink.
+            if hl_state := HyperlinkParams.parse(m.group()):
+                r = _process_hyperlink(ctx, hl_state, m.end(), col)
+                if r.action is _HyperlinkAction.NO_CLOSE:
+                    _append_seq(m.group())
+                    idx = m.end()
+                elif r.action is _HyperlinkAction.EMPTY:
+                    idx = r.close_end
+                elif r.action is _HyperlinkAction.OUTSIDE:
+                    col += r.inner_width
+                    idx = r.close_end
+                else:
+                    _append_seq(r.open_seq)
+                    _write_cells(r.clipped_inner, r.clipped_width, col,
+                                 is_hyperlink=True)
+                    col += r.clipped_width
+                    _append_seq(r.close_seq, at_col=col)
+                    col = r.hl_col_end
+                    idx = r.close_end
+                continue
+
+            # Indeterminate-effect sequences: raise in strict mode.
+            seq = m.group()
+            if _strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):
+                raise ValueError(
+                    f"Indeterminate cursor sequence at position {idx}, "
+                    f"{seq!r}"
+                )
+
+            # Horizontal Position Absolute (CSI n G).
+            if (hpa_n := m.group('hpa_n')) is not None:
+                col = int(hpa_n) - 1 if hpa_n else 0
+                idx = m.end()
+                continue
+
+            # Cursor Forward (CSI n C).
+            if (cforward_n := m.group('cforward_n')) is not None:
+                n_forward = int(cforward_n) if cforward_n else 1
+                move_end = col + n_forward
+                if col < _end and move_end > _start:
+                    for i in range(max(col, _start), min(move_end, _end)):
+                        _write_cells(_fillchar, 1, i)
+                col = move_end
+                idx = m.end()
+                continue
+
+            # Cursor Backward (CSI n D).
+            if (cbackward_n := m.group('cbackward_n')) is not None:
+                n_backward = int(cbackward_n) if cbackward_n else 1
+                if _strict and n_backward > col:
+                    raise ValueError(
+                        f"Cursor left movement at position {idx} would move "
+                        f"{n_backward} cells left from column {col}, "
+                        f"exceeding string start"
+                    )
+                col = max(0, col - n_backward)
+                idx = m.end()
+                continue
+
+            # Any other recognized sequence: preserve as-is.
+            _append_seq(m.group())
+            idx = m.end()
+            continue
+
+        # Carriage return.
+        if char == '\r':
+            col = 0
             idx += 1
             continue
-        seq = m.group()
-        if _HYPERLINK_CLOSE_RE.match(seq):
-            depth -= 1
-            if depth == 0:
-                return (idx, m.end())
-        elif _parse_hyperlink_open(seq):
-            depth += 1
-        idx = m.end()
-    return None
+
+        # Backspace.
+        if char == '\x08':
+            if col > 0:
+                col -= 1
+            idx += 1
+            continue
+
+        # Tab expansion.
+        if char == '\t':
+            col = _emit_tab(col)
+            idx += 1
+            continue
+
+        # Grapheme cluster.
+        grapheme = next(iter_graphemes(_text, start=idx))
+        grapheme_w = width(grapheme, ambiguous_width=_ambw)
+        _handle_grapheme(grapheme, grapheme_w, col)
+        col += grapheme_w
+        idx += len(grapheme)
+
+    result = _reconstruct_painter(
+        cells, sequences, _start, _end, _fillchar,
+    )
+    return result, sgr_at_clip_start
 
 
 def clip(
@@ -59,17 +526,14 @@ def clip(
 
     This function extracts a substring based on visible column positions rather than
     character indices. Terminal escape sequences are preserved in the output since
-    they have zero display width. If a wide character (width 2) would be split at
+    they have zero display width. If a wide character (width 2) is split at
     either boundary, it is replaced with ``fillchar``.
 
     TAB characters (``\t``) are expanded to spaces up to the next tab stop,
-    controlled by the ``tabsize`` parameter.
-
-    When no horizontal cursor movements are present (backspace, carriage return, or
-    CSI C/D/G sequences), cursor movement characters and sequences are passed through
-    as zero-width sequences.  When cursor movement is detected, a "painter's
-    algorithm" is used instead: cursor movements actively change the write position,
-    allowing cursor-left and carriage return to overwrite previously written cells.
+    controlled by the ``tabsize`` parameter. When cursor movement is detected,
+    a "painter's algorithm" is used, cursor movements actively change the write
+    position, allowing cursor-left and carriage return to overwrite previously
+    written cells. It is assumed that ``text`` begins at column 0.
 
     **OSC 8 hyperlinks** are handled specially: the visible text inside a hyperlink
     is clipped to the requested column range, and the hyperlink is rebuilt around
@@ -94,11 +558,13 @@ def clip(
     :param control_codes: How to handle control characters and sequences:
 
         - ``'parse'`` (default): Track horizontal cursor movement and clip
-          hyperlink text.  Cursor overwrite of hyperlink cells is allowed
-          (the hyperlink open/close are preserved as sequences).
-        - ``'strict'``: Like ``parse``, but raises :exc:`ValueError` when a
-          cursor movement would overwrite a cell that is part of an OSC 8
-          hyperlink, as this produces indeterminate results on real terminals.
+          hyperlink text.  Cursor overwrite is always allowed, with best effort
+          results; indeterminate sequences (home, clear, reset, etc.) are
+          preserved as zero-width.
+        - ``'strict'``: Like ``parse``, but raises :exc:`ValueError` on
+          sequences with indeterminate effects (cursor home, clear screen,
+          reset, vertical movement, etc.) matching :func:`width` behavior.
+          Also raises on out-of-bounds horizontal cursor movement.
         - ``'ignore'``: All control characters are treated as zero-width.
           Cursor movement is not tracked (fastest path).
 
@@ -106,8 +572,8 @@ def clip(
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
 
-    :raises ValueError: If ``control_codes='strict'`` and a cursor movement
-        would overwrite a cell that was emitted as part of an OSC 8 hyperlink.
+    :raises ValueError: If ``control_codes='strict'`` and an indeterminate-effect
+        sequence or out-of-bounds cursor movement is encountered.
 
     SGR (terminal styling) sequences are propagated by default. The result
     begins with any active style and ends with a reset::
@@ -123,7 +589,8 @@ def clip(
        Added ``propagate_sgr`` parameter (default True).
 
     .. versionchanged:: 0.7.0
-       Added ``control_codes`` parameter and OSC 8 hyperlink-aware clipping.
+       Added ``control_codes`` parameter (default 'parse').
+       OSC 8 hyperlink-aware clipping.
 
     Example::
 
@@ -138,419 +605,32 @@ def clip(
     if end <= start:
         return ''
 
-    strict = control_codes == 'strict'
-
-    # Fast path: printable ASCII only (no tabs, escape sequences, or wide or zero-width chars)
+    # Fast path: printable ASCII only.
     if text.isascii() and text.isprintable():
         return text[start:end]
 
-    # Fast path: no escape sequences means no SGR tracking needed
+    # No escape sequences => no SGR tracking needed.
     has_esc = '\x1b' in text
     if propagate_sgr and not has_esc:
         propagate_sgr = False
 
-    # Use painter's algorithm only when cursor movement (BS, CR, CSI C/D) can overwrite
-    # previously emitted cells. Text without any horizontal movement uses the fast simple path.
-    # Use direct char checks to avoid regex scan overhead for the common (no-cursor) case.
-    use_painter = (
+    # Use painter's algorithm only when cursor movement can overwrite cells.
+    fn_clip = _clip_painter if (
         control_codes != 'ignore' and
         ('\x08' in text or '\r' in text or
          (has_esc and bool(_HORIZONTAL_CURSOR_MOVEMENT.search(text))))
+    ) else _clip_simple
+
+    ctx = _ClipContext(
+        text=text,
+        start=start,
+        end=end,
+        fillchar=fillchar,
+        tabsize=tabsize,
+        ambiguous_width=ambiguous_width,
+        control_codes=control_codes,
+        strict=(control_codes == 'strict'),
+        propagate_sgr=propagate_sgr,
     )
 
-    # SGR tracking state (only when propagate_sgr=True) sgr_at_clip_start is
-    # sgr state when first visible char emitted (None = not yet)
-    sgr_at_clip_start = None
-    # current active sgr state
-    sgr = None  # current SGR state, updated by SGR matches
-    if propagate_sgr:
-        sgr = _SGR_STATE_DEFAULT
-
-    # Inner helpers
-    # Closure-based to avoid LOAD_GLOBAL overhead on hot-path calls.
-    # Each has low individual McCabe complexity.
-
-    def _mark_sgr_capture() -> None:
-        """Record SGR state at first visible emit, if not already captured."""
-        nonlocal sgr_at_clip_start
-        if propagate_sgr and sgr_at_clip_start is None:
-            sgr_at_clip_start = sgr
-
-    def _process_hyperlink(
-        hl_state: _HyperlinkState, match_end: int, col: int,
-    ) -> tuple[str, object]:
-        """Process OSC 8 hyperlink unit.
-
-        Returns (action, data):
-          action='no_close'  -> data unused (emit as regular seq, advance past match_end)
-          action='empty'     -> data is close_end (skip entirely)
-          action='outside'   -> data is (inner_width, close_end) (advance col, skip)
-          action='visible'   -> data is (open_seq, clipped_inner, close_seq,
-                                         inner_width, clipped_width, hl_col_end, close_end)
-        """
-        close_span = _find_hyperlink_close(text, match_end)
-        if close_span is None:
-            return ('no_close', None)
-
-        close_start, close_end = close_span
-        inner_text = text[match_end:close_start]
-        inner_width = width(
-            inner_text, control_codes=control_codes,
-            tabsize=tabsize, ambiguous_width=ambiguous_width,
-        )
-
-        if inner_width == 0:
-            return ('empty', close_end)
-
-        hl_col_start = col
-        hl_col_end = col + inner_width
-
-        if hl_col_end <= start or hl_col_start >= end:
-            return ('outside', (inner_width, close_end))
-
-        inner_clip_start = max(0, start - col)
-        inner_clip_end = end - col
-
-        clipped_inner = clip(
-            inner_text, inner_clip_start, inner_clip_end,
-            fillchar=fillchar, tabsize=tabsize,
-            ambiguous_width=ambiguous_width,
-            propagate_sgr=False,
-            control_codes=control_codes,
-        )
-
-        # Compute clipped width once here; avoids a second width() call in the painter path.
-        clipped_width = width(
-            clipped_inner, control_codes=control_codes,
-            tabsize=tabsize, ambiguous_width=ambiguous_width,
-        )
-
-        return ('visible', (
-            _make_hyperlink_open(hl_state.url, hl_state.params, hl_state.terminator),
-            clipped_inner,
-            _make_hyperlink_close(hl_state.terminator),
-            inner_width,
-            clipped_width,
-            hl_col_end,
-            close_end,
-        ))
-
-    def _emit_tab_simple(col: int, output: list[str]) -> int:
-        """Expand tab for simple-path, appending spaces to output list."""
-        if tabsize > 0:
-            next_tab = col + (tabsize - (col % tabsize))
-            while col < next_tab:
-                if start <= col < end:
-                    output.append(' ')
-                    _mark_sgr_capture()
-                col += 1
-        else:
-            output.append('\t')
-        return col
-
-    def _emit_tab_painter(col: int, write_cells, append_seq) -> int:
-        """Expand tab for painter-path."""
-        if tabsize > 0:
-            next_tab = col + (tabsize - (col % tabsize))
-            while col < next_tab:
-                if start <= col < end:
-                    write_cells(' ', 1, col)
-                col += 1
-        else:
-            append_seq('\t')
-        return col
-
-    def _handle_grapheme_simple(
-        grapheme: str, gw: int, col: int, output: list[str],
-    ) -> None:
-        """Emit grapheme to simple-path output list based on visibility."""
-        if gw == 0:
-            if start <= col < end:
-                output.append(grapheme)
-        elif col >= start and col + gw <= end:
-            output.append(grapheme)
-            _mark_sgr_capture()
-        elif col < end and col + gw > start:
-            output.append(fillchar * (min(end, col + gw) - max(start, col)))
-            _mark_sgr_capture()
-
-    def _handle_grapheme_painter(
-        grapheme: str, gw: int, col: int, write_cells, append_seq,
-    ) -> None:
-        """Emit grapheme to painter-path based on visibility."""
-        if gw == 0:
-            if start <= col < end:
-                append_seq(grapheme)
-        elif col >= start and col + gw <= end:
-            write_cells(grapheme, gw, col)
-        elif col < end and col + gw > start:
-            clip_start = max(start, col)
-            for offset in range(min(end, col + gw) - clip_start):
-                write_cells(fillchar, 1, clip_start + offset)
-
-    def _apply_sgr_wrap(result: str) -> str:
-        """Apply SGR prefix/suffix around result."""
-        if sgr_at_clip_start is not None:
-            if prefix := _sgr_state_to_sequence(sgr_at_clip_start):
-                result = prefix + result
-            if _sgr_state_is_active(sgr_at_clip_start):
-                result += '\x1b[0m'
-        return result
-
-    # Main loops
-
-    if not use_painter:
-        # Simple path: no cursor movement
-        output: list[str] = []
-        col = 0
-        idx = 0
-
-        while idx < len(text):
-            char = text[idx]
-
-            # Early exit: past visible region, SGR captured, no escape ahead
-            if col >= end and sgr_at_clip_start is not None and char != '\x1b':
-                break
-
-            # Handle escape sequences
-            if char == '\x1b':
-                m = _SEQUENCE_CLASSIFY.match(text, idx)
-                if not m:
-                    output.append(char)
-                    idx += 1
-                    continue
-
-                # SGR handling: update state, don't emit sequence
-                if m.group('sgr_params') is not None and propagate_sgr and sgr:
-                    sgr = _sgr_state_update(sgr, m.group())
-                    idx = m.end()
-                    continue
-
-                # OSC 8 hyperlink
-                if hl_state := _parse_hyperlink_open(m.group()):
-                    action, data = _process_hyperlink(hl_state, m.end(), col)
-                    if action == 'no_close':
-                        output.append(m.group())
-                        idx = m.end()
-                    elif action == 'empty':
-                        idx = data
-                    elif action == 'outside':
-                        inner_width, close_end = data
-                        col += inner_width
-                        idx = close_end
-                    else:  # 'visible'
-                        open_seq, clipped_inner, close_seq, inner_width, clipped_width, _, close_end = data
-                        output.append(open_seq)
-                        output.append(clipped_inner)
-                        output.append(close_seq)
-                        _mark_sgr_capture()
-                        col += inner_width
-                        idx = close_end
-                    continue
-
-                # Any other recognized sequence preserved as-is
-                output.append(m.group())
-                idx = m.end()
-                continue
-
-            # TAB expansion
-            if char == '\t':
-                col = _emit_tab_simple(col, output)
-                idx += 1
-                continue
-
-            # Grapheme clustering
-            grapheme = next(iter_graphemes(text, start=idx))
-            grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
-            _handle_grapheme_simple(grapheme, grapheme_w, col, output)
-            col += grapheme_w
-            idx += len(grapheme)
-
-        result = _apply_sgr_wrap(''.join(output))
-        return result
-
-    # Painter's algorithm path: handles cursor movement
-    cells: dict[int, tuple[str, int]] = {}
-    hyperlink_cells: set[int] = set()
-    sequences: list[tuple[int, int, str]] = []
-    seq_order = 0
-
-    col = 0
-    idx = 0
-
-    def _write_cells(s: str, w: int, write_col: int,
-                     is_hyperlink: bool = False) -> None:
-        nonlocal sgr_at_clip_start
-        if strict and not is_hyperlink:
-            for offset in range(w):
-                if write_col + offset in hyperlink_cells:
-                    raise ValueError(
-                        f"Cursor movement at column {write_col + offset} "
-                        f"would overwrite an OSC 8 hyperlink cell. "
-                        f"Use control_codes='parse' to allow this."
-                    )
-        for offset in range(w):
-            src_col = write_col + offset
-            if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
-                cells[src_col - 1] = (fillchar, 1)
-                hyperlink_cells.discard(src_col - 1)
-            if cells.get(src_col, ('', 0))[1] == 2:
-                cells[src_col + 1] = (fillchar, 1)
-                hyperlink_cells.discard(src_col + 1)
-            cells.pop(src_col, None)
-            hyperlink_cells.discard(src_col)
-        cells[write_col] = (s, w)
-        if is_hyperlink:
-            for offset in range(w):
-                hyperlink_cells.add(write_col + offset)
-        _mark_sgr_capture()
-
-    def _append_seq(seq: str, at_col: Optional[int] = None) -> None:
-        nonlocal seq_order
-        c = col if at_col is None else at_col
-        sequences.append((c, seq_order, seq))
-        seq_order += 1
-        _mark_sgr_capture()
-
-    while idx < len(text):
-        char = text[idx]
-
-        # Early exit: past visible region, SGR captured, no escape ahead
-        if col >= end and sgr_at_clip_start is not None and char != '\x1b':
-            break
-
-        # 1. Handle escape sequences -- single regex dispatch
-        if char == '\x1b':
-            m = _SEQUENCE_CLASSIFY.match(text, idx)
-            if not m:
-                _append_seq(char)
-                idx += 1
-                continue
-
-            # SGR handling: update state, don't emit sequence
-            if m.group('sgr_params') is not None and propagate_sgr and sgr:
-                sgr = _sgr_state_update(sgr, m.group())
-                idx = m.end()
-                continue
-
-            # OSC 8 hyperlink
-            if hl_state := _parse_hyperlink_open(m.group()):
-                action, data = _process_hyperlink(hl_state, m.end(), col)
-                if action == 'no_close':
-                    _append_seq(m.group())
-                    idx = m.end()
-                elif action == 'empty':
-                    idx = data
-                elif action == 'outside':
-                    inner_width, close_end = data
-                    col += inner_width
-                    idx = close_end
-                else:  # 'visible'
-                    open_seq, clipped_inner, close_seq, inner_width, clipped_width, hl_col_end, close_end = data
-                    _append_seq(open_seq)
-                    _write_cells(clipped_inner, clipped_width, col,
-                                 is_hyperlink=True)
-                    col += clipped_width
-                    _append_seq(close_seq, at_col=col)
-                    # Advance past the original hyperlink content
-                    col = hl_col_end
-                    idx = close_end
-                continue
-
-            # 1a. HPA: horizontal position absolute (CSI n G)
-            if (hpa_n := m.group('hpa_n')) is not None:
-                col = int(hpa_n) - 1 if hpa_n else 0
-                idx = m.end()
-                continue
-
-            # 1b. Cursor forward
-            if (cforward_n := m.group('cforward_n')) is not None:
-                n_forward = int(cforward_n) if cforward_n else 1
-                move_end = col + n_forward
-                if col < end and move_end > start:
-                    for i in range(max(col, start), min(move_end, end)):
-                        _write_cells(fillchar, 1, i)
-                col = move_end
-                idx = m.end()
-                continue
-
-            # 1c. Cursor backward
-            if (cbackward_n := m.group('cbackward_n')) is not None:
-                n_backward = int(cbackward_n) if cbackward_n else 1
-                if strict and n_backward > col:
-                    raise ValueError(
-                        f"Cursor left movement at position {idx} would move "
-                        f"{n_backward} cells left from column {col}, "
-                        f"exceeding string start"
-                    )
-                col = max(0, col - n_backward)
-                idx = m.end()
-                continue
-
-            # 1d. Any other recognized zero-width sequence
-            _append_seq(m.group())
-            idx = m.end()
-            continue
-
-        # 2. Carriage return and backspace (before TAB/grapheme fallthrough)
-        if char == '\r':
-            col = 0
-            idx += 1
-            continue
-
-        if char == '\x08':
-            if col > 0:
-                col -= 1
-            idx += 1
-            continue
-
-        # 3. TAB expansion
-        if char == '\t':
-            col = _emit_tab_painter(col, _write_cells, _append_seq)
-            idx += 1
-            continue
-
-        # 4. Grapheme clustering
-        grapheme = next(iter_graphemes(text, start=idx))
-        grapheme_w = width(grapheme, ambiguous_width=ambiguous_width)
-        _handle_grapheme_painter(grapheme, grapheme_w, col, _write_cells, _append_seq)
-        col += grapheme_w
-        idx += len(grapheme)
-
-    # Reconstruct result from "painter's algorithm"
-    seqs_by_col: dict[int, list[tuple[int, str]]] = {}
-    for col_pos, order, seq_text in sequences:
-        seqs_by_col.setdefault(col_pos, []).append((order, seq_text))
-    for entries in seqs_by_col.values():
-        entries.sort()
-
-    max_cell_col = max(cells.keys()) if cells else -1
-    max_seq_col = max(seqs_by_col.keys()) if seqs_by_col else -1
-    max_col = max(max_cell_col, max_seq_col)
-
-    parts: list[str] = []
-    walk_col = 0
-    col_limit = min(max_col, end)
-    while walk_col <= col_limit:
-        for _, seq_text in seqs_by_col.get(walk_col, ()):
-            parts.append(seq_text)
-
-        if walk_col >= end:
-            walk_col += 1
-            continue
-
-        if walk_col in cells:
-            cell_text, cell_w = cells[walk_col]
-            parts.append(cell_text)
-            walk_col += cell_w
-        else:
-            if start <= walk_col <= max_cell_col:
-                parts.append(fillchar)
-            walk_col += 1
-
-    for c in sorted(seqs_by_col.keys()):
-        if c > col_limit:
-            for _, seq_text in seqs_by_col[c]:
-                parts.append(seq_text)
-
-    return _apply_sgr_wrap(''.join(parts))
+    return _apply_sgr_wrap(*fn_clip(ctx))

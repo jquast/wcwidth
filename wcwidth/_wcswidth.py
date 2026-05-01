@@ -1,6 +1,8 @@
 """This is a python implementation of wcswidth()."""
 
-import typing
+from __future__ import annotations
+
+from typing import Callable, Optional
 
 # local
 from ._wcwidth import wcwidth
@@ -15,7 +17,8 @@ from .table_grapheme import ISC_CONSONANT
 
 
 class GraphemeMeasurer:
-    """Stateful measurer for grapheme-aware character width.
+    """
+    Stateful measurer for grapheme-aware character width.
 
     Encapsulates the lookbehind state that must be threaded through
     sequential per-character measurements by :meth:`measure_at`.
@@ -25,7 +28,7 @@ class GraphemeMeasurer:
     from applying across the gap.
     """
 
-    def __init__(self, text: str, end: int, wcwidth_fn) -> None:
+    def __init__(self, text: str, end: int, wcwidth_fn: Callable[[str], int]) -> None:
         self._text = text
         self._end = end
         self._wcwidth_fn = wcwidth_fn
@@ -35,7 +38,8 @@ class GraphemeMeasurer:
         self.conjunct_pending = False
 
     def measure_at(self, idx: int) -> tuple[int, int]:
-        """Process character at ``text[idx]`` and return ``(next_idx, width)``.
+        """
+        Process character at ``text[idx]`` and return ``(next_idx, width)``.
 
         Handles ZWJ, VS16, Regional Indicators, Fitzpatrick modifiers, virama
         conjunct formation, Mc spacing marks, and standard ``wcwidth`` measurement.
@@ -98,7 +102,7 @@ class GraphemeMeasurer:
         # Normal character: measure with wcwidth
         w = self._wcwidth_fn(char)
         if w < 0:
-            # C0/C1 control character — caller must handle
+            # C0/C1 control character (returns -1: caller should handle!)
             return (idx + 1, -1)
         if w > 0:
             extra = 1 if self.conjunct_pending else 0
@@ -117,10 +121,11 @@ class GraphemeMeasurer:
         return (idx + 1, 0)
 
     def reset_adjacency(self) -> None:
-        """Break VS16/Fitzpatrick adjacency.
+        """
+        Break VS16/Fitzpatrick adjacency.
 
-        Call after processing escape sequences or control codes to prevent
-        VS16 and Fitzpatrick lookbehind from applying across the gap.
+        Call after processing escape sequences or control codes to prevent VS16 and Fitzpatrick
+        lookbehind from applying across the gap.
         """
         self._last_measured_idx = -2
         self._last_measured_ucs = -1
@@ -128,7 +133,7 @@ class GraphemeMeasurer:
 
 def wcswidth(
     pwcs: str,
-    n: typing.Union[int, None] = None,
+    n: Optional[int] = None,
     unicode_version: str = 'auto',
     ambiguous_width: int = 1,
 ) -> int:
@@ -168,9 +173,7 @@ def wcswidth(
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
 
-    # Select wcwidth call pattern for best lru_cache performance:
-    # - ambiguous_width=1 (default): single-arg calls share cache with direct wcwidth() calls
-    # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
+    # Select wcwidth call pattern for best lru_cache performance
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
     end = len(pwcs) if n is None else n

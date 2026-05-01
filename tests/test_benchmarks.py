@@ -293,6 +293,48 @@ def test_clip_complex_sgr(benchmark):
     benchmark(wcwidth.clip, text, 6, 11)
 
 
+def test_clip_long_cjk_past_window(benchmark):
+    """Benchmark clip() with long CJK text, narrow window (early-exit path)."""
+    text = '中文测试字符串' * 100  # 700 chars, no escape sequences
+    benchmark(wcwidth.clip, text, 0, 50)
+
+
+def test_clip_dense_ansi_past_window(benchmark):
+    """Benchmark clip() with dense ANSI sequences past clip window (SGR tracking)."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30)
+
+
+def test_clip_dense_ansi_no_propagate(benchmark):
+    """Benchmark clip() with dense ANSI sequences, SGR propagation disabled."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, 30, propagate_sgr=False)
+
+
+def test_clip_osc8_hyperlinks(benchmark):
+    """Benchmark clip() with OSC 8 hyperlinks (hyperlink parsing path)."""
+    text = '\x1b]8;;http://example.com\x07Click Here\x1b]8;;\x07 ' * 20
+    benchmark(wcwidth.clip, text, 0, 80)
+
+
+def test_clip_cursor_cr_overwrite(benchmark):
+    """Benchmark clip() with carriage-return overwrite (painter path)."""
+    text = 'hello\rworld ' * 20
+    benchmark(wcwidth.clip, text, 0, 50)
+
+
+def test_clip_cursor_csi_backward(benchmark):
+    """Benchmark clip() with CSI cursor-backward sequences (painter path)."""
+    text = 'hello\x1b[2Dxy ' * 20
+    benchmark(wcwidth.clip, text, 0, 40)
+
+
+def test_clip_long_ascii_fastpath(benchmark):
+    """Benchmark clip() with long ASCII string (fast-path slice)."""
+    text = 'hello world ' * 1000
+    benchmark(wcwidth.clip, text, 500, 600)
+
+
 def test_propagate_sgr_multiline(benchmark):
     """Benchmark propagate_sgr() with multiple lines."""
     lines = ['\x1b[1;31mline one', 'line two', 'line three\x1b[0m']

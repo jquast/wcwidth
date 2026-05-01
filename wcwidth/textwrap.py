@@ -16,11 +16,9 @@ from typing import TYPE_CHECKING, Optional
 # local
 from ._width import width as wcwidth_width
 from .grapheme import iter_graphemes
+from .hyperlink import HyperlinkParams
 from .sgr_state import propagate_sgr as _propagate_sgr
-from .escape_sequences import (ZERO_WIDTH_PATTERN, iter_sequences,
-                               _HYPERLINK_OPEN_RE, _HyperlinkState,
-                               _parse_hyperlink_open, _make_hyperlink_open,
-                               _make_hyperlink_close)
+from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
@@ -214,7 +212,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         lines: list[str] = []
         is_first_line = True
 
-        hyperlink_state: Optional[_HyperlinkState] = None
+        hyperlink_state: Optional[HyperlinkParams] = None
         # Track the id we're using for the current hyperlink continuation
         current_hyperlink_id: Optional[str] = None
 
@@ -231,8 +229,11 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # If continuing a hyperlink from previous line, prepend open sequence
             if hyperlink_state is not None:
-                open_seq = _make_hyperlink_open(
-                    hyperlink_state.url, hyperlink_state.params, hyperlink_state.terminator)
+                open_seq = HyperlinkParams(
+                    url=hyperlink_state.url,
+                    params=hyperlink_state.params,
+                    terminator=hyperlink_state.terminator,
+                ).make_open()
                 chunks[-1] = open_seq + chunks[-1]
 
             # Drop leading whitespace (except at very start)
@@ -311,20 +312,26 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                                     f'id={self._next_hyperlink_id()}:{new_state.params}')
                             else:
                                 current_hyperlink_id = f'id={self._next_hyperlink_id()}'
-                        line_content += _make_hyperlink_close(new_state.terminator)
+                        line_content += HyperlinkParams(terminator=new_state.terminator, url='').make_close()
 
                         # Also need to inject the id into the opening
                         # sequence if it didn't have one
                         if 'id=' not in new_state.params:
                             # Find and replace the original open sequence with one that has id
-                            old_open = _make_hyperlink_open(
-                                new_state.url, new_state.params, new_state.terminator)
-                            new_open = _make_hyperlink_open(
-                                new_state.url, current_hyperlink_id, new_state.terminator)
+                            old_open = HyperlinkParams(
+                                url=new_state.url,
+                                params=new_state.params,
+                                terminator=new_state.terminator,
+                            ).make_open()
+                            new_open = HyperlinkParams(
+                                url=new_state.url,
+                                params=current_hyperlink_id,
+                                terminator=new_state.terminator,
+                            ).make_open()
                             line_content = line_content.replace(old_open, new_open, 1)
 
                         # Update state for next line, using computed id
-                        hyperlink_state = _HyperlinkState(
+                        hyperlink_state = HyperlinkParams(
                             new_state.url, current_hyperlink_id, new_state.terminator)
                     else:
                         hyperlink_state = None
@@ -348,8 +355,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                             new_state = self._track_hyperlink_state(
                                 line_content, hyperlink_state)
                             if new_state is not None:
-                                line_content += _make_hyperlink_close(
-                                    new_state.terminator)
+                                line_content += HyperlinkParams(
+                                    terminator=new_state.terminator, url='').make_close()
                             lines.append(indent + line_content + self.placeholder)
                             break
                         current_width -= self._width(current_line[-1])
@@ -368,7 +375,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
     def _track_hyperlink_state(
             self, text: str,
-            state: Optional[_HyperlinkState]) -> Optional[_HyperlinkState]:
+            state: Optional[HyperlinkParams]) -> Optional[HyperlinkParams]:
         """
         Track hyperlink state through text.
 
@@ -378,7 +385,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         for segment, is_seq in iter_sequences(text):
             if is_seq:
-                parsed_link = _parse_hyperlink_open(segment)
+                parsed_link = HyperlinkParams.parse(segment)
                 if parsed_link is not None and parsed_link.url:  # has URL = open
                     state = parsed_link
                 elif segment.startswith(('\x1b]8;;\x1b\\', '\x1b]8;;\x07')):  # close

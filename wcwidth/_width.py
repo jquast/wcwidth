@@ -4,7 +4,7 @@ from typing import Literal
 
 # local
 from ._wcwidth import wcwidth
-from ._wcswidth import wcswidth, GraphemeMeasurer
+from ._wcswidth import GraphemeMeasurer, wcswidth
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                CURSOR_MOVEMENT_SEQUENCE,

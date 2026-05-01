@@ -524,9 +524,9 @@ History
   * **New** `clip()`_ parameter ``control_codes='parse'``, ``'ignore'``, and ``'strict'``. `clip()`_
     is now able to clip OSC 8 hyperlinks.
   * **Improved** `clip()`_ and `width()`_ to support horizontal cursor sequences (``cub``, ``cuf``,
-    ``hpa``). Cursor-left (``cub``) can now overwrite previous text, matching terminal behavior.
-    ``column_address`` (``hpa``) and carriage return (``\r``) are now parsed, and some values
-    conditionally raise ``ValueError`` when ``control_codes='parse'``.
+    ``hpa``). Cursor-left (``cub``) or backspace (``\b``) now overwrites text.  ``column_address``
+    (``hpa``) and carriage return (``\r``) are now parsed, and some values conditionally raise
+    ``ValueError`` when ``control_codes='parse'``.
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,

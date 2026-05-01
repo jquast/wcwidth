@@ -108,7 +108,7 @@ character when measured in sequence by :func:`wcwidth.wcswidth` or
 :func:`wcwidth.width`. The ``Mc`` character adds +1 to the total width,
 reflecting its *positive advance width* as defined in `General Category`_
 (Table 4-4). Zero-width combining marks (``Mn``) between the base character
-and the ``Mc`` do not break the association — for example, a consonant followed
+and the ``Mc`` do not break the association. For example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
 Virama Conjunct Formation
@@ -116,13 +116,13 @@ Virama Conjunct Formation
 
 In `Brahmic scripts`_, a `Virama`_ (``Indic_Syllabic_Category=Virama`` in
 `IndicSyllabicCategory.txt`_) between two consonants triggers `conjunct`_
-formation: the font engine merges the consonants into a single ligature glyph.
+formation: the consonants are merged into a single ligature glyph.
 
 - A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
-- The conjunct still occupies cells — the next visible advance settles it:
+- The conjunct still occupies cells and the next visible advance settles it:
 
   - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
-    1 cell and closes the conjunct — no extra cell is added.
+    1 cell and closes the conjunct.
   - A following character with positive width (or end of string) adds 1 cell
     for the conjunct before counting its own width.
 

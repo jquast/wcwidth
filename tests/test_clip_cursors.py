@@ -105,18 +105,83 @@ def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expe
 
 
 def test_clip_cursor_left_strict_out_of_bounds():
-    """clip() with control_codes='strict' raises on cursor-left beyond string start."""
+    """Clip() with control_codes='strict' raises on cursor-left beyond string start."""
     with pytest.raises(ValueError, match='Cursor left movement'):
         clip('a\x1b[5Da', 0, 1, control_codes='strict')
 
 
 def test_clip_cursor_left_strict_out_of_bounds_painter():
-    """clip() strict-mode raises on cursor-left beyond start in painter path."""
+    """Clip() strict-mode raises on cursor-left beyond start in painter path."""
     with pytest.raises(ValueError, match='Cursor left movement'):
         clip('\x1b[2Dab', 0, 2, control_codes='strict')
 
 
 def test_clip_cursor_left_out_of_bounds_parse_no_raise():
-    """clip() parse mode silently clamps cursor-left beyond start."""
+    """Clip() parse mode silently clamps cursor-left beyond start."""
     assert clip('a\x1b[5Da', 0, 1) == 'a'
     assert clip('ab\x1b[99Dcd', 0, 4) == 'cd'
+
+
+# Indeterminate-effect sequences that raise ValueError in strict mode
+# (matching width() behavior).
+
+INDETERMINATE_SEQUENCES = [
+    ('\x1b[K', 'erase_in_line'),
+    ('\x1b[2K', 'erase_in_line_params'),
+    ('\x1b[J', 'erase_in_display'),
+    ('\x1b[2J', 'erase_in_display_params'),
+    ('\x1b[H', 'cursor_home'),
+    ('\x1b[1;1H', 'cursor_address'),
+    ('\x1b[A', 'cursor_up'),
+    ('\x1b[2A', 'cursor_up_params'),
+    ('\x1b[B', 'cursor_down'),
+    ('\x1b[5B', 'cursor_down_params'),
+    ('\x1b[P', 'delete_character'),
+    ('\x1b[1P', 'parm_dch'),
+    ('\x1b[M', 'delete_line'),
+    ('\x1b[1M', 'parm_delete_line'),
+    ('\x1b[L', 'insert_line'),
+    ('\x1b[1L', 'parm_insert_line'),
+    ('\x1b[@', 'insert_character'),
+    ('\x1b[1X', 'erase_chars'),
+    ('\x1b[S', 'scroll_up'),
+    ('\x1b[T', 'scroll_down'),
+    ('\x1b[?1049h', 'enter_fullscreen'),
+    ('\x1b[?1049l', 'exit_fullscreen'),
+    ('\x1bD', 'scroll_forward'),
+    ('\x1bM', 'scroll_reverse'),
+    ('\x1b8', 'restore_cursor'),
+    ('\x1bc', 'full_reset'),
+]
+
+
+@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
+def test_clip_strict_indeterminate_raises(seq, cap_name):
+    """Clip() strict mode raises ValueError on indeterminate-effect sequences."""
+    with pytest.raises(ValueError, match='Indeterminate cursor sequence'):
+        clip(f'hello{seq}world', 0, 10, control_codes='strict')
+
+
+@pytest.mark.parametrize('seq,cap_name', INDETERMINATE_SEQUENCES)
+def test_clip_parse_indeterminate_preserved(seq, cap_name):
+    """Clip() parse mode preserves indeterminate sequences as zero-width."""
+    result = clip(f'hello{seq}world', 0, 10, control_codes='parse')
+    # The sequence is preserved, visible text is hello + world = 10 chars
+    assert 'hello' in result
+    assert 'world' in result
+    assert seq in result
+
+
+def test_clip_strict_cr_allowed():
+    """Carriage return is allowed in strict mode (text begins at column 0)."""
+    assert clip('hello\rworld', 0, 5, control_codes='strict') == 'world'
+
+
+def test_clip_strict_hpa_allowed():
+    """HPA is allowed in strict mode (text begins at column 0)."""
+    assert clip('abc\x1b[5Gde', 0, 10, control_codes='strict') == 'abc de'
+
+
+def test_clip_strict_cursor_left_allowed():
+    """Cursor-left within bounds is allowed in strict mode."""
+    assert clip('hello\x1b[2Dxy', 0, 5, control_codes='strict') == 'helxy'
