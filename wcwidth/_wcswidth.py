@@ -51,8 +51,7 @@ def wcswidth(
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements
     # pylint: disable=too-complex,too-many-branches,duplicate-code
-    # This function intentionally keeps all logic inline for performance —
-    # local variable state tracking avoids per-character method-call overhead.
+    # This function intentionally keeps all logic inline for performance.
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
