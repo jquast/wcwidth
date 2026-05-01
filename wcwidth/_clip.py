@@ -626,8 +626,6 @@ def clip(
     .. versionchanged:: 0.7.0
        Added ``control_codes`` parameter (default 'parse').
        OSC 8 hyperlink-aware clipping.
-
-    .. versionchanged:: 0.8.0
        Added ``overtyping`` parameter (default None, auto-detect).
 
     Example::
