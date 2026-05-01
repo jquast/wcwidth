@@ -6,9 +6,23 @@ Specification
 
 This document defines how this Python wcwidth library measures the printable width of characters of
 a string. This is not meant to an official standard, but as a terse description of the lowest level
-API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth`.
+API functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` and its relation to higher level
+functions :func:`wcwidth.width` and :func:`wcwidth.iter_graphemes`.
 
-The :func:`wcwidth.iter_graphemes` function is mainly specified by `Unicode Standard Annex #29`_.
+Scope
+-----
+
+The lowest level functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` return -1 when any
+control codes are present.  The higher level function :func:`wcwidth.width` never returns -1,
+accepting default arguments, ``control_codes='parse'`` and its behavior and options are described by
+its docstring and specifications of related control codes, `XTerm Control Sequences`_ and `Kitty
+Text Sizing Protocol`_.
+
+Each string yielded by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth` to
+accurately measure the width of a **grapheme**. Although :func:`wcwidth.iter_graphemes` matches
+behavior of Python 3.15 `uncodedata.iter_graphemes()`_ it differs in its return value,
+:func:`wcwidth.iter_graphemes` yields only strings, while :func:`unicodedata.iter_graphemes` yields
+``unicodedata.Segment`` class objects.
 
 Width of -1
 -----------
@@ -85,15 +99,16 @@ an emoji base, they combine with the base and add 0 to total width.
 Any characters of `Modifier Symbol`_ category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of `UnicodeData.txt`_, aprox. 3 characters.
 
-Any character in sequence with `U+FE0F`_ (Variation Selector 16) defined by
-`emoji-variation-sequences.txt`_ as ``emoji style``.
+Any character with `U+FE0F`_ (Variation Selector 16) defined as ``emoji style``
+in `emoji-variation-sequences.txt`_: VS16 adds 1 cell to the narrow character
+it directly follows, making the pair width 2. Wide characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
 :func:`wcwidth.width`. The ``Mc`` character adds +1 to the total width,
 reflecting its *positive advance width* as defined in `General Category`_
 (Table 4-4). Zero-width combining marks (``Mn``) between the base character
-and the ``Mc`` do not break the association — for example, a consonant followed
+and the ``Mc`` do not break the association. For example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
 Virama Conjunct Formation
@@ -101,13 +116,13 @@ Virama Conjunct Formation
 
 In `Brahmic scripts`_, a `Virama`_ (``Indic_Syllabic_Category=Virama`` in
 `IndicSyllabicCategory.txt`_) between two consonants triggers `conjunct`_
-formation: the font engine merges the consonants into a single ligature glyph.
+formation: the consonants are merged into a single ligature glyph.
 
 - A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
-- The conjunct still occupies cells — the next visible advance settles it:
+- The conjunct still occupies cells and the next visible advance settles it:
 
   - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
-    1 cell and closes the conjunct — no extra cell is added.
+    1 cell and closes the conjunct.
   - A following character with positive width (or end of string) adds 1 cell
     for the conjunct before counting its own width.
 
@@ -119,6 +134,9 @@ formation: the font engine merges the consonants into a single ligature glyph.
 
 See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 
+.. _`Hyperlinks in Terminal Emulators`: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+.. _`Kitty Text Sizing Protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
+.. _`XTerm Control Sequences`: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 .. _`U+0000`: https://codepoints.net/U+0000
 .. _`U+0001`: https://codepoints.net/U+0001
 .. _`U+001F`: https://codepoints.net/U+001F
@@ -164,3 +182,4 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`aksara`: https://www.unicode.org/glossary/#aksara
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`uncodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes

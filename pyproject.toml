@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "wcwidth"
-version = "0.6.0"
+version = "0.7.0"  # don't forget to also update wcwidth/__init__.py:__version__
 description = "Measures the displayed width of unicode strings in a terminal"
 readme = "README.rst"
 keywords = [
