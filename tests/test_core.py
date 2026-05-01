@@ -492,6 +492,7 @@ def test_prepended_concatenation_mark_width(codepoint, name):
 
 def test_legacy_module():
     """Verify legacy ``wcwidth.wcwidth`` module is importable and all public items resolve."""
+    # pylint: disable=import-outside-toplevel
     # local
     import wcwidth.wcwidth as legacy
 
