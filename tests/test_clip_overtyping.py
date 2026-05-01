@@ -103,6 +103,16 @@ from wcwidth import clip
     ('\x1b[5C\x1b]8;;http://example.com\x07', 0, 5, {'propagate_sgr': False}, '     \x1b]8;;http://example.com\x07'),
     # Trailing sequences past col_limit (line 374)
     ('\x1b[5C\x1b]8;;http://example.com\x07', 0, 3, {'propagate_sgr': False}, '   \x1b]8;;http://example.com\x07'),
+    # Lone ESC as first visible thing in painter (captured_style = current_style, line 398)
+    ('\x1b[D\x1b\x1bXy', 0, 3, {}, '\x1b\x1bXy'),
+    # Hyperlink VISIBLE after captured_style already set
+    ('a\x1b[C\x1b]8;;http://x\x07hi\x1b]8;;\x07', 0, 5, {}, 'a \x1b]8;;http://x\x07hi\x1b]8;;\x07'),
+    # Tab with tabsize=0 as first visible thing in painter
+    ('\x1b[D\tab', 0, 2, {'tabsize': 0}, '\tab'),
+    # Zero-width grapheme as first visible thing in painter
+    ('\x1b[D\u0301x', 0, 3, {}, '\u0301x'),
+    # Generic escape sequence as first visible in painter
+    ('\x1b[D\x1b[Hxy', 0, 3, {}, '\x1b[Hxy'),
 ])
 def test_clip_cursor_sequences_expected_behaviour(text, start, end, kwargs, expected):
     """Verify clip() output matches terminal-visible columns after cursor moves."""
@@ -141,3 +151,9 @@ def test_clip_strict_hpa_allowed():
 def test_clip_strict_cursor_left_allowed():
     """Cursor-left within bounds is allowed in strict mode."""
     assert clip('hello\x1b[2Dxy', 0, 5, control_codes='strict') == 'helxy'
+
+
+def test_clip_strict_indeterminate_sequence_painter():
+    """Clip() strict-mode raises on indeterminate sequence in painter path."""
+    with pytest.raises(ValueError, match='Indeterminate cursor sequence'):
+        clip('a\x1b[D\x1b[Hb', 0, 3, control_codes='strict')

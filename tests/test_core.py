@@ -454,6 +454,11 @@ def test_virama_conjunct(phrase, expected):
     assert wcwidth.width(phrase) == expected
 
 
+def test_zwj_at_end_of_string():
+    """ZWJ at end of string (not after virama) is consumed with zero width."""
+    assert wcwidth.wcswidth('a\u200D') == 1
+
+
 def test_soft_hyphen():
     # Test SOFT HYPHEN, category 'Cf' usually are zero-width, but most
     # implementations agree to draw it was '1' cell, visually
@@ -483,3 +488,12 @@ def test_prepended_concatenation_mark_width(codepoint, name):
     """Prepended Concatenation Marks have width 1, not 0."""
     # https://github.com/jquast/wcwidth/issues/119
     assert wcwidth.wcwidth(chr(codepoint)) == 1
+
+
+def test_legacy_module():
+    """Verify legacy ``wcwidth.wcwidth`` module is importable and all public items resolve."""
+    # local
+    import wcwidth.wcwidth as legacy
+
+    for name in legacy.__all__:
+        assert getattr(legacy, name) is not None, f"legacy.wcwidth.{name} is None"
