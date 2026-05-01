@@ -376,6 +376,7 @@ class Screen:
 
 class Pager:
     """A less(1)-like browser for browsing unicode characters."""
+
     # pylint: disable=too-many-instance-attributes
 
     #: screen state for next draw method(s).
@@ -520,14 +521,13 @@ class Pager:
         """
         Pager entry point.
 
-        In interactive mode (terminal is a tty), run until
-        ``process_keystroke()`` detects quit keystroke ('q').  In
-        non-interactive mode, exit after displaying all unicode points.
+        In interactive mode (terminal is a tty), run until ``process_keystroke()`` detects quit
+        keystroke ('q').  In non-interactive mode, exit after displaying all unicode points.
 
         :param writer: callable writes to output stream, receiving unicode.
         :type writer: callable
-        :param reader: callable reads keystrokes from input stream, sending
-                       instance of blessed.keyboard.Keystroke.
+        :param reader: callable reads keystrokes from input stream, sending instance of
+            blessed.keyboard.Keystroke.
         :type reader: callable
         """
         self.initialize_page_data()
@@ -720,8 +720,8 @@ class Pager:
         """
         Conditionally redraw screen when ``dirty`` attribute is valued REFRESH.
 
-        When Pager attribute ``dirty`` is ``STATE_REFRESH``, cursor is moved
-        to (0,0), screen is cleared, and heading is displayed.
+        When Pager attribute ``dirty`` is ``STATE_REFRESH``, cursor is moved to (0,0), screen is
+        cleared, and heading is displayed.
 
         :param callable writer: callable writes to output stream, receiving unicode.
         :return: True if class attribute ``dirty`` is ``STATE_REFRESH``.
@@ -787,8 +787,8 @@ class Pager:
         """
         Generator yields text to be displayed for the current unicode pageview.
 
-        :param list[(unicode, unicode)] data: The current page's data as tuple
-            of ``(ucs, name)``.
+        :param list[(unicode, unicode)] data: The current page's data as tuple     of ``(ucs,
+        name)``.
         :returns: generator for full-page text for display
         """
         if self.term.is_a_tty:

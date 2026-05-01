@@ -15,7 +15,7 @@ import unicodedata
 from enum import IntEnum
 from functools import lru_cache
 
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Optional, NamedTuple
 
 # local
 from .bisearch import bisearch as _bisearch
@@ -138,7 +138,7 @@ class BreakResult(NamedTuple):
 
 
 @lru_cache(maxsize=1024)
-def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> BreakResult | None:
+def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
     """
     Check simple GCB-pair-based break rules (cacheable).
 
@@ -256,7 +256,7 @@ def _should_break(
 def _iter_graphemes_stdlib(
     unistr: str,
     start: int = 0,
-    end: int | None = None,
+    end: Optional[int] = None,
 ) -> Iterator[str]:
     r"""
     Iterate over grapheme clusters using :func:`unicodedata.iter_graphemes`.
@@ -422,7 +422,7 @@ def grapheme_boundary_before(unistr: str, pos: int) -> int:
 def iter_graphemes_reverse(
     unistr: str,
     start: int = 0,
-    end: int | None = None,
+    end: Optional[int] = None,
 ) -> Iterator[str]:
     r"""
     Iterate over grapheme clusters in reverse order (last to first).

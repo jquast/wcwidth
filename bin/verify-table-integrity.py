@@ -65,6 +65,7 @@ Category code was changed from 'Mc' to 'Lo':
     +DerivedGeneralCategory-8.0.0.txt:19B0..19C9    ; Lo #  [26] NEW TAI LUE VOWEL SIGN VOWEL SHORTENER..NEW TAI LUE TONE MARK-2
 
 """
+
 # std imports
 import logging
 

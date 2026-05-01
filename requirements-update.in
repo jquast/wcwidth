@@ -1,4 +1,4 @@
 typing-extensions
 jinja2
-requests
+requests>=2.33
 python-dateutil
