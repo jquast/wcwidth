@@ -183,8 +183,12 @@ class TextSizing(typing.NamedTuple):
         Calculate the display width of a text sizing sequence.
 
         :param ambiguous_width: Width for East Asian Ambiguous characters.
-        :returns: Display width in terminal cells. When ``width > 0``, returns ``params.scale *
-            params.width``. When ``width == 0``, returns ``params.scale * measured_inner_width``.
+        :returns: Display width in terminal cells. When ``width > 0``, returns
+            ``params.scale * params.width``. When ``width == 0``, returns
+            ``params.scale * measured_inner_width``.
+
+        .. note: Fractional scaling (numerator/denominator) does not affect the
+            cell count, it adjusts only the font size within the cells allocated by 'w'.
         """
         if self.params.width > 0:
             return self.params.scale * self.params.width
