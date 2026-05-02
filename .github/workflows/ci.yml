@@ -90,18 +90,8 @@ jobs:
         shell: bash
         run: |
           V=${{ matrix.python-version }}
-
-          if [[ "$V" = pypy-* ]]; then
-            V=$(echo $V | tr -d .-)
-            IS_PYPY=1
-          else
-            V=py$(echo $V | tr -d .)
-            IS_PYPY=0
-          fi
-
-          echo IS_PYPY=$IS_PYPY >>$GITHUB_ENV
+          V=py$(echo $V | tr -d .)
           echo TOX_PYTHON=$V >>$GITHUB_ENV
-
           python -Im pip install tox
 
       - name: Prepare sdist and source-dir

@@ -148,6 +148,12 @@ Use function `width()`_ to measure a string with improved handling of ``control_
     >>> # or ignored,
     >>> wcwidth.width('hello\x1b[5Dworld', control_codes='ignore')
     10
+    >>> # Measure width of text using kitty text sizing protocol (OSC 66),
+    >>> width('\x1b]66;w=2;XY\x07')
+    2
+    >>> # Scaled text sizing: each grapheme occupies 'scale' cells
+    >>> width('\x1b]66;s=2;ABC\x07')
+    6
 
 Use ``control_codes='ignore'`` when the input is known not to contain any control characters or
 terminal sequences for slightly improved performance. Note that TAB (``'\t'``) is a control
@@ -177,7 +183,6 @@ such as clearing the screen, vertical, or absolute cursor movement will raise ``
     Traceback (most recent call last):
     ...
     ValueError: Cursor left movement at position 1 would move 5 cells left from column 1, exceeding string start
-
 
 iter_sequences()
 ----------------
@@ -310,6 +315,10 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> # even OSC 8 hyperlink text may be clipped, 'Click This link' -> 'is link' !
     >>> clip('\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07', 8, 15)
     '\x1b]8;;http://example.com\x07is link\x1b]8;;\x07'
+
+    >>> # and OSC 66 kitty text sizing, supporting width and scale, 'Look' -> '...ook'
+    >>> clip('\x1b]66;w=4:s=4;Look\x07', 1, 16, fillchar='.')
+    '...\x1b]66;s=4:w=3;ook\x07'
 
 Use ``overtyping=False`` when the input is known not to contain any cursor movement characters
 (``\b``, ``\r``, ``CSI C``, ``CSI D``, ``CSI G``) for improved performance.  When
@@ -526,7 +535,8 @@ History
 
 0.7.0 *2026-04-30*
   * **New** `clip()`_ parameter ``control_codes='parse'``, ``'ignore'``, and ``'strict'``. `clip()`_
-    is now able to clip OSC 8 hyperlinks.
+    is now able to clip OSC 8 hyperlinks and OSC 66 text sizing sequences.
+  * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
   * **Improved** `clip()`_ and `width()`_ to support horizontal cursor sequences (``cub``, ``cuf``,
     ``hpa``). Cursor-left (``cub``) or backspace (``\b``) now overwrites text.  ``column_address``
     (``hpa``) and carriage return (``\r``) are now parsed, and some values conditionally raise
@@ -817,6 +827,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
 .. _`propagate_sgr()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.propagate_sgr
+.. _`TextSizing`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.TextSizing
+.. _`TextSizingParams`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.TextSizingParams
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`list_versions()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_versions
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
