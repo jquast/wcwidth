@@ -533,14 +533,14 @@ languages.
 History
 =======
 
-0.7.0 *2026-04-30*
+0.7.0 *2026-05-02*
+  * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
   * **New** `clip()`_ parameter ``control_codes='parse'``, ``'ignore'``, and ``'strict'``. `clip()`_
     is now able to clip OSC 8 hyperlinks and OSC 66 text sizing sequences.
-  * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
   * **Improved** `clip()`_ and `width()`_ to support horizontal cursor sequences (``cub``, ``cuf``,
     ``hpa``). Cursor-left (``cub``) or backspace (``\b``) now overwrites text.  ``column_address``
-    (``hpa``) and carriage return (``\r``) are now parsed, and some values conditionally raise
-    ``ValueError`` when ``control_codes='parse'``.
+    (``hpa``) and carriage return (``\r``) are now parsed, and more values conditionally raise
+    ``ValueError`` when ``control_codes='strict'``.
 
 0.6.0 *2026-02-06*
   * **New** Parameters ``expand_tabs``, ``replace_whitespace``, ``fix_sentence_endings``,
