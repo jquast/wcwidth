@@ -274,9 +274,9 @@ def _iter_graphemes_stdlib(
 
         >>> list(iter_graphemes('cafe\u0301'))
         ['c', 'a', 'f', 'e\u0301']
-        >>> list(iter_graphemes('\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+        >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
         ['o', 'k', '\U0001F468\u200D\U0001F469\u200D\U0001F467']
-        >>> list(iter_graphemes('\U0001F1FA\U0001F1F8'))
+        >>> list(iter_graphemes('ok\U0001F1FA\U0001F1F8'))
         ['o', 'k', '\U0001F1FA\U0001F1F8']
 
     .. versionadded:: 0.3.0

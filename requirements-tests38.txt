@@ -6,7 +6,7 @@
 #
 attrs==25.3.0
     # via pytest
-coverage==5.5
+coverage==7.6.1
     # via
     #   -r requirements-tests38.in
     #   pytest-cov
@@ -27,6 +27,6 @@ pytest==6.2.5
 pytest-cov==5.0.0
     # via -r requirements-tests38.in
 toml==0.10.2
-    # via
-    #   coverage
-    #   pytest
+    # via pytest
+tomli==2.4.1
+    # via coverage

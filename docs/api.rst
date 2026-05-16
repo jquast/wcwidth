@@ -40,4 +40,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.HyperlinkParams
 
+.. autofunction:: wcwidth.TextSizing
+
+.. autofunction:: wcwidth.TextSizingParams
+
 .. _SEMVER: https://semver.org
