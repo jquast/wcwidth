@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import os
 import re
+import glob
 import string
 import difflib
 import zipfile
@@ -33,6 +34,7 @@ except ImportError:
     from typing_extensions import Self
 
 # 3rd party
+import yaml
 import jinja2
 import requests
 import urllib3.util
@@ -43,6 +45,7 @@ EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
 PATH_TESTS = os.path.join(PATH_UP, 'tests')
+PATH_UCS_DETECT_DATA = os.path.join(PATH_UP, 'ucs-detect', 'data')
 # "wcwidth/bin/update-tables.py", even on Windows
 # not really a path, if the git repo isn't named "wcwidth"
 THIS_FILEPATH = ('wcwidth/' +
@@ -1147,6 +1150,298 @@ def replace_if_modified(new_filename: str, original_filename: str) -> None:
     return True
 
 
+# These appear to share the same engines.
+SOFTWARE_SHARED_ENGINES = {
+    'QTerminal': 'qtermwidget',
+    'cool-retro-term': 'qtermwidget',
+    'Hyper': 'xterm.js',
+    'Tabby': 'xterm.js',
+}
+
+VTE_CANONICAL = 'vte'
+
+
+def canonical_name(software_name: str, software_version: str) -> str:
+    """Determine the canonical terminal name, applying VTE and known consolidations."""
+    if 'VTE' in (software_version or ''):
+        return VTE_CANONICAL.lower()
+    return SOFTWARE_SHARED_ENGINES.get(software_name, software_name).lower()
+
+
+def parse_wchar_codepoint(wchar: str) -> int:
+    r"""
+    Extract the primary codepoint from a wchar string.
+
+    The ``wchar`` field in ucs-detect YAML is stored as a literal Python escape string
+    (e.g. ``'\\u2630'``, ``'\\U0001f468'``), not as the actual Unicode character.
+    Decode it first, then return the ordinal of the first character.
+
+    For VS16/VS15 sequences like ``'\\u231a\\ufe0e'``, returns the base codepoint (0x231A).
+    """
+    decoded = wchar.encode('ascii').decode('unicode_escape')
+    if len(decoded) > 1 and decoded[-1] in ('\ufe0f', '\ufe0e'):
+        return ord(decoded[0])
+    return ord(decoded)
+
+
+@dataclass(frozen=True)
+class OverrideTableRenderCtx(RenderContext):
+    """Render context for override tables (codepoint ranges per terminal)."""
+    variable_name: str
+    table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]]
+
+
+@dataclass
+class OverrideTableRenderDef(RenderDefinition):
+    render_context: OverrideTableRenderCtx
+
+    @classmethod
+    def new(cls, filename: str, context: OverrideTableRenderCtx) -> Self:
+        return cls(
+            jinja_filename='override_table.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=context,
+        )
+
+
+@dataclass(frozen=True)
+class GraphemeOverridePerTerminalRenderCtx(RenderContext):
+    """Render context for a single terminal's grapheme overrides."""
+    canonical_name: str
+    graphemes: dict[str, int]
+
+
+@dataclass
+class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
+    render_context: GraphemeOverridePerTerminalRenderCtx
+
+    @classmethod
+    def new(cls, canonical_name: str, graphemes: dict[str, int]) -> Self:
+        safe_name = canonical_name.replace('-', '_').replace('.', '_')
+        filename = f'table_grapheme_overrides/{safe_name}.py'
+        return cls(
+            jinja_filename='grapheme_override_per_terminal.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=GraphemeOverridePerTerminalRenderCtx(
+                canonical_name=canonical_name,
+                graphemes=graphemes,
+            ),
+        )
+
+
+def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
+    """Convert a set of codepoint integers to hex range descriptions."""
+    if not values:
+        return []
+    sorted_vals = sorted(values)
+    ranges = []
+    start = end = sorted_vals[0]
+    for val in sorted_vals[1:]:
+        if val == end + 1:
+            end = val
+        else:
+            ranges.append((start, end))
+            start = end = val
+    ranges.append((start, end))
+
+    result: list[tuple[str, str, str]] = []
+    for lo, hi in ranges:
+        hex_start, hex_end = f'0x{lo:05x}', f'0x{hi:05x}'
+        name_start = name_ucs(chr(lo)) or '(nil)'
+        name_end = name_ucs(chr(hi)) or '(nil)'
+        if name_start != name_end:
+            txt = f'{name_start[:24].rstrip():24s}..{name_end[:24].rstrip()}'
+        else:
+            txt = name_start[:48]
+        result.append((hex_start, hex_end, txt))
+    return result
+
+
+def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
+    """Yield (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
+        with open(yaml_path, encoding='utf-8') as f:
+            doc = yaml.safe_load(f)
+        name = doc.get('software_name', '')
+        ver = doc.get('software_version', '')
+        canonical = canonical_name(name, ver)
+        yield os.path.basename(yaml_path), canonical, doc
+
+
+def collect_single_codepoint_overrides(
+    category: str,
+) -> Mapping[str, Mapping[str, list[tuple[str, str, str]]]]:
+    """
+    Collect single-codepoint overrides for a given test_results category.
+
+    Returns a dict mapping canonical_name -> {'narrower': [...], 'wider': [...]}
+    where 'narrower' means terminal measured 1, wcwidth measured 2,
+    and 'wider' means terminal measured 2, wcwidth measured 1.
+    """
+    narrower: dict[str, set[int]] = {}
+    wider: dict[str, set[int]] = {}
+
+    for _, canonical, doc in load_ucs_detect_yaml():
+        test_results = doc.get('test_results', {})
+        cat_results = test_results.get(category, {})
+        for _ver, ver_data in cat_results.items():
+            for entry in ver_data.get('failed_codepoints', []):
+                wchar = entry['wchar']
+                ucs = parse_wchar_codepoint(wchar)
+                term_w = entry['measured_by_terminal']
+                wc_w = entry['measured_by_wcwidth']
+                if term_w == 1 and wc_w == 2:
+                    narrower.setdefault(canonical, set()).add(ucs)
+                elif term_w == 2 and wc_w == 1:
+                    wider.setdefault(canonical, set()).add(ucs)
+
+    result: dict[str, dict[str, list[tuple[str, str, str]]]] = {}
+    all_names = sorted(set(narrower.keys()) | set(wider.keys()))
+    for name in all_names:
+        result[name] = {
+            'narrower': values_to_hex_ranges(narrower.get(name, set())),
+            'wider': values_to_hex_ranges(wider.get(name, set())),
+        }
+    return result
+
+
+def collect_grapheme_overrides() -> Mapping[str, dict[str, int]]:
+    """
+    Collect multi-codepoint grapheme overrides from emoji_zwj_results and ri_results.
+
+    Returns a dict mapping canonical_name -> {grapheme_string: terminal_measured_width}. Only
+    includes entries where the terminal measurement differs from wcwidth. Grapheme strings are
+    stored as Python source string literals suitable for code generation.
+    """
+    result: dict[str, dict[str, int]] = {}
+    categories = ('emoji_zwj_results', 'ri_results')
+
+    for _, canonical, doc in load_ucs_detect_yaml():
+        test_results = doc.get('test_results', {})
+        term_graphemes: dict[str, int] = {}
+        for category in categories:
+            cat_results = test_results.get(category, {})
+            for _ver, ver_data in cat_results.items():
+                for entry in ver_data.get('failed_codepoints', []):
+                    wchar = entry['wchar']
+                    term_w = entry['measured_by_terminal']
+                    wc_w = entry['measured_by_wcwidth']
+                    if term_w != wc_w:
+                        decoded = wchar.encode('ascii').decode('unicode_escape')
+                        term_graphemes[decoded] = term_w
+        if term_graphemes:
+            result.setdefault(canonical, {}).update(term_graphemes)
+
+    return result
+
+
+def fetch_override_wide_data() -> OverrideTableRenderCtx:
+    """Generate WIDE_OVERRIDES table from unicode_wide_results."""
+    table = collect_single_codepoint_overrides('unicode_wide_results')
+    return OverrideTableRenderCtx('WIDE_OVERRIDES', table)
+
+
+def fetch_override_sri_data() -> OverrideTableRenderCtx:
+    """Generate SRI_OVERRIDES table from sri_results."""
+    table = collect_single_codepoint_overrides('sri_results')
+    return OverrideTableRenderCtx('SRI_OVERRIDES', table)
+
+
+def fetch_override_sfz_data() -> OverrideTableRenderCtx:
+    """Generate SFZ_OVERRIDES table from sfz_results."""
+    table = collect_single_codepoint_overrides('sfz_results')
+    return OverrideTableRenderCtx('SFZ_OVERRIDES', table)
+
+
+def fetch_override_vs16_data() -> OverrideTableRenderCtx:
+    """Generate VS16_OVERRIDES table from emoji_vs16_results."""
+    table = collect_single_codepoint_overrides('emoji_vs16_results')
+    return OverrideTableRenderCtx('VS16_OVERRIDES', table)
+
+
+def fetch_override_vs15_data() -> OverrideTableRenderCtx:
+    """Generate VS15_OVERRIDES table from emoji_vs15_results."""
+    table = collect_single_codepoint_overrides('emoji_vs15_results')
+    return OverrideTableRenderCtx('VS15_OVERRIDES', table)
+
+
+def fetch_override_grapheme_data() -> list[GraphemeOverridePerTerminalRenderDef]:
+    """Generate per-terminal GRAPHEME_OVERRIDES files from emoji_zwj_results and ri_results."""
+    table = collect_grapheme_overrides()
+    result: list[GraphemeOverridePerTerminalRenderDef] = []
+    for canonical_name, graphemes in sorted(table.items()):
+        if graphemes:
+            result.append(
+                GraphemeOverridePerTerminalRenderDef.new(canonical_name, graphemes))
+    return result
+
+
+def collect_term_programs() -> tuple[frozenset[str], dict[str, str]]:
+    """
+    Collect canonical terminal names and TERM_PROGRAM aliases from ucs-detect data.
+
+    Only terminals that have actual override data (single-codepoint or grapheme)
+    are included.  Returns (known_terminals, term_program_aliases).
+    """
+    # Build the set of terminals that actually have override data from the
+    # same data sources used to generate the override table files.
+    override_terminals: set[str] = set()
+    for table in (collect_single_codepoint_overrides('unicode_wide_results'),
+                  collect_single_codepoint_overrides('sri_results'),
+                  collect_single_codepoint_overrides('sfz_results'),
+                  collect_single_codepoint_overrides('emoji_vs16_results'),
+                  collect_single_codepoint_overrides('emoji_vs15_results')):
+        override_terminals.update(table.keys())
+    override_terminals.update(collect_grapheme_overrides().keys())
+
+    # Collect TERM_PROGRAM aliases from ucs-detect data, only for known terminals.
+    aliases: dict[str, str] = {}
+    for _, canonical, doc in load_ucs_detect_yaml():
+        if canonical not in override_terminals:
+            continue
+        tprog = (doc.get('environment') or {}).get('TERM_PROGRAM', '')
+        if tprog:
+            key = tprog.strip().lower()
+            if key and key != canonical:
+                aliases[key] = canonical
+
+    # User-facing aliases for well-known TERM_PROGRAM values not in ucs-detect data.
+    aliases.update({
+        'iterm.app': 'iterm2',
+        'iterm': 'iterm2',
+        'apple_terminal': 'terminal.app',
+        'urxvt': 'rxvt-unicode',
+        'rxvt': 'rxvt-unicode',
+        'vscode': 'xterm.js',
+    })
+
+    return frozenset(override_terminals), aliases
+
+
+@dataclass(frozen=True)
+class TermProgramTableRenderCtx(RenderContext):
+    """Render context for terminal program data."""
+    known_terminals: frozenset[str]
+    term_program_aliases: dict[str, str]
+
+
+@dataclass
+class TermProgramTableRenderDef(RenderDefinition):
+    render_context: TermProgramTableRenderCtx
+
+    @classmethod
+    def new(cls) -> Self:
+        known, aliases = collect_term_programs()
+        return cls(
+            jinja_filename='term_programs.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_term_programs.py'),
+            render_context=TermProgramTableRenderCtx(
+                known_terminals=known,
+                term_program_aliases=aliases,
+            ),
+        )
+
+
 def fetch_all_emoji_files() -> None:
     """
     Fetch emoji variation sequences and ZWJ sequences for all versions.
@@ -1277,6 +1572,15 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         yield UnicodeTableRenderDef.new('table_ambiguous.py', fetch_table_ambiguous_data())
         yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
+
+        # Terminal override tables from ucs-detect data
+        yield OverrideTableRenderDef.new('table_wide_overrides.py', fetch_override_wide_data())
+        yield OverrideTableRenderDef.new('table_sri_overrides.py', fetch_override_sri_data())
+        yield OverrideTableRenderDef.new('table_sfz_overrides.py', fetch_override_sfz_data())
+        yield OverrideTableRenderDef.new('table_vs16_overrides.py', fetch_override_vs16_data())
+        yield OverrideTableRenderDef.new('table_vs15_overrides.py', fetch_override_vs15_data())
+        yield from fetch_override_grapheme_data()
+        yield TermProgramTableRenderDef.new()
 
     for render_def in get_codegen_definitions():
         new_filename = render_def.output_filename + '.new'

@@ -1,0 +1,3 @@
+[submodule "ucs-detect"]
+	path = ucs-detect
+	url = https://github.com/jquast/ucs-detect.git

@@ -804,7 +804,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
 .. _`urwid/urwid`: https://github.com/urwid/urwid
-.. _`prettytable/prettytable`: https://github.com/urwid/urwid
+.. _`prettytable/prettytable`: prettytable/prettytable
 .. _`leviathan0992/Pylsy`: https://github.com/leviathan0992/Pylsy
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
