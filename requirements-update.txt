@@ -4,11 +4,11 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-update.txt --strip-extras requirements-update.in
 #
-certifi==2026.4.22
+certifi==2026.5.20
     # via requests
 charset-normalizer==3.4.7
     # via requests
-idna==3.13
+idna==3.16
     # via requests
 jinja2==3.1.6
     # via -r requirements-update.in
@@ -16,11 +16,11 @@ markupsafe==3.0.3
     # via jinja2
 python-dateutil==2.9.0.post0
     # via -r requirements-update.in
-requests==2.33.1
+requests==2.34.2
     # via -r requirements-update.in
 six==1.17.0
     # via python-dateutil
 typing-extensions==4.15.0
     # via -r requirements-update.in
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
