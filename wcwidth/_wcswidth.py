@@ -100,10 +100,10 @@ def wcswidth(
     term_canonical = _resolve_terminal(term_program)
     overrides = _get_term_overrides(term_canonical) if term_canonical else None
     if overrides is not None:
-        _narrower, _, _vs16_narrower, _vs16_wider, _vs15_narrower, _vs15_wider = overrides
+        _narrower, _, _vs16_narrower, _vs16_wider, _, _vs15_wider = overrides
     else:
         _narrower = _vs16_narrower = _vs16_wider = ()
-        _vs15_narrower = _vs15_wider = ()
+        _vs15_wider = ()
 
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
     _grapheme_overrides = table_grapheme_overrides.get(term_canonical) if term_canonical else None
@@ -171,9 +171,7 @@ def wcswidth(
         if ucs == 0xFE0E and last_measured_idx >= 0:
             base_ucs = ord(pwcs[last_measured_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
-            if _vs15_narrower and bisearch(base_ucs, _vs15_narrower):
-                vs15_narrow = True
-            elif _vs15_wider and bisearch(base_ucs, _vs15_wider):
+            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 total_width -= 1

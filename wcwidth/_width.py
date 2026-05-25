@@ -158,10 +158,10 @@ def width(
     term_canonical = _resolve_terminal(term_program)
     overrides = _get_term_overrides(term_canonical) if term_canonical else None
     if overrides is not None:
-        _narrower, _, _vs16_narrower, _vs16_wider, _vs15_narrower, _vs15_wider = overrides
+        _narrower, _, _vs16_narrower, _vs16_wider, _, _vs15_wider = overrides
     else:
         _narrower = _vs16_narrower = _vs16_wider = ()
-        _vs15_narrower = _vs15_wider = ()
+        _vs15_wider = ()
 
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
     _grapheme_overrides = table_grapheme_overrides.get(term_canonical) if term_canonical else None
@@ -185,6 +185,7 @@ def width(
     last_measured_w = 0
     last_was_virama = False
     conjunct_pending = False
+    _max_extent_before = 0
 
     while idx < text_len:
         char = text[idx]
@@ -334,13 +335,11 @@ def width(
         if ucs == 0xFE0E and last_measured_idx >= 0:
             base_ucs = ord(text[last_measured_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
-            if _vs15_narrower and bisearch(base_ucs, _vs15_narrower):
-                vs15_narrow = True
-            elif _vs15_wider and bisearch(base_ucs, _vs15_wider):
+            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 current_col -= 1
-                max_extent = max(max_extent, current_col)
+                max_extent = max(_max_extent_before, current_col)
             last_measured_idx = -2
             idx += 1
             continue
@@ -380,6 +379,7 @@ def width(
             if conjunct_pending:
                 current_col += 1
                 conjunct_pending = False
+            _max_extent_before = max_extent
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx

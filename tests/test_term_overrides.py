@@ -145,6 +145,14 @@ def test_vs15_wider_override_unchanged():
     assert wcwidth.wcswidth('\u231a') == 2
     assert wcwidth.wcswidth('\u231a\ufe0e') == 1
     assert wcwidth.wcswidth('\u231a\ufe0e', term_program='VTE') == 2
+    assert wcwidth.width('\u231a\ufe0e') == 1
+    assert wcwidth.width('\u231a\ufe0e', term_program='VTE') == 2
+
+
+def test_grapheme_override_zwj_not_in_table():
+    """ZWJ cluster not in override table falls through without error."""
+    assert wcwidth.wcswidth('😀\u200d😀', term_program='VTE') == 2
+    assert wcwidth.width('😀\u200d😀', term_program='VTE') == 2
 
 
 def test_width_vs15_override():
