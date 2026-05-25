@@ -4,6 +4,7 @@ from __future__ import annotations
 # std imports
 import os
 from functools import lru_cache
+
 from typing import Tuple
 
 # local
@@ -96,11 +97,13 @@ def _load_single_cp_tables() -> dict[str, dict[str, dict[str, _RangeTuple]]]:
     """Lazy-load single-codepoint terminal override tables (excludes graphemes)."""
     if not _SINGLE_CP_CACHE:
         # pylint: disable=import-outside-toplevel
+        # local
         from .table_sfz_overrides import SFZ_OVERRIDES
         from .table_sri_overrides import SRI_OVERRIDES
         from .table_vs15_overrides import VS15_OVERRIDES
         from .table_vs16_overrides import VS16_OVERRIDES
         from .table_wide_overrides import WIDE_OVERRIDES
+
         # pylint: enable=import-outside-toplevel
         _SINGLE_CP_CACHE.append({
             'wide': WIDE_OVERRIDES,

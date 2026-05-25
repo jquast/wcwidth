@@ -17,8 +17,8 @@ import os
 import re
 import glob
 import string
-import hashlib
 import difflib
+import hashlib
 import zipfile
 import argparse
 import datetime
@@ -35,7 +35,6 @@ except ImportError:
     from typing_extensions import Self
 
 # 3rd party
-import yaml
 import jinja2
 import requests
 import urllib3.util
@@ -1306,6 +1305,7 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
 
 def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
     """Yield (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    import yaml  # pylint: disable=import-outside-toplevel
     for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
         with open(yaml_path, encoding='utf-8') as f:
             doc = yaml.safe_load(f)

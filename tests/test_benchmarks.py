@@ -654,13 +654,13 @@ def test_width_ri_term_program(benchmark, term_program):
 
 # VS16/VS15-heavy text to exercise the vs16_narrower/vs15_wider bisearch paths
 _VS16_TEXT = ('\u263A\uFE0F'      # WHITE SMILING FACE + VS16
-             '\u2764\uFE0F'       # HEAVY BLACK HEART + VS16
-             '\u2600\uFE0F'       # BLACK SUN WITH RAYS + VS16
-             '\u2615\uFE0F') * 25  # HOT BEVERAGE + VS16
+              '\u2764\uFE0F'       # HEAVY BLACK HEART + VS16
+              '\u2600\uFE0F'       # BLACK SUN WITH RAYS + VS16
+              '\u2615\uFE0F') * 25  # HOT BEVERAGE + VS16
 
 _VS15_TEXT = ('\u263A\uFE0E'      # WHITE SMILING FACE + VS15
-             '\u2600\uFE0E'       # BLACK SUN WITH RAYS + VS15
-             '\u2615\uFE0E') * 34  # HOT BEVERAGE + VS15
+              '\u2600\uFE0E'       # BLACK SUN WITH RAYS + VS15
+              '\u2615\uFE0E') * 34  # HOT BEVERAGE + VS15
 
 
 @pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
