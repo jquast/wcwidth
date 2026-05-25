@@ -33,8 +33,8 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _WIDE_EASTASIAN_TABLE,
                          _REGIONAL_INDICATOR_SET)
-from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_vs15 import VS15_WIDE_TO_NARROW
+from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL

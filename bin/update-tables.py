@@ -1347,6 +1347,7 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
 
 def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
     """Yield (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    # 3rd party
     import yaml  # pylint: disable=import-outside-toplevel
     for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
         with open(yaml_path, encoding='utf-8') as f:

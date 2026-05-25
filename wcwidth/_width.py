@@ -14,8 +14,8 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _REGIONAL_INDICATOR_SET,
                          _resolve_terminal,
                          _get_term_overrides)
-from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_vs15 import VS15_WIDE_TO_NARROW
+from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
@@ -158,9 +158,9 @@ def width(
     term_canonical = _resolve_terminal(term_program)
     overrides = _get_term_overrides(term_canonical) if term_canonical else None
     if overrides is not None:
-        _narrower, _wider, _vs16_narrower, _vs16_wider, _vs15_narrower, _vs15_wider = overrides
+        _narrower, _, _vs16_narrower, _vs16_wider, _vs15_narrower, _vs15_wider = overrides
     else:
-        _narrower = _wider = _vs16_narrower = _vs16_wider = ()
+        _narrower = _vs16_narrower = _vs16_wider = ()
         _vs15_narrower = _vs15_wider = ()
 
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
