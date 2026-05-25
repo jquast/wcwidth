@@ -9,6 +9,9 @@ from __future__ import annotations
 import importlib
 from functools import lru_cache
 
+# local
+from ._registry import _REGISTRY
+
 
 @lru_cache(maxsize=32)
 def get(term_canonical: str | None) -> dict[str, int] | None:
@@ -20,11 +23,11 @@ def get(term_canonical: str | None) -> dict[str, int] | None:
     """
     if term_canonical is None:
         return None
-    safe_name = term_canonical.replace('-', '_').replace('.', '_')
-    if not safe_name.isidentifier() or safe_name.startswith('_'):
+    hash_key = _REGISTRY.get(term_canonical)
+    if hash_key is None:
         return None
     try:
-        mod = importlib.import_module(f'.{safe_name}', __package__)
+        mod = importlib.import_module(f'._known_{hash_key}', __package__)
         result: dict[str, int] = getattr(mod, 'GRAPHEMES')
         return result
     except ImportError:

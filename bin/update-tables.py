@@ -17,6 +17,7 @@ import os
 import re
 import glob
 import string
+import hashlib
 import difflib
 import zipfile
 import argparse
@@ -1189,6 +1190,31 @@ class OverrideTableRenderCtx(RenderContext):
     """Render context for override tables (codepoint ranges per terminal)."""
     variable_name: str
     table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]]
+    shared_sets: Mapping[str, Mapping[str, list[tuple[str, str, str]]]] = \
+        field(default_factory=dict)
+    terminal_refs: Mapping[str, str] = field(default_factory=dict)
+
+
+def _dedup_override_table(
+    table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]],
+) -> tuple[dict[str, dict[str, list[tuple[str, str, str]]]],
+           dict[str, str]]:
+    """
+    Deduplicate override table by hashing per-terminal narrower/wider tuples.
+
+    Returns (shared_sets, terminal_refs) where shared_sets maps hash_key->{narrower/wider} and
+    terminal_refs maps terminal_name->hash_key.
+    """
+    shared_sets: dict[str, dict[str, list[tuple[str, str, str]]]] = {}
+    terminal_refs: dict[str, str] = {}
+    for term_name, overrides in table.items():
+        key = (tuple(overrides.get('narrower', ())),
+               tuple(overrides.get('wider', ())))
+        hash_key = hashlib.sha256(repr(key).encode()).hexdigest()[:8]
+        if hash_key not in shared_sets:
+            shared_sets[hash_key] = overrides
+        terminal_refs[term_name] = hash_key
+    return shared_sets, terminal_refs
 
 
 @dataclass
@@ -1226,6 +1252,27 @@ class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
                 canonical_name=canonical_name,
                 graphemes=graphemes,
             ),
+        )
+
+
+@dataclass
+class GraphemeRegistryRenderCtx(RenderContext):
+    """Render context for the grapheme override hash registry."""
+
+    registry: dict[str, str]
+
+
+@dataclass
+class GraphemeRegistryRenderDef(RenderDefinition):
+    render_context: GraphemeRegistryRenderCtx
+
+    @classmethod
+    def new(cls, registry: dict[str, str]) -> Self:
+        return cls(
+            jinja_filename='grapheme_registry.py.j2',
+            output_filename=os.path.join(
+                PATH_UP, 'wcwidth', 'table_grapheme_overrides', '_registry.py'),
+            render_context=GraphemeRegistryRenderCtx(registry=registry),
         )
 
 
@@ -1335,44 +1382,71 @@ def collect_grapheme_overrides() -> Mapping[str, dict[str, int]]:
     return result
 
 
+def _make_override_ctx(variable_name: str,
+                       table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]]
+                       ) -> OverrideTableRenderCtx:
+    shared_sets, terminal_refs = _dedup_override_table(table)
+    return OverrideTableRenderCtx(variable_name, table, shared_sets, terminal_refs)
+
+
 def fetch_override_wide_data() -> OverrideTableRenderCtx:
     """Generate WIDE_OVERRIDES table from unicode_wide_results."""
     table = collect_single_codepoint_overrides('unicode_wide_results')
-    return OverrideTableRenderCtx('WIDE_OVERRIDES', table)
+    return _make_override_ctx('WIDE_OVERRIDES', table)
 
 
 def fetch_override_sri_data() -> OverrideTableRenderCtx:
     """Generate SRI_OVERRIDES table from sri_results."""
     table = collect_single_codepoint_overrides('sri_results')
-    return OverrideTableRenderCtx('SRI_OVERRIDES', table)
+    return _make_override_ctx('SRI_OVERRIDES', table)
 
 
 def fetch_override_sfz_data() -> OverrideTableRenderCtx:
     """Generate SFZ_OVERRIDES table from sfz_results."""
     table = collect_single_codepoint_overrides('sfz_results')
-    return OverrideTableRenderCtx('SFZ_OVERRIDES', table)
+    return _make_override_ctx('SFZ_OVERRIDES', table)
 
 
 def fetch_override_vs16_data() -> OverrideTableRenderCtx:
     """Generate VS16_OVERRIDES table from emoji_vs16_results."""
     table = collect_single_codepoint_overrides('emoji_vs16_results')
-    return OverrideTableRenderCtx('VS16_OVERRIDES', table)
+    return _make_override_ctx('VS16_OVERRIDES', table)
 
 
 def fetch_override_vs15_data() -> OverrideTableRenderCtx:
     """Generate VS15_OVERRIDES table from emoji_vs15_results."""
     table = collect_single_codepoint_overrides('emoji_vs15_results')
-    return OverrideTableRenderCtx('VS15_OVERRIDES', table)
+    return _make_override_ctx('VS15_OVERRIDES', table)
 
 
-def fetch_override_grapheme_data() -> list[GraphemeOverridePerTerminalRenderDef]:
-    """Generate per-terminal GRAPHEME_OVERRIDES files from emoji_zwj_results and ri_results."""
+def fetch_override_grapheme_data() -> list[RenderDefinition]:
+    """Generate shared GRAPHEME_OVERRIDES files, deduplicating identical tables."""
     table = collect_grapheme_overrides()
-    result: list[GraphemeOverridePerTerminalRenderDef] = []
+
+    # Group terminals by stable hash of their grapheme data
+    hash_groups: dict[str, list[str]] = {}
+    terminal_hashes: dict[str, str] = {}
+
     for canonical_name, graphemes in sorted(table.items()):
-        if graphemes:
-            result.append(
-                GraphemeOverridePerTerminalRenderDef.new(canonical_name, graphemes))
+        if not graphemes:
+            continue
+        sorted_items = tuple(sorted(graphemes.items()))
+        hash_key = hashlib.sha256(repr(sorted_items).encode()).hexdigest()[:8]
+        hash_groups.setdefault(hash_key, []).append(canonical_name)
+        terminal_hashes[canonical_name] = hash_key
+
+    result: list[RenderDefinition] = []
+
+    # Generate one shared file per unique hash
+    for hash_key, terminals in sorted(hash_groups.items()):
+        graphemes = table[terminals[0]]
+        shared_name = f'_known_{hash_key}'
+        result.append(
+            GraphemeOverridePerTerminalRenderDef.new(shared_name, graphemes))
+
+    # Generate registry mapping terminal -> hash
+    result.append(GraphemeRegistryRenderDef.new(terminal_hashes))
+
     return result
 
 
@@ -1549,6 +1623,19 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
         fetch_all_emoji_files()
 
 
+def _cleanup_obsolete_grapheme_files() -> None:
+    """Remove old per-terminal grapheme override files now covered by shared _known_* files."""
+    overrides_dir = os.path.join(PATH_UP, 'wcwidth', 'table_grapheme_overrides')
+    for filename in sorted(os.listdir(overrides_dir)):
+        if not filename.endswith('.py'):
+            continue
+        if filename in ('__init__.py', '_registry.py') or filename.startswith('_known_'):
+            continue
+        filepath = os.path.join(overrides_dir, filename)
+        os.unlink(filepath)
+        print(f'removed obsolete {filepath}')
+
+
 def main(only_fetch: bool = False, fetch_all_versions: bool = False,
          check_last_modified: bool = False) -> None:
     """Update east-asian, combining and zero width tables."""
@@ -1601,6 +1688,9 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         else:
             assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
             print('ok')
+
+    # Remove obsolete per-terminal grapheme override files (now covered by shared _known_* files)
+    _cleanup_obsolete_grapheme_files()
 
 
 if __name__ == '__main__':

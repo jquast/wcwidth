@@ -604,3 +604,84 @@ def test_ljust_udhr_lines(benchmark):
     benchmark.pedantic(lambda: [wcwidth.ljust(line, w + 1, UDHR_FILLCHAR)
                                 for line, w in zip(UDHR_LINES, UDHR_WIDTHS)],
                        rounds=1, iterations=1)
+
+
+_TERM_PROGRAMS = [
+    'ghostty',
+    'xterm.js',
+]
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with term_program (ghostty=0 overrides vs xterm.js=237)."""
+    text = 'Hello 世界 😀 café ' * 20
+    benchmark(wcwidth.wcswidth, text, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_ri_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with RI flags and term_program."""
+    benchmark(wcwidth.wcswidth, RI_FLAGS_PAIRED, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_emoji_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with emoji ZWJ sequences and term_program."""
+    text = '👨\u200d👩\u200d👧\u200d👦' * 20
+    benchmark(wcwidth.wcswidth, text, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_wide_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with wide CJK and term_program."""
+    text = 'コンニチハ、セカイ！' * 20
+    benchmark(wcwidth.wcswidth, text, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_width_term_program(benchmark, term_program):
+    """Benchmark width() with term_program (ghostty=0 overrides vs xterm.js=237)."""
+    text = 'Hello 世界 😀 café ' * 20
+    benchmark(wcwidth.width, text, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_width_ri_term_program(benchmark, term_program):
+    """Benchmark width() with RI flags and term_program."""
+    benchmark(wcwidth.width, RI_FLAGS_PAIRED, term_program=term_program)
+
+
+# VS16/VS15-heavy text to exercise the vs16_narrower/vs15_wider bisearch paths
+_VS16_TEXT = ('\u263A\uFE0F'      # WHITE SMILING FACE + VS16
+             '\u2764\uFE0F'       # HEAVY BLACK HEART + VS16
+             '\u2600\uFE0F'       # BLACK SUN WITH RAYS + VS16
+             '\u2615\uFE0F') * 25  # HOT BEVERAGE + VS16
+
+_VS15_TEXT = ('\u263A\uFE0E'      # WHITE SMILING FACE + VS15
+             '\u2600\uFE0E'       # BLACK SUN WITH RAYS + VS15
+             '\u2615\uFE0E') * 34  # HOT BEVERAGE + VS15
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_vs16_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with VS16 sequences to exercise vs16_narrower bisearch."""
+    benchmark(wcwidth.wcswidth, _VS16_TEXT, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_wcswidth_vs15_term_program(benchmark, term_program):
+    """Benchmark wcswidth() with VS15 sequences to exercise vs15_wider bisearch."""
+    benchmark(wcwidth.wcswidth, _VS15_TEXT, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_width_vs16_term_program(benchmark, term_program):
+    """Benchmark width() with VS16 sequences to exercise vs16_narrower bisearch."""
+    benchmark(wcwidth.width, _VS16_TEXT, term_program=term_program)
+
+
+@pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
+def test_width_vs15_term_program(benchmark, term_program):
+    """Benchmark width() with VS15 sequences to exercise vs15_wider bisearch."""
+    benchmark(wcwidth.width, _VS15_TEXT, term_program=term_program)

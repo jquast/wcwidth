@@ -4,6 +4,7 @@ from __future__ import annotations
 # std imports
 import os
 from functools import lru_cache
+from typing import Tuple
 
 # local
 from .table_mc import CATEGORY_MC
@@ -14,7 +15,7 @@ from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .unicode_versions import list_versions
 from .table_term_programs import TERM_ALIASES, KNOWN_TERMINALS, TERM_PROGRAM_ALIASES
 
-_RangeTuple = tuple[tuple[int, int], ...]
+_RangeTuple = Tuple[Tuple[int, int], ...]
 
 __all__ = (
     "_REGIONAL_INDICATOR_SET",
