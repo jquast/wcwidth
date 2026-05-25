@@ -73,7 +73,6 @@ _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[_LATEST_VERSION]
 
-# --- Terminal override support ---
 # Canonical terminal names and TERM/TERM_PROGRAM aliases are imported
 # from the generated table_term_programs module.
 
