@@ -132,9 +132,9 @@ def test_vs15_no_override():
 
 
 def test_vs15_wider_override_unchanged():
-    """VS15 wider override does not add width when wcwidth already says 2."""
+    """VS15 narrows by default; VTE wider override restores width 2."""
     assert wcwidth.wcswidth('\u231a') == 2
-    assert wcwidth.wcswidth('\u231a\ufe0e') == 2
+    assert wcwidth.wcswidth('\u231a\ufe0e') == 1
     assert wcwidth.wcswidth('\u231a\ufe0e', term_program='VTE') == 2
 
 

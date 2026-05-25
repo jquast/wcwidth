@@ -15,6 +15,7 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _resolve_terminal,
                          _get_term_overrides)
 from .table_vs16 import VS16_NARROW_TO_WIDE
+from .table_vs15 import VS15_WIDE_TO_NARROW
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
@@ -332,14 +333,14 @@ def width(
         # VS15 (U+FE0E): text variation selector, requests narrow presentation.
         if ucs == 0xFE0E and last_measured_idx >= 0:
             base_ucs = ord(text[last_measured_idx])
+            vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
             if _vs15_narrower and bisearch(base_ucs, _vs15_narrower):
-                if last_measured_w == 2:
-                    current_col -= 1
-                    max_extent = max(max_extent, current_col)
+                vs15_narrow = True
             elif _vs15_wider and bisearch(base_ucs, _vs15_wider):
-                if last_measured_w == 1:
-                    current_col += 1
-                    max_extent = max(max_extent, current_col)
+                vs15_narrow = False
+            if vs15_narrow and last_measured_w == 2:
+                current_col -= 1
+                max_extent = max(max_extent, current_col)
             last_measured_idx = -2
             idx += 1
             continue
@@ -375,8 +376,6 @@ def width(
         # Apply single-codepoint terminal overrides (pre-merged tuples)
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
-        elif w == 1 and _wider and bisearch(ucs, _wider):
-            w = 2
         if w > 0:
             if conjunct_pending:
                 current_col += 1

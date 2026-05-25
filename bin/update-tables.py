@@ -81,6 +81,7 @@ HANGUL_JAMO_ZEROWIDTH = (
 )
 
 HEX_STR_VS16 = 'FE0F'
+HEX_STR_VS15 = 'FE0E'
 # Grapheme Break Property values from UAX #29
 GRAPHEME_BREAK_PROPERTIES = (
     'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
@@ -607,6 +608,47 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     }
 
     return UnicodeTableRenderCtx('VS16_NARROW_TO_WIDE', table)
+
+
+def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
+    """
+    Fetch and create a "wide to narrow variation-15" lookup table.
+
+    Characters in this table are normally wide, but when combined with a variation
+    selector-15 (\\uFE0E), they become narrow. The table is built from ''text style''
+    entries in ``emoji-variation-sequences.txt``, filtered to only wide characters.
+
+    This mirrors ``fetch_table_vs16_data``, which builds the ''narrow to wide''
+    variation-16 table from ''emoji style'' entries.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    unicode_latest = fetch_unicode_versions()[-1]
+
+    wide_tables = fetch_table_wide_data().table
+    unicode_version = UnicodeVersion.parse('9.0.0')
+
+    # Parse FE0E (text style) entries from the latest emoji release
+    table[unicode_version] = parse_vs_data(
+        fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
+        ubound_unicode_version=unicode_version,
+        hex_str_vs=HEX_STR_VS15)
+
+    # Parse and join the earlier-format emoji release
+    table[unicode_version].values.update(
+        parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
+                      ubound_unicode_version=unicode_version,
+                      hex_str_vs=HEX_STR_VS15).values)
+
+    # Keep only characters that are already wide (width 2) -- these are the
+    # ones where VS15 has a narrowing effect. Narrow characters (width 1)
+    # stay narrow regardless.
+    wide_table = wide_tables[unicode_latest].as_value_ranges()
+    table[unicode_version].values = {
+        ucs for ucs in table[unicode_version].values
+        if _bisearch(ucs, wide_table)
+    }
+
+    return UnicodeTableRenderCtx('VS15_WIDE_TO_NARROW', table)
 
 
 def parse_vs_data(fname: str, ubound_unicode_version: UnicodeVersion, hex_str_vs: str):
@@ -1254,7 +1296,7 @@ class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class GraphemeRegistryRenderCtx(RenderContext):
     """Render context for the grapheme override hash registry."""
 
@@ -1660,6 +1702,7 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             UnicodeVersionPyRenderCtx([fetch_unicode_versions()[-1]])  # Only latest
         )
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
+        yield UnicodeTableRenderDef.new('table_vs15.py', fetch_table_vs15_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
         yield UnicodeTableRenderDef.new('table_mc.py', fetch_table_category_mc_data())

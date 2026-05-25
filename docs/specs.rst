@@ -103,6 +103,11 @@ Any character with `U+FE0F`_ (Variation Selector 16) defined as ``emoji style``
 in `emoji-variation-sequences.txt`_: VS16 adds 1 cell to the narrow character
 it directly follows, making the pair width 2. Wide characters are unchanged.
 
+Any character with `U+FE0E`_ (Variation Selector 15) defined as ``text style``
+in `emoji-variation-sequences.txt`_: VS15 subtracts 1 cell from the wide
+character it directly follows, making the pair width 1. Narrow characters are
+unchanged. Terminal overrides may further narrow or widen VS15 presentation.
+
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
 :func:`wcwidth.width`. The ``Mc`` character adds +1 to the total width,
@@ -150,6 +155,7 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
+.. _`U+FE0E`: https://codepoints.net/U+FE0E
 .. _`U+115F`: https://codepoints.net/U+115F
 .. _`DerivedGeneralCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
 .. _`DerivedCoreProperties.txt`: https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt
