@@ -383,6 +383,59 @@ possible timeout, slow network, or non-response when working with "dumb terminal
     >>> awidth('\u2460')
     1
 
+.. _term_program:
+
+term_program
+------------
+
+Some terminal emulators render specific Unicode characters or sequences at widths that differ from
+the Unicode standard.  The ``term_program`` parameter applies per-terminal width corrections
+discovered by the `jquast/ucs-detect`_ utility.
+
+.. code-block:: python
+
+    >>> # VTE-based terminals render trigrams as narrow (1 cell)
+    >>> wcwidth.wcswidth('\u2630')
+    2
+    >>> wcwidth.wcswidth('\u2630', term_program='vte')
+    1
+
+    >>> # Alacritty renders some emoji ZWJ sequences wider than default
+    >>> family = '\U0001F468\u200D\U0001F466'  # man + ZWJ + boy
+    >>> wcwidth.wcswidth(family)
+    2
+    >>> wcwidth.wcswidth(family, term_program='alacritty')
+    4
+
+Use ``term_program=''`` to disable override lookup entirely, or ``term_program=None`` (default) for
+automatic detection.
+
+The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
+`width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
+
+**Automatic Detection**
+
+When ``term_program`` is ``None``, the ``TERM_PROGRAM`` environment variable is read first, falling
+back to ``TERM``.  Only distinctive ``TERM`` values are recognized; generic values like
+``xterm-256color`` are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
+
+.. code-block:: python
+
+    >>> wcwidth.list_term_programs()[:5]
+    ('alacritty', 'bobcat', 'cmd.exe', 'conemu', 'contour')
+
+Terminal names and their ``TERM``/``TERM_PROGRAM`` mappings are auto-generated from `jquast/ucs-detect`_
+data.  For the most accurate detection, query the terminal's software version via XTVERSION_ (CSI > q)
+using an interactive terminal library:
+
+.. code-block:: python
+
+    >>> import blessed, wcwidth
+    >>> term = blessed.Terminal()
+    >>> name = term.get_software_term()  # queries XTVERSION
+    >>> wcwidth.width('\u2630', term_program=name)
+    1
+
 ==========
 Developing
 ==========

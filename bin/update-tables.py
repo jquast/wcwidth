@@ -1376,37 +1376,31 @@ def fetch_override_grapheme_data() -> list[GraphemeOverridePerTerminalRenderDef]
     return result
 
 
-def collect_term_programs() -> tuple[frozenset[str], dict[str, str]]:
+def collect_term_programs() -> tuple[frozenset[str], dict[str, str], dict[str, str]]:
     """
-    Collect canonical terminal names and TERM_PROGRAM aliases from ucs-detect data.
+    Collect canonical terminal names and aliases from ucs-detect data.
 
-    Only terminals that have actual override data (single-codepoint or grapheme)
-    are included.  Returns (known_terminals, term_program_aliases).
+    Returns (known_terminals, term_program_aliases, term_aliases).
     """
-    # Build the set of terminals that actually have override data from the
-    # same data sources used to generate the override table files.
-    override_terminals: set[str] = set()
-    for table in (collect_single_codepoint_overrides('unicode_wide_results'),
-                  collect_single_codepoint_overrides('sri_results'),
-                  collect_single_codepoint_overrides('sfz_results'),
-                  collect_single_codepoint_overrides('emoji_vs16_results'),
-                  collect_single_codepoint_overrides('emoji_vs15_results')):
-        override_terminals.update(table.keys())
-    override_terminals.update(collect_grapheme_overrides().keys())
+    known: set[str] = set()
+    tprog_aliases: dict[str, str] = {}
+    term_aliases: dict[str, str] = {}
 
-    # Collect TERM_PROGRAM aliases from ucs-detect data, only for known terminals.
-    aliases: dict[str, str] = {}
     for _, canonical, doc in load_ucs_detect_yaml():
-        if canonical not in override_terminals:
-            continue
-        tprog = (doc.get('environment') or {}).get('TERM_PROGRAM', '')
+        known.add(canonical)
+        env = doc.get('environment') or {}
+        tprog = env.get('TERM_PROGRAM', '')
         if tprog:
             key = tprog.strip().lower()
             if key and key != canonical:
-                aliases[key] = canonical
+                tprog_aliases[key] = canonical
+        term = env.get('TERM', '')
+        if term and term not in ('xterm-256color', 'xterm'):
+            key = term.strip().lower()
+            if key != canonical:
+                term_aliases.setdefault(key, canonical)
 
-    # User-facing aliases for well-known TERM_PROGRAM values not in ucs-detect data.
-    aliases.update({
+    tprog_aliases.update({
         'iterm.app': 'iterm2',
         'iterm': 'iterm2',
         'apple_terminal': 'terminal.app',
@@ -1415,7 +1409,7 @@ def collect_term_programs() -> tuple[frozenset[str], dict[str, str]]:
         'vscode': 'xterm.js',
     })
 
-    return frozenset(override_terminals), aliases
+    return frozenset(known), tprog_aliases, term_aliases
 
 
 @dataclass(frozen=True)
@@ -1423,6 +1417,7 @@ class TermProgramTableRenderCtx(RenderContext):
     """Render context for terminal program data."""
     known_terminals: frozenset[str]
     term_program_aliases: dict[str, str]
+    term_aliases: dict[str, str]
 
 
 @dataclass
@@ -1431,13 +1426,14 @@ class TermProgramTableRenderDef(RenderDefinition):
 
     @classmethod
     def new(cls) -> Self:
-        known, aliases = collect_term_programs()
+        known, tprog_aliases, term_aliases = collect_term_programs()
         return cls(
             jinja_filename='term_programs.py.j2',
             output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_term_programs.py'),
             render_context=TermProgramTableRenderCtx(
                 known_terminals=known,
-                term_program_aliases=aliases,
+                term_program_aliases=tprog_aliases,
+                term_aliases=term_aliases,
             ),
         )
 

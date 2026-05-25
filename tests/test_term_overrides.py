@@ -27,19 +27,21 @@ def test_resolve_terminal_unknown():
 
 
 def test_resolve_terminal_none():
-    """_resolve_terminal reads TERM_PROGRAM env var when arg is None."""
-    saved = os.environ.get('TERM_PROGRAM')
+    """_resolve_terminal reads TERM_PROGRAM env var, falling back to TERM."""
+    saved_tprog = os.environ.get('TERM_PROGRAM')
+    saved_term = os.environ.get('TERM')
     try:
-        if 'TERM_PROGRAM' in os.environ:
-            del os.environ['TERM_PROGRAM']
+        for var in ('TERM_PROGRAM', 'TERM'):
+            os.environ.pop(var, None)
         assert _resolve_terminal(None) is None
         os.environ['TERM_PROGRAM'] = 'kitty'
         assert _resolve_terminal(None) == 'kitty'
     finally:
-        if saved is not None:
-            os.environ['TERM_PROGRAM'] = saved
-        elif 'TERM_PROGRAM' in os.environ:
-            del os.environ['TERM_PROGRAM']
+        for var, saved in (('TERM_PROGRAM', saved_tprog), ('TERM', saved_term)):
+            if saved is not None:
+                os.environ[var] = saved
+            else:
+                os.environ.pop(var, None)
 
 
 def test_wcswidth_no_override():
