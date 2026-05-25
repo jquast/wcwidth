@@ -13,8 +13,6 @@ from wcwidth._constants import _resolve_terminal
 def test_resolve_terminal_aliases():
     """_resolve_terminal maps known aliases to canonical names."""
     assert _resolve_terminal('kitty') == 'kitty'
-    assert _resolve_terminal('iTerm2') == 'iterm2'
-    assert _resolve_terminal('iTerm.app') == 'iterm2'
     assert _resolve_terminal('vscode') == 'xterm.js'
     assert _resolve_terminal('xterm') == 'xterm'
     assert _resolve_terminal('urxvt') == 'rxvt-unicode'
@@ -207,7 +205,7 @@ def test_grapheme_override_zwj_at_end():
 def test_grapheme_override_fitzpatrick():
     """Fitzpatrick modifier between base and ZWJ handled correctly."""
     text = '\u26F9\U0001F3FB\u200D\u2640\uFE0F'
-    assert wcwidth.wcswidth(text, term_program='iterm2') == 3
+    assert wcwidth.wcswidth(text, term_program='alacritty') == 4
 
 
 def test_list_term_programs():

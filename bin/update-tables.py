@@ -1387,23 +1387,34 @@ def collect_term_programs() -> tuple[frozenset[str], dict[str, str], dict[str, s
     term_aliases: dict[str, str] = {}
 
     for _, canonical, doc in load_ucs_detect_yaml():
-        known.add(canonical)
+        tr = doc.get('terminal_results') or {}
+        method = tr.get('software_method', '') or ''
         env = doc.get('environment') or {}
-        tprog = env.get('TERM_PROGRAM', '')
-        if tprog:
-            key = tprog.strip().lower()
+        tprog = (env.get('TERM_PROGRAM', '') or '').strip()
+        term = (env.get('TERM', '') or '').strip()
+        ver = doc.get('software_version', '') or ''
+
+        has_xtversion = method == 'XTVERSION' or 'VTE' in ver
+        has_tprog = bool(tprog)
+        has_dist_term = bool(term and term.lower() not in ('xterm-256color', 'xterm'))
+
+        if not (has_xtversion or has_tprog or has_dist_term):
+            continue
+
+        known.add(canonical)
+
+        if has_tprog:
+            key = tprog.lower()
             if key and key != canonical:
                 tprog_aliases[key] = canonical
-        term = env.get('TERM', '')
-        if term and term not in ('xterm-256color', 'xterm'):
-            key = term.strip().lower()
+
+        if has_dist_term:
+            key = term.lower()
             if key != canonical:
                 term_aliases.setdefault(key, canonical)
 
+    # Hardcoded aliases for well-known TERM_PROGRAM values not in ucs-detect data.
     tprog_aliases.update({
-        'iterm.app': 'iterm2',
-        'iterm': 'iterm2',
-        'apple_terminal': 'terminal.app',
         'urxvt': 'rxvt-unicode',
         'rxvt': 'rxvt-unicode',
         'vscode': 'xterm.js',
