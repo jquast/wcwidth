@@ -39,7 +39,7 @@ def _scan_zwj_cluster_end(text: str, start: int, end: int) -> int:
         # GB11: \p{ExtPict} Extend* ZWJ × \p{ExtPict}
         # Extend modifiers (VS16, Fitzpatrick skin tones, etc.) attach to
         # the ExtPict *before* the ZWJ, not after it.  After ZWJ the next
-        # codepoint is always an ExtPict directly — no Extend skip needed.
+        # codepoint is always an ExtPict directly, no Extend skip needed.
         if idx < end and ord(text[idx]) in _EMOJI_ZWJ_SET:
             idx += 1
             # Skip trailing Extend (VS16, etc.) after ExtPict before next ZWJ

@@ -7,6 +7,7 @@ import pytest
 
 # local
 import wcwidth
+import wcwidth.table_grapheme_overrides as grapheme_overrides
 from wcwidth._constants import _resolve_terminal, list_term_programs
 from wcwidth.table_grapheme_overrides import get
 
@@ -97,6 +98,12 @@ def test_vs16_override_basic():
     with_override = wcwidth.wcswidth(heart_vs16, term_program='VTE')
     assert normal in (1, 2)
     assert with_override in (1, 2)
+
+
+def test_vs16_wider_override_libvterm():
+    """Libvterm has VS16 wider overrides -- exercises _vs16_wider bisearch path."""
+    assert wcwidth.wcswidth('\u23ed\ufe0f', term_program='libvterm') == 2
+    assert wcwidth.width('\u23ed\ufe0f', term_program='libvterm') == 2
 
 
 def test_wcwidth_unchanged():
@@ -241,3 +248,21 @@ def test_grapheme_override_zwj_no_extpict_base():
 def test_grapheme_override_scanner_edges(text, term, expected):
     """Scanner edge cases for ZWJ chains."""
     assert wcwidth.wcswidth(text, term_program=term) == expected
+
+
+def test_grapheme_override_missing_module():
+    """Returns None when registry hash points to missing _known_ module.
+
+    This can occur during a program re-install when the registry and
+    _known_* files are out of sync (filesystem vs. in-memory copy differ).
+    The ImportError is caught so measurement can continue gracefully
+    without per-terminal grapheme overrides.
+    """
+    saved = grapheme_overrides._REGISTRY.get('putty')
+    try:
+        grapheme_overrides._REGISTRY['putty'] = 'deadbeef'
+        grapheme_overrides.get.cache_clear()
+        assert grapheme_overrides.get('putty') is None
+    finally:
+        grapheme_overrides._REGISTRY['putty'] = saved
+        grapheme_overrides.get.cache_clear()

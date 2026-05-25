@@ -424,9 +424,9 @@ back to ``TERM``.  Only distinctive ``TERM`` values are recognized; generic valu
     >>> wcwidth.list_term_programs()[:5]
     ('alacritty', 'bobcat', 'cmd.exe', 'conemu', 'contour')
 
-Terminal names and their ``TERM``/``TERM_PROGRAM`` mappings are auto-generated from `jquast/ucs-detect`_
-data.  For the most accurate detection, query the terminal's software version via XTVERSION_ (CSI > q)
-using an interactive terminal library:
+Terminal names and their ``TERM``/``TERM_PROGRAM`` mappings are auto-generated from
+`jquast/ucs-detect`_ data.  For the most accurate detection, query the terminal's software
+version via XTVERSION_ (CSI > q) using an interactive terminal library:
 
 .. code-block:: python
 

@@ -658,9 +658,9 @@ _VS16_TEXT = ('\u263A\uFE0F'      # WHITE SMILING FACE + VS16
               '\u2600\uFE0F'       # BLACK SUN WITH RAYS + VS16
               '\u2615\uFE0F') * 25  # HOT BEVERAGE + VS16
 
-_VS15_TEXT = ('\u263A\uFE0E'      # WHITE SMILING FACE + VS15
-              '\u2600\uFE0E'       # BLACK SUN WITH RAYS + VS15
-              '\u2615\uFE0E') * 34  # HOT BEVERAGE + VS15
+_VS15_TEXT = ('\u2615\uFE0E'       # HOT BEVERAGE + VS15 (wide=2 narrows to 1)
+              '\u231A\uFE0E'       # WATCH + VS15 (wide=2 narrows to 1)
+              '\u23F0\uFE0E') * 34  # ALARM CLOCK + VS15 (wide=2 narrows to 1)
 
 
 @pytest.mark.parametrize('term_program', _TERM_PROGRAMS)
