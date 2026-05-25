@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
-from typing import Tuple
+from typing import Tuple, NamedTuple
 
 # local
 from .table_mc import CATEGORY_MC
@@ -133,15 +133,19 @@ def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
     return tuple(merged)
 
 
+class _TermOverrides(NamedTuple):
+    narrower: _RangeTuple
+    vs16_narrower: _RangeTuple
+    vs16_wider: _RangeTuple
+    vs15_wider: _RangeTuple
+
+
 @lru_cache(maxsize=4)
-def _get_term_overrides(term_canonical: str) -> tuple[_RangeTuple, _RangeTuple,
-                                                      _RangeTuple, _RangeTuple,
-                                                      _RangeTuple, _RangeTuple] | None:
+def _get_term_overrides(term_canonical: str) -> _TermOverrides | None:
     """
     Return pre-merged override tuples for a terminal.
 
-    Returns (narrower, wider, vs16_narrower, vs16_wider, vs15_narrower, vs15_wider) or None if the
-    terminal has no overrides at all.
+    Returns a _TermOverrides named tuple or None if the terminal has no overrides at all.
     """
     tables = _load_single_cp_tables()
 
@@ -153,19 +157,13 @@ def _get_term_overrides(term_canonical: str) -> tuple[_RangeTuple, _RangeTuple,
         _get('sri', 'narrower'),
         _get('sfz', 'narrower'),
     )
-    wider = _merge_ranges(
-        _get('wide', 'wider'),
-        _get('sri', 'wider'),
-        _get('sfz', 'wider'),
-    )
     vs16_narrower = _get('vs16', 'narrower')
     vs16_wider = _get('vs16', 'wider')
-    vs15_narrower = _get('vs15', 'narrower')
     vs15_wider = _get('vs15', 'wider')
 
-    if not (narrower or wider or vs16_narrower or vs16_wider or vs15_narrower or vs15_wider):
+    if not (narrower or vs16_narrower or vs16_wider or vs15_wider):
         return None
-    return (narrower, wider, vs16_narrower, vs16_wider, vs15_narrower, vs15_wider)
+    return _TermOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
 
 
 @lru_cache(maxsize=1)
