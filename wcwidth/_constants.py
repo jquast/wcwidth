@@ -168,6 +168,7 @@ def _get_term_overrides(term_canonical: str) -> tuple[_RangeTuple, _RangeTuple,
     return (narrower, wider, vs16_narrower, vs16_wider, vs15_narrower, vs15_wider)
 
 
+@lru_cache(maxsize=1)
 def _resolve_terminal(term_program: str | None = None) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.
