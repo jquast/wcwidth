@@ -34,3 +34,5 @@ _REGISTRY = {
     'zellij': '5bfd6c91',
     'zutty': '5bfd6c91',
 }
+
+__all__ = ('_REGISTRY',)
