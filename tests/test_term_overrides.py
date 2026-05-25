@@ -96,10 +96,9 @@ def test_width_ignore_mode_with_override():
 def test_vs16_override_basic():
     """VS16 override is applied to heart emoji variation."""
     heart_vs16 = '\u2764\ufe0f'
-    normal = wcwidth.wcswidth(heart_vs16)
-    with_override = wcwidth.wcswidth(heart_vs16, term_program='VTE')
-    assert normal in (1, 2)
-    assert with_override in (1, 2)
+    assert wcwidth.wcswidth(heart_vs16) == 2
+    assert wcwidth.wcswidth(heart_vs16, term_program='VTE') == 1
+    assert wcwidth.width(heart_vs16, term_program='VTE') == 1
 
 
 def test_vs16_wider_override_libvterm():
