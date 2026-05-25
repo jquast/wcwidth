@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 # local
+from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
 from ._constants import (_EMOJI_ZWJ_SET,
@@ -16,7 +17,6 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _get_term_overrides)
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_grapheme import ISC_CONSONANT, GRAPHEME_EXTEND
-from . import table_grapheme_overrides
 
 
 def _scan_zwj_cluster_end(text: str, start: int, end: int) -> int:

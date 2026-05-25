@@ -3,6 +3,7 @@
 from typing import Literal, Optional
 
 # local
+from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
 from ._wcswidth import wcswidth, _scan_zwj_cluster_end
@@ -17,7 +18,6 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
 from .table_grapheme import ISC_CONSONANT
-from . import table_grapheme_overrides
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                TEXT_SIZING_PATTERN,
                                CURSOR_MOVEMENT_SEQUENCE,

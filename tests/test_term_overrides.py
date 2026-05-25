@@ -7,7 +7,8 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth._constants import _resolve_terminal
+from wcwidth._constants import _resolve_terminal, list_term_programs
+from wcwidth.table_grapheme_overrides import get
 
 
 def test_resolve_terminal_aliases():
@@ -210,8 +211,6 @@ def test_grapheme_override_fitzpatrick():
 
 def test_list_term_programs():
     """list_term_programs returns known terminals."""
-    # local
-    from wcwidth._constants import list_term_programs
     terms = list_term_programs()
     assert isinstance(terms, tuple)
     assert 'alacritty' in terms
@@ -222,8 +221,6 @@ def test_list_term_programs():
 
 def test_grapheme_override_invalid_term_names():
     """Grapheme override get() rejects non-canonical names."""
-    # local
-    from wcwidth.table_grapheme_overrides import get
     assert get(None) is None
     assert get('__init__') is None
     assert get('') is None

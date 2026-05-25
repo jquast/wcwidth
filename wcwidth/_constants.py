@@ -12,7 +12,9 @@ from .table_zero import ZERO_WIDTH
 from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .unicode_versions import list_versions
-from .table_term_programs import KNOWN_TERMINALS, TERM_PROGRAM_ALIASES, TERM_ALIASES
+from .table_term_programs import TERM_ALIASES, KNOWN_TERMINALS, TERM_PROGRAM_ALIASES
+
+_RangeTuple = tuple[tuple[int, int], ...]
 
 __all__ = (
     "_REGIONAL_INDICATOR_SET",
@@ -86,33 +88,32 @@ def list_term_programs() -> tuple[str, ...]:
     return tuple(sorted(KNOWN_TERMINALS))
 
 
-# Lazy-loaded single-codepoint override tables.
-_SINGLE_CP_TABLES = None
+_SINGLE_CP_CACHE: list[dict[str, dict[str, dict[str, _RangeTuple]]]] = []
 
 
-def _load_single_cp_tables():
+def _load_single_cp_tables() -> dict[str, dict[str, dict[str, _RangeTuple]]]:
     """Lazy-load single-codepoint terminal override tables (excludes graphemes)."""
-    global _SINGLE_CP_TABLES
-    if _SINGLE_CP_TABLES is None:
-        # local
+    if not _SINGLE_CP_CACHE:
+        # pylint: disable=import-outside-toplevel
         from .table_sfz_overrides import SFZ_OVERRIDES
         from .table_sri_overrides import SRI_OVERRIDES
         from .table_vs15_overrides import VS15_OVERRIDES
         from .table_vs16_overrides import VS16_OVERRIDES
         from .table_wide_overrides import WIDE_OVERRIDES
-        _SINGLE_CP_TABLES = {
+        # pylint: enable=import-outside-toplevel
+        _SINGLE_CP_CACHE.append({
             'wide': WIDE_OVERRIDES,
             'sri': SRI_OVERRIDES,
             'sfz': SFZ_OVERRIDES,
             'vs16': VS16_OVERRIDES,
             'vs15': VS15_OVERRIDES,
-        }
-    return _SINGLE_CP_TABLES
+        })
+    return _SINGLE_CP_CACHE[0]
 
 
-def _merge_ranges(*tuples):
+def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
     """Merge multiple sorted range tuples into one sorted, non-overlapping tuple."""
-    all_ranges = []
+    all_ranges: list[tuple[int, int]] = []
     for t in tuples:
         all_ranges.extend(t)
     if not all_ranges:
@@ -129,7 +130,9 @@ def _merge_ranges(*tuples):
 
 
 @lru_cache(maxsize=4)
-def _get_term_overrides(term_canonical):
+def _get_term_overrides(term_canonical: str) -> tuple[_RangeTuple, _RangeTuple,
+                                                      _RangeTuple, _RangeTuple,
+                                                      _RangeTuple, _RangeTuple] | None:
     """
     Return pre-merged override tuples for a terminal.
 
@@ -138,7 +141,7 @@ def _get_term_overrides(term_canonical):
     """
     tables = _load_single_cp_tables()
 
-    def _get(cat, direction):
+    def _get(cat: str, direction: str) -> _RangeTuple:
         return tables[cat].get(term_canonical, {}).get(direction, ())
 
     narrower = _merge_ranges(
@@ -161,7 +164,7 @@ def _get_term_overrides(term_canonical):
     return (narrower, wider, vs16_narrower, vs16_wider, vs15_narrower, vs15_wider)
 
 
-def _resolve_terminal(term_program=None):
+def _resolve_terminal(term_program: str | None = None) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.
 
