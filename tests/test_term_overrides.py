@@ -9,7 +9,6 @@ import pytest
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
 from wcwidth._constants import _resolve_terminal, list_term_programs
-from wcwidth.table_grapheme_overrides import get
 
 
 def test_resolve_terminal_aliases():
@@ -33,8 +32,10 @@ def test_resolve_terminal_none():
     try:
         for var in ('TERM_PROGRAM', 'TERM'):
             os.environ.pop(var, None)
+        _resolve_terminal.cache_clear()
         assert _resolve_terminal(None) is None
         os.environ['TERM_PROGRAM'] = 'kitty'
+        _resolve_terminal.cache_clear()
         assert _resolve_terminal(None) == 'kitty'
     finally:
         for var, saved in (('TERM_PROGRAM', saved_tprog), ('TERM', saved_term)):
@@ -42,6 +43,7 @@ def test_resolve_terminal_none():
                 os.environ[var] = saved
             else:
                 os.environ.pop(var, None)
+        _resolve_terminal.cache_clear()
 
 
 def test_wcswidth_no_override():
@@ -228,10 +230,10 @@ def test_list_term_programs():
 
 def test_grapheme_override_invalid_term_names():
     """Grapheme override get() rejects non-canonical names."""
-    assert get(None) is None
-    assert get('__init__') is None
-    assert get('') is None
-    assert get('../../etc') is None
+    assert grapheme_overrides.get(None) is None
+    assert grapheme_overrides.get('__init__') is None
+    assert grapheme_overrides.get('') is None
+    assert grapheme_overrides.get('../../etc') is None
 
 
 def test_grapheme_override_zwj_no_extpict_base():
@@ -251,12 +253,12 @@ def test_grapheme_override_scanner_edges(text, term, expected):
 
 
 def test_grapheme_override_missing_module():
-    """Returns None when registry hash points to missing _known_ module.
+    """
+    Returns None when registry hash points to missing _known_ module.
 
-    This can occur during a program re-install when the registry and
-    _known_* files are out of sync (filesystem vs. in-memory copy differ).
-    The ImportError is caught so measurement can continue gracefully
-    without per-terminal grapheme overrides.
+    This can occur during a program re-install when the registry and _known_* files are out of sync
+    (filesystem vs. in-memory copy differ). The ImportError is caught so measurement can continue
+    gracefully without per-terminal grapheme overrides.
     """
     saved = grapheme_overrides._REGISTRY.get('putty')
     try:
