@@ -17,7 +17,6 @@ import os
 import re
 import glob
 import string
-import difflib
 import hashlib
 import zipfile
 import argparse
@@ -1153,41 +1152,8 @@ class UnicodeDataFile:
         return [os.path.join(PATH_DATA, match.string) for match in filename_matches]
 
 
-def replace_if_modified(new_filename: str, original_filename: str) -> None:
-    """
-    Replace original file with new file only if there are significant changes.
-
-    If only the 'This code generated' timestamp line differs, discard the new file. If there are
-    other changes or the original doesn't exist, replace it.
-    """
-    if os.path.exists(original_filename):
-        with open(original_filename, encoding='utf-8') as f1, \
-                open(new_filename, encoding='utf-8') as f2:
-            old_lines = f1.readlines()
-            new_lines = f2.readlines()
-
-        # Generate diff
-        diff_lines = list(difflib.unified_diff(old_lines, new_lines,
-                                               fromfile=original_filename,
-                                               tofile=new_filename,
-                                               lineterm=''))
-
-        # Check if only the 'This code generated' line is different
-        significant_changes = False
-        for line in diff_lines:
-            if (line.startswith(('@@', '---', '+++')) or
-                    (line.startswith(('-', '+')) and 'This code generated' in line)):
-                continue
-            else:
-                significant_changes = line.startswith(('-', '+'))
-            if significant_changes:
-                break
-
-        if not significant_changes:
-            # only the code-generated timestamp changed, remove the .new file
-            os.remove(new_filename)
-            return False
-    # Significant changes found, replace the original
+def replace_if_modified(new_filename: str, original_filename: str) -> bool:
+    """Replace original file with new file unconditionally. Always returns True."""
     os.replace(new_filename, original_filename)
     return True
 
@@ -1276,6 +1242,7 @@ class GraphemeOverridePerTerminalRenderCtx(RenderContext):
     """Render context for a single terminal's grapheme overrides."""
     canonical_name: str
     graphemes: dict[str, int]
+    terminals: list[str]      # All terminals that share this same grapheme data
 
 
 @dataclass
@@ -1283,7 +1250,8 @@ class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
     render_context: GraphemeOverridePerTerminalRenderCtx
 
     @classmethod
-    def new(cls, canonical_name: str, graphemes: dict[str, int]) -> Self:
+    def new(cls, canonical_name: str, graphemes: dict[str, int],
+            terminals: list[str]) -> Self:
         safe_name = canonical_name.replace('-', '_').replace('.', '_')
         filename = f'table_grapheme_overrides/{safe_name}.py'
         return cls(
@@ -1292,6 +1260,7 @@ class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
             render_context=GraphemeOverridePerTerminalRenderCtx(
                 canonical_name=canonical_name,
                 graphemes=graphemes,
+                terminals=terminals,
             ),
         )
 
@@ -1485,7 +1454,7 @@ def fetch_override_grapheme_data() -> list[RenderDefinition]:
         graphemes = table[terminals[0]]
         shared_name = f'_known_{hash_key}'
         result.append(
-            GraphemeOverridePerTerminalRenderDef.new(shared_name, graphemes))
+            GraphemeOverridePerTerminalRenderDef.new(shared_name, graphemes, terminals))
 
     # Generate registry mapping terminal -> hash
     result.append(GraphemeRegistryRenderDef.new(terminal_hashes))
@@ -1666,14 +1635,37 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
         fetch_all_emoji_files()
 
 
-def _cleanup_obsolete_grapheme_files() -> None:
-    """Remove old per-terminal grapheme override files now covered by shared _known_* files."""
+def _cleanup_stale_grapheme_files() -> None:
+    """Remove stale per-terminal grapheme override files and unreferenced _known_* files."""
     overrides_dir = os.path.join(PATH_UP, 'wcwidth', 'table_grapheme_overrides')
+
+    # Load registry to determine which _known_* files are still referenced
+    registry: dict[str, str] = {}
+    registry_path = os.path.join(overrides_dir, '_registry.py')
+    if os.path.exists(registry_path):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('_registry', registry_path)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            registry = getattr(mod, '_REGISTRY', {})
+
+    active_hashes = set(registry.values())
+
     for filename in sorted(os.listdir(overrides_dir)):
         if not filename.endswith('.py'):
             continue
-        if filename in ('__init__.py', '_registry.py') or filename.startswith('_known_'):
+        if filename in ('__init__.py', '_registry.py'):
             continue
+        if filename.startswith('_known_'):
+            # Remove _known_* files whose hash is not in the registry
+            hash_key = filename[len('_known_'):-len('.py')]
+            if hash_key not in active_hashes:
+                filepath = os.path.join(overrides_dir, filename)
+                os.unlink(filepath)
+                print(f'removed unreferenced {filepath}')
+            continue
+        # Remove old per-terminal override files (now covered by shared _known_* files)
         filepath = os.path.join(overrides_dir, filename)
         os.unlink(filepath)
         print(f'removed obsolete {filepath}')
@@ -1727,14 +1719,12 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             for data in render_def.generate():
                 fout.write(data)
 
-        if not replace_if_modified(new_filename, render_def.output_filename):
-            print(f'discarded {new_filename} (timestamp-only change)')
-        else:
-            assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
-            print('ok')
+        replace_if_modified(new_filename, render_def.output_filename)
+        assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
+        print('ok')
 
-    # Remove obsolete per-terminal grapheme override files (now covered by shared _known_* files)
-    _cleanup_obsolete_grapheme_files()
+    # Remove stale grapheme override files no longer referenced by _registry.py
+    _cleanup_stale_grapheme_files()
 
 
 if __name__ == '__main__':
