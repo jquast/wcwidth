@@ -284,7 +284,6 @@ VS16_OVERRIDES = {
     'mlterm': _SET_7C486220,
     'putty': _SET_7C486220,
     'qtermwidget': _SET_7C486220,
-    'rio': _SET_7C486220,
     'rxvt-unicode': _SET_7C486220,
     'screen': _SET_7C486220,
     'securecrt': _SET_7C486220,

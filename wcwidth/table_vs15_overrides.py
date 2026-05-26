@@ -113,6 +113,24 @@ _SET_9719B290 = {
         (0x1f237, 0x1f237,),  # Squared Cjk Unified Ideograph-6708
     ),
 }
+_SET_D570010F = {
+    'narrower': (
+    ),
+    'wider': (
+        (0x023eb, 0x023ec,),  # Black Up-pointing Double..Black Down-pointing Doub
+        (0x023f0, 0x023f0,),  # Alarm Clock
+        (0x026ce, 0x026ce,),  # Ophiuchus
+        (0x02705, 0x02705,),  # White Heavy Check Mark
+        (0x0270a, 0x0270b,),  # Raised Fist             ..Raised Hand
+        (0x02728, 0x02728,),  # Sparkles
+        (0x0274c, 0x0274c,),  # Cross Mark
+        (0x0274e, 0x0274e,),  # Negative Squared Cross Mark
+        (0x02754, 0x02755,),  # White Question Mark Orna..White Exclamation Mark O
+        (0x02795, 0x02797,),  # Heavy Plus Sign         ..Heavy Division Sign
+        (0x027b0, 0x027b0,),  # Curly Loop
+        (0x027bf, 0x027bf,),  # Double Curly Loop
+    ),
+}
 _SET_7CEC5966 = {
     'narrower': (
     ),
@@ -221,7 +239,7 @@ VS15_OVERRIDES = {
     'mlterm': _SET_CE924F3D,
     'putty': _SET_CE924F3D,
     'qtermwidget': _SET_CE924F3D,
-    'rio': _SET_CE924F3D,
+    'rio': _SET_D570010F,
     'rxvt-unicode': _SET_CE924F3D,
     'screen': _SET_CE924F3D,
     'securecrt': _SET_7CEC5966,

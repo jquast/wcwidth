@@ -16,6 +16,7 @@ KNOWN_TERMINALS = frozenset({
     'libvterm',
     'mintty',
     'mlterm',
+    'rio',
     'rxvt-unicode',
     'screen',
     'st',
