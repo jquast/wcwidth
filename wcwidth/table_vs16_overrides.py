@@ -123,14 +123,6 @@ _SET_7C486220 = {
     'wider': (
     ),
 }
-_SET_6DF5EE1D = {
-    'narrower': (
-    ),
-    'wider': (
-        (0x1f170, 0x1f171,),  # Negative Squared Latin C..Negative Squared Latin C
-        (0x1f17e, 0x1f17f,),  # Negative Squared Latin C..Negative Squared Latin C
-    ),
-}
 _SET_ABCBD177 = {
     'narrower': (
         (0x00023, 0x00023,),  # Number Sign
@@ -276,25 +268,19 @@ _SET_5520C208 = {
 VS16_OVERRIDES = {
     'alacritty': _SET_7C486220,
     'apple_terminal': _SET_7C486220,
-    'conemu': _SET_6DF5EE1D,
     'contour': _SET_7C486220,
+    'gnu screen': _SET_7C486220,
     'iterm2': _SET_ABCBD177,
     'kitty': _SET_6E23A28A,
     'libvterm': _SET_5520C208,
     'mlterm': _SET_7C486220,
-    'putty': _SET_7C486220,
-    'qtermwidget': _SET_7C486220,
-    'rxvt-unicode': _SET_7C486220,
-    'screen': _SET_7C486220,
-    'securecrt': _SET_7C486220,
-    'st': _SET_7C486220,
-    'teraterm': _SET_7C486220,
+    'st-luke': _SET_7C486220,
     'terminology': _SET_7C486220,
     'tmux': _SET_6E23A28A,
+    'urxvt': _SET_7C486220,
     'vte': _SET_7C486220,
     'wezterm': _SET_7C486220,
     'xterm': _SET_7C486220,
     'xterm.js': _SET_7C486220,
     'zellij': _SET_7C486220,
-    'zutty': _SET_7C486220,
 }

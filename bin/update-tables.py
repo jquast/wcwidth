@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import os
 import re
+import sys
 import glob
 import string
 import hashlib
@@ -90,11 +91,10 @@ INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
 
 def _bisearch(ucs, table):
-    """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
-    our generated code."""
+    """A copy of wcwwidth._bisearch"""
+    # to prevent having issues when depending on code that imports our generated code.
     lbound = 0
     ubound = len(table) - 1
-
     if ucs < table[0][0] or ucs > table[ubound][1]:
         return 0
     while ubound >= lbound:
@@ -105,7 +105,6 @@ def _bisearch(ucs, table):
             ubound = mid - 1
         else:
             return 1
-
     return 0
 
 
@@ -1153,9 +1152,57 @@ class UnicodeDataFile:
 
 
 def replace_if_modified(new_filename: str, original_filename: str) -> bool:
-    """Replace original file with new file unconditionally. Always returns True."""
+    """
+    Replace original file with new file unconditionally.
+
+    Always returns True.
+    """
     os.replace(new_filename, original_filename)
     return True
+
+
+def update_readme_term_programs() -> bool:
+    """
+    Update the ``list_term_programs()`` example in ``README.rst``.
+
+    The section between ``.. BEGIN_LIST_TERM_PROGRAMS`` and ``.. END_LIST_TERM_PROGRAMS``
+    is replaced with the current sorted terminal names (first 5 followed by ``...``).
+
+    Returns True if the file was modified.
+    """
+    readme_path = os.path.join(PATH_UP, 'README.rst')
+    with open(readme_path, encoding='utf-8') as fin:
+        original = fin.read()
+
+    tp = collect_term_programs()
+    names = tuple(sorted(tp.known_terminals))
+    shown = names[:5]
+    if len(names) > 5:
+        display = '(' + ', '.join(repr(n) for n in shown) + ', ...)'
+    else:
+        display = repr(shown)
+    output_lines = [
+        '.. BEGIN_LIST_TERM_PROGRAMS',
+        '.. code-block:: python',
+        '',
+        '    >>> wcwidth.list_term_programs()',
+        f'    {display}',
+        '',
+        '.. END_LIST_TERM_PROGRAMS',
+    ]
+    replacement = '\n'.join(output_lines)
+
+    pattern = re.compile(
+        r'\.\. BEGIN_LIST_TERM_PROGRAMS\n.*?\n\.\. END_LIST_TERM_PROGRAMS',
+        re.DOTALL,
+    )
+    modified = pattern.sub(replacement, original)
+
+    if modified != original:
+        with open(readme_path, 'w', encoding='utf-8', newline='\n') as fout:
+            fout.write(modified)
+        return True
+    return False
 
 
 # These appear to share the same engines.
@@ -1193,35 +1240,46 @@ def parse_wchar_codepoint(wchar: str) -> int:
 
 
 @dataclass(frozen=True)
+class TerminalOverrides:
+    """Per-terminal codepoint override ranges for narrower/wider measurements."""
+    narrower: list[tuple[str, str, str]]
+    wider: list[tuple[str, str, str]]
+
+    def items(self) -> list[tuple[str, list[tuple[str, str, str]]]]:
+        return [('narrower', self.narrower), ('wider', self.wider)]
+
+
+@dataclass(frozen=True)
 class OverrideTableRenderCtx(RenderContext):
     """Render context for override tables (codepoint ranges per terminal)."""
     variable_name: str
-    table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]]
-    shared_sets: Mapping[str, Mapping[str, list[tuple[str, str, str]]]] = \
+    table: Mapping[str, TerminalOverrides]
+    shared_sets: Mapping[str, TerminalOverrides] = \
         field(default_factory=dict)
     terminal_refs: Mapping[str, str] = field(default_factory=dict)
 
 
-def _dedup_override_table(
-    table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]],
-) -> tuple[dict[str, dict[str, list[tuple[str, str, str]]]],
-           dict[str, str]]:
-    """
-    Deduplicate override table by hashing per-terminal narrower/wider tuples.
+@dataclass(frozen=True)
+class DedupedOverrides:
+    """Deduplicated override data: shared sets keyed by hash, terminal-to-hash refs."""
+    shared_sets: dict[str, TerminalOverrides]
+    terminal_refs: dict[str, str]
 
-    Returns (shared_sets, terminal_refs) where shared_sets maps hash_key->{narrower/wider} and
-    terminal_refs maps terminal_name->hash_key.
-    """
-    shared_sets: dict[str, dict[str, list[tuple[str, str, str]]]] = {}
+
+def dedup_override_table(
+    table: Mapping[str, TerminalOverrides],
+) -> DedupedOverrides:
+    """Deduplicate override table by hashing."""
+    shared_sets: dict[str, TerminalOverrides] = {}
     terminal_refs: dict[str, str] = {}
     for term_name, overrides in table.items():
-        key = (tuple(overrides.get('narrower', ())),
-               tuple(overrides.get('wider', ())))
+        key = (tuple(overrides.narrower),
+               tuple(overrides.wider))
         hash_key = hashlib.sha256(repr(key).encode()).hexdigest()[:8]
         if hash_key not in shared_sets:
             shared_sets[hash_key] = overrides
         terminal_refs[term_name] = hash_key
-    return shared_sets, terminal_refs
+    return DedupedOverrides(shared_sets=shared_sets, terminal_refs=terminal_refs)
 
 
 @dataclass
@@ -1329,13 +1387,15 @@ def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
 
 def collect_single_codepoint_overrides(
     category: str,
-) -> Mapping[str, Mapping[str, list[tuple[str, str, str]]]]:
+    known_terminals: frozenset[str],
+) -> Mapping[str, TerminalOverrides]:
     """
     Collect single-codepoint overrides for a given test_results category.
 
-    Returns a dict mapping canonical_name -> {'narrower': [...], 'wider': [...]}
-    where 'narrower' means terminal measured 1, wcwidth measured 2,
-    and 'wider' means terminal measured 2, wcwidth measured 1.
+    Returns a dict mapping canonical_name to 'TerminalOverrides'.
+
+    - 'narrower' means terminal measured 1, but wcwidth measured 2,
+    - 'wider' means terminal measured 2, but wcwidth measured 1.
     """
     narrower: dict[str, set[int]] = {}
     wider: dict[str, set[int]] = {}
@@ -1354,17 +1414,23 @@ def collect_single_codepoint_overrides(
                 elif term_w == 2 and wc_w == 1:
                     wider.setdefault(canonical, set()).add(ucs)
 
-    result: dict[str, dict[str, list[tuple[str, str, str]]]] = {}
+    result: dict[str, TerminalOverrides] = {}
     all_names = sorted(set(narrower.keys()) | set(wider.keys()))
     for name in all_names:
-        result[name] = {
-            'narrower': values_to_hex_ranges(narrower.get(name, set())),
-            'wider': values_to_hex_ranges(wider.get(name, set())),
-        }
+        result[name] = TerminalOverrides(
+            narrower=values_to_hex_ranges(narrower.get(name, set())),
+            wider=values_to_hex_ranges(wider.get(name, set())),
+        )
+    result = {
+        name: data for name, data in result.items()
+        if name in known_terminals
+    }
     return result
 
 
-def collect_grapheme_overrides() -> Mapping[str, dict[str, int]]:
+def collect_grapheme_overrides(
+    known_terminals: frozenset[str],
+) -> Mapping[str, dict[str, int]]:
     """
     Collect multi-codepoint grapheme overrides from emoji_zwj_results and ri_results.
 
@@ -1391,49 +1457,52 @@ def collect_grapheme_overrides() -> Mapping[str, dict[str, int]]:
         if term_graphemes:
             result.setdefault(canonical, {}).update(term_graphemes)
 
+    result = {
+        name: data for name, data in result.items()
+        if name in known_terminals
+    }
     return result
 
 
 def _make_override_ctx(variable_name: str,
-                       table: Mapping[str, Mapping[str, list[tuple[str, str, str]]]]
-                       ) -> OverrideTableRenderCtx:
-    shared_sets, terminal_refs = _dedup_override_table(table)
-    return OverrideTableRenderCtx(variable_name, table, shared_sets, terminal_refs)
+                       table: Mapping[str, TerminalOverrides]) -> OverrideTableRenderCtx:
+    deduped = dedup_override_table(table)
+    return OverrideTableRenderCtx(variable_name, table, deduped.shared_sets, deduped.terminal_refs)
 
 
-def fetch_override_wide_data() -> OverrideTableRenderCtx:
+def fetch_override_wide_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
     """Generate WIDE_OVERRIDES table from unicode_wide_results."""
-    table = collect_single_codepoint_overrides('unicode_wide_results')
+    table = collect_single_codepoint_overrides('unicode_wide_results', known_terminals)
     return _make_override_ctx('WIDE_OVERRIDES', table)
 
 
-def fetch_override_sri_data() -> OverrideTableRenderCtx:
+def fetch_override_sri_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
     """Generate SRI_OVERRIDES table from sri_results."""
-    table = collect_single_codepoint_overrides('sri_results')
+    table = collect_single_codepoint_overrides('sri_results', known_terminals)
     return _make_override_ctx('SRI_OVERRIDES', table)
 
 
-def fetch_override_sfz_data() -> OverrideTableRenderCtx:
+def fetch_override_sfz_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
     """Generate SFZ_OVERRIDES table from sfz_results."""
-    table = collect_single_codepoint_overrides('sfz_results')
+    table = collect_single_codepoint_overrides('sfz_results', known_terminals)
     return _make_override_ctx('SFZ_OVERRIDES', table)
 
 
-def fetch_override_vs16_data() -> OverrideTableRenderCtx:
+def fetch_override_vs16_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
     """Generate VS16_OVERRIDES table from emoji_vs16_results."""
-    table = collect_single_codepoint_overrides('emoji_vs16_results')
+    table = collect_single_codepoint_overrides('emoji_vs16_results', known_terminals)
     return _make_override_ctx('VS16_OVERRIDES', table)
 
 
-def fetch_override_vs15_data() -> OverrideTableRenderCtx:
+def fetch_override_vs15_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
     """Generate VS15_OVERRIDES table from emoji_vs15_results."""
-    table = collect_single_codepoint_overrides('emoji_vs15_results')
+    table = collect_single_codepoint_overrides('emoji_vs15_results', known_terminals)
     return _make_override_ctx('VS15_OVERRIDES', table)
 
 
-def fetch_override_grapheme_data() -> list[RenderDefinition]:
+def fetch_override_grapheme_data(known_terminals: frozenset[str]) -> list[RenderDefinition]:
     """Generate shared GRAPHEME_OVERRIDES files, deduplicating identical tables."""
-    table = collect_grapheme_overrides()
+    table = collect_grapheme_overrides(known_terminals)
 
     # Group terminals by stable hash of their grapheme data
     hash_groups: dict[str, list[str]] = {}
@@ -1462,11 +1531,21 @@ def fetch_override_grapheme_data() -> list[RenderDefinition]:
     return result
 
 
-def collect_term_programs() -> tuple[frozenset[str], dict[str, str], dict[str, str]]:
+@dataclass(frozen=True)
+class TermPrograms:
+    """Canonical terminal names and aliases collected from ucs-detect data."""
+    known_terminals: frozenset[str]
+    term_program_aliases: dict[str, str]
+    term_aliases: dict[str, str]
+
+
+@functools.lru_cache(maxsize=1)
+def collect_term_programs() -> TermPrograms:
     """
     Collect canonical terminal names and aliases from ucs-detect data.
 
-    Returns (known_terminals, term_program_aliases, term_aliases).
+    Only terminals detectable by XTVERSION, TERM_PROGRAM, or distinctive TERM are included in
+    known_terminals.
     """
     known: set[str] = set()
     tprog_aliases: dict[str, str] = {}
@@ -1485,6 +1564,7 @@ def collect_term_programs() -> tuple[frozenset[str], dict[str, str], dict[str, s
         has_dist_term = bool(term and term.lower() not in ('xterm-256color', 'xterm'))
 
         if not (has_xtversion or has_tprog or has_dist_term):
+            print(f'terminal "{canonical}" ({ver}) is not auto-detectable', file=sys.stderr)
             continue
 
         known.add(canonical)
@@ -1501,12 +1581,15 @@ def collect_term_programs() -> tuple[frozenset[str], dict[str, str], dict[str, s
 
     # Hardcoded aliases for well-known TERM_PROGRAM values not in ucs-detect data.
     tprog_aliases.update({
-        'urxvt': 'rxvt-unicode',
-        'rxvt': 'rxvt-unicode',
+        'rxvt': 'urxvt',
         'vscode': 'xterm.js',
     })
 
-    return frozenset(known), tprog_aliases, term_aliases
+    return TermPrograms(
+        known_terminals=frozenset(known),
+        term_program_aliases=tprog_aliases,
+        term_aliases=term_aliases,
+    )
 
 
 @dataclass(frozen=True)
@@ -1523,14 +1606,14 @@ class TermProgramTableRenderDef(RenderDefinition):
 
     @classmethod
     def new(cls) -> Self:
-        known, tprog_aliases, term_aliases = collect_term_programs()
+        tp = collect_term_programs()
         return cls(
             jinja_filename='term_programs.py.j2',
             output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_term_programs.py'),
             render_context=TermProgramTableRenderCtx(
-                known_terminals=known,
-                term_program_aliases=tprog_aliases,
-                term_aliases=term_aliases,
+                known_terminals=tp.known_terminals,
+                term_program_aliases=tp.term_program_aliases,
+                term_aliases=tp.term_aliases,
             ),
         )
 
@@ -1635,14 +1718,19 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
         fetch_all_emoji_files()
 
 
-def _cleanup_stale_grapheme_files() -> None:
+def cleanup_stale_grapheme_files() -> None:
     """Remove stale per-terminal grapheme override files and unreferenced _known_* files."""
     overrides_dir = os.path.join(PATH_UP, 'wcwidth', 'table_grapheme_overrides')
+    # Because hashes can change at any given next release, this is a big part of why we prefix our
+    # files with '_' to indicate to please do not try to import and use them, at least not without
+    # great care via _registry.py -- because they could disappear at any next release! At least we
+    # certainly hope so, that all detectable terminals support unicode well.
 
     # Load registry to determine which _known_* files are still referenced
     registry: dict[str, str] = {}
     registry_path = os.path.join(overrides_dir, '_registry.py')
     if os.path.exists(registry_path):
+        # std imports
         import importlib.util
         spec = importlib.util.spec_from_file_location('_registry', registry_path)
         if spec and spec.loader:
@@ -1691,9 +1779,8 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
     # language options using jinja2 templates, with minimal modification of the
     # code.
     def get_codegen_definitions() -> Iterator[RenderDefinition]:
-        yield UnicodeVersionPyRenderDef.new(
-            UnicodeVersionPyRenderCtx([fetch_unicode_versions()[-1]])  # Only latest
-        )
+        latest_version = fetch_unicode_versions()[-1]
+        yield UnicodeVersionPyRenderDef.new(UnicodeVersionPyRenderCtx([latest_version]))
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
         yield UnicodeTableRenderDef.new('table_vs15.py', fetch_table_vs15_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
@@ -1703,13 +1790,20 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
 
-        # Terminal override tables from ucs-detect data
-        yield OverrideTableRenderDef.new('table_wide_overrides.py', fetch_override_wide_data())
-        yield OverrideTableRenderDef.new('table_sri_overrides.py', fetch_override_sri_data())
-        yield OverrideTableRenderDef.new('table_sfz_overrides.py', fetch_override_sfz_data())
-        yield OverrideTableRenderDef.new('table_vs16_overrides.py', fetch_override_vs16_data())
-        yield OverrideTableRenderDef.new('table_vs15_overrides.py', fetch_override_vs15_data())
-        yield from fetch_override_grapheme_data()
+        # Only publish override data for auto-detectable terminals
+        known_terminals = collect_term_programs().known_terminals
+
+        yield OverrideTableRenderDef.new(
+            'table_wide_overrides.py', fetch_override_wide_data(known_terminals))
+        yield OverrideTableRenderDef.new(
+            'table_sri_overrides.py', fetch_override_sri_data(known_terminals))
+        yield OverrideTableRenderDef.new(
+            'table_sfz_overrides.py', fetch_override_sfz_data(known_terminals))
+        yield OverrideTableRenderDef.new(
+            'table_vs16_overrides.py', fetch_override_vs16_data(known_terminals))
+        yield OverrideTableRenderDef.new(
+            'table_vs15_overrides.py', fetch_override_vs15_data(known_terminals))
+        yield from fetch_override_grapheme_data(known_terminals)
         yield TermProgramTableRenderDef.new()
 
     for render_def in get_codegen_definitions():
@@ -1723,8 +1817,14 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
         print('ok')
 
+    # Update README.rst list_term_programs() example with current terminal names
+    if update_readme_term_programs():
+        print('updated README.rst: list_term_programs() example')
+    else:
+        print('README.rst: list_term_programs() example is up-to-date')
+
     # Remove stale grapheme override files no longer referenced by _registry.py
-    _cleanup_stale_grapheme_files()
+    cleanup_stale_grapheme_files()
 
 
 if __name__ == '__main__':

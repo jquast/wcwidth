@@ -131,7 +131,7 @@ _SET_D570010F = {
         (0x027bf, 0x027bf,),  # Double Curly Loop
     ),
 }
-_SET_7CEC5966 = {
+_SET_ECF58A06 = {
     'narrower': (
     ),
     'wider': (
@@ -168,10 +168,7 @@ _SET_7CEC5966 = {
         (0x02b1b, 0x02b1c,),  # Black Large Square      ..White Large Square
         (0x02b50, 0x02b50,),  # White Medium Star
         (0x02b55, 0x02b55,),  # Heavy Large Circle
-        (0x03030, 0x03030,),  # Wavy Dash
-        (0x0303d, 0x0303d,),  # Part Alternation Mark
-        (0x03297, 0x03297,),  # Circled Ideograph Congratulation
-        (0x03299, 0x03299,),  # Circled Ideograph Secret
+        (0x1f004, 0x1f004,),  # Mahjong Tile Red Dragon
         (0x1f30d, 0x1f30f,),  # Earth Globe Europe-afric..Earth Globe Asia-austral
         (0x1f315, 0x1f315,),  # Full Moon Symbol
         (0x1f31c, 0x1f31c,),  # Last Quarter Moon With Face
@@ -229,29 +226,21 @@ VS15_OVERRIDES = {
     'alacritty': _SET_CE924F3D,
     'apple_terminal': _SET_CE924F3D,
     'bobcat': _SET_9719B290,
-    'cmd.exe': _SET_CE924F3D,
     'contour': _SET_CE924F3D,
-    'extraterm': _SET_CE924F3D,
-    'foot': _SET_CE924F3D,
+    'gnu screen': _SET_CE924F3D,
     'iterm2': _SET_CE924F3D,
     'konsole': _SET_CE924F3D,
     'libvterm': _SET_CE924F3D,
     'mlterm': _SET_CE924F3D,
-    'putty': _SET_CE924F3D,
-    'qtermwidget': _SET_CE924F3D,
     'rio': _SET_D570010F,
-    'rxvt-unicode': _SET_CE924F3D,
-    'screen': _SET_CE924F3D,
-    'securecrt': _SET_7CEC5966,
-    'st': _SET_CE924F3D,
-    'teraterm': _SET_CE924F3D,
-    'terminal.exe': _SET_CE924F3D,
+    'st-luke': _SET_CE924F3D,
     'terminology': _SET_CE924F3D,
     'tmux': _SET_CE924F3D,
+    'urxvt': _SET_CE924F3D,
     'vte': _SET_CE924F3D,
+    'warp': _SET_ECF58A06,
     'wezterm': _SET_CE924F3D,
     'xterm': _SET_CE924F3D,
     'xterm.js': _SET_CE924F3D,
     'zellij': _SET_CE924F3D,
-    'zutty': _SET_CE924F3D,
 }

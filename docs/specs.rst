@@ -106,7 +106,7 @@ it directly follows, making the pair width 2. Wide characters are unchanged.
 Any character with `U+FE0E`_ (Variation Selector 15) defined as ``text style``
 in `emoji-variation-sequences.txt`_: VS15 subtracts 1 cell from the wide
 character it directly follows, making the pair width 1. Narrow characters are
-unchanged. Terminal overrides may further narrow or widen VS15 presentation.
+unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or

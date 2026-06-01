@@ -30,10 +30,43 @@ _SET_07CF0C0A = {
     'wider': (
     ),
 }
-_SET_191341CD = {
+_SET_FDE5FC81 = {
     'narrower': (
+        (0x0fa6e, 0x0fa6f,),  # (nil)
+        (0x0fada, 0x0faff,),  # (nil)
         (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
         (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
+    ),
+    'wider': (
+    ),
+}
+_SET_3A56CDAF = {
+    'narrower': (
+        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
+        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
+        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
+        (0x0fa6e, 0x0fa6f,),  # (nil)
+        (0x0fada, 0x0faff,),  # (nil)
+        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
+        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
+        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
+        (0x1f6d8, 0x1f6d8,),  # Landslide
+        (0x1fa89, 0x1fa8a,),  # Harp                    ..Trombone
+        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
+        (0x1fabe, 0x1fabe,),  # Leafless Tree
+        (0x1fac6, 0x1fac6,),  # Fingerprint
+        (0x1fac8, 0x1fac8,),  # Hairy Creature
+        (0x1facd, 0x1facd,),  # Orca
+        (0x1fadc, 0x1fadc,),  # Root Vegetable
+        (0x1fadf, 0x1fadf,),  # Splatter
+        (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
+        (0x1faef, 0x1faef,),  # Fight Cloud
+    ),
+    'wider': (
+    ),
+}
+_SET_AC239184 = {
+    'narrower': (
         (0x1f6d8, 0x1f6d8,),  # Landslide
         (0x1fa8a, 0x1fa8a,),  # Trombone
         (0x1fa8e, 0x1fa8e,),  # Treasure Chest
@@ -53,85 +86,6 @@ _SET_17E94D9C = {
         (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
         (0x031ef, 0x031ef,),  # Ideographic Description Character Subtraction
         (0x04dc0, 0x04dff,),  # Hexagram For The Creativ..Hexagram For Before Comp
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1fa89, 0x1fa8a,),  # Harp                    ..Trombone
-        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
-        (0x1fabe, 0x1fabe,),  # Leafless Tree
-        (0x1fac6, 0x1fac6,),  # Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facd,),  # Orca
-        (0x1fadc, 0x1fadc,),  # Root Vegetable
-        (0x1fadf, 0x1fadf,),  # Splatter
-        (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-_SET_94F58AD9 = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x02ffc, 0x02fff,),  # Ideographic Description ..Ideographic Description
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
-        (0x031ef, 0x031ef,),  # Ideographic Description Character Subtraction
-        (0x04dc0, 0x04dff,),  # Hexagram For The Creativ..Hexagram For Before Comp
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1f6dc, 0x1f6dc,),  # Wireless
-        (0x1fa75, 0x1fa77,),  # Light Blue Heart        ..Pink Heart
-        (0x1fa87, 0x1fa8a,),  # Maracas                 ..Trombone
-        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
-        (0x1faad, 0x1faaf,),  # Folding Hand Fan        ..Khanda
-        (0x1fabb, 0x1fabf,),  # Hyacinth                ..Goose
-        (0x1fac6, 0x1fac6,),  # Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facf,),  # Orca                    ..Donkey
-        (0x1fada, 0x1fadc,),  # Ginger Root             ..Root Vegetable
-        (0x1fadf, 0x1fadf,),  # Splatter
-        (0x1fae8, 0x1faea,),  # Shaking Face            ..Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-        (0x1faf7, 0x1faf8,),  # Leftwards Pushing Hand  ..Rightwards Pushing Hand
-    ),
-    'wider': (
-    ),
-}
-_SET_D996C3B1 = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-        (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
-    ),
-    'wider': (
-    ),
-}
-_SET_AC239184 = {
-    'narrower': (
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1fa8a, 0x1fa8a,),  # Trombone
-        (0x1fa8e, 0x1fa8e,),  # Treasure Chest
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facd,),  # Orca
-        (0x1faea, 0x1faea,),  # Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-_SET_693006D2 = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x02ffc, 0x02fff,),  # Ideographic Description ..Ideographic Description
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
-        (0x031ef, 0x031ef,),  # Ideographic Description Character Subtraction
         (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
         (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
         (0x1f6d8, 0x1f6d8,),  # Landslide
@@ -184,81 +138,10 @@ _SET_9EA595DD = {
     'wider': (
     ),
 }
-_SET_023123B6 = {
+_SET_CDCD60DF = {
     'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-    ),
-    'wider': (
-    ),
-}
-_SET_3A56CDAF = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
         (0x0fa6e, 0x0fa6f,),  # (nil)
         (0x0fada, 0x0faff,),  # (nil)
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1fa89, 0x1fa8a,),  # Harp                    ..Trombone
-        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
-        (0x1fabe, 0x1fabe,),  # Leafless Tree
-        (0x1fac6, 0x1fac6,),  # Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facd,),  # Orca
-        (0x1fadc, 0x1fadc,),  # Root Vegetable
-        (0x1fadf, 0x1fadf,),  # Splatter
-        (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-_SET_E639788C = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x0a960, 0x0a97c,),  # Hangul Choseong Tikeut-m..Hangul Choseong Ssangyeo
-        (0x16fe0, 0x16fe3,),  # Tangut Iteration Mark   ..Old Chinese Iteration Ma
-        (0x1aff0, 0x1aff3,),  # Katakana Letter Minnan T..Katakana Letter Minnan T
-        (0x1aff5, 0x1affb,),  # Katakana Letter Minnan T..Katakana Letter Minnan N
-        (0x1affd, 0x1affe,),  # Katakana Letter Minnan N..Katakana Letter Minnan N
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f004, 0x1f004,),  # Mahjong Tile Red Dragon
-        (0x1f0cf, 0x1f0cf,),  # Playing Card Black Joker
-        (0x1f18e, 0x1f18e,),  # Negative Squared Ab
-        (0x1f191, 0x1f19a,),  # Squared Cl              ..Squared Vs
-        (0x1f1e6, 0x1f202,),  # Regional Indicator Symbo..Squared Katakana Sa
-        (0x1f210, 0x1f23b,),  # Squared Cjk Unified Ideo..Squared Cjk Unified Ideo
-        (0x1f240, 0x1f248,),  # Tortoise Shell Bracketed..Tortoise Shell Bracketed
-        (0x1f250, 0x1f251,),  # Circled Ideograph Advant..Circled Ideograph Accept
-        (0x1f260, 0x1f265,),  # Rounded Symbol For Fu   ..Rounded Symbol For Cai
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1f6dc, 0x1f6df,),  # Wireless                ..Ring Buoy
-        (0x1f7e0, 0x1f7eb,),  # Large Orange Circle     ..Large Brown Square
-        (0x1f7f0, 0x1f7f0,),  # Heavy Equals Sign
-        (0x1f979, 0x1f979,),  # Face Holding Back Tears
-        (0x1f9cc, 0x1f9cc,),  # Troll
-        (0x1fa70, 0x1fa7c,),  # Ballet Shoes            ..Crutch
-        (0x1fa80, 0x1fa8a,),  # Yo-yo                   ..Trombone
-        (0x1fa8e, 0x1fac6,),  # Treasure Chest          ..Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1fadc,),  # Orca                    ..Root Vegetable
-        (0x1fadf, 0x1faea,),  # Splatter                ..Distorted Face
-        (0x1faef, 0x1faf8,),  # Fight Cloud             ..Rightwards Pushing Hand
-    ),
-    'wider': (
-    ),
-}
-_SET_58496605 = {
-    'narrower': (
         (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
     ),
     'wider': (
@@ -376,31 +259,22 @@ _SET_4B6C0303 = {
 WIDE_OVERRIDES = {
     'apple_terminal': _SET_8CF816C1,
     'bobcat': _SET_07CF0C0A,
-    'cmd.exe': _SET_191341CD,
-    'conemu': _SET_17E94D9C,
-    'extraterm': _SET_94F58AD9,
-    'foot': _SET_D996C3B1,
+    'foot': _SET_FDE5FC81,
+    'gnu screen': _SET_3A56CDAF,
     'iterm2': _SET_AC239184,
-    'konsole': _SET_693006D2,
+    'konsole': _SET_17E94D9C,
     'libvterm': _SET_AC239184,
     'mintty': _SET_69823C79,
     'mlterm': _SET_9EA595DD,
-    'putty': _SET_94F58AD9,
-    'qtermwidget': _SET_023123B6,
     'rio': _SET_8CF816C1,
-    'rxvt-unicode': _SET_3A56CDAF,
-    'screen': _SET_3A56CDAF,
-    'securecrt': _SET_E639788C,
-    'st': _SET_3A56CDAF,
-    'teraterm': _SET_58496605,
-    'terminal.exe': _SET_191341CD,
+    'st-luke': _SET_CDCD60DF,
     'terminology': _SET_DA41A89A,
     'tmux': _SET_26214565,
+    'urxvt': _SET_CDCD60DF,
     'vte': _SET_AB0AE05F,
-    'weston-terminal': _SET_3A56CDAF,
-    'wezterm': _SET_8CF816C1,
-    'xterm': _SET_3A56CDAF,
+    'warp': _SET_9EA595DD,
+    'wezterm': _SET_AB0AE05F,
+    'xterm': _SET_CDCD60DF,
     'xterm.js': _SET_4B6C0303,
     'zellij': _SET_AB0AE05F,
-    'zutty': _SET_3A56CDAF,
 }

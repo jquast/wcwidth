@@ -166,7 +166,7 @@ def _get_term_overrides(term_canonical: str) -> _TermOverrides | None:
     return _TermOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=32)
 def _resolve_terminal(term_program: str | None = None) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.

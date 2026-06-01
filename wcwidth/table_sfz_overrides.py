@@ -14,7 +14,5 @@ _SET_DFEF2777 = {
 
 
 SFZ_OVERRIDES = {
-    'cmd.exe': _SET_DFEF2777,
     'foot': _SET_DFEF2777,
-    'terminal.exe': _SET_DFEF2777,
 }

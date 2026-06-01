@@ -9,6 +9,7 @@ import pytest
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
 from wcwidth._constants import _resolve_terminal, list_term_programs
+from wcwidth.table_vs15_overrides import VS15_OVERRIDES
 
 
 def test_resolve_terminal_aliases():
@@ -16,7 +17,7 @@ def test_resolve_terminal_aliases():
     assert _resolve_terminal('kitty') == 'kitty'
     assert _resolve_terminal('vscode') == 'xterm.js'
     assert _resolve_terminal('xterm') == 'xterm'
-    assert _resolve_terminal('urxvt') == 'rxvt-unicode'
+    assert _resolve_terminal('urxvt') == 'urxvt'
 
 
 def test_resolve_terminal_unknown():
@@ -275,3 +276,20 @@ def test_grapheme_override_missing_module():
     finally:
         grapheme_overrides._REGISTRY['putty'] = saved
         grapheme_overrides.get.cache_clear()
+
+
+def test_no_terminal_has_vs15_narrower_overrides():
+    """No terminal narrows VS15."""
+
+    # VS15 (text presentation) narrows a wide character to width 1. There is no width below 1 !
+    narrower_terminals = {
+        term: data['narrower']
+        for term, data in VS15_OVERRIDES.items()
+        if data.get('narrower')
+    }
+    assert not narrower_terminals, (
+        f'Unexpected: terminal(s) with VS15 narrower overrides detected: '
+        f'{sorted(narrower_terminals)}.\n'
+        f'VS15 cannot narrow a character below width 1. '
+        f'This may indicate a ucs-detect measurement error or an unexpected terminal behavior.'
+    )

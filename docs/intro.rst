@@ -394,47 +394,57 @@ discovered by the `jquast/ucs-detect`_ utility.
 
 .. code-block:: python
 
-    >>> # VTE-based terminals render trigrams as narrow (1 cell)
+    # VTE terminals (Gnome Terminal Et al.) still render trigrams as narrow (1 cell), but their
+    # definition was changed to wide in Unicode 16 (September 2024).
     >>> wcwidth.wcswidth('\u2630')
     2
     >>> wcwidth.wcswidth('\u2630', term_program='vte')
     1
 
-    >>> # Alacritty renders some emoji ZWJ sequences wider than default
-    >>> family = '\U0001F468\u200D\U0001F466'  # man + ZWJ + boy
+    # account for Alacritty non-support of emoji ZWJ:
+    # man + ZWJ + woman + ZWJ + girl + ZWJ + boy
+    >>> family = '\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466'
     >>> wcwidth.wcswidth(family)
     2
     >>> wcwidth.wcswidth(family, term_program='alacritty')
-    4
-
-Use ``term_program=''`` to disable override lookup entirely, or ``term_program=None`` (default) for
-automatic detection.
+    8
 
 The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
+Use ``term_program=''`` to disable automatic terminal override lookup entirely, which is appropriate
+for automatic tests and some kinds of remote services, or, ``term_program=None`` (default) for
+automatic detection by process ``TERM`` and ``TERM_PROGRAM`` environment variables.
+
 **Automatic Detection**
 
 When ``term_program`` is ``None``, the ``TERM_PROGRAM`` environment variable is read first, falling
-back to ``TERM``.  Only distinctive ``TERM`` values are recognized; generic values like
-``xterm-256color`` are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
+back to ``TERM``.  Only distinctive values are recognized; generic values like ``xterm-256color``
+are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
 
+.. BEGIN_LIST_TERM_PROGRAMS
 .. code-block:: python
 
-    >>> wcwidth.list_term_programs()[:5]
-    ('alacritty', 'bobcat', 'cmd.exe', 'conemu', 'contour')
+    >>> wcwidth.list_term_programs()
+    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'foot', ...)
+
+.. END_LIST_TERM_PROGRAMS
 
 Terminal names and their ``TERM``/``TERM_PROGRAM`` mappings are auto-generated from
-`jquast/ucs-detect`_ data.  For the most accurate detection, query the terminal's software
-version via XTVERSION_ (CSI > q) using an interactive terminal library:
+`jquast/ucs-detect`_ data.  For the most accurate detection, query the terminal's software version
+via XTVERSION_ (CSI > q) using a higher-level interactive terminal library like `jquast/blessed`_:
 
 .. code-block:: python
 
     >>> import blessed, wcwidth
     >>> term = blessed.Terminal()
-    >>> name = term.get_software_term()  # queries XTVERSION
+    >>> name = term.get_software_term()
     >>> wcwidth.width('\u2630', term_program=name)
     1
+
+Only `detectable`_ terminals are included, those that identify themselves by XTVERSION_, a
+distinctive ``TERM`` or ``TERM_PROGRAM`` environment value.  Terminals that cannot be auto-detected,
+such as those reporting ``TERM=xterm-256color`` or without XTVERSION support are not included.
 
 ==========
 Developing
@@ -585,6 +595,12 @@ languages.
 =======
 History
 =======
+
+0.8.0 *2026-06-01*
+  * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
+  * **New** argument, ``term_program`` for `wcswidth()`_, `width()`_, `clip()`, `wrap()`,
+    `ljust()`, `rjust()`, and `center()`, as one of the lowercased terminal names detectable
+    by XTVERSION_, TERM_PROGRAM, or unique TERM environment variable
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
@@ -819,6 +835,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
+.. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`jquast/telix`: https://github.com/jquast/telix
 .. _`selectel/pyte`: https://github.com/selectel/pyte
@@ -891,6 +908,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
+.. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/
