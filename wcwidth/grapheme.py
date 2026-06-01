@@ -304,7 +304,29 @@ def _iter_graphemes_python(
     start: int = 0,
     end: int | None = None,
 ) -> Iterator[str]:
-    """Pure-Python grapheme cluster iteration following UAX #29."""
+    r"""
+    Iterate over grapheme clusters using :func:`unicodedata.iter_graphemes`.
+
+    Grapheme clusters are "user-perceived characters" - what a user would
+    consider a single character, which may consist of multiple Unicode
+    codepoints (e.g., a base character with combining marks, emoji sequences).
+
+    :param unistr: The Unicode string to segment.
+    :param start: Starting index (default 0).
+    :param end: Ending index (default len(unistr)).
+    :yields: Grapheme cluster substrings.
+
+    Example::
+
+        >>> list(iter_graphemes('cafe\u0301'))
+        ['c', 'a', 'f', 'e\u0301']
+        >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
+        ['o', 'k', '\U0001F468\u200D\U0001F469\u200D\U0001F467']
+        >>> list(iter_graphemes('ok\U0001F1FA\U0001F1F8'))
+        ['o', 'k', '\U0001F1FA\U0001F1F8']
+
+    .. versionadded:: 0.3.0
+    """
     if not unistr:
         return
 
