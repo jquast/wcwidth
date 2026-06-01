@@ -292,3 +292,33 @@ def test_no_terminal_has_vs15_narrower_overrides():
         f'VS15 cannot narrow a character below width 1. '
         f'This may indicate a ucs-detect measurement error or an unexpected terminal behavior.'
     )
+
+
+def test_list_term_programs_includes_xterm():
+    """xterm is a recognized terminal program for explicit use."""
+    assert 'xterm' in list_term_programs()
+
+
+def test_resolve_terminal_xterm_explicit():
+    """_resolve_terminal returns 'xterm' when passed explicitly."""
+    assert _resolve_terminal('xterm') == 'xterm'
+
+
+@pytest.mark.parametrize('env_var', ['TERM', 'TERM_PROGRAM'])
+def test_resolve_terminal_xterm_not_auto_detected(env_var):
+    """_resolve_terminal returns None for xterm via auto-detection from env."""
+    os.environ[env_var] = 'xterm'
+    _resolve_terminal.cache_clear()
+    assert _resolve_terminal(None) is None
+
+
+@pytest.mark.parametrize('func,text,expected_default,expected_xterm', [
+    (wcwidth.wcswidth, '\U0001f1e6', 2, 1),
+    (wcwidth.width, '\U0001f1e6', 2, 1),
+    (wcwidth.wcswidth, '\u231a\ufe0e', 1, 2),
+    (wcwidth.width, '\u231a\ufe0e', 1, 2),
+])
+def test_xterm_overrides_applied(func, text, expected_default, expected_xterm):
+    """xterm overrides are applied when term_program='xterm' is explicit."""
+    assert func(text) == expected_default
+    assert func(text, term_program='xterm') == expected_xterm

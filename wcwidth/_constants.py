@@ -177,6 +177,10 @@ def _resolve_terminal(term_program: str | None = None) -> str | None:
         If None, read the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
     :returns: Canonical terminal name if recognized, ``None`` otherwise.
     """
+    # Track whether the caller passed term_program explicitly.  Auto-detection
+    # from environment must not match 'xterm' because its TERM value is shared
+    # by many unrelated terminals with different unicode behaviours.
+    explicit = term_program is not None
     if term_program is None:
         term_program = os.environ.get('TERM_PROGRAM', '')
         if not term_program:
@@ -186,5 +190,7 @@ def _resolve_terminal(term_program: str | None = None) -> str | None:
     key = term_program.strip().lower()
     canonical = ALIASES.get(key, key)
     if canonical not in KNOWN_TERMINALS:
+        return None
+    if canonical == 'xterm' and not explicit:
         return None
     return canonical

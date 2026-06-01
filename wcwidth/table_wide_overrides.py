@@ -186,7 +186,7 @@ _SET_9EA595DD = {
     ),
 }
 
-# For terminals: st-luke, urxvt
+# For terminals: st-luke, urxvt, xterm
 _SET_CDCD60DF = {
     'narrower': (
         (0x0fa6e, 0x0fa6f,),  # (nil)
@@ -333,6 +333,7 @@ WIDE_OVERRIDES = {
     'vte': _SET_AB0AE05F,
     'warp': _SET_9EA595DD,
     'wezterm': _SET_AB0AE05F,
+    'xterm': _SET_CDCD60DF,
     'xterm.js': _SET_4B6C0303,
     'zellij': _SET_AB0AE05F,
 }

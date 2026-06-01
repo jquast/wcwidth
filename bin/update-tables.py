@@ -1592,14 +1592,6 @@ def collect_term_programs() -> TermPrograms:
             print(f'terminal "{canonical}" ({ver}) is not auto-detectable', file=sys.stderr)
             continue
 
-        # xterm's TERM value ('xterm', 'xterm-256color') is used by many
-        # unrelated terminals (AbsoluteTelnet/SSH, TeraTerm, pterm/PuTTY,
-        # LXTerminal, zutty, ...) whose unicode behaviours differ
-        # substantially.  Including xterm would cause incorrect override data
-        # to be applied for those terminals when auto-detected via $TERM.
-        if canonical == 'xterm':
-            continue
-
         known.add(canonical)
 
         if has_tprog:

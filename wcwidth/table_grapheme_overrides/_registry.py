@@ -24,6 +24,7 @@ _REGISTRY = {
     'urxvt': '8dc9f9a2',
     'vte': 'e6e5d1f4',
     'warp': '0bccd381',
+    'xterm': '8dc9f9a2',
     'xterm.js': 'd5a9ae23',
     'zellij': 'e6e5d1f4',
 }

@@ -419,8 +419,16 @@ automatic detection by process ``TERM`` and ``TERM_PROGRAM`` environment variabl
 **Automatic Detection**
 
 When ``term_program`` is ``None``, the ``TERM_PROGRAM`` environment variable is read first, falling
-back to ``TERM``.  Only distinctive values are recognized; generic values like ``xterm-256color``
-are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
+back to ``TERM``.  Only distinctive values are recognized; generic environment values like
+``xterm`` or ``xterm-256color`` are ignored. 
+
+Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
+``TERM_PROGRAM`` or a unique ``TERM`` environment value.  Terminals that cannot be auto-detected,
+and those reporting the common ``TERM=xterm`` or ``TERM=xterm-256color`` are not corrected.  XTerm
+is only corrected for when ``prog_name='xterm'`` is set explicitly, such as determined by XTVERSION_
+result.
+
+Use `list_term_programs()`_ to see all recognized terminal names:
 
 .. BEGIN_LIST_TERM_PROGRAMS
 .. code-block:: python
@@ -431,8 +439,8 @@ are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
      'konsole', 'libvterm', 'mintty', 'mlterm', 'pterm', 'putty', 'rio',
      'rxvt', 'rxvt-unicode-256color', 'screen', 'st', 'st-256color', 'st-luke',
      'tabby', 'terminology', 'tmux', 'tmux-256color', 'urxvt', 'vscode', 'vte',
-     'warp', 'warpterminal', 'wezterm', 'xterm-ghostty', 'xterm-kitty',
-     'xterm.js', 'zellij')
+     'warp', 'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty',
+     'xterm-kitty', 'xterm.js', 'zellij')
 
 .. END_LIST_TERM_PROGRAMS
 
@@ -444,19 +452,11 @@ via XTVERSION_ (CSI > q) using a higher-level interactive terminal library like 
 
     >>> import blessed, wcwidth
     >>> term = blessed.Terminal()
-    >>> name = term.get_software_term()
-    >>> wcwidth.width('\u2630', term_program=name)
+    >>> sw_ver = term.get_software_version()
+    >>> print(sw_ver)
+    SoftwareVersion(name='VTE', version='7600')
+    >>> wcwidth.width('\u2630', term_program=sw_ver.name)
     1
-
-Only `detectable`_ terminals are included, those that identify themselves by XTVERSION_, a
-distinctive ``TERM`` or ``TERM_PROGRAM`` environment value.  Terminals that cannot be
-auto-detected, such as those reporting ``TERM=xterm``, ``TERM=xterm-256color``, or without
-XTVERSION support are not included.
-
-XTerm itself is excluded despite supporting XTVERSION: its ``TERM=xterm`` value is used by
-many unrelated terminals (AbsoluteTelnet/SSH, TeraTerm, pterm/PuTTY, LXTerminal, zutty,
-and others) whose Unicode behaviours differ substantially.  Including xterm override data
-would produce incorrect results for those terminals when auto-detected via ``$TERM``.
 
 ==========
 Developing
@@ -921,6 +921,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
+.. _ENQ: https://documentation.help/PuTTY/config-answerback.html
+.. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

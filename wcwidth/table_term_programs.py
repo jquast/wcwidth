@@ -29,6 +29,7 @@ KNOWN_TERMINALS = frozenset({
     'vte',
     'warp',
     'wezterm',
+    'xterm',
     'xterm.js',
     'zellij',
 })
