@@ -22,6 +22,7 @@ import hashlib
 import zipfile
 import argparse
 import datetime
+import textwrap
 import functools
 import unicodedata
 from pathlib import Path
@@ -35,10 +36,19 @@ except ImportError:
     from typing_extensions import Self
 
 # 3rd party
+import yaml
 import jinja2
 import requests
 import urllib3.util
 import dateutil.parser
+
+try:
+    # 3rd party
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    # 3rd party
+    from yaml import SafeLoader
+
 
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 
@@ -91,7 +101,7 @@ INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
 
 def _bisearch(ucs, table):
-    """A copy of wcwwidth._bisearch"""
+    """A copy of wcwwidth._bisearch."""
     # to prevent having issues when depending on code that imports our generated code.
     lbound = 0
     ubound = len(table) - 1
@@ -1175,12 +1185,11 @@ def update_readme_term_programs() -> bool:
         original = fin.read()
 
     tp = collect_term_programs()
-    names = tuple(sorted(tp.known_terminals))
-    shown = names[:5]
-    if len(names) > 5:
-        display = '(' + ', '.join(repr(n) for n in shown) + ', ...)'
-    else:
-        display = repr(shown)
+    all_names = sorted(tp.known_terminals | tp.aliases.keys())
+    display = textwrap.fill(repr(tuple(all_names)), width=79,
+                            subsequent_indent='     ',
+                            break_on_hyphens=False)
+
     output_lines = [
         '.. BEGIN_LIST_TERM_PROGRAMS',
         '.. code-block:: python',
@@ -1257,6 +1266,7 @@ class OverrideTableRenderCtx(RenderContext):
     shared_sets: Mapping[str, TerminalOverrides] = \
         field(default_factory=dict)
     terminal_refs: Mapping[str, str] = field(default_factory=dict)
+    set_terminals: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -1372,17 +1382,27 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
     return result
 
 
+_ucs_detect_yaml_cache: Optional[list[tuple[str, str, Any]]] = None
+
+
 def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
     """Yield (filename, canonical_name, yaml_document) for each ucs-detect data file."""
-    # 3rd party
-    import yaml  # pylint: disable=import-outside-toplevel
+    global _ucs_detect_yaml_cache
+    if _ucs_detect_yaml_cache is not None:
+        yield from _ucs_detect_yaml_cache
+        return
+
+    items: list[tuple[str, str, Any]] = []
     for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
         with open(yaml_path, encoding='utf-8') as f:
-            doc = yaml.safe_load(f)
+            doc = yaml.load(f, Loader=SafeLoader)
         name = doc.get('software_name', '')
         ver = doc.get('software_version', '')
         canonical = canonical_name(name, ver)
-        yield os.path.basename(yaml_path), canonical, doc
+        items.append((os.path.basename(yaml_path), canonical, doc))
+
+    _ucs_detect_yaml_cache = items
+    yield from items
 
 
 def collect_single_codepoint_overrides(
@@ -1467,7 +1487,13 @@ def collect_grapheme_overrides(
 def _make_override_ctx(variable_name: str,
                        table: Mapping[str, TerminalOverrides]) -> OverrideTableRenderCtx:
     deduped = dedup_override_table(table)
-    return OverrideTableRenderCtx(variable_name, table, deduped.shared_sets, deduped.terminal_refs)
+    # Build reverse mapping: hash_key -> sorted terminal names
+    set_terminals: dict[str, tuple[str, ...]] = {}
+    for term_name, hash_key in deduped.terminal_refs.items():
+        set_terminals.setdefault(hash_key, []).append(term_name)
+    set_terminals = {k: tuple(sorted(v)) for k, v in set_terminals.items()}
+    return OverrideTableRenderCtx(variable_name, table, deduped.shared_sets,
+                                  deduped.terminal_refs, set_terminals)
 
 
 def fetch_override_wide_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
@@ -1535,8 +1561,7 @@ def fetch_override_grapheme_data(known_terminals: frozenset[str]) -> list[Render
 class TermPrograms:
     """Canonical terminal names and aliases collected from ucs-detect data."""
     known_terminals: frozenset[str]
-    term_program_aliases: dict[str, str]
-    term_aliases: dict[str, str]
+    aliases: dict[str, str]
 
 
 @functools.lru_cache(maxsize=1)
@@ -1559,12 +1584,20 @@ def collect_term_programs() -> TermPrograms:
         term = (env.get('TERM', '') or '').strip()
         ver = doc.get('software_version', '') or ''
 
-        has_xtversion = method == 'XTVERSION' or 'VTE' in ver
+        has_xtversion = method in ('XTVERSION', 'ENQ') or 'VTE' in ver
         has_tprog = bool(tprog)
         has_dist_term = bool(term and term.lower() not in ('xterm-256color', 'xterm'))
 
         if not (has_xtversion or has_tprog or has_dist_term):
             print(f'terminal "{canonical}" ({ver}) is not auto-detectable', file=sys.stderr)
+            continue
+
+        # xterm's TERM value ('xterm', 'xterm-256color') is used by many
+        # unrelated terminals (AbsoluteTelnet/SSH, TeraTerm, pterm/PuTTY,
+        # LXTerminal, zutty, ...) whose unicode behaviours differ
+        # substantially.  Including xterm would cause incorrect override data
+        # to be applied for those terminals when auto-detected via $TERM.
+        if canonical == 'xterm':
             continue
 
         known.add(canonical)
@@ -1579,16 +1612,30 @@ def collect_term_programs() -> TermPrograms:
             if key != canonical:
                 term_aliases.setdefault(key, canonical)
 
-    # Hardcoded aliases for well-known TERM_PROGRAM values not in ucs-detect data.
+    # aliases for well-known TERM_PROGRAM values not in ucs-detect data.
     tprog_aliases.update({
         'rxvt': 'urxvt',
         'vscode': 'xterm.js',
     })
 
+    # Mixin "st" for "st-luke" fork, which has "more patches", selected in response of
+    # https://github.com/jquast/ucs-detect/issues/7 but it had equal results as 'st', even though it
+    # should have patches that differ? Maybe only by rendering and not cursor position,
+    # https://st.suckless.org/patches/glyph_wide_support/st-glyph-wide-support-20220411-ef05519.diff
+    #
+    # And so "st" is no longer tested by ucs-detect, only "st-luke". I really don't know how to
+    # handle a terminal that self-identifies as "st" but is a cornucopia of user-selected patches
+    # that may or may not change emoji/unicode handling. To be able to identify what set of patches
+    # have been applied is counter to its very foundation of "simple", and so we are not likely ever
+    # to see st's unicode problems resolved in "vanilla", nor self-identified even if patched
+    term_aliases.update({
+        'st': 'st-luke',
+        'putty': 'pterm',
+    })
+
     return TermPrograms(
         known_terminals=frozenset(known),
-        term_program_aliases=tprog_aliases,
-        term_aliases=term_aliases,
+        aliases={**term_aliases, **tprog_aliases},
     )
 
 
@@ -1596,8 +1643,7 @@ def collect_term_programs() -> TermPrograms:
 class TermProgramTableRenderCtx(RenderContext):
     """Render context for terminal program data."""
     known_terminals: frozenset[str]
-    term_program_aliases: dict[str, str]
-    term_aliases: dict[str, str]
+    aliases: dict[str, str]
 
 
 @dataclass
@@ -1612,8 +1658,7 @@ class TermProgramTableRenderDef(RenderDefinition):
             output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_term_programs.py'),
             render_context=TermProgramTableRenderCtx(
                 known_terminals=tp.known_terminals,
-                term_program_aliases=tp.term_program_aliases,
-                term_aliases=tp.term_aliases,
+                aliases=tp.aliases,
             ),
         )
 

@@ -554,9 +554,10 @@ def wrap(text: str, width: int = 70, *,
         may differ from stdlib for non-space whitespace characters.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :param term_program: Terminal program name for applying terminal-specific
-        width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
-        environment variable (falling back to ``TERM``).
+    :param term_program: Terminal software identifier for table correction.  When ``None``
+        (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
+        canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
+        Set empty, ``""`` to disable override lookup entirely.
     :param initial_indent: String prepended to first line.
     :param subsequent_indent: String prepended to subsequent lines.
     :param fix_sentence_endings: If True, ensure sentences are always

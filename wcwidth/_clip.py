@@ -83,7 +83,7 @@ def _process_hyperlink(
     Finds the matching close sequence, measures the inner text width, and determines whether the
     hyperlink is empty, outside the clip window, or visible (requiring inner-text clipping).
     """
-    # pylint: disable=too-many-locals,too-many-positional-arguments
+    # pylint: disable=too-many-locals,too-many-positional-arguments,too-many-arguments
     close_start, close_end = Hyperlink.find_close(text, match_end)
     if (close_start, close_end) == (-1, -1):
         return _HyperlinkResult(_HyperlinkAction.NO_CLOSE)

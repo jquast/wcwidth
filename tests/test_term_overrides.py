@@ -16,7 +16,6 @@ def test_resolve_terminal_aliases():
     """_resolve_terminal maps known aliases to canonical names."""
     assert _resolve_terminal('kitty') == 'kitty'
     assert _resolve_terminal('vscode') == 'xterm.js'
-    assert _resolve_terminal('xterm') == 'xterm'
     assert _resolve_terminal('urxvt') == 'urxvt'
 
 

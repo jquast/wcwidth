@@ -14,7 +14,7 @@ from .table_zero import ZERO_WIDTH
 from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .unicode_versions import list_versions
-from .table_term_programs import TERM_ALIASES, KNOWN_TERMINALS, TERM_PROGRAM_ALIASES
+from .table_term_programs import ALIASES, KNOWN_TERMINALS
 
 _RangeTuple = Tuple[Tuple[int, int], ...]
 
@@ -83,11 +83,13 @@ _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[_LATEST_VERSION]
 
 def list_term_programs() -> tuple[str, ...]:
     """
-    Return the tuple of canonical terminal program names with override data.
+    Return all recognized values for the ``term_program`` argument.
+
+    Includes canonical terminal names and their TERM/TERM_PROGRAM aliases.
 
     .. versionadded:: 0.8.0
     """
-    return tuple(sorted(KNOWN_TERMINALS))
+    return tuple(sorted(KNOWN_TERMINALS | ALIASES.keys()))
 
 
 _SINGLE_CP_CACHE: list[dict[str, dict[str, dict[str, _RangeTuple]]]] = []
@@ -182,7 +184,7 @@ def _resolve_terminal(term_program: str | None = None) -> str | None:
     if not term_program:
         return None
     key = term_program.strip().lower()
-    canonical = TERM_PROGRAM_ALIASES.get(key, TERM_ALIASES.get(key, key))
+    canonical = ALIASES.get(key, key)
     if canonical not in KNOWN_TERMINALS:
         return None
     return canonical

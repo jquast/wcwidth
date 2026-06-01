@@ -87,9 +87,9 @@ def width(
     :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters. Default is ``1``
         (narrow). Set to ``2`` for CJK contexts.
     :param term_program: Terminal software identifier for table correction.  When ``None``
-        (default), the ``TERM_PROGRAM`` environment variable is used when set. Accepts a
-        canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` query result.
-        Set to ``""`` to disable override lookup entirely.
+        (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
+        canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
+        Set empty, ``""`` to disable override lookup entirely.
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
         cursor reaches.  Always a non-negative integer.

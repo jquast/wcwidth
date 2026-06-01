@@ -426,7 +426,13 @@ are ignored.  Use `list_term_programs()`_ to see all recognized terminal names:
 .. code-block:: python
 
     >>> wcwidth.list_term_programs()
-    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'foot', ...)
+    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'extraterm', 'foot',
+     'ghostty', 'gnu screen', 'hyper', 'iterm.app', 'iterm2', 'kitty',
+     'konsole', 'libvterm', 'mintty', 'mlterm', 'pterm', 'putty', 'rio',
+     'rxvt', 'rxvt-unicode-256color', 'screen', 'st', 'st-256color', 'st-luke',
+     'tabby', 'terminology', 'tmux', 'tmux-256color', 'urxvt', 'vscode', 'vte',
+     'warp', 'warpterminal', 'wezterm', 'xterm-ghostty', 'xterm-kitty',
+     'xterm.js', 'zellij')
 
 .. END_LIST_TERM_PROGRAMS
 
@@ -443,8 +449,14 @@ via XTVERSION_ (CSI > q) using a higher-level interactive terminal library like 
     1
 
 Only `detectable`_ terminals are included, those that identify themselves by XTVERSION_, a
-distinctive ``TERM`` or ``TERM_PROGRAM`` environment value.  Terminals that cannot be auto-detected,
-such as those reporting ``TERM=xterm-256color`` or without XTVERSION support are not included.
+distinctive ``TERM`` or ``TERM_PROGRAM`` environment value.  Terminals that cannot be
+auto-detected, such as those reporting ``TERM=xterm``, ``TERM=xterm-256color``, or without
+XTVERSION support are not included.
+
+XTerm itself is excluded despite supporting XTVERSION: its ``TERM=xterm`` value is used by
+many unrelated terminals (AbsoluteTelnet/SSH, TeraTerm, pterm/PuTTY, LXTerminal, zutty,
+and others) whose Unicode behaviours differ substantially.  Including xterm override data
+would produce incorrect results for those terminals when auto-detected via ``$TERM``.
 
 ==========
 Developing
