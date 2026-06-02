@@ -180,7 +180,8 @@ def width(
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
     # grapheme-clustering state
-    last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
+    last_base_idx: int = -1
+    base_state: _GraphemeState = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
     last_was_virama = False
@@ -235,7 +236,8 @@ def width(
                 # 2e. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             # Escape sequences break VS16 adjacency: reset last-measured state
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             max_extent = max(max_extent, current_col)
             continue
@@ -245,7 +247,8 @@ def width(
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
             idx += 1
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -253,7 +256,8 @@ def width(
             if strict:
                 raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
             idx += 1
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -273,14 +277,16 @@ def width(
                 current_col = 0
             max_extent = max(max_extent, current_col)
             idx += 1
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
         # 4. Zero-width control characters
         if char in ZERO_WIDTH_CTRL:
             idx += 1
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -295,28 +301,28 @@ def width(
             elif idx + 1 < text_len:
                 # Check for terminal grapheme override when base char is ExtPict/RI
                 if (_grapheme_overrides
-                        and last_base_or_idx >= 0
+                        and last_base_idx >= 0
                         and last_measured_ucs in _EMOJI_ZWJ_SET):
-                    cluster_end = _scan_zwj_cluster_end(text, last_base_or_idx, text_len)
-                    cluster = text[last_base_or_idx:cluster_end]
+                    cluster_end = _scan_zwj_cluster_end(text, last_base_idx, text_len)
+                    cluster = text[last_base_idx:cluster_end]
                     override_w = _grapheme_overrides.get(cluster)
                     if override_w is not None:
                         current_col += (override_w - last_measured_w)
                         max_extent = max(max_extent, current_col)
-                        last_base_or_idx = _GraphemeState.NO_BASE
+                        last_base_idx = -1
+                        base_state = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
                         last_was_virama = False
                         idx = cluster_end
                         continue
                 # No override; ZWJ breaks VS adjacency.
-                # Preserve VS16-already-applied state so a trailing
-                # VS16 does not double-widen.  VS15 is blocked for both
-                # ZWJ_SKIP states.
-                if last_base_or_idx == _GraphemeState.VS16_APPLIED:
-                    last_base_or_idx = _GraphemeState.ZWJ_SKIP_VS16_BLOCKED
+                # ZWJ_BLOCKED prevents double-widening when base was already VS16'd.
+                # VS15 is blocked for both ZWJ states.
+                if base_state == _GraphemeState.VS16_APPLIED:
+                    base_state = _GraphemeState.ZWJ_BLOCKED
                 else:
-                    last_base_or_idx = _GraphemeState.ZWJ_SKIP_VS16_OPEN
+                    base_state = _GraphemeState.ZWJ_OPEN
                 last_measured_w = 0
                 last_was_virama = False
                 idx += 2
@@ -326,11 +332,11 @@ def width(
             continue
 
         # VS16 (U+FE0F): converts preceding narrow character to wide.
-        # Accepts ZWJ_SKIP_VS16_OPEN: VS16 may connect across a ZWJ skip when not already applied.
         if (ucs == 0xFE0F
-                and (last_base_or_idx >= 0
-                     or last_base_or_idx == _GraphemeState.ZWJ_SKIP_VS16_OPEN)):
-            base_ucs = ord(text[last_base_or_idx]) if last_base_or_idx >= 0 else last_measured_ucs
+                and last_base_idx >= 0
+                and base_state in (_GraphemeState.NO_BASE,
+                                   _GraphemeState.ZWJ_OPEN)):
+            base_ucs = ord(text[last_base_idx])
             vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
             if overrides.vs16_narrower and bisearch(base_ucs, overrides.vs16_narrower):
                 vs16_wide = False
@@ -339,20 +345,22 @@ def width(
             if vs16_wide:
                 current_col += 1
                 max_extent = max(max_extent, current_col)
-            last_base_or_idx = _GraphemeState.VS16_APPLIED
+            base_state = _GraphemeState.VS16_APPLIED
             idx += 1
             continue
 
         # VS15 (U+FE0E): text variation selector, requests narrow presentation.
-        if ucs == 0xFE0E and last_base_or_idx >= 0:
-            base_ucs = ord(text[last_base_or_idx])
+        if (ucs == 0xFE0E
+                and last_base_idx >= 0
+                and base_state == _GraphemeState.NO_BASE):
+            base_ucs = ord(text[last_base_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
             if overrides.vs15_wider and bisearch(base_ucs, overrides.vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 current_col -= 1
                 max_extent = max(_max_extent_before, current_col)
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            base_state = _GraphemeState.VS15_APPLIED
             idx += 1
             continue
 
@@ -375,7 +383,7 @@ def width(
 
         # Virama conjunct formation
         if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            last_base_or_idx = idx
+            last_base_idx = idx
             last_measured_ucs = ucs
             last_was_virama = False
             conjunct_pending = True
@@ -394,15 +402,17 @@ def width(
                 conjunct_pending = False
             current_col += w
             max_extent = max(max_extent, current_col)
-            last_base_or_idx = idx
+            last_base_idx = idx
+            base_state = _GraphemeState.NO_BASE
             last_measured_ucs = ucs
             last_measured_w = w
             last_was_virama = False
-        elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
+        elif last_base_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
-            last_base_or_idx = _GraphemeState.NO_BASE
+            last_base_idx = -1
+            base_state = _GraphemeState.NO_BASE
             last_was_virama = False
             conjunct_pending = False
         else:

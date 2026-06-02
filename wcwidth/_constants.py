@@ -22,22 +22,20 @@ _RangeTuple = Tuple[Tuple[int, int], ...]
 
 class _GraphemeState(IntEnum):
     """Track VS/ZWJ clustering state for base character."""
-    #: No base character established yet (initial state, or reset after cursor movement).
+    #: No base established (initial, or reset after cursor move / escape).
     NO_BASE = -1
 
-    #: VS15 (U+FE0E) was applied: no further VS valid.
+    #: VS15 applied; blocks further VS.
     VS15_APPLIED = -2
 
-    #: VS16 (U+FE0F) was applied: blocks another VS16 but allows trailing VS15.
+    #: VS16 applied; blocks further VS.
     VS16_APPLIED = -3
 
-    #: ZWJ consumed, base char not VS16'd: VS16 may still connect across ZWJ.
-    #: Example: ``"\\u263A\\u200Da\\uFE0F"`` (smiley + ZWJ + 'a' + VS16) = 2.
-    ZWJ_SKIP_VS16_OPEN = -4
+    #: ZWJ consumed, base not VS16'd; VS16 may connect across ZWJ.
+    ZWJ_OPEN = -4
 
-    #: ZWJ consumed, base char already VS16'd: block VS16 to prevent double-widen.
-    #: Example: ``"\\u263A\\uFE0F\\u200Dx\\uFE0F"`` (smiley+VS16 + ZWJ + 'x' + VS16) = 2.
-    ZWJ_SKIP_VS16_BLOCKED = -5
+    #: ZWJ consumed, base already VS16'd; block VS16 across ZWJ.
+    ZWJ_BLOCKED = -5
 
 
 __all__ = (
