@@ -295,7 +295,7 @@ def test_no_terminal_has_vs15_narrower_overrides():
 
 
 def test_list_term_programs_includes_xterm():
-    """xterm is a recognized terminal program for explicit use."""
+    """Xterm is a recognized terminal program for explicit use."""
     assert 'xterm' in list_term_programs()
 
 
@@ -319,6 +319,6 @@ def test_resolve_terminal_xterm_not_auto_detected(env_var):
     (wcwidth.width, '\u231a\ufe0e', 1, 2),
 ])
 def test_xterm_overrides_applied(func, text, expected_default, expected_xterm):
-    """xterm overrides are applied when term_program='xterm' is explicit."""
+    """Xterm overrides are applied when term_program='xterm' is explicit."""
     assert func(text) == expected_default
     assert func(text, term_program='xterm') == expected_xterm

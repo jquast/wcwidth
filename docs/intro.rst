@@ -420,7 +420,7 @@ automatic detection by process ``TERM`` and ``TERM_PROGRAM`` environment variabl
 
 When ``term_program`` is ``None``, the ``TERM_PROGRAM`` environment variable is read first, falling
 back to ``TERM``.  Only distinctive values are recognized; generic environment values like
-``xterm`` or ``xterm-256color`` are ignored. 
+``xterm`` or ``xterm-256color`` are ignored.
 
 Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
 ``TERM_PROGRAM`` or a unique ``TERM`` environment value.  Terminals that cannot be auto-detected,
@@ -610,9 +610,9 @@ History
 
 0.8.0 *2026-06-01*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
-  * **New** argument, ``term_program`` for `wcswidth()`_, `width()`_, `clip()`, `wrap()`,
-    `ljust()`, `rjust()`, and `center()`, as one of the lowercased terminal names detectable
-    by XTVERSION_, TERM_PROGRAM, or unique TERM environment variable
+  * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`, `wrap()`,
+    `ljust()`, `rjust()`, and `center()`, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
+    environment values, and suggested for negotiation by XTVERSION_, and ENQ_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
