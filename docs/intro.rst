@@ -615,7 +615,8 @@ History
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
     `ljust()`_, `rjust()`_, and `center()`_, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
-    environment values, and suggested for negotiation by XTVERSION_, and ENQ_.
+    environment values when None (default), and, suggest downstream developers negotiate for
+    XTVERSION_ and ENQ_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
