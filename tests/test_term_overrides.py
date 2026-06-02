@@ -134,6 +134,12 @@ def test_grapheme_override_zwj_not_in_table():
     assert wcwidth.width('😀\u200d😀', term_program='VTE') == 2
 
 
+def test_width_vs16_zwj_transition():
+    """Width() VS16-applied state transitions to ZWJ_BLOCKED."""
+    # smiley gets VS16'd (base_state=VS16_APPLIED), then ZWJ_BLOCKED
+    assert wcwidth.width('\u263a\ufe0f\u200da') == 2
+
+
 def test_width_vs15_override():
     """Width() with VS15 and terminal override."""
     assert wcwidth.width('\u231a\ufe0e', term_program='VTE') == 2
