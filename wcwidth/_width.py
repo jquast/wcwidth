@@ -161,17 +161,10 @@ def width(
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
-    overrides = get_term_overrides(term_canonical) if term_canonical else None
-    if overrides is not None:
-        _narrower = overrides.narrower
-        _vs16_narrower = overrides.vs16_narrower
-        _vs16_wider = overrides.vs16_wider
-        _vs15_wider = overrides.vs15_wider
-    else:
-        _narrower = _vs16_narrower = _vs16_wider = _vs15_wider = ()
+    overrides = get_term_overrides(term_canonical)
 
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
-    _grapheme_overrides = table_grapheme_overrides.get(term_canonical) if term_canonical else None
+    _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
@@ -187,7 +180,7 @@ def width(
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
     # grapheme-clustering state
-    last_base_or_idx: int | _GraphemeState = _GraphemeState.VS15_APPLIED
+    last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
     last_was_virama = False
@@ -242,7 +235,7 @@ def width(
                 # 2e. SGR and other zero-width sequences -- no column advance
                 idx = m.end()
             # Escape sequences break VS16 adjacency: reset last-measured state
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             max_extent = max(max_extent, current_col)
             continue
@@ -252,7 +245,7 @@ def width(
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
             idx += 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -260,7 +253,7 @@ def width(
             if strict:
                 raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
             idx += 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -280,14 +273,14 @@ def width(
                 current_col = 0
             max_extent = max(max_extent, current_col)
             idx += 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
         # 4. Zero-width control characters
         if char in ZERO_WIDTH_CTRL:
             idx += 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
             continue
 
@@ -301,7 +294,7 @@ def width(
                 idx += 1
             elif idx + 1 < text_len:
                 # Check for terminal grapheme override when base char is ExtPict/RI
-                if (_grapheme_overrides is not None
+                if (_grapheme_overrides
                         and last_base_or_idx >= 0
                         and last_measured_ucs in _EMOJI_ZWJ_SET):
                     cluster_end = _scan_zwj_cluster_end(text, last_base_or_idx, text_len)
@@ -310,7 +303,7 @@ def width(
                     if override_w is not None:
                         current_col += (override_w - last_measured_w)
                         max_extent = max(max_extent, current_col)
-                        last_base_or_idx = _GraphemeState.VS15_APPLIED
+                        last_base_or_idx = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
                         last_was_virama = False
@@ -339,9 +332,9 @@ def width(
                      or last_base_or_idx == _GraphemeState.ZWJ_SKIP_VS16_OPEN)):
             base_ucs = ord(text[last_base_or_idx]) if last_base_or_idx >= 0 else last_measured_ucs
             vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
-            if _vs16_narrower and bisearch(base_ucs, _vs16_narrower):
+            if overrides.vs16_narrower and bisearch(base_ucs, overrides.vs16_narrower):
                 vs16_wide = False
-            if _vs16_wider and bisearch(base_ucs, _vs16_wider):
+            if overrides.vs16_wider and bisearch(base_ucs, overrides.vs16_wider):
                 vs16_wide = True
             if vs16_wide:
                 current_col += 1
@@ -354,7 +347,7 @@ def width(
         if ucs == 0xFE0E and last_base_or_idx >= 0:
             base_ucs = ord(text[last_base_or_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
-            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
+            if overrides.vs15_wider and bisearch(base_ucs, overrides.vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 current_col -= 1
@@ -392,7 +385,7 @@ def width(
         # Normal character: measure with wcwidth
         w = _wcwidth(char)
         # Apply single-codepoint terminal overrides (pre-merged tuples)
-        if w == 2 and _narrower and bisearch(ucs, _narrower):
+        if w == 2 and overrides.narrower and bisearch(ucs, overrides.narrower):
             w = 1
         if w > 0:
             _max_extent_before = max_extent
@@ -409,7 +402,7 @@ def width(
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_was_virama = False
             conjunct_pending = False
         else:

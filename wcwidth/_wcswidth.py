@@ -101,17 +101,10 @@ def wcswidth(
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
-    overrides = get_term_overrides(term_canonical) if term_canonical else None
-    if overrides is not None:
-        _narrower = overrides.narrower
-        _vs16_narrower = overrides.vs16_narrower
-        _vs16_wider = overrides.vs16_wider
-        _vs15_wider = overrides.vs15_wider
-    else:
-        _narrower = _vs16_narrower = _vs16_wider = _vs15_wider = ()
+    overrides = get_term_overrides(term_canonical)
 
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
-    _grapheme_overrides = table_grapheme_overrides.get(term_canonical) if term_canonical else None
+    _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
 
     # Select wcwidth call pattern for best lru_cache performance
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
@@ -121,7 +114,7 @@ def wcswidth(
     idx = 0
 
     # grapheme-clustering state
-    last_base_or_idx: int | _GraphemeState = _GraphemeState.VS15_APPLIED
+    last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
     last_was_virama = False
@@ -137,7 +130,7 @@ def wcswidth(
                 idx += 1
             elif idx + 1 < end:
                 # Check for terminal grapheme override when base char is ExtPict/RI
-                if (_grapheme_overrides is not None
+                if (_grapheme_overrides
                         and last_base_or_idx >= 0
                         and last_measured_ucs in _EMOJI_ZWJ_SET):
                     cluster_end = _scan_zwj_cluster_end(pwcs, last_base_or_idx, end)
@@ -145,7 +138,7 @@ def wcswidth(
                     override_w = _grapheme_overrides.get(cluster)
                     if override_w is not None:
                         total_width += (override_w - last_measured_w)
-                        last_base_or_idx = _GraphemeState.VS15_APPLIED
+                        last_base_or_idx = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
                         last_was_virama = False
@@ -174,9 +167,9 @@ def wcswidth(
                      or last_base_or_idx == _GraphemeState.ZWJ_SKIP_VS16_OPEN)):
             base_ucs = ord(pwcs[last_base_or_idx]) if last_base_or_idx >= 0 else last_measured_ucs
             vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
-            if _vs16_narrower and bisearch(base_ucs, _vs16_narrower):
+            if overrides.vs16_narrower and bisearch(base_ucs, overrides.vs16_narrower):
                 vs16_wide = False
-            if _vs16_wider and bisearch(base_ucs, _vs16_wider):
+            if overrides.vs16_wider and bisearch(base_ucs, overrides.vs16_wider):
                 vs16_wide = True
             if vs16_wide:
                 total_width += 1
@@ -189,7 +182,7 @@ def wcswidth(
         if ucs == 0xFE0E and last_base_or_idx >= 0:
             base_ucs = ord(pwcs[last_base_or_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
-            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
+            if overrides.vs15_wider and bisearch(base_ucs, overrides.vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 total_width -= 1
@@ -229,7 +222,7 @@ def wcswidth(
             # C0/C1 control character
             return -1
         # Apply single-codepoint terminal overrides (pre-merged tuples)
-        if w == 2 and _narrower and bisearch(ucs, _narrower):
+        if w == 2 and overrides.narrower and bisearch(ucs, overrides.narrower):
             w = 1
         if w > 0:
             if conjunct_pending:
@@ -243,7 +236,7 @@ def wcswidth(
         elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             total_width += 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            last_base_or_idx = _GraphemeState.NO_BASE
             last_was_virama = False
             conjunct_pending = False
         else:

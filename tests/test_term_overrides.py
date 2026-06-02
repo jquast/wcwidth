@@ -200,11 +200,11 @@ def test_list_term_programs():
 
 
 def test_grapheme_override_invalid_term_names():
-    """Grapheme override get() rejects non-canonical names."""
-    assert grapheme_overrides.get(None) is None
-    assert grapheme_overrides.get('__init__') is None
-    assert grapheme_overrides.get('') is None
-    assert grapheme_overrides.get('../../etc') is None
+    """Grapheme override get() returns empty dict for invalid names."""
+    assert grapheme_overrides.get(None) == {}
+    assert grapheme_overrides.get('__init__') == {}
+    assert grapheme_overrides.get('') == {}
+    assert grapheme_overrides.get('../../etc') == {}
 
 
 def test_grapheme_override_zwj_no_extpict_base():
@@ -235,7 +235,7 @@ def test_grapheme_override_missing_module():
     try:
         grapheme_overrides._REGISTRY['putty'] = 'deadbeef'
         grapheme_overrides.get.cache_clear()
-        assert grapheme_overrides.get('putty') is None
+        assert grapheme_overrides.get('putty') == {}
     finally:
         grapheme_overrides._REGISTRY['putty'] = saved
         grapheme_overrides.get.cache_clear()

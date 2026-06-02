@@ -22,7 +22,10 @@ _RangeTuple = Tuple[Tuple[int, int], ...]
 
 class _GraphemeState(IntEnum):
     """Track VS/ZWJ clustering state for base character."""
-    #: VS15 (U+FE0E) was applied (or initial state): no further VS valid.
+    #: No base character established yet (initial state, or reset after cursor movement).
+    NO_BASE = -1
+
+    #: VS15 (U+FE0E) was applied: no further VS valid.
     VS15_APPLIED = -2
 
     #: VS16 (U+FE0F) was applied: blocks another VS16 but allows trailing VS15.
@@ -158,10 +161,14 @@ class TerminalOverrides(NamedTuple):
     vs16_wider: _RangeTuple
     vs15_wider: _RangeTuple
 
+_EMPTY_OVERRIDES = TerminalOverrides((), (), (), ())
+
 
 @lru_cache(maxsize=32)
-def get_term_overrides(term_canonical: str) -> TerminalOverrides | None:
-    """Return a TerminalOverrides, or None for no matching overrides."""
+def get_term_overrides(term_canonical: str | None) -> TerminalOverrides:
+    """Return a TerminalOverrides, with all empty tuples when there are no overrides."""
+    if term_canonical is None:
+        return _EMPTY_OVERRIDES
     tables = _load_single_cp_tables()
 
     def _get(cat: str, direction: str) -> _RangeTuple:
@@ -177,7 +184,7 @@ def get_term_overrides(term_canonical: str) -> TerminalOverrides | None:
     vs15_wider = _get('vs15', 'wider')
     # vs15_narrower is intentionally excluded, not possible by specification
     if not (narrower or vs16_narrower or vs16_wider or vs15_wider):
-        return None
+        return _EMPTY_OVERRIDES
     return TerminalOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
 
 
