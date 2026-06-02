@@ -161,15 +161,20 @@ def width(
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
-    overrides = get_term_overrides(term_canonical)
 
-    # Extract locals for hot-loop performance (NamedTuple attribute access is slow)
-    _narrower = overrides.narrower
-    _vs16_narrower = overrides.vs16_narrower
-    _vs15_wider = overrides.vs15_wider
-
-    # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
-    _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
+    # Skip override lookup when no terminal detected (avoids lru_cache call overhead).
+    # Extract locals for hot-loop performance (NamedTuple attribute access is slow).
+    if term_canonical:
+        overrides = get_term_overrides(term_canonical)
+        _narrower = overrides.narrower
+        _vs16_narrower = overrides.vs16_narrower
+        _vs15_wider = overrides.vs15_wider
+        _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
+    else:
+        _narrower = ()
+        _vs16_narrower = ()
+        _vs15_wider = ()
+        _grapheme_overrides = {}
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.

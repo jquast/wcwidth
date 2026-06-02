@@ -101,15 +101,20 @@ def wcswidth(
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
-    overrides = get_term_overrides(term_canonical)
 
-    # Extract locals for hot-loop performance (NamedTuple attribute access is slow)
-    _narrower = overrides.narrower
-    _vs16_narrower = overrides.vs16_narrower
-    _vs15_wider = overrides.vs15_wider
-
-    # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
-    _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
+    # Skip override lookup when no terminal detected (avoids lru_cache call overhead).
+    # Extract locals for hot-loop performance (NamedTuple attribute access is slow).
+    if term_canonical:
+        overrides = get_term_overrides(term_canonical)
+        _narrower = overrides.narrower
+        _vs16_narrower = overrides.vs16_narrower
+        _vs15_wider = overrides.vs15_wider
+        _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
+    else:
+        _narrower = ()
+        _vs16_narrower = ()
+        _vs15_wider = ()
+        _grapheme_overrides = {}
 
     # Select wcwidth call pattern for best lru_cache performance
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
