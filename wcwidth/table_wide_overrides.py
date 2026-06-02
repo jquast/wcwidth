@@ -79,34 +79,7 @@ _SET_FDE5FC81 = {
     ),
 }
 
-# For terminals: gnu screen
-_SET_3A56CDAF = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
-        (0x0fa6e, 0x0fa6f,),  # (nil)
-        (0x0fada, 0x0faff,),  # (nil)
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1fa89, 0x1fa8a,),  # Harp                    ..Trombone
-        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
-        (0x1fabe, 0x1fabe,),  # Leafless Tree
-        (0x1fac6, 0x1fac6,),  # Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facd,),  # Orca
-        (0x1fadc, 0x1fadc,),  # Root Vegetable
-        (0x1fadf, 0x1fadf,),  # Splatter
-        (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-
-# For terminals: iterm2, libvterm
+# For terminals: iterm2
 _SET_AC239184 = {
     'narrower': (
         (0x1f6d8, 0x1f6d8,),  # Landslide
@@ -186,7 +159,7 @@ _SET_9EA595DD = {
     ),
 }
 
-# For terminals: st-luke, urxvt, xterm
+# For terminals: st, urxvt, xterm
 _SET_CDCD60DF = {
     'narrower': (
         (0x0fa6e, 0x0fa6f,),  # (nil)
@@ -218,33 +191,7 @@ _SET_DA41A89A = {
     ),
 }
 
-# For terminals: tmux
-_SET_26214565 = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
-        (0x0fa6e, 0x0fa6f,),  # (nil)
-        (0x0fada, 0x0faff,),  # (nil)
-        (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
-        (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
-        (0x1f6d8, 0x1f6d8,),  # Landslide
-        (0x1fa89, 0x1fa8a,),  # Harp                    ..Trombone
-        (0x1fa8e, 0x1fa8f,),  # Treasure Chest          ..Shovel
-        (0x1fabe, 0x1fabe,),  # Leafless Tree
-        (0x1fac6, 0x1fac6,),  # Fingerprint
-        (0x1fac8, 0x1fac8,),  # Hairy Creature
-        (0x1facd, 0x1facd,),  # Orca
-        (0x1fadc, 0x1fadc,),  # Root Vegetable
-        (0x1fadf, 0x1fadf,),  # Splatter
-        (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
-        (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-
-# For terminals: vte, wezterm, zellij
+# For terminals: vte, wezterm
 _SET_AB0AE05F = {
     'narrower': (
         (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
@@ -318,22 +265,18 @@ WIDE_OVERRIDES = {
     'bobcat': _SET_07CF0C0A,
     'extraterm': _SET_94F58AD9,
     'foot': _SET_FDE5FC81,
-    'gnu screen': _SET_3A56CDAF,
     'iterm2': _SET_AC239184,
     'konsole': _SET_693006D2,
-    'libvterm': _SET_AC239184,
     'mintty': _SET_69823C79,
     'mlterm': _SET_9EA595DD,
     'pterm': _SET_8CF816C1,
     'rio': _SET_8CF816C1,
-    'st-luke': _SET_CDCD60DF,
+    'st': _SET_CDCD60DF,
     'terminology': _SET_DA41A89A,
-    'tmux': _SET_26214565,
     'urxvt': _SET_CDCD60DF,
     'vte': _SET_AB0AE05F,
     'warp': _SET_9EA595DD,
     'wezterm': _SET_AB0AE05F,
     'xterm': _SET_CDCD60DF,
     'xterm.js': _SET_4B6C0303,
-    'zellij': _SET_AB0AE05F,
 }

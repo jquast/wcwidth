@@ -439,12 +439,11 @@ Use `list_term_programs()`_ to see all recognized terminal names:
 
     >>> wcwidth.list_term_programs()
     ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'extraterm', 'foot',
-     'ghostty', 'gnu screen', 'hyper', 'iterm.app', 'iterm2', 'kitty',
-     'konsole', 'libvterm', 'mintty', 'mlterm', 'pterm', 'putty', 'rio',
-     'rxvt', 'rxvt-unicode-256color', 'screen', 'st', 'st-256color', 'st-luke',
-     'tabby', 'terminology', 'tmux', 'tmux-256color', 'urxvt', 'vscode', 'vte',
-     'warp', 'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty',
-     'xterm-kitty', 'xterm.js', 'zellij')
+     'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty', 'konsole', 'mintty',
+     'mlterm', 'pterm', 'putty', 'rio', 'rxvt', 'rxvt-unicode-256color', 'st',
+     'st-256color', 'tabby', 'terminology', 'urxvt', 'vscode', 'vte', 'warp',
+     'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty', 'xterm-kitty',
+     'xterm.js')
 
 .. END_LIST_TERM_PROGRAMS
 

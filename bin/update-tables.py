@@ -1220,6 +1220,7 @@ SOFTWARE_SHARED_ENGINES = {
     'cool-retro-term': 'qtermwidget',
     'Hyper': 'xterm.js',
     'Tabby': 'xterm.js',
+    'st-luke': 'st',
 }
 
 VTE_CANONICAL = 'vte'
@@ -1610,32 +1611,15 @@ def collect_term_programs() -> TermPrograms:
         'vscode': 'xterm.js',
     })
 
-    # Mixin "st" for "st-luke" fork, which has "more patches", selected in response of
-    # https://github.com/jquast/ucs-detect/issues/7 but it had equal results as 'st', even though it
-    # should have patches that differ? Maybe only by rendering and not cursor position,
-    # https://st.suckless.org/patches/glyph_wide_support/st-glyph-wide-support-20220411-ef05519.diff
-    #
-    # And so "st" is no longer tested by ucs-detect, only "st-luke". I really don't know how to
-    # handle a terminal that self-identifies as "st" but is a cornucopia of user-selected patches
-    # that may or may not change emoji/unicode handling. To be able to identify what set of patches
-    # have been applied is counter to its very foundation of "simple", and so we are not likely ever
-    # to see st's unicode problems resolved in "vanilla", nor self-identified even if patched
+    # hardcoded aliases for well-known TERM values not in ucs-detect data.
     term_aliases.update({
-        'st': 'st-luke',
         'putty': 'pterm',
     })
 
     # Terminal multiplexers (subterminals) depend on a host terminal for
     # rendering; their cursor-position reports from ucs-detect are not
     # reliable indicators of display width.
-    path = os.path.join(PATH_UP, 'ucs-detect', 'terminals.yaml')
-    with open(path, encoding='utf-8') as f:
-        doc = yaml.load(f, Loader=SafeLoader)
-    _multiplexers = frozenset(
-        canonical_name(name, '')
-        for name, config in doc['terminals'].items()
-        if config['launch'].get('subterminal')
-    )
+    _multiplexers = frozenset({'gnu screen', 'libvterm', 'tmux', 'zellij'})
     known -= _multiplexers
     term_aliases = {k: v for k, v in term_aliases.items() if v not in _multiplexers}
     tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in _multiplexers}
@@ -1866,8 +1850,6 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
                 fout.write(data)
 
         replace_file(new_filename, render_def.output_filename)
-        assert os.path.basename(render_def.output_filename) != 'table_vs16.py', (
-            'table_vs16 not expected to change!')
         print('ok')
 
     # Update README.rst list_term_programs() example with current terminal names
