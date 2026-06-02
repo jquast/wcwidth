@@ -52,45 +52,25 @@ def test_wcswidth_no_override():
     assert wcwidth.wcswidth('hello', term_program='') == 5
 
 
-def test_wcswidth_vte_wide_override():
-    """VTE override narrows U+2630 from wcwidth=2 to terminal=1."""
-    assert wcwidth.wcwidth('\u2630') == 2
-    assert wcwidth.wcswidth('\u2630') == 2
-    assert wcwidth.wcswidth('\u2630', term_program='VTE') == 1
+@pytest.mark.parametrize('char,expected_default,expected_vte', [
+    ('\u2630', 2, 1),
+    ('\U0001f1e6', 2, 1),
+])
+def test_wcswidth_vte_override(char, expected_default, expected_vte):
+    """VTE override narrows wide characters."""
+    assert wcwidth.wcswidth(char) == expected_default
+    assert wcwidth.wcswidth(char, term_program='VTE') == expected_vte
 
 
-def test_wcswidth_vte_wide_overrides_multiple():
-    """Multiple trigram characters corrected by VTE override."""
-    text = '\u2630\u2631\u2632\u2633\u2634\u2635\u2636\u2637'
-    assert wcwidth.wcswidth(text) == 16
-    assert wcwidth.wcswidth(text, term_program='VTE') == 8
-    assert wcwidth.wcswidth(text, term_program='kitty') == 16
-
-
-def test_wcswidth_vte_sri_override():
-    """VTE override narrows standalone Regional Indicators from 2 to 1."""
-    assert wcwidth.wcswidth('\U0001f1e6') == 2
-    assert wcwidth.wcswidth('\U0001f1e6', term_program='VTE') == 1
-
-
-def test_width_vte_wide_override():
-    """Width() applies VTE override for U+2630."""
-    assert wcwidth.width('\u2630', term_program='VTE') == 1
-    assert wcwidth.width('\u2630', term_program='kitty') == 2
-
-
-def test_width_vte_with_control_codes():
-    """Width() with control codes applies terminal overrides."""
-    text = '\x1b[31m\u2630\u2631\x1b[0m'
-    result = wcwidth.width(text, term_program='VTE')
-    assert result == 2
-
-
-def test_width_ignore_mode_with_override():
-    """Width() ignore mode applies terminal overrides."""
-    text = '\u2630\u2631'
-    result = wcwidth.width(text, control_codes='ignore', term_program='VTE')
-    assert result == 2
+@pytest.mark.parametrize('text,kwargs,expected', [
+    ('\u2630', {'term_program': 'VTE'}, 1),
+    ('\u2630', {'term_program': 'kitty'}, 2),
+    ('\x1b[31m\u2630\u2631\x1b[0m', {'term_program': 'VTE'}, 2),
+    ('\u2630\u2631', {'control_codes': 'ignore', 'term_program': 'VTE'}, 2),
+])
+def test_width_vte_override(text, kwargs, expected):
+    """Width() applies VTE overrides with and without control codes."""
+    assert wcwidth.width(text, **kwargs) == expected
 
 
 def test_vs16_override_basic():
@@ -160,29 +140,16 @@ def test_width_vs15_override():
     assert wcwidth.width('\u2630\ufe0e', term_program='VTE') == 1
 
 
-def test_grapheme_override_wcswidth_alacritty():
-    """Wcswidth applies ZWJ grapheme override for alacritty."""
+@pytest.mark.parametrize('term_program,expected', [
+    (None, 2),
+    ('', 2),
+    ('nonexistent', 2),
+    ('alacritty', 4),
+])
+def test_grapheme_override_wcswidth_family(term_program, expected):
+    """Wcswidth ZWJ grapheme override applied only for recognized terminals with overrides."""
     family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.wcswidth(family) == 2
-    assert wcwidth.wcswidth(family, term_program='alacritty') == 4
-
-
-def test_grapheme_override_wcswidth_no_term():
-    """Wcswidth uses default width when no terminal is set."""
-    family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.wcswidth(family) == 2
-
-
-def test_grapheme_override_wcswidth_disabled():
-    """Wcswidth ignores overrides when term_program is empty string."""
-    family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.wcswidth(family, term_program='') == 2
-
-
-def test_grapheme_override_wcswidth_unknown_term():
-    """Wcswidth uses default width for unrecognized terminal."""
-    family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.wcswidth(family, term_program='nonexistent') == 2
+    assert wcwidth.wcswidth(family, term_program=term_program) == expected
 
 
 def test_grapheme_override_multi_zwj_alacritty():
@@ -194,17 +161,14 @@ def test_grapheme_override_multi_zwj_alacritty():
     assert override == 8
 
 
-def test_grapheme_override_width_alacritty():
-    """Width() applies ZWJ grapheme override."""
+@pytest.mark.parametrize('func,kwargs', [
+    (wcwidth.width, {'term_program': 'alacritty'}),
+    (wcwidth.width, {'control_codes': 'ignore', 'term_program': 'alacritty'}),
+])
+def test_grapheme_override_width_alacritty(func, kwargs):
+    """Width() applies ZWJ grapheme override for alacritty."""
     family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.width(family, term_program='alacritty') == 4
-
-
-def test_grapheme_override_width_ignore_mode():
-    """Width() ignore mode applies grapheme override."""
-    family = '\U0001F468\u200D\U0001F466'
-    result = wcwidth.width(family, control_codes='ignore', term_program='alacritty')
-    assert result == 4
+    assert func(family, **kwargs) == 4
 
 
 def test_grapheme_override_ascii_unchanged():
@@ -360,19 +324,17 @@ def test_wrap_term_program_vte():
     assert result == ['\u2630\u2631']
 
 
-def test_resolve_terminal_termenv_as_fallback():
-    """resolve_terminal falls back to TERM when TERM_PROGRAM is empty."""
-    os.environ['TERM_PROGRAM'] = ''
-    os.environ['TERM'] = 'xterm-kitty'
+@pytest.mark.parametrize('termenv,expected', [
+    ({'TERM': 'xterm-kitty'}, 'kitty'),
+    ({'TERM_PROGRAM': '', 'TERM': 'xterm-kitty'}, 'kitty'),
+])
+def test_resolve_terminal_from_env(termenv, expected):
+    """resolve_terminal reads TERM when TERM_PROGRAM is unset or empty."""
+    for var in ('TERM_PROGRAM', 'TERM'):
+        os.environ.pop(var, None)
+    os.environ.update(termenv)
     resolve_terminal.cache_clear()
-    assert resolve_terminal(None) == 'kitty'
-
-
-def test_resolve_terminal_termenv_only():
-    """resolve_terminal reads TERM when TERM_PROGRAM is unset."""
-    os.environ['TERM'] = 'xterm-kitty'
-    resolve_terminal.cache_clear()
-    assert resolve_terminal(None) == 'kitty'
+    assert resolve_terminal(None) == expected
 
 
 @pytest.mark.parametrize('args,expected', [
@@ -392,11 +354,10 @@ def test_sfz_override_foot():
     assert wcwidth.wcswidth('\U0001F3FB', term_program='foot') == 1
 
 
-def test_resolve_terminal_strips_whitespace():
-    """resolve_terminal strips and lowercases input."""
-    assert resolve_terminal('  KITTY  ') == 'kitty'
-
-
-def test_resolve_terminal_whitespace_only_is_none():
-    """resolve_terminal returns None for whitespace-only input."""
-    assert resolve_terminal('   ') is None
+@pytest.mark.parametrize('value,expected', [
+    ('  KITTY  ', 'kitty'),
+    ('   ', None),
+])
+def test_resolve_terminal_strips_whitespace(value, expected):
+    """resolve_terminal strips, lowercases, and returns None for whitespace-only."""
+    assert resolve_terminal(value) == expected

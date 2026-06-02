@@ -26,9 +26,12 @@ def get(term_canonical: str | None) -> dict[str, int] | None:
     hash_key = _REGISTRY.get(term_canonical)
     if hash_key is None:
         return None
+
     try:
         mod = importlib.import_module(f'._known_{hash_key}', __package__)
         result: dict[str, int] = getattr(mod, 'GRAPHEMES')
         return result
     except ImportError:
+        # This can occur during a program re-install when the registry and files are out of sync
+        # (filesystem vs. in-memory copy differ due to upgrade).
         return None
