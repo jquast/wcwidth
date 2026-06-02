@@ -29,6 +29,8 @@ def ljust(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+
+        .. versionadded:: 0.8.0
     :returns: Text padded on the right to reach ``dest_width``.
 
     .. versionadded:: 0.3.0
@@ -75,6 +77,8 @@ def rjust(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+
+        .. versionadded:: 0.8.0
     :returns: Text padded on the left to reach ``dest_width``.
 
     .. versionadded:: 0.3.0
@@ -121,6 +125,8 @@ def center(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+
+        .. versionadded:: 0.8.0
     :returns: Text padded on both sides to reach ``dest_width``.
 
     For odd-width padding, the extra cell fills in the same cell position as

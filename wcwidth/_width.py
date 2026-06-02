@@ -93,6 +93,8 @@ def width(
         (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
         canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
         Set empty, ``""`` to disable override lookup entirely.
+
+        .. versionadded:: 0.8.0
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
         cursor reaches.  Always a non-negative integer.

@@ -613,8 +613,8 @@ History
 
 0.8.0 *2026-06-01*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
-  * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`, `wrap()`,
-    `ljust()`, `rjust()`, and `center()`, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
+  * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
+    `ljust()`_, `rjust()`_, and `center()`_, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
     environment values, and suggested for negotiation by XTVERSION_, and ENQ_.
 
 0.7.0 *2026-05-02*
@@ -916,6 +916,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`TextSizingParams`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.TextSizingParams
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`list_versions()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_versions
+.. _`list_term_programs()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_term_programs
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`Terminal.detect_ambiguous_width()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.detect_ambiguous_width
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html

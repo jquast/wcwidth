@@ -58,6 +58,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         :param tabsize: Tab stop width for tab expansion.
         :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters.
         :param term_program: Terminal program for width overrides.
+
+            .. versionadded:: 0.8.0
         :param kwargs: Additional arguments passed to :class:`textwrap.TextWrapper`.
         """
         super().__init__(width=width, **kwargs)
@@ -558,6 +560,8 @@ def wrap(text: str, width: int = 70, *,
         (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
         canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
         Set empty, ``""`` to disable override lookup entirely.
+
+        .. versionadded:: 0.8.0
     :param initial_indent: String prepended to first line.
     :param subsequent_indent: String prepended to subsequent lines.
     :param fix_sentence_endings: If True, ensure sentences are always

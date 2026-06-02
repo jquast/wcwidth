@@ -21,13 +21,7 @@ _RangeTuple = Tuple[Tuple[int, int], ...]
 
 
 class _GraphemeState(IntEnum):
-    """
-    Track VS/ZWJ clustering state for the character-before-last.
-
-    Negative integer sentinels replace ad-hoc magic numbers
-    (``-2`` … ``-5``) formerly scattered through the hot loop.
-    """
-
+    """Track VS/ZWJ clustering state for base character."""
     #: VS15 (U+FE0E) was applied (or initial state): no further VS valid.
     VS15_APPLIED = -2
 

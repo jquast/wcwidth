@@ -756,6 +756,8 @@ def clip(
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
 
+        .. versionadded:: 0.8.0
+
     :returns: Substring of ``text`` spanning display columns (start, end),
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.

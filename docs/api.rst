@@ -36,6 +36,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.list_versions
 
+.. autofunction:: wcwidth.list_term_programs
+
 .. autofunction:: wcwidth.Hyperlink
 
 .. autofunction:: wcwidth.HyperlinkParams

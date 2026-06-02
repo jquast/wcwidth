@@ -83,6 +83,8 @@ def wcswidth(
         (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
         canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
         Set empty, ``""`` to disable override lookup entirely.
+
+        .. versionadded:: 0.8.0
     :returns: The width, in cells, needed to display the first ``n`` characters
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
         characters!
