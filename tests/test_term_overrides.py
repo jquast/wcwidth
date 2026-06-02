@@ -8,42 +8,42 @@ import pytest
 # local
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
-from wcwidth._constants import _resolve_terminal, list_term_programs
+from wcwidth._constants import _merge_ranges, resolve_terminal, list_term_programs
 from wcwidth.table_vs15_overrides import VS15_OVERRIDES
 
 
 def test_resolve_terminal_aliases():
-    """_resolve_terminal maps known aliases to canonical names."""
-    assert _resolve_terminal('kitty') == 'kitty'
-    assert _resolve_terminal('vscode') == 'xterm.js'
-    assert _resolve_terminal('urxvt') == 'urxvt'
+    """resolve_terminal maps known aliases to canonical names."""
+    assert resolve_terminal('kitty') == 'kitty'
+    assert resolve_terminal('vscode') == 'xterm.js'
+    assert resolve_terminal('urxvt') == 'urxvt'
 
 
 def test_resolve_terminal_unknown():
-    """_resolve_terminal returns None for unrecognized names and empty string."""
-    assert _resolve_terminal('nonexistent') is None
-    assert _resolve_terminal('') is None
+    """resolve_terminal returns None for unrecognized names and empty string."""
+    assert resolve_terminal('nonexistent') is None
+    assert resolve_terminal('') is None
 
 
 def test_resolve_terminal_none():
-    """_resolve_terminal reads TERM_PROGRAM env var, falling back to TERM."""
+    """resolve_terminal reads TERM_PROGRAM env var, falling back to TERM."""
     saved_tprog = os.environ.get('TERM_PROGRAM')
     saved_term = os.environ.get('TERM')
     try:
         for var in ('TERM_PROGRAM', 'TERM'):
             os.environ.pop(var, None)
-        _resolve_terminal.cache_clear()
-        assert _resolve_terminal(None) is None
+        resolve_terminal.cache_clear()
+        assert resolve_terminal(None) is None
         os.environ['TERM_PROGRAM'] = 'kitty'
-        _resolve_terminal.cache_clear()
-        assert _resolve_terminal(None) == 'kitty'
+        resolve_terminal.cache_clear()
+        assert resolve_terminal(None) == 'kitty'
     finally:
         for var, saved in (('TERM_PROGRAM', saved_tprog), ('TERM', saved_term)):
             if saved is not None:
                 os.environ[var] = saved
             else:
                 os.environ.pop(var, None)
-        _resolve_terminal.cache_clear()
+        resolve_terminal.cache_clear()
 
 
 def test_wcswidth_no_override():
@@ -300,16 +300,16 @@ def test_list_term_programs_includes_xterm():
 
 
 def test_resolve_terminal_xterm_explicit():
-    """_resolve_terminal returns 'xterm' when passed explicitly."""
-    assert _resolve_terminal('xterm') == 'xterm'
+    """resolve_terminal returns 'xterm' when passed explicitly."""
+    assert resolve_terminal('xterm') == 'xterm'
 
 
 @pytest.mark.parametrize('env_var', ['TERM', 'TERM_PROGRAM'])
 def test_resolve_terminal_xterm_not_auto_detected(env_var):
-    """_resolve_terminal returns None for xterm via auto-detection from env."""
+    """resolve_terminal returns None for xterm via auto-detection from env."""
     os.environ[env_var] = 'xterm'
-    _resolve_terminal.cache_clear()
-    assert _resolve_terminal(None) is None
+    resolve_terminal.cache_clear()
+    assert resolve_terminal(None) is None
 
 
 @pytest.mark.parametrize('func,text,expected_default,expected_xterm', [
@@ -322,3 +322,81 @@ def test_xterm_overrides_applied(func, text, expected_default, expected_xterm):
     """Xterm overrides are applied when term_program='xterm' is explicit."""
     assert func(text) == expected_default
     assert func(text, term_program='xterm') == expected_xterm
+
+
+@pytest.mark.parametrize('func', [wcwidth.wcswidth, wcwidth.width])
+def test_zwj_fallthrough_resets_base_for_vs16(func):
+    """VS16 after ZWJ-skipped char does not connect to stale base (before fix, VS16 narrowed the
+    watch)."""
+    assert func('\u231a\u200d\u23f0\ufe0f') == 2
+
+
+@pytest.mark.parametrize('func', [wcwidth.wcswidth, wcwidth.width])
+def test_zwj_fallthrough_resets_base_for_vs15(func):
+    """VS15 after ZWJ-skipped char does not connect to stale base (before fix, VS15 narrowed the
+    watch)."""
+    assert func('\u231a\u200d\u23f0\ufe0e') == 2
+
+
+@pytest.mark.parametrize('func,text,dest_width,expected', [
+    (wcwidth.ljust, '\u2630', 4, '\u2630   '),
+    (wcwidth.rjust, '\u2630', 4, '   \u2630'),
+    (wcwidth.center, '\u2630', 5, '  \u2630  '),
+])
+def test_align_term_program_vte(func, text, dest_width, expected):
+    """Ljust/rjust/center pass term_program through to width()."""
+    assert func(text, dest_width, term_program='VTE') == expected
+
+
+def test_clip_term_program_vte():
+    """Clip() passes term_program through to width()."""
+    result = wcwidth.clip('\u2630\u2631', 0, 1, term_program='VTE')
+    assert result == '\u2630'
+
+
+def test_wrap_term_program_vte():
+    """Wrap() passes term_program through to width()."""
+    result = wcwidth.wrap('\u2630\u2631', width=2, term_program='VTE')
+    assert result == ['\u2630\u2631']
+
+
+def test_resolve_terminal_termenv_as_fallback():
+    """resolve_terminal falls back to TERM when TERM_PROGRAM is empty."""
+    os.environ['TERM_PROGRAM'] = ''
+    os.environ['TERM'] = 'xterm-kitty'
+    resolve_terminal.cache_clear()
+    assert resolve_terminal(None) == 'kitty'
+
+
+def test_resolve_terminal_termenv_only():
+    """resolve_terminal reads TERM when TERM_PROGRAM is unset."""
+    os.environ['TERM'] = 'xterm-kitty'
+    resolve_terminal.cache_clear()
+    assert resolve_terminal(None) == 'kitty'
+
+
+@pytest.mark.parametrize('args,expected', [
+    ((), ()),
+    ((((1, 5),),), ((1, 5),)),
+    ((((1, 3),), ((6, 8),)), ((1, 3), (6, 8))),
+    ((((1, 5),), ((4, 8),)), ((1, 8),)),
+])
+def test_merge_ranges(args, expected):
+    """_merge_ranges merges sorted range tuples."""
+    assert _merge_ranges(*args) == expected
+
+
+def test_sfz_override_foot():
+    """Foot narrows Fitzpatrick modifiers."""
+    assert wcwidth.wcswidth('\U0001F3FB') == 2
+    assert wcwidth.wcswidth('\U0001F3FB', term_program='foot') == 1
+
+
+def test_resolve_terminal_strips_whitespace():
+    """resolve_terminal strips and lowercases input."""
+    assert resolve_terminal('  KITTY  ') == 'kitty'
+
+
+def test_resolve_terminal_whitespace_only_is_none():
+    """resolve_terminal returns None for whitespace-only input."""
+    assert resolve_terminal('   ') is None

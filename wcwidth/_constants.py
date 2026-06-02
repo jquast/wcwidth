@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # std imports
 import os
+from enum import IntEnum
 from functools import lru_cache
 
 from typing import Tuple, NamedTuple
@@ -18,6 +19,30 @@ from .table_term_programs import ALIASES, KNOWN_TERMINALS
 
 _RangeTuple = Tuple[Tuple[int, int], ...]
 
+
+class _GraphemeState(IntEnum):
+    """
+    Track VS/ZWJ clustering state for the character-before-last.
+
+    Negative integer sentinels replace ad-hoc magic numbers
+    (``-2`` … ``-5``) formerly scattered through the hot loop.
+    """
+
+    #: VS15 (U+FE0E) was applied (or initial state): no further VS valid.
+    VS15_APPLIED = -2
+
+    #: VS16 (U+FE0F) was applied: blocks another VS16 but allows trailing VS15.
+    VS16_APPLIED = -3
+
+    #: ZWJ consumed, base char not VS16'd: VS16 may still connect across ZWJ.
+    #: Example: ``"\\u263A\\u200Da\\uFE0F"`` (smiley + ZWJ + 'a' + VS16) = 2.
+    ZWJ_SKIP_VS16_OPEN = -4
+
+    #: ZWJ consumed, base char already VS16'd: block VS16 to prevent double-widen.
+    #: Example: ``"\\u263A\\uFE0F\\u200Dx\\uFE0F"`` (smiley+VS16 + ZWJ + 'x' + VS16) = 2.
+    ZWJ_SKIP_VS16_BLOCKED = -5
+
+
 __all__ = (
     "_REGIONAL_INDICATOR_SET",
     "_ISC_VIRAMA_SET",
@@ -28,8 +53,8 @@ __all__ = (
     "_ZERO_WIDTH_TABLE",
     "_WIDE_EASTASIAN_TABLE",
     "_AMBIGUOUS_TABLE",
-    "_resolve_terminal",
-    "_get_term_overrides",
+    "resolve_terminal",
+    "get_term_overrides",
     "list_term_programs",
 )
 
@@ -92,29 +117,25 @@ def list_term_programs() -> tuple[str, ...]:
     return tuple(sorted(KNOWN_TERMINALS | ALIASES.keys()))
 
 
-_SINGLE_CP_CACHE: list[dict[str, dict[str, dict[str, _RangeTuple]]]] = []
-
-
+@lru_cache(maxsize=1)
 def _load_single_cp_tables() -> dict[str, dict[str, dict[str, _RangeTuple]]]:
     """Lazy-load single-codepoint terminal override tables (excludes graphemes)."""
-    if not _SINGLE_CP_CACHE:
-        # pylint: disable=import-outside-toplevel
-        # local
-        from .table_sfz_overrides import SFZ_OVERRIDES
-        from .table_sri_overrides import SRI_OVERRIDES
-        from .table_vs15_overrides import VS15_OVERRIDES
-        from .table_vs16_overrides import VS16_OVERRIDES
-        from .table_wide_overrides import WIDE_OVERRIDES
+    # pylint: disable=import-outside-toplevel
+    # local
+    from .table_sfz_overrides import SFZ_OVERRIDES
+    from .table_sri_overrides import SRI_OVERRIDES
+    from .table_vs15_overrides import VS15_OVERRIDES
+    from .table_vs16_overrides import VS16_OVERRIDES
+    from .table_wide_overrides import WIDE_OVERRIDES
 
-        # pylint: enable=import-outside-toplevel
-        _SINGLE_CP_CACHE.append({
-            'wide': WIDE_OVERRIDES,
-            'sri': SRI_OVERRIDES,
-            'sfz': SFZ_OVERRIDES,
-            'vs16': VS16_OVERRIDES,
-            'vs15': VS15_OVERRIDES,
-        })
-    return _SINGLE_CP_CACHE[0]
+    # pylint: enable=import-outside-toplevel
+    return {
+        'wide': WIDE_OVERRIDES,
+        'sri': SRI_OVERRIDES,
+        'sfz': SFZ_OVERRIDES,
+        'vs16': VS16_OVERRIDES,
+        'vs15': VS15_OVERRIDES,
+    }
 
 
 def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
@@ -127,7 +148,7 @@ def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
     all_ranges.sort(key=lambda r: r[0])
     merged = [all_ranges[0]]
     for lo, hi in all_ranges[1:]:
-        _prev_lo, prev_hi = merged[-1]
+        _, prev_hi = merged[-1]
         if lo <= prev_hi:
             merged[-1] = (merged[-1][0], max(prev_hi, hi))
         else:
@@ -135,20 +156,18 @@ def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
     return tuple(merged)
 
 
-class _TermOverrides(NamedTuple):
+class TerminalOverrides(NamedTuple):
+    """Pre-merged override range tuples for a single terminal."""
+
     narrower: _RangeTuple
     vs16_narrower: _RangeTuple
     vs16_wider: _RangeTuple
     vs15_wider: _RangeTuple
 
 
-@lru_cache(maxsize=4)
-def _get_term_overrides(term_canonical: str) -> _TermOverrides | None:
-    """
-    Return pre-merged override tuples for a terminal.
-
-    Returns a _TermOverrides named tuple or None if the terminal has no overrides at all.
-    """
+@lru_cache(maxsize=32)
+def get_term_overrides(term_canonical: str) -> TerminalOverrides | None:
+    """Return a TerminalOverrides, or None for no matching overrides."""
     tables = _load_single_cp_tables()
 
     def _get(cat: str, direction: str) -> _RangeTuple:
@@ -162,20 +181,25 @@ def _get_term_overrides(term_canonical: str) -> _TermOverrides | None:
     vs16_narrower = _get('vs16', 'narrower')
     vs16_wider = _get('vs16', 'wider')
     vs15_wider = _get('vs15', 'wider')
-
+    # vs15_narrower is intentionally excluded, not possible by specification
     if not (narrower or vs16_narrower or vs16_wider or vs15_wider):
         return None
-    return _TermOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
+    return TerminalOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
 
 
 @lru_cache(maxsize=32)
-def _resolve_terminal(term_program: str | None = None) -> str | None:
+def resolve_terminal(term_program: str | None = None) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.
 
     :param term_program: Terminal identifier string such as a TERM_PROGRAM value.
         If None, read the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
     :returns: Canonical terminal name if recognized, ``None`` otherwise.
+
+    The auto-detection path (``term_program=None``) reads environment variables at call time
+    and caches the result.  The environment is assumed immutable for the process lifetime;
+    callers that change ``TERM`` or ``TERM_PROGRAM`` mid-process must call
+    :func:`resolve_terminal.cache_clear` afterward.
     """
     # Track whether the caller passed term_program explicitly.  Auto-detection
     # from environment must not match 'xterm' because its TERM value is shared

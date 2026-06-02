@@ -1161,7 +1161,7 @@ class UnicodeDataFile:
         return [os.path.join(PATH_DATA, match.string) for match in filename_matches]
 
 
-def replace_if_modified(new_filename: str, original_filename: str) -> bool:
+def replace_file(new_filename: str, original_filename: str) -> bool:
     """
     Replace original file with new file unconditionally.
 
@@ -1625,6 +1625,21 @@ def collect_term_programs() -> TermPrograms:
         'putty': 'pterm',
     })
 
+    # Terminal multiplexers (subterminals) depend on a host terminal for
+    # rendering; their cursor-position reports from ucs-detect are not
+    # reliable indicators of display width.
+    path = os.path.join(PATH_UP, 'ucs-detect', 'terminals.yaml')
+    with open(path, encoding='utf-8') as f:
+        doc = yaml.load(f, Loader=SafeLoader)
+    _multiplexers = frozenset(
+        canonical_name(name, '')
+        for name, config in doc['terminals'].items()
+        if config['launch'].get('subterminal')
+    )
+    known -= _multiplexers
+    term_aliases = {k: v for k, v in term_aliases.items() if v not in _multiplexers}
+    tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in _multiplexers}
+
     return TermPrograms(
         known_terminals=frozenset(known),
         aliases={**term_aliases, **tprog_aliases},
@@ -1850,8 +1865,9 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             for data in render_def.generate():
                 fout.write(data)
 
-        replace_if_modified(new_filename, render_def.output_filename)
-        assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
+        replace_file(new_filename, render_def.output_filename)
+        assert os.path.basename(render_def.output_filename) != 'table_vs16.py', (
+            'table_vs16 not expected to change!')
         print('ok')
 
     # Update README.rst list_term_programs() example with current terminal names

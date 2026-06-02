@@ -61,17 +61,21 @@ Discrepancies
 
 You may find that support *varies* for complex unicode sequences or codepoints. This library may be
 considered to presume the terminal is enabled for DEC Private Mode 2027 ("Grapheme Clustering"), but
-the specification does not fully describe varying unicode versions, feature levels, or details of
-specific language support.  This library does *not* support any alternate "legacy width"
-measurement.
+it is not detailed enough to describe accurately describe the width behavior recorded and corrected
+by this project and `jquast/ucs-detect`_. This library does support legacy alternate "legacy width"
+measurement for those corrected by override tables described below, term_program_.
 
-See `Grapheme Clusters and Terminal Emulators`_ and `terminal-unicode-core.tex`_, and `State of
-Terminal Emulators in 2025`_ for more details on Mode 2027 and unicode-aware terminals.
+See Also:
+
+- `Grapheme Clusters and Terminal Emulators`_
+- `terminal-unicode-core.tex`_
+- `State of Terminal Emulators in 2025`_
 
 The `jquast/ucs-detect`_ utility is used to gather and publish the results of compliance to our
 standard for Wide character, Languages, grapheme clustering, complex or combining scripts, emojis,
-zero-width joiner, variations, and regional indicator (flags) as a `General
-Tabulated Summary`_ by terminal emulator software and version.
+zero-width joiner, variations, and regional indicator (flags) as a `General Tabulated Summary`_ by
+terminal emulator software and version. It is also used to provide automatically generated
+correction tables.
 
 ========
 Overview
@@ -886,7 +890,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`ihabunek/toot`: https://github.com/ihabunek/toot
 .. _`saulpw/visidata`: https://github.com/saulpw/visidata
 .. _`urwid/urwid`: https://github.com/urwid/urwid
-.. _`prettytable/prettytable`: prettytable/prettytable
+.. _`prettytable/prettytable`: https://github.com/prettytable/prettytable
 .. _`leviathan0992/Pylsy`: https://github.com/leviathan0992/Pylsy
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/

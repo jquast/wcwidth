@@ -19,7 +19,6 @@ from ._wcswidth import wcswidth
 from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import propagate_sgr
 from ._constants import list_term_programs
-from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
