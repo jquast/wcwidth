@@ -1161,16 +1161,6 @@ class UnicodeDataFile:
         return [os.path.join(PATH_DATA, match.string) for match in filename_matches]
 
 
-def replace_file(new_filename: str, original_filename: str) -> bool:
-    """
-    Replace original file with new file unconditionally.
-
-    Always returns True.
-    """
-    os.replace(new_filename, original_filename)
-    return True
-
-
 def update_readme_term_programs() -> bool:
     """
     Update the ``list_term_programs()`` example in ``README.rst``.
@@ -1307,6 +1297,34 @@ class OverrideTableRenderDef(RenderDefinition):
 
 
 @dataclass(frozen=True)
+class MergedOverridesCategory:
+    """A single category within the merged overrides table."""
+    variable_name: str
+    shared_sets: Mapping[str, TerminalOverrides]
+    terminal_refs: Mapping[str, str]
+    set_terminals: Mapping[str, tuple[str, ...]]
+
+
+@dataclass(frozen=True)
+class MergedOverridesRenderCtx(RenderContext):
+    """Render context for all single-codepoint override tables in one file."""
+    categories: Sequence[MergedOverridesCategory]
+
+
+@dataclass
+class MergedOverridesRenderDef(RenderDefinition):
+    render_context: MergedOverridesRenderCtx
+
+    @classmethod
+    def new(cls, categories: Sequence[MergedOverridesCategory]) -> Self:
+        return cls(
+            jinja_filename='table_overrides.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_overrides.py'),
+            render_context=MergedOverridesRenderCtx(categories=categories),
+        )
+
+
+@dataclass(frozen=True)
 class GraphemeOverridePerTerminalRenderCtx(RenderContext):
     """Render context for a single terminal's grapheme overrides."""
     canonical_name: str
@@ -1383,16 +1401,9 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
     return result
 
 
-_ucs_detect_yaml_cache: Optional[list[tuple[str, str, Any]]] = None
-
-
-def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
-    """Yield (filename, canonical_name, yaml_document) for each ucs-detect data file."""
-    global _ucs_detect_yaml_cache
-    if _ucs_detect_yaml_cache is not None:
-        yield from _ucs_detect_yaml_cache
-        return
-
+@functools.lru_cache(maxsize=1)
+def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
+    """Return (filename, canonical_name, yaml_document) for each ucs-detect data file."""
     items: list[tuple[str, str, Any]] = []
     for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
         with open(yaml_path, encoding='utf-8') as f:
@@ -1401,9 +1412,7 @@ def load_ucs_detect_yaml() -> Iterator[tuple[str, str, Any]]:
         ver = doc.get('software_version', '')
         canonical = canonical_name(name, ver)
         items.append((os.path.basename(yaml_path), canonical, doc))
-
-    _ucs_detect_yaml_cache = items
-    yield from items
+    return items
 
 
 def collect_single_codepoint_overrides(
@@ -1495,6 +1504,17 @@ def _make_override_ctx(variable_name: str,
     set_terminals = {k: tuple(sorted(v)) for k, v in set_terminals.items()}
     return OverrideTableRenderCtx(variable_name, table, deduped.shared_sets,
                                   deduped.terminal_refs, set_terminals)
+
+
+def _make_merged_category(variable_name: str,
+                          table: Mapping[str, TerminalOverrides]) -> MergedOverridesCategory:
+    deduped = dedup_override_table(table)
+    set_terminals: dict[str, tuple[str, ...]] = {}
+    for term_name, hash_key in deduped.terminal_refs.items():
+        set_terminals.setdefault(hash_key, []).append(term_name)
+    set_terminals = {k: tuple(sorted(v)) for k, v in set_terminals.items()}
+    return MergedOverridesCategory(variable_name, deduped.shared_sets,
+                                   deduped.terminal_refs, set_terminals)
 
 
 def fetch_override_wide_data(known_terminals: frozenset[str]) -> OverrideTableRenderCtx:
@@ -1829,16 +1849,23 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         # Only publish override data for auto-detectable terminals
         known_terminals = collect_term_programs().known_terminals
 
-        yield OverrideTableRenderDef.new(
-            'table_wide_overrides.py', fetch_override_wide_data(known_terminals))
-        yield OverrideTableRenderDef.new(
-            'table_sri_overrides.py', fetch_override_sri_data(known_terminals))
-        yield OverrideTableRenderDef.new(
-            'table_sfz_overrides.py', fetch_override_sfz_data(known_terminals))
-        yield OverrideTableRenderDef.new(
-            'table_vs16_overrides.py', fetch_override_vs16_data(known_terminals))
-        yield OverrideTableRenderDef.new(
-            'table_vs15_overrides.py', fetch_override_vs15_data(known_terminals))
+        yield MergedOverridesRenderDef.new([
+            _make_merged_category(
+                'WIDE_OVERRIDES',
+                collect_single_codepoint_overrides('unicode_wide_results', known_terminals)),
+            _make_merged_category(
+                'SRI_OVERRIDES',
+                collect_single_codepoint_overrides('sri_results', known_terminals)),
+            _make_merged_category(
+                'SFZ_OVERRIDES',
+                collect_single_codepoint_overrides('sfz_results', known_terminals)),
+            _make_merged_category(
+                'VS16_OVERRIDES',
+                collect_single_codepoint_overrides('emoji_vs16_results', known_terminals)),
+            _make_merged_category(
+                'VS15_OVERRIDES',
+                collect_single_codepoint_overrides('emoji_vs15_results', known_terminals)),
+        ])
         yield from fetch_override_grapheme_data(known_terminals)
         yield TermProgramTableRenderDef.new()
 
@@ -1849,7 +1876,7 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             for data in render_def.generate():
                 fout.write(data)
 
-        replace_file(new_filename, render_def.output_filename)
+        os.replace(new_filename, render_def.output_filename)
         print('ok')
 
     # Update README.rst list_term_programs() example with current terminal names

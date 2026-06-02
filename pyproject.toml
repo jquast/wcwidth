@@ -69,3 +69,6 @@ include = [
   "/.gitignore",
   "/.pylintrc",
 ]
+
+[tool.hatch.build.targets.sdist.force-include]
+"ucs-detect/data" = "ucs-detect/data"

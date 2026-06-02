@@ -122,11 +122,11 @@ def _load_single_cp_tables() -> dict[str, dict[str, dict[str, _RangeTuple]]]:
     """Lazy-load single-codepoint terminal override tables (excludes graphemes)."""
     # pylint: disable=import-outside-toplevel
     # local
-    from .table_sfz_overrides import SFZ_OVERRIDES
-    from .table_sri_overrides import SRI_OVERRIDES
-    from .table_vs15_overrides import VS15_OVERRIDES
-    from .table_vs16_overrides import VS16_OVERRIDES
-    from .table_wide_overrides import WIDE_OVERRIDES
+    from .table_overrides import (SFZ_OVERRIDES,
+                                  SRI_OVERRIDES,
+                                  VS15_OVERRIDES,
+                                  VS16_OVERRIDES,
+                                  WIDE_OVERRIDES)
 
     # pylint: enable=import-outside-toplevel
     return {

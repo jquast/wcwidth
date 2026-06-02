@@ -9,7 +9,7 @@ import pytest
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
 from wcwidth._constants import _merge_ranges, resolve_terminal, list_term_programs
-from wcwidth.table_vs15_overrides import VS15_OVERRIDES
+from wcwidth.table_overrides import VS15_OVERRIDES
 
 
 def test_resolve_terminal_aliases():
