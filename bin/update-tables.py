@@ -1417,7 +1417,12 @@ def make_single_override(
                 wc_w = entry['measured_by_wcwidth']
                 if term_w == 1 and wc_w == 2:
                     narrower.setdefault(canonical, set()).add(ucs)
-                elif term_w == 2 and wc_w == 1:
+                # 'wider' entries in emoji_vs16_results are from the vs16n baseline test
+                # (base character measured without VS16, expected width 1).  Kitty rendering
+                # these codepoints as 2 cells without VS16 is a WIDE_OVERRIDES issue, not
+                # VS16.  Terminal multiplexer entries (e.g. tmux, libvterm) are excluded by
+                # known_terminals filtering below.
+                elif category != 'emoji_vs16_results' and term_w == 2 and wc_w == 1:
                     wider.setdefault(canonical, set()).add(ucs)
 
     result: dict[str, TerminalOverrides] = {}
@@ -1783,7 +1788,7 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             _make_merged_category('VS16_OVERRIDES', make_single_override('emoji_vs16_results', kt)),
             _make_merged_category('VS15_OVERRIDES', make_single_override('emoji_vs15_results', kt)),
         ])
-        yield from fetch_override_grapheme_data(known_terminals)
+        yield from fetch_override_grapheme_data(kt)
         yield TermProgramTableRenderDef.new()
 
     for render_def in get_codegen_definitions():

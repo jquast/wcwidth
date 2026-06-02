@@ -170,8 +170,6 @@ def wcswidth(
             vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
             if overrides.vs16_narrower and bisearch(base_ucs, overrides.vs16_narrower):
                 vs16_wide = False
-            if overrides.vs16_wider and bisearch(base_ucs, overrides.vs16_wider):
-                vs16_wide = True
             if vs16_wide:
                 total_width += 1
             base_state = _GraphemeState.VS16_APPLIED

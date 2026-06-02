@@ -14,6 +14,11 @@ from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .table_grapheme import EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
+from .table_overrides import (SFZ_OVERRIDES,
+                              SRI_OVERRIDES,
+                              VS15_OVERRIDES,
+                              VS16_OVERRIDES,
+                              WIDE_OVERRIDES)
 from .unicode_versions import list_versions
 from .table_term_programs import ALIASES, KNOWN_TERMINALS
 
@@ -22,6 +27,7 @@ _RangeTuple = Tuple[Tuple[int, int], ...]
 
 class _GraphemeState(IntEnum):
     """Track VS/ZWJ clustering state for base character."""
+
     #: No base established (initial, or reset after cursor move / escape).
     NO_BASE = -1
 
@@ -97,9 +103,6 @@ _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[_LATEST_VERSION]
 
-# Canonical terminal names and TERM/TERM_PROGRAM aliases are imported
-# from the generated table_term_programs module.
-
 
 def list_term_programs() -> tuple[str, ...]:
     """
@@ -110,27 +113,6 @@ def list_term_programs() -> tuple[str, ...]:
     .. versionadded:: 0.8.0
     """
     return tuple(sorted(KNOWN_TERMINALS | ALIASES.keys()))
-
-
-@lru_cache(maxsize=1)
-def _load_single_cp_tables() -> dict[str, dict[str, dict[str, _RangeTuple]]]:
-    """Lazy-load single-codepoint terminal override tables (excludes graphemes)."""
-    # pylint: disable=import-outside-toplevel
-    # local
-    from .table_overrides import (SFZ_OVERRIDES,
-                                  SRI_OVERRIDES,
-                                  VS15_OVERRIDES,
-                                  VS16_OVERRIDES,
-                                  WIDE_OVERRIDES)
-
-    # pylint: enable=import-outside-toplevel
-    return {
-        'wide': WIDE_OVERRIDES,
-        'sri': SRI_OVERRIDES,
-        'sfz': SFZ_OVERRIDES,
-        'vs16': VS16_OVERRIDES,
-        'vs15': VS15_OVERRIDES,
-    }
 
 
 def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
@@ -156,10 +138,10 @@ class TerminalOverrides(NamedTuple):
 
     narrower: _RangeTuple
     vs16_narrower: _RangeTuple
-    vs16_wider: _RangeTuple
     vs15_wider: _RangeTuple
 
-_EMPTY_OVERRIDES = TerminalOverrides((), (), (), ())
+
+_EMPTY_OVERRIDES = TerminalOverrides((), (), ())
 
 
 @lru_cache(maxsize=32)
@@ -167,23 +149,23 @@ def get_term_overrides(term_canonical: str | None) -> TerminalOverrides:
     """Return a TerminalOverrides, with all empty tuples when there are no overrides."""
     if term_canonical is None:
         return _EMPTY_OVERRIDES
-    tables = _load_single_cp_tables()
 
-    def _get(cat: str, direction: str) -> _RangeTuple:
-        return tables[cat].get(term_canonical, {}).get(direction, ())
-
+    # wide, sri, sfz: all narrow characters Unicode expects wide (no 'wider' data exists)
     narrower = _merge_ranges(
-        _get('wide', 'narrower'),
-        _get('sri', 'narrower'),
-        _get('sfz', 'narrower'),
+        WIDE_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
+        SRI_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
+        SFZ_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
     )
-    vs16_narrower = _get('vs16', 'narrower')
-    vs16_wider = _get('vs16', 'wider')
-    vs15_wider = _get('vs15', 'wider')
-    # vs15_narrower is intentionally excluded, not possible by specification
-    if not (narrower or vs16_narrower or vs16_wider or vs15_wider):
+    vs16_narrower = VS16_OVERRIDES.get(term_canonical, {}).get('narrower', ())
+    vs15_wider = VS15_OVERRIDES.get(term_canonical, {}).get('wider', ())
+    # vs15_narrower intentionally excluded: no known terminal narrows VS15
+    # vs16_wider intentionally excluded: any 'wider' entries in emoji_vs16_results
+    #   ucs-detect YAML are from the vs16n baseline test (base char without VS16),
+    #   not actual VS16 correction data.
+
+    if not (narrower or vs16_narrower or vs15_wider):
         return _EMPTY_OVERRIDES
-    return TerminalOverrides(narrower, vs16_narrower, vs16_wider, vs15_wider)
+    return TerminalOverrides(narrower, vs16_narrower, vs15_wider)
 
 
 @lru_cache(maxsize=32)
@@ -205,9 +187,7 @@ def resolve_terminal(term_program: str | None = None) -> str | None:
     # by many unrelated terminals with different unicode behaviours.
     explicit = term_program is not None
     if term_program is None:
-        term_program = os.environ.get('TERM_PROGRAM', '')
-        if not term_program:
-            term_program = os.environ.get('TERM', '')
+        term_program = os.environ.get('TERM_PROGRAM', '') or os.environ.get('TERM', '')
     if not term_program:
         return None
     key = term_program.strip().lower()

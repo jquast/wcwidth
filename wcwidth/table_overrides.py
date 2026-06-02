@@ -452,26 +452,11 @@ _SET_VS16_OVERRIDES_ABCBD177 = {
     ),
 }
 
-# For terminals: kitty
-_SET_VS16_OVERRIDES_6E23A28A = {
-    'narrower': (
-    ),
-    'wider': (
-        (0x0261d, 0x0261d,),  # White Up Pointing Index
-        (0x026f9, 0x026f9,),  # Person With Ball
-        (0x0270c, 0x0270d,),  # Victory Hand            ..Writing Hand
-        (0x1f3cb, 0x1f3cc,),  # Weight Lifter           ..Golfer
-        (0x1f574, 0x1f575,),  # Man In Business Suit Lev..Sleuth Or Spy
-        (0x1f590, 0x1f590,),  # Raised Hand With Fingers Splayed
-    ),
-}
-
 VS16_OVERRIDES = {
     'alacritty': _SET_VS16_OVERRIDES_7C486220,
     'apple_terminal': _SET_VS16_OVERRIDES_7C486220,
     'contour': _SET_VS16_OVERRIDES_7C486220,
     'iterm2': _SET_VS16_OVERRIDES_ABCBD177,
-    'kitty': _SET_VS16_OVERRIDES_6E23A28A,
     'mlterm': _SET_VS16_OVERRIDES_7C486220,
     'pterm': _SET_VS16_OVERRIDES_7C486220,
     'st': _SET_VS16_OVERRIDES_7C486220,

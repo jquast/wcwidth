@@ -81,8 +81,8 @@ def test_vs16_override_basic():
     assert wcwidth.width(heart_vs16, term_program='VTE') == 1
 
 
-def test_vs16_wider_override_libvterm():
-    """Libvterm has VS16 wider overrides -- exercises _vs16_wider bisearch path."""
+def test_vs16_libvterm_no_override():
+    """Libvterm is not a known terminal; falls back to spec VS16 (returns 2)."""
     assert wcwidth.wcswidth('\u23ed\ufe0f', term_program='libvterm') == 2
     assert wcwidth.width('\u23ed\ufe0f', term_program='libvterm') == 2
 
