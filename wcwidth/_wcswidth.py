@@ -103,6 +103,11 @@ def wcswidth(
     term_canonical = resolve_terminal(term_program)
     overrides = get_term_overrides(term_canonical)
 
+    # Extract locals for hot-loop performance (NamedTuple attribute access is slow)
+    _narrower = overrides.narrower
+    _vs16_narrower = overrides.vs16_narrower
+    _vs15_wider = overrides.vs15_wider
+
     # Load grapheme overrides (multi-codepoint ZWJ sequences) for this terminal
     _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
 
@@ -168,7 +173,7 @@ def wcswidth(
                                    _GraphemeState.ZWJ_OPEN)):
             base_ucs = ord(pwcs[last_base_idx])
             vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
-            if overrides.vs16_narrower and bisearch(base_ucs, overrides.vs16_narrower):
+            if _vs16_narrower and bisearch(base_ucs, _vs16_narrower):
                 vs16_wide = False
             if vs16_wide:
                 total_width += 1
@@ -182,7 +187,7 @@ def wcswidth(
                 and base_state == _GraphemeState.NO_BASE):
             base_ucs = ord(pwcs[last_base_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
-            if overrides.vs15_wider and bisearch(base_ucs, overrides.vs15_wider):
+            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 total_width -= 1
@@ -222,7 +227,7 @@ def wcswidth(
             # C0/C1 control character
             return -1
         # Apply single-codepoint terminal overrides (pre-merged tuples)
-        if w == 2 and overrides.narrower and bisearch(ucs, overrides.narrower):
+        if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
         if w > 0:
             if conjunct_pending:
