@@ -1,14 +1,35 @@
 """
 Legacy compatibility module for wcwidth.wcwidth.
 
-This file contains no new definitions and is provided only for backwards
-compatibility.  This module exists solely to support legacy import paths::
+This file contains no new definitions and is provided only for backwards compatibility.  This module
+exists solely to support legacy "absolute" import paths, when this module published everything under
+this single file, 'wcwidth'::
 
-    from wcwidth.wcwidth import iter_graphemes
-    from wcwidth.wcwidth import _SGR_PATTERN
-    import wcwidth.wcwidth as legacy
+    from wcwidth.wcwidth import wcswidth
+    import wcwidth.wcwidth as wc_module
 """
 # pylint: disable=unused-import
+
+__lazy_modules__ = [
+    "wcwidth._clip",
+    "wcwidth._constants",
+    "wcwidth._wcswidth",
+    "wcwidth._wcwidth",
+    "wcwidth._width",
+    "wcwidth.align",
+    "wcwidth.bisearch",
+    "wcwidth.control_codes",
+    "wcwidth.escape_sequences",
+    "wcwidth.grapheme",
+    "wcwidth.sgr_state",
+    "wcwidth.table_ambiguous",
+    "wcwidth.table_grapheme",
+    "wcwidth.table_mc",
+    "wcwidth.table_vs16",
+    "wcwidth.table_wide",
+    "wcwidth.table_zero",
+    "wcwidth.unicode_versions",
+]
 
 # local
 from ._clip import clip

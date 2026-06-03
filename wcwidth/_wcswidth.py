@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from typing import Optional
 
+__lazy_modules__ = [
+    "wcwidth._constants",
+    "wcwidth._wcwidth",
+    "wcwidth.bisearch",
+    "wcwidth.table_grapheme",
+    "wcwidth.table_vs16",
+]
 # local
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
