@@ -17,6 +17,10 @@ from functools import lru_cache
 
 from typing import TYPE_CHECKING, Optional, NamedTuple
 
+__lazy_modules__ = [
+    "wcwidth.bisearch",
+    "wcwidth.table_grapheme",
+]
 # local
 from .bisearch import bisearch as _bisearch
 from .table_grapheme import (GRAPHEME_L,

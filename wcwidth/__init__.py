@@ -8,6 +8,26 @@ https://github.com/jquast/wcwidth
 # ones, some for convenience, others for legacy, only the items in __all__ are
 # documented as public API
 
+__lazy_modules__ = [
+    "wcwidth._clip",
+    "wcwidth._wcswidth",
+    "wcwidth._wcwidth",
+    "wcwidth._width",
+    "wcwidth.align",
+    "wcwidth.bisearch",
+    "wcwidth.escape_sequences",
+    "wcwidth.grapheme",
+    "wcwidth.hyperlink",
+    "wcwidth.sgr_state",
+    "wcwidth.table_ambiguous",
+    "wcwidth.table_vs16",
+    "wcwidth.table_wide",
+    "wcwidth.table_zero",
+    "wcwidth.text_sizing",
+    "wcwidth.textwrap",
+    "wcwidth.unicode_versions",
+]
+
 # local
 from ._clip import clip
 from .align import ljust, rjust, center
@@ -27,16 +47,24 @@ from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences, strip_sequences
 from .unicode_versions import list_versions
 
-# Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is
-# populated during package initialization.  This matches the 0.6.0 behavior
-# where ``from .wcwidth import wcwidth`` would have already loaded the
-# submodule.  Without this, a later ``import wcwidth.wcwidth`` triggers
-# on-disk file discovery which rebinds wcwidth.wcwidth from the function to
-# the module object.
-#
 # NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
-from . import wcwidth as _wcwidth_module  # isort:skip
-from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip
+#
+# On Python < 3.15 the legacy submodule is eagerly pre-imported for backward compatibility
+# (populates sys.modules['wcwidth.wcwidth']).  On 3.15+ __lazy_modules__ handles all submodules; the
+# legacy shim loads on-demand via file discovery when ``from wcwidth.wcwidth import ...`` is used.
+if __import__('sys').version_info < (3, 15):
+    # Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is populated during
+    # package initialization.  Without this, a later downstream dependent ``import wcwidth.wcwidth``
+    # triggers on-disk file discovery which rebinds wcwidth.wcwidth from the function to the module
+    # object.
+    #
+    # this is just a lot of carefulness for the original release that contained all functions in a
+    # single 'wcwidth.py' file. Even though we always exposed our API at the top-level the preferred
+    # 'from wcwidth import wcswidth', it was always possible to import them more directly,
+    # 'from wcwidth.wcwidth import wcswidth'
+    # -- and we make a lot of effort to allow any such import statements to continue to function.
+    from . import wcwidth as _wcwidth_module  # isort:skip
+from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 
 
 # The __all__ attribute defines the items exported from statement,

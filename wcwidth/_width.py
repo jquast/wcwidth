@@ -4,6 +4,17 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+__lazy_modules__ = [
+    "wcwidth._constants",
+    "wcwidth._wcswidth",
+    "wcwidth._wcwidth",
+    "wcwidth.bisearch",
+    "wcwidth.control_codes",
+    "wcwidth.escape_sequences",
+    "wcwidth.table_grapheme",
+    "wcwidth.table_vs16",
+    "wcwidth.text_sizing",
+]
 # local
 from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
