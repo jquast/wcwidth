@@ -10,8 +10,9 @@ import pytest
 
 # local
 import wcwidth
-
-_width_module = sys.modules['wcwidth._width']
+# Access via import to trigger lazy-load on Python 3.15+; on older
+# Python _width is already in sys.modules and this is a no-op.
+import wcwidth._width as _width_module  # noqa: E402
 
 
 def test_wcwidth_ascii(benchmark):

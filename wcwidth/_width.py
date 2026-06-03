@@ -2,6 +2,17 @@
 
 from typing import Literal
 
+__lazy_modules__ = [
+    "wcwidth._constants",
+    "wcwidth._wcswidth",
+    "wcwidth._wcwidth",
+    "wcwidth.bisearch",
+    "wcwidth.control_codes",
+    "wcwidth.escape_sequences",
+    "wcwidth.table_grapheme",
+    "wcwidth.table_vs16",
+    "wcwidth.text_sizing",
+]
 # local
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
