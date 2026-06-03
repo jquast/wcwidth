@@ -14,15 +14,13 @@ from ._registry import _REGISTRY
 
 
 @lru_cache(maxsize=32)
-def get(term_canonical: str | None) -> dict[str, int]:
+def get(term_canonical: str) -> dict[str, int]:
     """
     Return grapheme override dict for a terminal, or an empty dict.
 
     The per-terminal module is imported on first access and cached in ``sys.modules``; subsequent
     calls for the same terminal return immediately via lru_cache.
     """
-    if term_canonical is None:
-        return {}
     hash_key = _REGISTRY.get(term_canonical)
     if hash_key is None:
         return {}

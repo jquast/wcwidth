@@ -145,10 +145,8 @@ _EMPTY_OVERRIDES = TerminalOverrides((), (), ())
 
 
 @lru_cache(maxsize=32)
-def get_term_overrides(term_canonical: str | None) -> TerminalOverrides:
+def get_term_overrides(term_canonical: str) -> TerminalOverrides:
     """Return a TerminalOverrides, with all empty tuples when there are no overrides."""
-    if term_canonical is None:
-        return _EMPTY_OVERRIDES
 
     # wide, sri, sfz: all narrow characters Unicode expects wide (no 'wider' data exists)
     narrower = _merge_ranges(
