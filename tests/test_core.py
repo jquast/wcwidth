@@ -309,7 +309,7 @@ def test_devanagari_script():
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
     expect_length_each = (1, 0, 1, 0)
     # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -331,7 +331,7 @@ def test_tamil_script():
     expect_length_each = (1, 0, 1, 0)
 
     # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -354,7 +354,7 @@ def test_kannada_script():
     # 23107-terminal-suppt.pdf suggests should be (2, 0, 3, 1)
     expect_length_each = (1, 0, 1, 0)
     # virama conjunct collapses RA+virama+JHA into one cell, Mc adds +1
-    expect_length_phrase = 2
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -437,19 +437,31 @@ def test_mc_width_consistency(repeat):
 
 
 @pytest.mark.parametrize("phrase,expected", [
-    ("\u0999\u09CD\u0997\u09C7", 2),
-    ("\u0915\u094D\u0924\u093F", 2),
-    ("\u0915\u094D\u0930\u093F", 2),
-    ("\u0A95\u0ACD\u0A95\u0ACB", 2),
-    ("\u0938\u094D\u0924\u094D\u0930", 2),
+    ("\u0999\u09CD\u0997\u09C7", 3),
+    ("\u0915\u094D\u0924\u093F", 3),
+    ("\u0915\u094D\u0930\u093F", 3),
+    ("\u0A95\u0ACD\u0A95\u0ACB", 3),
+    ("\u0938\u094D\u0924\u094D\u0930", 3),
     ("\u0938\u094D\u0924", 2),
     ("\u0915\u094D\u0020", 2),
     ("\u09A4\u09CD\u200D\u09AA", 2),
     ("\u0915\u094D\u200D\u0924", 2),
-    ("\u0D15\u0D4D\u0D15\u0D41\u0D02", 2),
+    ("\u0D15\u0D4D\u0D15\u0D41\u0D02", 3),
     ("\u0915\u094D\u0924\u0941\u0902", 2),
 ])
 def test_virama_conjunct(phrase, expected):
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+
+
+@pytest.mark.parametrize("phrase,expected", [
+    ("\u1000\u1039\u1000", 2),             # Burmese KA+VIRAMA+KA
+    ("\u1000\u1039\u1000\u1039\u1002", 3),  # Burmese KA+V+KA+V+GA
+    ("\u1000\u1039\u200D\u1000", 2),       # Burmese KA+V+ZWJ+KA
+    ("\u1782\u17D2\u1782\u17C1", 3),       # Khmer KO+COENG+KO+VOWEL_E (Mc closes)
+    ("\u1780\u17D2\u1780", 2),             # Khmer KA+COENG+KA
+])
+def test_virama_conjunct_invisible_stacker(phrase, expected):
     assert wcwidth.wcswidth(phrase) == expected
     assert wcwidth.width(phrase) == expected
 

@@ -506,10 +506,15 @@ This library is used in:
 Other Languages
 ===============
 
-There are similar implementations of the `wcwidth()`_ and `wcswidth()`_ functions in other
-languages.
+The following libraries provide grapheme and emoji support and closely align with our
+specification_:
 
-- `contour-terminal/libunicode`_: C++20
+- `jacobsandlund/uucode`_ Zig
+- `contour-terminal/libunicode`_ C++20
+
+There are similar implementations of at least the `wcwidth()`_ and `wcswidth()`_ functions in other
+languages:
+
 - `ridiculousfish/widecharwidth`_: Python
 - `termux/wcwidth`_: C
 - `powerman/wcwidth-icons`_: C
@@ -534,8 +539,10 @@ History
 =======
 
 0.8.0 *(unreleased)*
-  * **Improved** memory resource usage and import time for Python 3.15 using lazy imports `PR #221`_.
+  * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
+  * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and
+    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #XXX`_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
@@ -799,6 +806,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
 .. _`contour-terminal/libunicode`: https://github.com/contour-terminal/libunicode
+.. _`jacobsandlund/uucode`: https://github.com/jacobsandlund/uucode
 .. _`ridiculousfish/widecharwidth`: https://github.com/ridiculousfish/widecharwidth
 .. _`termux/wcwidth`: https://github.com/termux/wcwidth
 .. _`powerman/wcwidth-icons`: https://github.com/powerman/wcwidth-icons
