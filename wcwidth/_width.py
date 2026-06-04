@@ -169,6 +169,7 @@ def width(
     # grapheme-clustering state
     last_measured_idx = -2
     last_measured_ucs = -1
+    prev_was_virama = False
 
     while idx < text_len:
         char = text[idx]
@@ -271,13 +272,11 @@ def width(
 
         # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
         #    Fitzpatrick, Virama conjuncts, Mc, wcwidth
+        # Virama codepoints are treated as zero-width combining marks (Mn), matching
+        # Ghostty's uucode library.  Whether a virama+consonant sequence should
+        # collapse to 1 or 2 cells is undefined by Unicode; we follow uucode's (1).
         if ucs == 0x200D:
-            # ZWJ (U+200D): consumed without contributing width.
-            if idx > 0 and ord(text[idx - 1]) in _ISC_VIRAMA_SET:
-                # Virama codepoints (Indic_Syllabic_Category=Virama|Invisible_Stacker)
-                # are treated as zero-width combining marks, matching Ghostty's uucode
-                # library.  Whether a virama+consonant sequence should collapse to 1 or
-                # 2 cells is undefined by Unicode; we follow uucode's (1).
+            if prev_was_virama:
                 idx += 1
             elif idx + 1 < text_len:
                 idx += 2
@@ -318,11 +317,15 @@ def width(
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
             last_measured_ucs = ucs
+            prev_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
             last_measured_idx = -2
+            prev_was_virama = False
+        else:
+            prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
     return max_extent

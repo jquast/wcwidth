@@ -72,6 +72,7 @@ def wcswidth(
     # grapheme-clustering state
     last_measured_idx = -2
     last_measured_ucs = -1
+    prev_was_virama = False
 
     while idx < end:
         char = pwcs[idx]
@@ -81,12 +82,11 @@ def wcswidth(
         # performance, they are given matching index reference numbers (starting at #6).
         #
         # 5. ZWJ (U+200D): consumed without contributing width.
+        # Virama codepoints are treated as zero-width combining marks (Mn), matching
+        # Ghostty's uucode library.  Whether a virama+consonant sequence should
+        # collapse to 1 or 2 cells is undefined by Unicode; we follow uucode's (1).
         if ucs == 0x200D:
-            if idx > 0 and ord(pwcs[idx - 1]) in _ISC_VIRAMA_SET:
-                # Virama codepoints (Indic_Syllabic_Category=Virama|Invisible_Stacker)
-                # are treated as zero-width combining marks, matching Ghostty's uucode
-                # library.  Whether a virama+consonant sequence should collapse to 1 or
-                # 2 cells is undefined by Unicode; we follow uucode's (1).
+            if prev_was_virama:
                 idx += 1
             elif idx + 1 < end:
                 idx += 2
@@ -130,10 +130,14 @@ def wcswidth(
             total_width += w
             last_measured_idx = idx
             last_measured_ucs = ucs
+            prev_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             total_width += 1
             last_measured_idx = -2
+            prev_was_virama = False
+        else:
+            prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
     return total_width

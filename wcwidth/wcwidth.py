@@ -67,7 +67,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                strip_sequences)
 from .unicode_versions import list_versions
 
-
 __all__ = (
     'ZERO_WIDTH',
     'WIDE_EASTASIAN',
