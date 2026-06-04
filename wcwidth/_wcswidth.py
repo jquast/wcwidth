@@ -19,6 +19,7 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
+from .table_grapheme import ISC_CONSONANT
 
 
 def wcswidth(
@@ -73,6 +74,7 @@ def wcswidth(
     last_measured_idx = -2
     last_measured_ucs = -1
     prev_was_virama = False
+    conjunct_pending = False
 
     while idx < end:
         char = pwcs[idx]
@@ -121,23 +123,43 @@ def wcswidth(
                 idx += 1
                 continue
 
+        # Virama conjunct formation
+        if prev_was_virama and bisearch(ucs, ISC_CONSONANT):
+            if conjunct_pending:
+                total_width += 1
+            last_measured_idx = idx
+            last_measured_ucs = ucs
+            prev_was_virama = False
+            conjunct_pending = True
+            idx += 1
+            continue
+
         # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w < 0:
             # C0/C1 control character
             return -1
         if w > 0:
+            if conjunct_pending:
+                total_width += 1
+                conjunct_pending = False
             total_width += w
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
-            # Spacing Combining Mark (Mc) following a base character adds 1
-            total_width += 1
+            # Spacing Combining Mark (Mc) following a base character
+            if conjunct_pending:
+                total_width += 1
+                conjunct_pending = False
+            else:
+                total_width += 1
             last_measured_idx = -2
             prev_was_virama = False
         else:
             prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
+    if conjunct_pending:
+        total_width += 1
     return total_width
