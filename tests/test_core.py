@@ -454,6 +454,18 @@ def test_virama_conjunct(phrase, expected):
     assert wcwidth.width(phrase) == expected
 
 
+@pytest.mark.parametrize("phrase,expected", [
+    ("\u1000\u1039\u1000", 2),             # Burmese KA+VIRAMA+KA
+    ("\u1000\u1039\u1000\u1039\u1002", 2),  # Burmese KA+V+KA+V+GA
+    ("\u1000\u1039\u200D\u1000", 2),       # Burmese KA+V+ZWJ+KA
+    ("\u1782\u17D2\u1782\u17C1", 2),       # Khmer KO+COENG+KO+VOWEL_E (Mc closes)
+    ("\u1780\u17D2\u1780", 2),             # Khmer KA+COENG+KA
+])
+def test_virama_conjunct_invisible_stacker(phrase, expected):
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+
+
 def test_zwj_at_end_of_string():
     """ZWJ at end of string (not after virama) is consumed with zero width."""
     assert wcwidth.wcswidth('a\u200D') == 1

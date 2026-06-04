@@ -798,7 +798,7 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     }
 
 
-ISC_VALUES = ('Consonant',)
+ISC_VALUES = ('Consonant', 'Virama', 'Invisible_Stacker')
 
 
 def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
