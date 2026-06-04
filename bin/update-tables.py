@@ -409,9 +409,9 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
     # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
     # See https://github.com/jquast/wcwidth/issues/118
-    default_ignorable = parse_derived_core_property(
+    default_ignorable = set(parse_derived_core_property(
         fname=UnicodeDataFile.DerivedCoreProperties(version),
-        property_name='Default_Ignorable_Code_Point')
+        property_name='Default_Ignorable_Code_Point'))
     default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
     table[version].values = table[version].values.difference(default_ignorable)
 
@@ -896,6 +896,7 @@ def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
     }
 
 
+@functools.lru_cache(maxsize=None)
 def parse_derived_core_property(fname: str, property_name: str) -> set[int]:
     """Parse DerivedCoreProperties.txt for a specific property."""
     print(f'parsing {fname} for {property_name}: ', end='', flush=True)
