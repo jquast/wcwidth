@@ -8,6 +8,6 @@ Terminals: {{ terminals|join(', ') }}
 # pylint: skip-file
 GRAPHEMES = {
 {%- for grapheme_str, terminal_width in graphemes.items() %}
-    {{ grapheme_str.__repr__() }}: {{ terminal_width }},
+    '{{ grapheme_str }}': {{ terminal_width }},
 {%- endfor %}
 }

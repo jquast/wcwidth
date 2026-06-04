@@ -90,8 +90,9 @@ HANGUL_JAMO_ZEROWIDTH = (
     *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
 )
 
-HEX_STR_VS16 = 'FE0F'
-HEX_STR_VS15 = 'FE0E'
+# Variation Selector-15 and 16
+HEX_STR_VS15, HEX_STR_VS16 = ('FE0E', 'FE0F')
+
 # Grapheme Break Property values from UAX #29
 GRAPHEME_BREAK_PROPERTIES = (
     'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
@@ -1812,9 +1813,9 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         yield TermProgramTableRenderDef.new()
 
     for render_def in get_codegen_definitions():
+        print(f'write {render_def.output_filename}: ', flush=True, end='')
         new_filename = render_def.output_filename + '.new'
         with open(new_filename, 'w', encoding='utf-8', newline='\n') as fout:
-            print(f'write {new_filename}: ', flush=True, end='')
             for data in render_def.generate():
                 fout.write(data)
 
