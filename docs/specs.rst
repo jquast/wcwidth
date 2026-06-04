@@ -114,9 +114,12 @@ by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 Virama Conjunct Formation
 -------------------------
 
-In `Brahmic scripts`_, a `Virama`_ (``Indic_Syllabic_Category=Virama`` in
-`IndicSyllabicCategory.txt`_) between two consonants triggers `conjunct`_
-formation: the consonants are merged into a single ligature glyph.
+In `Brahmic scripts`_, `IndicSyllabicCategory.txt`_ defines two categories
+that trigger `conjunct`_ formation between consonants: `Virama`_ ("may act
+as a Pure_Killer or Invisible_Stacker depending on context") and
+``Invisible_Stacker``_ ("not visible by itself; causes conjunct formation
+or consonant stacking", the "only as consonant stackers" category
+described in the Virama section header).
 
 - A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
 - The conjunct still occupies cells and the next visible advance settles it:
@@ -176,6 +179,7 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
 .. _`IndicSyllabicCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
 .. _`Indic_Syllabic_Category`: https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
+.. _`Invisible_Stacker`: https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
 .. _`Brahmic scripts`: https://en.wikipedia.org/wiki/Brahmic_scripts
 .. _`Virama`: https://www.unicode.org/glossary/#virama
 .. _`conjunct`: https://www.unicode.org/glossary/#consonant_conjunct
