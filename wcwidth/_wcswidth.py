@@ -274,7 +274,8 @@ def wcswidth(
             if conjunct_pending:
                 total_width += 1
                 conjunct_pending = False
-            total_width += 1
+            else:
+                total_width += 1
             last_base_or_idx = _GraphemeState.NO_BASE
             last_was_virama = False
         else:

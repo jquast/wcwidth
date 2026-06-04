@@ -104,13 +104,14 @@ _SET_WIDE_OVERRIDES_AC239184 = {
 }
 
 # For terminals: konsole
-_SET_WIDE_OVERRIDES_693006D2 = {
+_SET_WIDE_OVERRIDES_17E94D9C = {
     'narrower': (
         (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
         (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
         (0x02ffc, 0x02fff,),  # Ideographic Description ..Ideographic Description
         (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
         (0x031ef, 0x031ef,),  # Ideographic Description Character Subtraction
+        (0x04dc0, 0x04dff,),  # Hexagram For The Creativ..Hexagram For Before Comp
         (0x1d300, 0x1d356,),  # Monogram For Earth      ..Tetragram For Fostering
         (0x1d360, 0x1d376,),  # Counting Rod Unit Digit ..Ideographic Tally Mark F
         (0x1f6d8, 0x1f6d8,),  # Landslide
@@ -275,7 +276,7 @@ WIDE_OVERRIDES = {
     'extraterm': _SET_WIDE_OVERRIDES_94F58AD9,
     'foot': _SET_WIDE_OVERRIDES_FDE5FC81,
     'iterm2': _SET_WIDE_OVERRIDES_AC239184,
-    'konsole': _SET_WIDE_OVERRIDES_693006D2,
+    'konsole': _SET_WIDE_OVERRIDES_17E94D9C,
     'mintty': _SET_WIDE_OVERRIDES_69823C79,
     'mlterm': _SET_WIDE_OVERRIDES_9EA595DD,
     'pterm': _SET_WIDE_OVERRIDES_8CF816C1,

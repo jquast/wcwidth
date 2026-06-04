@@ -454,7 +454,8 @@ def width(
             if conjunct_pending:
                 current_col += 1
                 conjunct_pending = False
-            current_col += 1
+            else:
+                current_col += 1
             max_extent = max(max_extent, current_col)
             last_base_or_idx = _GraphemeState.NO_BASE
             last_was_virama = False
