@@ -342,13 +342,16 @@ Use `strip_sequences()`_ to remove all terminal escape sequences from text.
 
 .. _ambiguous_width:
 
-ambiguous_width
+Ambiguous Width
 ---------------
 
 Some Unicode characters have "East Asian Ambiguous" (A) width. These characters display as 1 cell by
 default, matching Western terminal contexts, but many CJK (Chinese, Japanese, Korean) environments
 may have a preference for 2 cells.  This is often found as boolean option, "Ambiguous width as wide"
 in Terminal Emulator software preferences.
+
+The ``ambiguous_width`` parameter is available on all width-measuring functions: `wcwidth()`_,
+`wcswidth()`_, `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
 By default, wcwidth treats ambiguous characters as narrow (width 1). For CJK environments where your
 terminal is configured to display ambiguous characters as double-width, pass ``ambiguous_width=2``:
@@ -360,9 +363,6 @@ terminal is configured to display ambiguous characters as double-width, pass ``a
     1
     >>> wcwidth.width('\u2460', ambiguous_width=2)
     2
-
-The ``ambiguous_width`` parameter is available on all width-measuring functions: `wcwidth()`_,
-`wcswidth()`_, `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
 **Terminal Detection**
 
@@ -389,12 +389,19 @@ possible timeout, slow network, or non-response when working with "dumb terminal
 
 .. _term_program:
 
-term_program
-------------
+Corrections
+-----------
 
-Some terminal emulators render specific Unicode characters or sequences at widths that differ from
-the Unicode standard.  The ``term_program`` parameter applies per-terminal width corrections
-discovered by the `jquast/ucs-detect`_ utility.
+Corrections are automatically applied depending on detected or given terminal software name
+beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
+differs from the standard.
+
+The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
+`width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
+
+``term_program=None`` (default) performs automatic detection by environment values of ``TERM`` and
+``TERM_PROGRAM``.  Only distinctive values are recognized; generic values like ``xterm`` are
+ignored.
 
 .. code-block:: python
 
@@ -413,24 +420,22 @@ discovered by the `jquast/ucs-detect`_ utility.
     >>> wcwidth.wcswidth(family, term_program='alacritty')
     8
 
-The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
-`width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
-
-Use ``term_program=''`` to disable automatic terminal override lookup entirely, which is appropriate
-for automatic tests and some kinds of remote services, or, ``term_program=None`` (default) for
-automatic detection by process ``TERM`` and ``TERM_PROGRAM`` environment variables.
-
-**Automatic Detection**
-
-When ``term_program`` is ``None``, the ``TERM_PROGRAM`` environment variable is read first, falling
-back to ``TERM``.  Only distinctive values are recognized; generic environment values like
-``xterm`` or ``xterm-256color`` are ignored.
-
 Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
 ``TERM_PROGRAM`` or a unique ``TERM`` environment value.  Terminals that cannot be auto-detected,
 and those reporting the common ``TERM=xterm`` or ``TERM=xterm-256color`` are not corrected.  XTerm
 is only corrected for when ``prog_name='xterm'`` is set explicitly, such as determined by XTVERSION_
-result.
+result.  For the most accurate detection, query the terminal's software version via XTVERSION_ (CSI
+> q) using a higher-level interactive terminal library like `jquast/blessed`_:
+
+.. code-block:: python
+
+    >>> import blessed, wcwidth
+    >>> term = blessed.Terminal()
+    >>> sw_ver = term.get_software_version()
+    >>> print(sw_ver)
+    SoftwareVersion(name='VTE', version='7600')
+    >>> wcwidth.width('\u2630', term_program=sw_ver.name)
+    1
 
 Use `list_term_programs()`_ to see all recognized terminal names:
 
@@ -447,19 +452,24 @@ Use `list_term_programs()`_ to see all recognized terminal names:
 
 .. END_LIST_TERM_PROGRAMS
 
-Terminal names and their ``TERM``/``TERM_PROGRAM`` mappings are auto-generated from
-`jquast/ucs-detect`_ data.  For the most accurate detection, query the terminal's software version
-via XTVERSION_ (CSI > q) using a higher-level interactive terminal library like `jquast/blessed`_:
+Use ``term_program=False`` to disable automatic terminal override lookup entirely, which is
+appropriate for automatic tests and other purposes that require consistency in results that include
+wcwidth, or unset them entirely such as in ``conftest.py`` with pytest:
 
 .. code-block:: python
 
-    >>> import blessed, wcwidth
-    >>> term = blessed.Terminal()
-    >>> sw_ver = term.get_software_version()
-    >>> print(sw_ver)
-    SoftwareVersion(name='VTE', version='7600')
-    >>> wcwidth.width('\u2630', term_program=sw_ver.name)
-    1
+    @pytest.fixture(autouse=True)
+    def _clear_term_program():
+        """unset TERM/TERM_PROGRAM before each test."""
+        saved_term = os.environ.pop('TERM', None)
+        saved_tprog = os.environ.pop('TERM_PROGRAM', None)
+        yield
+        if saved_term is not None:
+            os.environ['TERM'] = saved_term
+        if saved_tprog is not None:
+            os.environ['TERM_PROGRAM'] = saved_tprog
+
+These corrections are sourced from the `jquast/ucs-detect`_ project.
 
 ==========
 Developing

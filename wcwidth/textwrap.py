@@ -48,7 +48,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                  control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
                  tabsize: int = 8,
                  ambiguous_width: int = 1,
-                 term_program: Optional[str] = None,
+                 term_program: str | None | Literal[False] = None,
                  **kwargs: Any) -> None:
         """
         Initialize the wrapper.
@@ -58,6 +58,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         :param tabsize: Tab stop width for tab expansion.
         :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters.
         :param term_program: Terminal program for width overrides.
+            Set to ``False`` to disable override lookup.
 
             .. versionadded:: 0.8.0
         :param kwargs: Additional arguments passed to :class:`textwrap.TextWrapper`.
@@ -526,7 +527,7 @@ def wrap(text: str, width: int = 70, *,
          expand_tabs: bool = True,
          replace_whitespace: bool = True,
          ambiguous_width: int = 1,
-         term_program: Optional[str] = None,
+         term_program: str | None | Literal[False] = None,
          initial_indent: str = '',
          subsequent_indent: str = '',
          fix_sentence_endings: bool = False,
@@ -559,7 +560,7 @@ def wrap(text: str, width: int = 70, *,
     :param term_program: Terminal software identifier for table correction.  When ``None``
         (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
         canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
-        Set empty, ``""`` to disable override lookup entirely.
+        Set to ``False`` to disable override lookup entirely.
 
         .. versionadded:: 0.8.0
     :param initial_indent: String prepended to first line.

@@ -1,5 +1,7 @@
 """Python grapheme, emoji, and sequence-aware ljust, rjust, center()."""
-from typing import Literal, Optional
+from __future__ import annotations
+
+from typing import Literal
 
 # local
 from ._width import width
@@ -12,7 +14,7 @@ def ljust(
     *,
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     ambiguous_width: int = 1,
-    term_program: Optional[str] = None,
+    term_program: str | None | Literal[False] = None,
 ) -> str:
     r"""
     Return text left-justified in a string of given display width.
@@ -29,6 +31,7 @@ def ljust(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+        Set to ``False`` to disable override lookup.
 
         .. versionadded:: 0.8.0
     :returns: Text padded on the right to reach ``dest_width``.
@@ -60,7 +63,7 @@ def rjust(
     *,
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     ambiguous_width: int = 1,
-    term_program: Optional[str] = None,
+    term_program: str | None | Literal[False] = None,
 ) -> str:
     r"""
     Return text right-justified in a string of given display width.
@@ -77,6 +80,7 @@ def rjust(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+        Set to ``False`` to disable override lookup.
 
         .. versionadded:: 0.8.0
     :returns: Text padded on the left to reach ``dest_width``.
@@ -108,7 +112,7 @@ def center(
     *,
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     ambiguous_width: int = 1,
-    term_program: Optional[str] = None,
+    term_program: str | None | Literal[False] = None,
 ) -> str:
     r"""
     Return text centered in a string of given display width.
@@ -125,6 +129,7 @@ def center(
     :param term_program: Terminal program name for applying terminal-specific
         width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
         environment variable (falling back to ``TERM``).
+        Set to ``False`` to disable override lookup.
 
         .. versionadded:: 0.8.0
     :returns: Text padded on both sides to reach ``dest_width``.

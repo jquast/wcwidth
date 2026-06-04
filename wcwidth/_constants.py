@@ -6,7 +6,7 @@ import os
 from enum import IntEnum
 from functools import lru_cache
 
-from typing import Tuple, NamedTuple
+from typing import Literal, NamedTuple, Tuple
 
 # local
 from .table_mc import CATEGORY_MC
@@ -144,12 +144,13 @@ def get_term_overrides(term_canonical: str) -> TerminalOverrides:
 
 
 @lru_cache(maxsize=32)
-def resolve_terminal(term_program: str | None = None) -> str | None:
+def resolve_terminal(term_program: str | None | Literal[False] = None) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.
 
     :param term_program: Terminal identifier string such as a TERM_PROGRAM value.
         If None, read the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
+        Set to ``False`` to disable override lookup entirely.
     :returns: Canonical terminal name if recognized, ``None`` otherwise.
 
     The auto-detection path (``term_program=None``) reads environment variables at call time

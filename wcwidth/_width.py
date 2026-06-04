@@ -54,7 +54,7 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 
 
 def _width_ignored_codes(text: str, ambiguous_width: int = 1,
-                         term_program: Optional[str] = None) -> int:
+                         term_program: str | None | Literal[False] = None) -> int:
     """
     Fast path for width() with control_codes='ignore'.
 
@@ -73,7 +73,7 @@ def width(
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     tabsize: int = 8,
     ambiguous_width: int = 1,
-    term_program: Optional[str] = None,
+    term_program: str | None | Literal[False] = None,
 ) -> int:
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
@@ -103,7 +103,7 @@ def width(
     :param term_program: Terminal software identifier for table correction.  When ``None``
         (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
         canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
-        Set empty, ``""`` to disable override lookup entirely.
+        Set to ``False`` to disable override lookup entirely.
 
         .. versionadded:: 0.8.0
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences

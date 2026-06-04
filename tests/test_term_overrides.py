@@ -100,6 +100,12 @@ def test_wcswidth_empty_term_program_disables():
     assert wcwidth.wcswidth('\u2630', term_program='VTE') == 1
 
 
+def test_wcswidth_false_term_program_disables():
+    """term_program=False disables override lookup."""
+    assert wcwidth.wcswidth('\u2630', term_program=False) == 2
+    assert wcwidth.width('\u2630', term_program=False) == 2
+
+
 def test_wcswidth_ascii_unchanged():
     """ASCII text is unaffected by terminal overrides."""
     assert wcwidth.wcswidth('hello world', term_program='VTE') == 11
