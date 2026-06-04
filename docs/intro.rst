@@ -539,9 +539,10 @@ History
 =======
 
 0.8.0 *(unreleased)*
-  * **Improved** memory resource usage and import time for Python 3.15 using lazy imports `PR #221`_.
+  * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
-  * **Bugfix** Invisible_Stacker virama conjunct formation for Burmese, Khmer, and 12 other scripts.
+  * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and
+    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #XXX`_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.

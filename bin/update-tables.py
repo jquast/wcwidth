@@ -798,6 +798,9 @@ def parse_indic_conjunct_breaks(fname: str) -> dict[str, TableDef]:
     }
 
 
+# ISC_CONSONANT is generated for the public API but not used by the runtime.
+# Virama and Invisible_Stacker are treated as zero-width combining marks (Mn),
+# matching Ghostty's uucode; the runtime no longer consults the ISC categories.
 ISC_VALUES = ('Consonant', 'Virama', 'Invisible_Stacker')
 
 

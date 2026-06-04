@@ -9,7 +9,6 @@ __lazy_modules__ = [
     "wcwidth.bisearch",
     "wcwidth.control_codes",
     "wcwidth.escape_sequences",
-    "wcwidth.table_grapheme",
     "wcwidth.table_vs16",
     "wcwidth.text_sizing",
 ]
@@ -25,7 +24,6 @@ from ._constants import (_EMOJI_ZWJ_SET,
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                TEXT_SIZING_PATTERN,
                                CURSOR_MOVEMENT_SEQUENCE,
@@ -171,8 +169,6 @@ def width(
     # grapheme-clustering state
     last_measured_idx = -2
     last_measured_ucs = -1
-    last_was_virama = False
-    conjunct_pending = False
 
     while idx < text_len:
         char = text[idx]
@@ -271,23 +267,25 @@ def width(
             last_measured_ucs = -1
             continue
 
-        # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
-        #    Fitzpatrick, Virama conjuncts, Mc, wcwidth
         ucs = ord(char)
 
-        # ZWJ (U+200D)
+        # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
+        #    Fitzpatrick, Virama conjuncts, Mc, wcwidth
         if ucs == 0x200D:
-            if last_was_virama:
+            # ZWJ (U+200D): consumed without contributing width.
+            if idx > 0 and ord(text[idx - 1]) in _ISC_VIRAMA_SET:
+                # Virama codepoints (Indic_Syllabic_Category=Virama|Invisible_Stacker)
+                # are treated as zero-width combining marks, matching Ghostty's uucode
+                # library.  Whether a virama+consonant sequence should collapse to 1 or
+                # 2 cells is undefined by Unicode; we follow uucode's (1).
                 idx += 1
             elif idx + 1 < text_len:
-                last_was_virama = False
                 idx += 2
             else:
-                last_was_virama = False
                 idx += 1
             continue
 
-        # VS16 (U+FE0F): converts preceding narrow character to wide.
+        # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
             if bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE['9.0.0']):
                 current_col += 1
@@ -296,7 +294,7 @@ def width(
             idx += 1
             continue
 
-        # Regional Indicator & Fitzpatrick (both above BMP)
+        # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 ri_before = 0
@@ -313,38 +311,18 @@ def width(
                 idx += 1
                 continue
 
-        # Virama conjunct formation
-        if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            last_measured_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-            conjunct_pending = True
-            idx += 1
-            continue
-
-        # Normal character: measure with wcwidth
+        # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w > 0:
-            if conjunct_pending:
-                current_col += 1
-                conjunct_pending = False
             current_col += w
             max_extent = max(max_extent, current_col)
             last_measured_idx = idx
             last_measured_ucs = ucs
-            last_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             current_col += 1
             max_extent = max(max_extent, current_col)
             last_measured_idx = -2
-            last_was_virama = False
-            conjunct_pending = False
-        else:
-            last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
-    if conjunct_pending:
-        current_col += 1
-        max_extent = max(max_extent, current_col)
     return max_extent

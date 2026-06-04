@@ -58,7 +58,6 @@ from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import ISC_CONSONANT, EXTENDED_PICTOGRAPHIC, GRAPHEME_REGIONAL_INDICATOR
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                CURSOR_LEFT_SEQUENCE,
@@ -68,7 +67,6 @@ from .escape_sequences import (ZERO_WIDTH_PATTERN,
                                strip_sequences)
 from .unicode_versions import list_versions
 
-_ISC_CONSONANT_TABLE = ISC_CONSONANT
 
 __all__ = (
     'ZERO_WIDTH',

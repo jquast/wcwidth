@@ -8,7 +8,6 @@ __lazy_modules__ = [
     "wcwidth._constants",
     "wcwidth._wcwidth",
     "wcwidth.bisearch",
-    "wcwidth.table_grapheme",
     "wcwidth.table_vs16",
 ]
 # local
@@ -20,7 +19,6 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET)
 from .table_vs16 import VS16_NARROW_TO_WIDE
-from .table_grapheme import ISC_CONSONANT
 
 
 def wcswidth(
@@ -74,26 +72,29 @@ def wcswidth(
     # grapheme-clustering state
     last_measured_idx = -2
     last_measured_ucs = -1
-    last_was_virama = False
-    conjunct_pending = False
 
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
-
-        # ZWJ (U+200D)
+        #
+        # Much of the logic below matches the logic in width(), but is repeated for improved
+        # performance, they are given matching index reference numbers (starting at #6).
+        #
+        # 5. ZWJ (U+200D): consumed without contributing width.
         if ucs == 0x200D:
-            if last_was_virama:
+            if idx > 0 and ord(pwcs[idx - 1]) in _ISC_VIRAMA_SET:
+                # Virama codepoints (Indic_Syllabic_Category=Virama|Invisible_Stacker)
+                # are treated as zero-width combining marks, matching Ghostty's uucode
+                # library.  Whether a virama+consonant sequence should collapse to 1 or
+                # 2 cells is undefined by Unicode; we follow uucode's (1).
                 idx += 1
             elif idx + 1 < end:
-                last_was_virama = False
                 idx += 2
             else:
-                last_was_virama = False
                 idx += 1
             continue
 
-        # VS16 (U+FE0F): converts preceding narrow character to wide.
+        # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
             total_width += bisearch(
                 ord(pwcs[last_measured_idx]),
@@ -103,7 +104,7 @@ def wcswidth(
             idx += 1
             continue
 
-        # Regional Indicator & Fitzpatrick (both above BMP)
+        # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 ri_before = 0
@@ -120,38 +121,19 @@ def wcswidth(
                 idx += 1
                 continue
 
-        # Virama conjunct formation
-        if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            last_measured_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-            conjunct_pending = True
-            idx += 1
-            continue
-
-        # Normal character: measure with wcwidth
+        # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w < 0:
             # C0/C1 control character
             return -1
         if w > 0:
-            if conjunct_pending:
-                total_width += 1
-                conjunct_pending = False
             total_width += w
             last_measured_idx = idx
             last_measured_ucs = ucs
-            last_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
             total_width += 1
             last_measured_idx = -2
-            last_was_virama = False
-            conjunct_pending = False
-        else:
-            last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
-    if conjunct_pending:
-        total_width += 1
     return total_width
