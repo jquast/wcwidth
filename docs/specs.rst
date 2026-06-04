@@ -131,8 +131,9 @@ described in the Virama section header).
 - A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
 - The conjunct still occupies cells and the next visible advance settles it:
 
-  - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
-    1 cell and closes the conjunct.
+  - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) closes
+    the conjunct and accounts for its 1-cell contribution.  The ``Mc`` itself
+    adds no independent width when following a conjunct.
   - A following character with positive width (or end of string) adds 1 cell
     for the conjunct before counting its own width.
 
