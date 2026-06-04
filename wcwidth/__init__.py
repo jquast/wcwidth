@@ -77,4 +77,4 @@ __all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places
 # Prefer the installed distribution version when available (helps test environments)
-__version__ = '0.7.0'  # don't forget to also update pyproject.toml:version
+__version__ = '0.8.0'  # don't forget to also update pyproject.toml:version

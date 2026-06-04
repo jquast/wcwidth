@@ -533,6 +533,10 @@ languages.
 History
 =======
 
+0.8.0 *(unreleased)*
+  * **Improved** memory resource usage and import time for Python 3.15 using lazy imports `PR #221`_.
+  * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
+
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
   * **New** `clip()`_ parameter ``control_codes='parse'``, ``'ignore'``, and ``'strict'``. `clip()`_
@@ -763,6 +767,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`PR #202`: https://github.com/jquast/wcwidth/pull/202
 .. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
+.. _`PR #206`: https://github.com/jquast/wcwidth/pull/206
+.. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
