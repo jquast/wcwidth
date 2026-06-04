@@ -584,10 +584,15 @@ This library is used in:
 Other Languages
 ===============
 
-There are similar implementations of the `wcwidth()`_ and `wcswidth()`_ functions in other
-languages.
+The following libraries provide grapheme and emoji support and closely align with our
+specification_:
 
-- `contour-terminal/libunicode`_: C++20
+- `jacobsandlund/uucode`_ Zig
+- `contour-terminal/libunicode`_ C++20
+
+There are similar implementations of at least the `wcwidth()`_ and `wcswidth()`_ functions in other
+languages:
+
 - `ridiculousfish/widecharwidth`_: Python
 - `termux/wcwidth`_: C
 - `powerman/wcwidth-icons`_: C
@@ -611,12 +616,16 @@ languages.
 History
 =======
 
-0.8.0 *2026-06-01*
+0.8.0 *(unreleased)*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
     `ljust()`_, `rjust()`_, and `center()`_, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
     environment values when None (default), and, suggest downstream developers negotiate for
     XTVERSION_ and ENQ_.
+  * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
+  * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
+  * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and
+    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #XXX`_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
@@ -848,6 +857,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #200`: https://github.com/jquast/wcwidth/pull/200
 .. _`PR #202`: https://github.com/jquast/wcwidth/pull/202
 .. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
+.. _`PR #206`: https://github.com/jquast/wcwidth/pull/206
+.. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
@@ -879,6 +890,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`joshuarubin/wcwidth9`: https://github.com/joshuarubin/wcwidth9
 .. _`spectreconsole/wcwidth`: https://github.com/spectreconsole/wcwidth
 .. _`contour-terminal/libunicode`: https://github.com/contour-terminal/libunicode
+.. _`jacobsandlund/uucode`: https://github.com/jacobsandlund/uucode
 .. _`ridiculousfish/widecharwidth`: https://github.com/ridiculousfish/widecharwidth
 .. _`termux/wcwidth`: https://github.com/termux/wcwidth
 .. _`powerman/wcwidth-icons`: https://github.com/powerman/wcwidth-icons
