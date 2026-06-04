@@ -399,9 +399,8 @@ differs from the standard.
 The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
-``term_program=None`` (default) performs automatic detection by environment values of ``TERM`` and
-``TERM_PROGRAM``.  Only distinctive values are recognized; generic values like ``xterm`` are
-ignored.
+``term_program=False`` (default) disables corrections.  Use ``term_program=True`` for automatic
+detection by environment values of ``TERM`` and ``TERM_PROGRAM``.
 
 .. code-block:: python
 
@@ -421,11 +420,9 @@ ignored.
     8
 
 Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
-``TERM_PROGRAM`` or a unique ``TERM`` environment value.  Terminals that cannot be auto-detected,
-and those reporting the common ``TERM=xterm`` or ``TERM=xterm-256color`` are not corrected.  XTerm
-is only corrected for when ``prog_name='xterm'`` is set explicitly, such as determined by XTVERSION_
-result.  For the most accurate detection, query the terminal's software version via XTVERSION_ (CSI
-> q) using a higher-level interactive terminal library like `jquast/blessed`_:
+``TERM_PROGRAM`` or a unique ``TERM`` environment value.  For the most accurate detection, query the
+terminal's software version via XTVERSION_ (``CSI > q``) using a higher-level interactive terminal
+library like `jquast/blessed`_:
 
 .. code-block:: python
 
@@ -452,9 +449,9 @@ Use `list_term_programs()`_ to see all recognized terminal names:
 
 .. END_LIST_TERM_PROGRAMS
 
-Use ``term_program=False`` to disable automatic terminal override lookup entirely, which is
-appropriate for automatic tests and other purposes that require consistency in results that include
-wcwidth, or unset them entirely such as in ``conftest.py`` with pytest:
+``term_program=False`` (the default) disables terminal corrections.  For automatic tests and other
+purposes that require consistency, clear or unset ``TERM`` and ``TERM_PROGRAM`` in the test
+environment such as in ``conftest.py`` with pytest:
 
 .. code-block:: python
 
@@ -628,14 +625,14 @@ History
 
 0.8.0 *(unreleased)*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
-  * **New** argument, ``term_program=None`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
-    `ljust()`_, `rjust()`_, and `center()`_, auto-detected by ``TERM_PROGRAM`` or unique ``TERM``
-    environment values when None (default), and, suggest downstream developers negotiate for
-    XTVERSION_ and ENQ_.
+  * **New** argument, ``term_program`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
+    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` (default) disables corrections; ``True``
+    auto-detects by ``TERM_PROGRAM`` or ``TERM``; string values accept canonical names matching
+    `list_term_programs()`_.
   * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
   * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and
-    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #XXX`_.
+    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #222`_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
@@ -869,6 +866,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
 .. _`PR #206`: https://github.com/jquast/wcwidth/pull/206
 .. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
+.. _`PR #222`: https://github.com/jquast/wcwidth/pull/222
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190

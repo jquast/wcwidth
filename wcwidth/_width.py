@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 __lazy_modules__ = [
     "wcwidth._constants",
@@ -54,7 +54,7 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 
 
 def _width_ignored_codes(text: str, ambiguous_width: int = 1,
-                         term_program: str | None | Literal[False] = None) -> int:
+                         term_program: bool | str = False) -> int:
     """
     Fast path for width() with control_codes='ignore'.
 
@@ -73,7 +73,7 @@ def width(
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     tabsize: int = 8,
     ambiguous_width: int = 1,
-    term_program: str | None | Literal[False] = None,
+    term_program: bool | str = False,
 ) -> int:
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
@@ -100,10 +100,11 @@ def width(
         positive. Has no effect when ``control_codes='ignore'``.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters. Default is ``1``
         (narrow). Set to ``2`` for CJK contexts.
-    :param term_program: Terminal software identifier for table correction.  When ``None``
-        (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
-        canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
-        Set to ``False`` to disable override lookup entirely.
+    :param term_program: Terminal software identifier for table correction.
+        ``False`` (default) disables override lookup.  ``True`` reads the
+        ``TERM_PROGRAM`` or ``TERM`` environment variable for auto-detection.
+        Accepts a canonical terminal name matching :func:`list_term_programs`,
+        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
         .. versionadded:: 0.8.0
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences

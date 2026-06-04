@@ -25,18 +25,18 @@ def test_resolve_terminal_unknown():
     assert resolve_terminal('') is None
 
 
-def test_resolve_terminal_none():
-    """resolve_terminal reads TERM_PROGRAM env var, falling back to TERM."""
+def test_resolve_terminal_auto_detect():
+    """resolve_terminal=True reads TERM_PROGRAM env var, falling back to TERM."""
     saved_tprog = os.environ.get('TERM_PROGRAM')
     saved_term = os.environ.get('TERM')
     try:
         for var in ('TERM_PROGRAM', 'TERM'):
             os.environ.pop(var, None)
         resolve_terminal.cache_clear()
-        assert resolve_terminal(None) is None
+        assert resolve_terminal(True) is None
         os.environ['TERM_PROGRAM'] = 'kitty'
         resolve_terminal.cache_clear()
-        assert resolve_terminal(None) == 'kitty'
+        assert resolve_terminal(True) == 'kitty'
     finally:
         for var, saved in (('TERM_PROGRAM', saved_tprog), ('TERM', saved_term)):
             if saved is not None:
@@ -153,7 +153,7 @@ def test_width_vs15_override():
 
 
 @pytest.mark.parametrize('term_program,expected', [
-    (None, 2),
+    (False, 2),
     ('', 2),
     ('nonexistent', 2),
     ('alacritty', 4),
@@ -228,7 +228,7 @@ def test_grapheme_override_zwj_no_extpict_base():
 @pytest.mark.parametrize('text,term,expected', [
     ('👨\u200d👦x', 'alacritty', 5),
     ('👨\u200da', 'alacritty', 2),
-    ('👨\u200da', None, 2),
+    ('👨\u200da', False, 2),
 ])
 def test_grapheme_override_scanner_edges(text, term, expected):
     """Scanner edge cases for ZWJ chains."""
@@ -281,11 +281,11 @@ def test_resolve_terminal_xterm_explicit():
 
 
 @pytest.mark.parametrize('env_var', ['TERM', 'TERM_PROGRAM'])
-def test_resolve_terminal_xterm_not_auto_detected(env_var):
-    """resolve_terminal returns None for xterm via auto-detection from env."""
+def test_resolve_terminal_xterm_auto_detected(env_var):
+    """resolve_terminal returns 'xterm' for xterm via auto-detection from env."""
     os.environ[env_var] = 'xterm'
     resolve_terminal.cache_clear()
-    assert resolve_terminal(None) is None
+    assert resolve_terminal(True) == 'xterm'
 
 
 @pytest.mark.parametrize('func,text,expected_default,expected_xterm', [
@@ -346,7 +346,7 @@ def test_resolve_terminal_from_env(termenv, expected):
         os.environ.pop(var, None)
     os.environ.update(termenv)
     resolve_terminal.cache_clear()
-    assert resolve_terminal(None) == expected
+    assert resolve_terminal(True) == expected
 
 
 @pytest.mark.parametrize('args,expected', [
@@ -376,18 +376,18 @@ def test_resolve_terminal_strips_whitespace(value, expected):
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
-    ('\u1000\u1031', None, 2),   # MYANMAR LETTER KA + MYANMAR VOWEL SIGN E (Burmese)
+    ('\u1000\u1031', False, 2),   # MYANMAR LETTER KA + MYANMAR VOWEL SIGN E (Burmese)
     ('\u1000\u1031', '', 2),
     ('\u1000\u1031', 'kitty', 1),
     ('\u1000\u1031', 'foot', 1),
     ('\u1000\u1031', 'alacritty', 2),
-    ('\u0c05\u0c02', None, 2),   # TELUGU LETTER A + TELUGU SIGN ANUSVARA
+    ('\u0c05\u0c02', False, 2),   # TELUGU LETTER A + TELUGU SIGN ANUSVARA
     ('\u0c05\u0c02', 'kitty', 1),
-    ('\u0e01\u0e33', None, 2),   # THAI CHARACTER KO KAI + THAI CHARACTER SARA AM
+    ('\u0e01\u0e33', False, 2),   # THAI CHARACTER KO KAI + THAI CHARACTER SARA AM
     ('\u0e01\u0e33', 'kitty', 1),
-    ('\u0985\u0982', None, 2),   # BENGALI LETTER A + BENGALI SIGN ANUSVARA
+    ('\u0985\u0982', False, 2),   # BENGALI LETTER A + BENGALI SIGN ANUSVARA
     ('\u0985\u0982', 'kitty', 1),
-    ('\u0915\u093e', None, 2),   # DEVANAGARI LETTER KA + DEVANAGARI VOWEL SIGN AA
+    ('\u0915\u093e', False, 2),   # DEVANAGARI LETTER KA + DEVANAGARI VOWEL SIGN AA
     ('\u0915\u093e', 'kitty', 1),
     ('\u0915\u093e', 'foot', 1),
     ('\u0915\u093e', 'alacritty', 2),
@@ -423,10 +423,10 @@ def test_wcswidth_mixed_language_ascii(text, term_program, expected):
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
-    ('\u1000\u1039\u1001', None, 2),   # MYANMAR KA + VIRAMA + KHA (conjunct)
+    ('\u1000\u1039\u1001', False, 2),   # MYANMAR KA + VIRAMA + KHA (conjunct)
     ('\u1000\u1039\u1001', 'kitty', 1),
     ('\u1000\u1039\u1001', 'foot', 2),
-    ('\u1000\u103b\u102d\u102f', None, 2),  # MYANMAR KA + MEDIAL YA + VOWEL I + VOWEL U
+    ('\u1000\u103b\u102d\u102f', False, 2),  # MYANMAR KA + MEDIAL YA + VOWEL I + VOWEL U
     ('\u1000\u103b\u102d\u102f', 'kitty', 1),
     ('\u1000\u103b\u102d\u102f', 'foot', 1),
 ])

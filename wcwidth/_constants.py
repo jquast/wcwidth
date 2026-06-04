@@ -6,7 +6,7 @@ import os
 from enum import IntEnum
 from functools import lru_cache
 
-from typing import Literal, NamedTuple, Tuple
+from typing import Tuple, NamedTuple
 
 # local
 from .table_mc import CATEGORY_MC
@@ -144,32 +144,28 @@ def get_term_overrides(term_canonical: str) -> TerminalOverrides:
 
 
 @lru_cache(maxsize=32)
-def resolve_terminal(term_program: str | None | Literal[False] = None) -> str | None:
+def resolve_terminal(term_program: bool | str = False) -> str | None:
     """
     Resolve a terminal identifier to its canonical name.
 
-    :param term_program: Terminal identifier string such as a TERM_PROGRAM value.
-        If None, read the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
-        Set to ``False`` to disable override lookup entirely.
+    :param term_program: Terminal identifier.  ``False`` (default) disables override lookup.
+        ``True`` reads the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
+        A string value is used directly (canonical name, alias, XTVERSION/ENQ result, etc.).
     :returns: Canonical terminal name if recognized, ``None`` otherwise.
 
-    The auto-detection path (``term_program=None``) reads environment variables at call time
+    The auto-detection path (``term_program=True``) reads environment variables at call time
     and caches the result.  The environment is assumed immutable for the process lifetime;
     callers that change ``TERM`` or ``TERM_PROGRAM`` mid-process must call
     :func:`resolve_terminal.cache_clear` afterward.
     """
-    # Track whether the caller passed term_program explicitly.  Auto-detection
-    # from environment must not match 'xterm' because its TERM value is shared
-    # by many unrelated terminals with different unicode behaviours.
-    explicit = term_program is not None
-    if term_program is None:
+    if term_program is False:
+        return None
+    if term_program is True:
         term_program = os.environ.get('TERM_PROGRAM', '') or os.environ.get('TERM', '')
     if not term_program:
         return None
     key = term_program.strip().lower()
     canonical = ALIASES.get(key, key)
     if canonical not in KNOWN_TERMINALS:
-        return None
-    if canonical == 'xterm' and not explicit:
         return None
     return canonical

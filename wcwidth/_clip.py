@@ -70,7 +70,7 @@ def _process_hyperlink(
     fillchar: str,
     tabsize: int,
     ambiguous_width: int,
-    term_program: str | None | Literal[False],
+    term_program: bool | str,
     control_codes: Literal['parse', 'strict', 'ignore'],
     *,
     params: HyperlinkParams,
@@ -195,7 +195,7 @@ def _clip_simple(
     *,
     propagate_sgr: bool,
     ambiguous_width: int,
-    term_program: str | None | Literal[False],
+    term_program: bool | str,
     fillchar: str,
     tabsize: int,
     strict: bool,
@@ -370,7 +370,7 @@ def _text_sizing_clip(
     end: int,
     fillchar: str,
     ambiguous_width: int,
-    term_program: str | None | Literal[False],
+    term_program: bool | str,
     write_cells: Callable[[str, int, int], None],
 ) -> int:
     """
@@ -458,7 +458,7 @@ def _clip_painter(
     *,
     propagate_sgr: bool,
     ambiguous_width: int,
-    term_program: str | None | Literal[False],
+    term_program: bool | str,
     fillchar: str,
     tabsize: int,
     strict: bool,
@@ -696,7 +696,7 @@ def clip(
     propagate_sgr: bool = True,
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     overtyping: Optional[bool] = None,
-    term_program: str | None | Literal[False] = None,
+    term_program: bool | str = False,
 ) -> str:
     r"""
     Clip text to display columns (start, end) while preserving all terminal sequences.
@@ -752,10 +752,11 @@ def clip(
         performance when the caller knows *text* contains no cursor movement
         characters.  Set to ``True`` to force the painter's algorithm (useful
         for testing).  Has no effect when ``control_codes='ignore'``.
-    :param term_program: Terminal program name for applying terminal-specific
-        width overrides. When ``None`` (default), reads ``TERM_PROGRAM``
-        environment variable (falling back to ``TERM``).
-        Set to ``False`` to disable override lookup.
+    :param term_program: Terminal software identifier for table correction.
+        ``False`` (default) disables override lookup.  ``True`` reads the
+        ``TERM_PROGRAM`` or ``TERM`` environment variable for auto-detection.
+        Accepts a canonical terminal name matching :func:`list_term_programs`,
+        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
         .. versionadded:: 0.8.0
 

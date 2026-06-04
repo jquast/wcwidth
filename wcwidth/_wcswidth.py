@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 __lazy_modules__ = [
     "wcwidth._constants",
@@ -63,7 +63,7 @@ def wcswidth(
     n: Optional[int] = None,
     unicode_version: str = 'auto',
     ambiguous_width: int = 1,
-    term_program: str | None | Literal[False] = None,
+    term_program: bool | str = False,
 ) -> int:
     """
     Given a unicode string, return its printable length on a terminal.
@@ -86,10 +86,11 @@ def wcswidth(
 
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
-    :param term_program: Terminal software identifier for table correction.  When ``None``
-        (default), the ``TERM_PROGRAM`` or unique ``TERM`` environment variable is used. Accepts a
-        canonical terminal name, ``TERM_PROGRAM`` value, or ``XTVERSION`` or ``ENQ`` query result.
-        Set to ``False`` to disable override lookup entirely.
+    :param term_program: Terminal software identifier for table correction.
+        ``False`` (default) disables override lookup.  ``True`` reads the
+        ``TERM_PROGRAM`` or ``TERM`` environment variable for auto-detection.
+        Accepts a canonical terminal name matching :func:`list_term_programs`,
+        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
         .. versionadded:: 0.8.0
     :returns: The width, in cells, needed to display the first ``n`` characters
