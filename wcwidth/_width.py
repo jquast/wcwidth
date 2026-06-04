@@ -402,6 +402,9 @@ def width(
 
         # Virama conjunct formation
         if last_was_virama and bisearch(ucs, ISC_CONSONANT):
+            if conjunct_pending:
+                current_col += 1
+                max_extent = max(max_extent, current_col)
             last_base_or_idx = idx
             last_measured_ucs = ucs
             last_was_virama = False
@@ -448,11 +451,13 @@ def width(
             last_was_virama = False
         elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
+            if conjunct_pending:
+                current_col += 1
+                conjunct_pending = False
             current_col += 1
             max_extent = max(max_extent, current_col)
             last_base_or_idx = _GraphemeState.NO_BASE
             last_was_virama = False
-            conjunct_pending = False
         else:
             last_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
