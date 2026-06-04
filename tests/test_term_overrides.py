@@ -367,3 +367,73 @@ def test_sfz_override_foot():
 def test_resolve_terminal_strips_whitespace(value, expected):
     """resolve_terminal strips, lowercases, and returns None for whitespace-only."""
     assert resolve_terminal(value) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u1000\u1031', None, 2),   # MYANMAR LETTER KA + MYANMAR VOWEL SIGN E (Burmese)
+    ('\u1000\u1031', '', 2),
+    ('\u1000\u1031', 'kitty', 1),
+    ('\u1000\u1031', 'foot', 1),
+    ('\u1000\u1031', 'alacritty', 2),
+    ('\u0c05\u0c02', None, 2),   # TELUGU LETTER A + TELUGU SIGN ANUSVARA
+    ('\u0c05\u0c02', 'kitty', 1),
+    ('\u0e01\u0e33', None, 2),   # THAI CHARACTER KO KAI + THAI CHARACTER SARA AM
+    ('\u0e01\u0e33', 'kitty', 1),
+    ('\u0985\u0982', None, 2),   # BENGALI LETTER A + BENGALI SIGN ANUSVARA
+    ('\u0985\u0982', 'kitty', 1),
+    ('\u0915\u093e', None, 2),   # DEVANAGARI LETTER KA + DEVANAGARI VOWEL SIGN AA
+    ('\u0915\u093e', 'kitty', 1),
+    ('\u0915\u093e', 'foot', 1),
+    ('\u0915\u093e', 'alacritty', 2),
+])
+def test_wcswidth_language_grapheme(text, term_program, expected):
+    """Language grapheme clusters use per-terminal override tables."""
+    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u1000\u1031', 'kitty', 1),  # MYANMAR LETTER KA + VOWEL SIGN E
+    ('\u1000\u1031', 'foot', 1),
+    ('\u0915\u093e', 'kitty', 1),  # DEVANAGARI LETTER KA + VOWEL SIGN AA
+    ('\u0915\u093e', 'foot', 1),
+    ('\u0c05\u0c02', 'kitty', 1),  # TELUGU LETTER A + SIGN ANUSVARA
+])
+def test_width_language_grapheme(text, term_program, expected):
+    """Width() applies language grapheme overrides."""
+    assert wcwidth.width(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('hello', 'kitty', 5),
+    ('hello', 'foot', 5),
+    ('hello\u1000\u1031', 'kitty', 6),   # ASCII + Burmese KA + VOWEL SIGN E
+    ('\u1000\u1031hello', 'kitty', 6),   # Burmese KA + VOWEL SIGN E + ASCII
+    ('\u1000\u1031\u1000\u1031', 'kitty', 2),  # two Burmese KA+E clusters
+    ('\u1000\u1031x\u0915\u093e', 'kitty', 3),  # Burmese + ASCII + Devanagari
+])
+def test_wcswidth_mixed_language_ascii(text, term_program, expected):
+    """Language grapheme overrides do not affect ASCII and mix correctly."""
+    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u1000\u1039\u1001', None, 2),   # MYANMAR KA + VIRAMA + KHA (conjunct)
+    ('\u1000\u1039\u1001', 'kitty', 1),
+    ('\u1000\u1039\u1001', 'foot', 2),
+    ('\u1000\u103b\u102d\u102f', None, 2),  # MYANMAR KA + MEDIAL YA + VOWEL I + VOWEL U
+    ('\u1000\u103b\u102d\u102f', 'kitty', 1),
+    ('\u1000\u103b\u102d\u102f', 'foot', 1),
+])
+def test_wcswidth_virama_conjunct(text, term_program, expected):
+    """Virama conjunct grapheme clusters use per-terminal overrides."""
+    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u1000\u1031', 'xterm', 2),  # Burmese: no xterm override
+    ('\u0915\u093e', 'xterm', 2),  # Devanagari: no xterm override
+    ('\u0c05\u0c02', 'xterm', 2),  # Telugu: no xterm override
+])
+def test_wcswidth_language_no_override(text, term_program, expected):
+    """Terminals without language overrides return spec width."""
+    assert wcwidth.wcswidth(text, term_program=term_program) == expected

@@ -207,6 +207,9 @@ def width(
     last_was_virama = False
     conjunct_pending = False
     _max_extent_before = 0
+    cluster_start = -1
+    col_before_cluster = 0
+    max_extent_before_cluster = 0
 
     while idx < text_len:
         char = text[idx]
@@ -258,6 +261,7 @@ def width(
             # Escape sequences break VS16 adjacency: reset last-measured state
             last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
+            cluster_start = -1
             max_extent = max(max_extent, current_col)
             continue
 
@@ -268,6 +272,7 @@ def width(
             idx += 1
             last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         if char in VERTICAL_CTRL:
@@ -276,6 +281,7 @@ def width(
             idx += 1
             last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         # 3. Horizontal movement characters
@@ -296,6 +302,7 @@ def width(
             idx += 1
             last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         # 4. Zero-width control characters
@@ -303,6 +310,7 @@ def width(
             idx += 1
             last_base_or_idx = _GraphemeState.NO_BASE
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
@@ -328,6 +336,7 @@ def width(
                         last_measured_ucs = -1
                         last_measured_w = 0
                         last_was_virama = False
+                        cluster_start = -1
                         idx = cluster_end
                         continue
                 # No override; ZWJ breaks VS adjacency.
@@ -406,11 +415,32 @@ def width(
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
         if w > 0:
+            applied = False
+            if _grapheme_overrides and cluster_start >= 0:
+                candidate = text[cluster_start:idx + 1]
+                override_w = _grapheme_overrides.get(candidate)
+                if override_w is not None:
+                    current_col = col_before_cluster + override_w
+                    max_extent = max(max_extent_before_cluster, current_col)
+                    cluster_start = -1
+                    applied = True
+                else:
+                    cluster = text[cluster_start:idx]
+                    override_w = _grapheme_overrides.get(cluster)
+                    if override_w is not None:
+                        current_col = col_before_cluster + override_w
+                        max_extent = max(max_extent_before_cluster, current_col)
+                    cluster_start = -1
+            if cluster_start < 0:
+                cluster_start = idx
+                col_before_cluster = current_col
+                max_extent_before_cluster = max_extent
             _max_extent_before = max_extent
             if conjunct_pending:
                 current_col += 1
                 conjunct_pending = False
-            current_col += w
+            if not applied:
+                current_col += w
             max_extent = max(max_extent, current_col)
             last_base_or_idx = idx
             last_measured_ucs = ucs
@@ -430,4 +460,10 @@ def width(
     if conjunct_pending:
         current_col += 1
         max_extent = max(max_extent, current_col)
+    if _grapheme_overrides and cluster_start >= 0:
+        cluster = text[cluster_start:text_len]
+        override_w = _grapheme_overrides.get(cluster)
+        if override_w is not None:
+            current_col = col_before_cluster + override_w
+            max_extent = max(max_extent_before_cluster, current_col)
     return max_extent

@@ -1443,7 +1443,8 @@ def collect_grapheme_overrides(
     known_terminals: frozenset[str],
 ) -> Mapping[str, dict[str, int]]:
     """
-    Collect multi-codepoint grapheme overrides from emoji_zwj_results and ri_results.
+    Collect multi-codepoint grapheme overrides from emoji_zwj_results, ri_results and
+    language_results.
 
     Returns a dict mapping canonical_name -> {grapheme_string: terminal_measured_width}. Only
     includes entries where the terminal measurement differs from wcwidth. Grapheme strings are
@@ -1465,6 +1466,22 @@ def collect_grapheme_overrides(
                     if term_w != wc_w:
                         decoded = wchar.encode('ascii').decode('unicode_escape')
                         term_graphemes[decoded] = term_w
+
+        lang_results = test_results.get('language_results')
+        if lang_results:
+            for lang_data in lang_results.values():
+                if not isinstance(lang_data, dict):
+                    continue
+                for entry in lang_data.get('failed', []):
+                    if 'inherited_from' in entry:
+                        continue
+                    wchar = entry['wchars']
+                    term_w = entry['measured_by_terminal']
+                    wc_w = entry['measured_by_wcwidth']
+                    if term_w != wc_w:
+                        decoded = wchar.encode('ascii').decode('unicode_escape')
+                        term_graphemes[decoded] = term_w
+
         if term_graphemes:
             result.setdefault(canonical, {}).update(term_graphemes)
 

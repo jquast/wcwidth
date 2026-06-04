@@ -136,6 +136,8 @@ def wcswidth(
     last_measured_w = 0
     last_was_virama = False
     conjunct_pending = False
+    cluster_start = -1
+    total_before_cluster = 0
 
     while idx < end:
         char = pwcs[idx]
@@ -159,6 +161,7 @@ def wcswidth(
                         last_measured_ucs = -1
                         last_measured_w = 0
                         last_was_virama = False
+                        cluster_start = -1
                         idx = cluster_end
                         continue
                 # No override; ZWJ breaks VS adjacency.
@@ -238,10 +241,28 @@ def wcswidth(
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
         if w > 0:
+            applied = False
+            if _grapheme_overrides and cluster_start >= 0:
+                candidate = pwcs[cluster_start:idx + 1]
+                override_w = _grapheme_overrides.get(candidate)
+                if override_w is not None:
+                    total_width = total_before_cluster + override_w
+                    cluster_start = -1
+                    applied = True
+                else:
+                    cluster = pwcs[cluster_start:idx]
+                    override_w = _grapheme_overrides.get(cluster)
+                    if override_w is not None:
+                        total_width = total_before_cluster + override_w
+                    cluster_start = -1
+            if cluster_start < 0:
+                cluster_start = idx
+                total_before_cluster = total_width
             if conjunct_pending:
                 total_width += 1
                 conjunct_pending = False
-            total_width += w
+            if not applied:
+                total_width += w
             last_base_or_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w
@@ -258,4 +279,9 @@ def wcswidth(
 
     if conjunct_pending:
         total_width += 1
+    if _grapheme_overrides and cluster_start >= 0:
+        cluster = pwcs[cluster_start:end]
+        override_w = _grapheme_overrides.get(cluster)
+        if override_w is not None:
+            total_width = total_before_cluster + override_w
     return total_width
