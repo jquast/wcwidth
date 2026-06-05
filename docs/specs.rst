@@ -105,11 +105,13 @@ it directly follows, making the pair width 2. Wide characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
-:func:`wcwidth.width`. The ``Mc`` character adds +1 to the total width,
+:func:`wcwidth.width`. The ``Mc`` character adds +1 to the cluster width,
 reflecting its *positive advance width* as defined in `General Category`_
 (Table 4-4). Zero-width combining marks (``Mn``) between the base character
 and the ``Mc`` do not break the association. For example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
+
+Any grapheme cluster width is limisted to 2 cells since 0.8.0, `PR #224`_.
 
 Virama Conjunct Formation
 -------------------------
@@ -121,16 +123,10 @@ as a Pure_Killer or Invisible_Stacker depending on context") and
 or consonant stacking", the "only as consonant stackers" category
 described in the Virama section header).
 
-- A ``Consonant`` immediately following a ``Virama`` contributes 0 width.
-- The conjunct still occupies cells and the next visible advance settles it:
-
-  - A following ``Mc`` (`Spacing Combining Mark`_, e.g. a vowel sign) counts as
-    1 cell and closes the conjunct.
-  - A following character with positive width (or end of string) adds 1 cell
-    for the conjunct before counting its own width.
-
-- Chains work the same way: C + virama + C + virama + C collapses each
-  virama+consonant pair.
+- A ``Virama`` contributes 0 width (category ``Mn``).
+- A ``Consonant`` immediately following a ``Virama`` adds its width to the
+  current grapheme cluster.
+- The cluster total is capped at 2 cells since 0.8.0, `PR #224`_.
 - ``Mn`` marks do not break conjunct context within the same `aksara`_.
 - ZWJ (`U+200D`_) after a virama is consumed without breaking conjunct state,
   supporting explicit half-form requests (virama + ZWJ + consonant).
@@ -187,3 +183,4 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`uncodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes
+.. _`PR #224`: https://github.com/jquast/wcwidth/pull/224

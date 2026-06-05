@@ -26,6 +26,8 @@ disable=
     too-many-boolean-expressions,
     redundant-u-string-prefix,
     consider-using-f-string,
+    consider-using-max-builtin,
+    consider-using-min-builtin,
 
 [FORMAT]
 max-line-length: 100

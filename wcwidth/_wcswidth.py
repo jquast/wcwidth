@@ -69,10 +69,13 @@ def wcswidth(
     total_width = 0
     idx = 0
 
-    # grapheme-clustering state
+    # grapheme-clustering state and local re-binding for performance
     last_measured_idx = -2
     last_measured_ucs = -1
     prev_was_virama = False
+    cluster_width = 0
+    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
+    _bisearch = bisearch
 
     while idx < end:
         char = pwcs[idx]
@@ -96,10 +99,8 @@ def wcswidth(
 
         # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
-            total_width += bisearch(
-                ord(pwcs[last_measured_idx]),
-                VS16_NARROW_TO_WIDE['9.0.0'],
-            )
+            if _bisearch(last_measured_ucs, vs16_nw_table):
+                cluster_width = 2
             last_measured_idx = -2  # prevent double application
             idx += 1
             continue
@@ -127,17 +128,25 @@ def wcswidth(
             # C0/C1 control character
             return -1
         if w > 0:
-            total_width += w
+            # virama+consonant extends current cluster; otherwise start new
+            if prev_was_virama:
+                cluster_width = 2
+            else:
+                if cluster_width:
+                    total_width += cluster_width
+                cluster_width = w
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
-        elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
-            # Spacing Combining Mark (Mc) following a base character adds 1
-            total_width += 1
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character
+            cluster_width = 2
             last_measured_idx = -2
             prev_was_virama = False
         else:
             prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
+    if cluster_width:
+        total_width += cluster_width
     return total_width
