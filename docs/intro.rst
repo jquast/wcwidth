@@ -59,11 +59,13 @@ backward cursor control over complex unicode.
 Discrepancies
 -------------
 
-You may find that support *varies* for complex unicode sequences or codepoints. This library may be
-considered to presume the terminal is enabled for DEC Private Mode 2027 ("Grapheme Clustering"), but
-it is not detailed enough to describe accurately describe the width behavior recorded and corrected
-by this project and `jquast/ucs-detect`_. This library does support legacy alternate "legacy width"
-measurement for those corrected by override tables described below, term_program_.
+You may find that support *varies* for complex unicode sequences or codepoints.
+
+This library may be considered to presume the terminal is enabled for DEC Private Mode 2027
+("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
+is often the default mode for those terminals that support it: Windows Terminal, WezTerm, ghostty,
+contour, and foot. This library does support any single legacy alternate "legacy width" measurement,
+but does provide Corrections_ for those terminals without grapheme support.
 
 See Also:
 
@@ -71,11 +73,10 @@ See Also:
 - `terminal-unicode-core.tex`_
 - `State of Terminal Emulators in 2025`_
 
-The `jquast/ucs-detect`_ utility is used to gather and publish the results of compliance to our
-standard for Wide character, Languages, grapheme clustering, complex or combining scripts, emojis,
-zero-width joiner, variations, and regional indicator (flags) as a `General Tabulated Summary`_ by
-terminal emulator software and version. It is also used to provide automatically generated
-correction tables.
+The `jquast/ucs-detect`_ project publish the results of compliance to our standard for Wide
+character, Languages, grapheme clustering, complex or combining scripts, emojis, zero-width joiner,
+variations, and regional indicator (flags) as a `General Tabulated Summary`_ by terminal emulator
+software and version. The results of ucs-detect project create our correction tables.
 
 ========
 Overview
@@ -121,6 +122,20 @@ Use function `wcswidth()`_ to determine the length of many, a *string of unicode
 
 See specification_ of character measurements. Note that ``-1`` is returned if control codes occurs
 anywhere in the string.
+
+wcstwidth()
+-----------
+
+Same behavior as `wcswidth()`_ with an optional terminal-specific Corrections_:
+
+.. code-block:: python
+
+    >>> # '♀️' emoji w/vs-16, uncorrected:
+    >>> wcwidth.wcswidth('\u2640\ufe0f')
+    2
+    >>> # corrected,
+    >>> wcwidth.wcstwidth('\u2640\ufe0f', term_program='vte')
+    1
 
 width()
 -------
@@ -387,8 +402,6 @@ possible timeout, slow network, or non-response when working with "dumb terminal
     >>> awidth('\u2460')
     1
 
-.. _term_program:
-
 Corrections
 -----------
 
@@ -396,7 +409,7 @@ Corrections are automatically applied depending on detected or given terminal so
 beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
 differs from the standard.
 
-The ``term_program`` parameter is available on all width-measuring functions: `wcswidth()`_,
+The ``term_program`` parameter is available on all width-measuring functions: `wcstwidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
 ``term_program=False`` (default) disables corrections.  Use ``term_program=True`` for automatic
@@ -408,7 +421,7 @@ detection by environment values of ``TERM`` and ``TERM_PROGRAM``.
     # definition was changed to wide in Unicode 16 (September 2024).
     >>> wcwidth.wcswidth('\u2630')
     2
-    >>> wcwidth.wcswidth('\u2630', term_program='vte')
+    >>> wcwidth.wcstwidth('\u2630', term_program='vte')
     1
 
     # account for Alacritty non-support of emoji ZWJ:
@@ -416,7 +429,7 @@ detection by environment values of ``TERM`` and ``TERM_PROGRAM``.
     >>> family = '\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466'
     >>> wcwidth.wcswidth(family)
     2
-    >>> wcwidth.wcswidth(family, term_program='alacritty')
+    >>> wcwidth.wcstwidth(family, term_program='alacritty')
     8
 
 Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
@@ -625,7 +638,7 @@ History
 
 0.8.0 *(unreleased)*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
-  * **New** argument, ``term_program`` for `wcswidth()`_, `width()`_, `clip()`_, `wrap()`_,
+  * **New** argument, ``term_program`` for `wcstwidth()`_, `width()`_, `clip()`_, `wrap()`_,
     `ljust()`_, `rjust()`_, and `center()`_.  ``False`` (default) disables corrections; ``True``
     auto-detects by ``TERM_PROGRAM`` or ``TERM``; string values accept canonical names matching
     `list_term_programs()`_.
@@ -925,6 +938,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html#tabulated-results
 .. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
+.. _`wcstwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcstwidth
 .. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
 .. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
 .. _`iter_graphemes_reverse()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes_reverse

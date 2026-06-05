@@ -46,4 +46,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.TextSizingParams
 
+.. autofunction:: wcwidth.wcstwidth
+
 .. _SEMVER: https://semver.org
+.. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
+.. _ENQ: https://documentation.help/PuTTY/config-answerback.html

@@ -127,7 +127,7 @@ Virama Conjunct Formation
 In `Brahmic scripts`_, `IndicSyllabicCategory.txt`_ defines two categories
 that trigger `conjunct`_ formation between consonants: `Virama`_ ("may act
 as a Pure_Killer or Invisible_Stacker depending on context") and
-``Invisible_Stacker``_ ("not visible by itself; causes conjunct formation
+`Invisible_Stacker`_ ("not visible by itself; causes conjunct formation
 or consonant stacking", the "only as consonant stackers" category
 described in the Virama section header).
 
