@@ -470,3 +470,15 @@ def test_width_candidate_override_mid_string(text, term_program, expected):
 def test_width_epilogue_max_extent_update(text, term_program, expected):
     """Width() updates max_extent in epilogue when final cluster extends beyond prior max."""
     assert wcwidth.width(text, term_program=term_program) == expected
+
+
+def test_wcstwidth_ambiguous_width_2():
+    """Wcstwidth respects ambiguous_width parameter."""
+    assert wcwidth.wcstwidth('\u00b1', ambiguous_width=2, term_program='VTE') == 2
+    assert wcwidth.wcstwidth('\u00b1', ambiguous_width=2, term_program='') == 2
+
+
+def test_wcstwidth_control_character():
+    """Wcstwidth returns -1 for C0 control characters."""
+    assert wcwidth.wcstwidth('hello\x01world', term_program='VTE') == -1
+    assert wcwidth.wcstwidth('\x01', term_program='') == -1
