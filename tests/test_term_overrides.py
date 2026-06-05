@@ -8,8 +8,7 @@ import pytest
 # local
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
-from wcwidth._constants import (_merge_ranges, _EMPTY_OVERRIDES,
-                                resolve_terminal, list_term_programs)
+from wcwidth._constants import _EMPTY_OVERRIDES, _merge_ranges, resolve_terminal, list_term_programs
 from wcwidth.table_overrides import VS15_OVERRIDES
 
 
@@ -379,7 +378,7 @@ def test_sfz_zeroer(term_program, expected):
     ({'control_codes': 'ignore'}, 0),
 ])
 def test_width_zeroer(kwargs, expected):
-    """width() zeroes standalone Fitzpatrick modifiers for kitty."""
+    """Width() zeroes standalone Fitzpatrick modifiers for kitty."""
     assert wcwidth.width('\U0001F3FB', term_program='kitty', **kwargs) == expected
 
 
