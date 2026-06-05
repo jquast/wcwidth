@@ -76,7 +76,8 @@ def wcswidth(
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     _bisearch = bisearch
-    _cap2 = (0, 1, 2, 2, 2, 2, 2)
+    _cap2 = (0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
 
     while idx < end:
         char = pwcs[idx]
