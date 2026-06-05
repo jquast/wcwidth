@@ -170,12 +170,19 @@ def width(
     last_measured_idx = -2
     last_measured_ucs = -1
     prev_was_virama = False
+    cluster_width = 0
 
     while idx < text_len:
         char = text[idx]
 
         # 1. ESC sequences
         if char == '\x1b':
+            # Flush pending cluster before processing escape sequence
+            if cluster_width:
+                current_col += cluster_width if cluster_width < 2 else 2
+                if current_col > max_extent:
+                    max_extent = current_col
+                cluster_width = 0
             m = _SEQUENCE_CLASSIFY.match(text, idx)
             if not m:
                 # 1a. Errant ESC or unknown sequence: only the first character is zero-width
@@ -221,13 +228,19 @@ def width(
             # Escape sequences break VS16 adjacency: reset last-measured state
             last_measured_idx = -2
             last_measured_ucs = -1
-            max_extent = max(max_extent, current_col)
+            if current_col > max_extent:
+                max_extent = current_col
             continue
 
         # 2. Vertical or Illegal control characters zero width or error when 'strict'
         if char in ILLEGAL_CTRL:
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
+            if cluster_width:
+                current_col += cluster_width if cluster_width < 2 else 2
+                if current_col > max_extent:
+                    max_extent = current_col
+                cluster_width = 0
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
@@ -236,6 +249,11 @@ def width(
         if char in VERTICAL_CTRL:
             if strict:
                 raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
+            if cluster_width:
+                current_col += cluster_width if cluster_width < 2 else 2
+                if current_col > max_extent:
+                    max_extent = current_col
+                cluster_width = 0
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
@@ -243,6 +261,11 @@ def width(
 
         # 3. Horizontal movement characters
         if char in HORIZONTAL_CTRL:
+            if cluster_width:
+                current_col += cluster_width if cluster_width < 2 else 2
+                if current_col > max_extent:
+                    max_extent = current_col
+                cluster_width = 0
             if char == '\t' and tabsize > 0:
                 current_col += tabsize - (current_col % tabsize)
             elif char == '\b':
@@ -255,7 +278,8 @@ def width(
                         "indeterminate starting column"
                     )
                 current_col = 0
-            max_extent = max(max_extent, current_col)
+            if current_col > max_extent:
+                max_extent = current_col
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
@@ -263,6 +287,11 @@ def width(
 
         # 4. Zero-width control characters
         if char in ZERO_WIDTH_CTRL:
+            if cluster_width:
+                current_col += cluster_width if cluster_width < 2 else 2
+                if current_col > max_extent:
+                    max_extent = current_col
+                cluster_width = 0
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
@@ -287,8 +316,7 @@ def width(
         # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
             if bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE['9.0.0']):
-                current_col += 1
-                max_extent = max(max_extent, current_col)
+                cluster_width = 2
             last_measured_idx = -2  # prevent double application
             idx += 1
             continue
@@ -313,19 +341,29 @@ def width(
         # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w > 0:
-            current_col += w
-            max_extent = max(max_extent, current_col)
+            # virama+consonant extends current cluster; otherwise start new
+            if prev_was_virama:
+                cluster_width += w
+            else:
+                if cluster_width:
+                    current_col += cluster_width if cluster_width < 2 else 2
+                    if current_col > max_extent:
+                        max_extent = current_col
+                cluster_width = w
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
         elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
-            # Spacing Combining Mark (Mc) following a base character adds 1
-            current_col += 1
-            max_extent = max(max_extent, current_col)
+            # Spacing Combining Mark (Mc) following a base character
+            cluster_width += 1
             last_measured_idx = -2
             prev_was_virama = False
         else:
             prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
+    if cluster_width:
+        current_col += cluster_width if cluster_width < 2 else 2
+        if current_col > max_extent:
+            max_extent = current_col
     return max_extent
