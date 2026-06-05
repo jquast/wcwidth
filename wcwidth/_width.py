@@ -166,11 +166,13 @@ def width(
     # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
-    # grapheme-clustering state
+    # grapheme-clustering state and local re-bindings for performance
     last_measured_idx = -2
     last_measured_ucs = -1
     prev_was_virama = False
     cluster_width = 0
+    _VS16_TABLE = VS16_NARROW_TO_WIDE['9.0.0']
+    _bisearch = bisearch
 
     while idx < text_len:
         char = text[idx]
@@ -317,7 +319,7 @@ def width(
 
         # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
-            if bisearch(ord(text[last_measured_idx]), VS16_NARROW_TO_WIDE['9.0.0']):
+            if _bisearch(last_measured_ucs, _VS16_TABLE):
                 cluster_width = 2
             last_measured_idx = -2  # prevent double application
             idx += 1
@@ -355,7 +357,7 @@ def width(
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
-        elif last_measured_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character
             cluster_width += 1
             last_measured_idx = -2
