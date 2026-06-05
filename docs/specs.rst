@@ -111,8 +111,7 @@ reflecting its *positive advance width* as defined in `General Category`_
 and the ``Mc`` do not break the association. For example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
-All grapheme cluster widths are capped at 2 cells beginning release 0.8.0, matching
-behavior of the current grapheme-supporting terminals.
+Any grapheme cluster width is limisted to 2 cells beginning release 0.8.0 (`PR #224`_).
 
 Virama Conjunct Formation
 -------------------------
@@ -184,3 +183,4 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
 .. _`uncodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes
+.. _`PR #224`: https://github.com/jquast/wcwidth/pull/224

@@ -213,7 +213,9 @@ def width(
                             f"{n_backward} cells left from column {current_col}, "
                             f"exceeding string start"
                         )
-                    current_col = max(0, current_col - n_backward)
+                    current_col -= n_backward
+                    if current_col < 0:
+                        current_col = 0
                 # 2d. OSC 66 Text Sizing — has positive display width
                 elif (ts_meta := m.group('ts_meta')) is not None:
                     ts_text = m.group('ts_text')
