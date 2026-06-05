@@ -97,9 +97,10 @@ class TerminalOverrides(NamedTuple):
     narrower: _RangeTuple
     vs16_narrower: _RangeTuple
     vs15_wider: _RangeTuple
+    zeroer: _RangeTuple
 
 
-_EMPTY_OVERRIDES = TerminalOverrides((), (), ())
+_EMPTY_OVERRIDES = TerminalOverrides((), (), (), ())
 
 
 @lru_cache(maxsize=32)
@@ -113,14 +114,19 @@ def get_term_overrides(term_canonical: str) -> TerminalOverrides:
     )
     vs16_narrower = VS16_OVERRIDES.get(term_canonical, {}).get('narrower', ())
     vs15_wider = VS15_OVERRIDES.get(term_canonical, {}).get('wider', ())
+    zeroer = _merge_ranges(
+        WIDE_OVERRIDES.get(term_canonical, {}).get('zeroer', ()),
+        SRI_OVERRIDES.get(term_canonical, {}).get('zeroer', ()),
+        SFZ_OVERRIDES.get(term_canonical, {}).get('zeroer', ()),
+    )
     # vs15_narrower intentionally excluded: no known terminal narrows VS15
     # vs16_wider intentionally excluded: any 'wider' entries in emoji_vs16_results
     #   ucs-detect YAML are from the vs16n baseline test (base char without VS16),
     #   not actual VS16 correction data.
 
-    if not (narrower or vs16_narrower or vs15_wider):
+    if not (narrower or vs16_narrower or vs15_wider or zeroer):
         return _EMPTY_OVERRIDES
-    return TerminalOverrides(narrower, vs16_narrower, vs15_wider)
+    return TerminalOverrides(narrower, vs16_narrower, vs15_wider, zeroer)
 
 
 @lru_cache(maxsize=32)

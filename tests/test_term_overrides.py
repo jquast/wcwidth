@@ -8,7 +8,8 @@ import pytest
 # local
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
-from wcwidth._constants import _merge_ranges, resolve_terminal, list_term_programs
+from wcwidth._constants import (_merge_ranges, _EMPTY_OVERRIDES,
+                                resolve_terminal, list_term_programs)
 from wcwidth.table_overrides import VS15_OVERRIDES
 
 
@@ -360,6 +361,34 @@ def test_sfz_override_foot():
     """Foot narrows Fitzpatrick modifiers."""
     assert wcwidth.wcswidth('\U0001F3FB') == 2
     assert wcwidth.wcstwidth('\U0001F3FB', term_program='foot') == 1
+
+
+@pytest.mark.parametrize('term_program,expected', [
+    ('kitty', 0),
+    ('bobcat', 0),
+    (False, 2),
+])
+def test_sfz_zeroer(term_program, expected):
+    """Standalone Fitzpatrick modifiers zeroed per terminal."""
+    assert wcwidth.wcswidth('\U0001F3FB') == 2
+    assert wcwidth.wcstwidth('\U0001F3FB', term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('kwargs,expected', [
+    ({}, 0),
+    ({'control_codes': 'ignore'}, 0),
+])
+def test_width_zeroer(kwargs, expected):
+    """width() zeroes standalone Fitzpatrick modifiers for kitty."""
+    assert wcwidth.width('\U0001F3FB', term_program='kitty', **kwargs) == expected
+
+
+def test_empty_overrides_includes_zeroer():
+    """_EMPTY_OVERRIDES has four empty tuple fields."""
+    assert _EMPTY_OVERRIDES.narrower == ()
+    assert _EMPTY_OVERRIDES.vs16_narrower == ()
+    assert _EMPTY_OVERRIDES.vs15_wider == ()
+    assert _EMPTY_OVERRIDES.zeroer == ()
 
 
 @pytest.mark.parametrize('value,expected', [

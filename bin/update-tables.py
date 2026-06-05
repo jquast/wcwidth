@@ -1246,12 +1246,15 @@ def parse_wchar_codepoint(wchar: str) -> int:
 
 @dataclass(frozen=True)
 class TerminalOverrides:
-    """Per-terminal codepoint override ranges for narrower/wider measurements."""
+    """Per-terminal codepoint override ranges for narrower/wider/zeroer measurements."""
     narrower: list[tuple[str, str, str]]
     wider: list[tuple[str, str, str]]
+    zeroer: list[tuple[str, str, str]]
 
     def items(self) -> list[tuple[str, list[tuple[str, str, str]]]]:
-        return [('narrower', self.narrower), ('wider', self.wider)]
+        return [('narrower', self.narrower),
+                ('wider', self.wider),
+                ('zeroer', self.zeroer)]
 
 
 @dataclass(frozen=True)
@@ -1269,7 +1272,8 @@ def dedup_override_table(
     terminal_refs: dict[str, str] = {}
     for term_name, overrides in table.items():
         key = (tuple(overrides.narrower),
-               tuple(overrides.wider))
+               tuple(overrides.wider),
+               tuple(overrides.zeroer))
         hash_key = hashlib.sha256(repr(key).encode()).hexdigest()[:8]
         if hash_key not in shared_sets:
             shared_sets[hash_key] = overrides
@@ -1405,9 +1409,11 @@ def make_single_override(
 
     Returns a dict mapping canonical_name to 'TerminalOverrides'.
 
+    - 'zeroer' means terminal measured 0, but wcwidth measured 2,
     - 'narrower' means terminal measured 1, but wcwidth measured 2,
     - 'wider' means terminal measured 2, but wcwidth measured 1.
     """
+    zeroer: dict[str, set[int]] = {}
     narrower: dict[str, set[int]] = {}
     wider: dict[str, set[int]] = {}
 
@@ -1420,7 +1426,9 @@ def make_single_override(
                 ucs = parse_wchar_codepoint(wchar)
                 term_w = entry['measured_by_terminal']
                 wc_w = entry['measured_by_wcwidth']
-                if term_w == 1 and wc_w == 2:
+                if term_w == 0 and wc_w == 2:
+                    zeroer.setdefault(canonical, set()).add(ucs)
+                elif term_w == 1 and wc_w == 2:
                     narrower.setdefault(canonical, set()).add(ucs)
                 # 'wider' entries in emoji_vs16_results are from the vs16n baseline test
                 # (base character measured without VS16, expected width 1).  Kitty rendering
@@ -1431,11 +1439,12 @@ def make_single_override(
                     wider.setdefault(canonical, set()).add(ucs)
 
     result: dict[str, TerminalOverrides] = {}
-    all_names = sorted(set(narrower.keys()) | set(wider.keys()))
+    all_names = sorted(set(zeroer.keys()) | set(narrower.keys()) | set(wider.keys()))
     for name in all_names:
         result[name] = TerminalOverrides(
             narrower=values_to_hex_ranges(narrower.get(name, set())),
             wider=values_to_hex_ranges(wider.get(name, set())),
+            zeroer=values_to_hex_ranges(zeroer.get(name, set())),
         )
     result = {
         name: data for name, data in result.items()

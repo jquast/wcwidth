@@ -653,10 +653,13 @@ languages:
 History
 =======
 
-0.8.0 *(unreleased)*
+0.8.1 *2026-06-06*
+  * **Improved** Corrections_ for Standalone Fitzpatricks as zero and others, `PR #226`_
+
+0.8.0 *2026-06-05*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program`` for `wcstwidth()`_, `width()`_, `clip()`_, `wrap()`_,
-    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables corrections; ``True``
+    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables Corrections_; ``True``
     auto-detects by ``TERM_PROGRAM`` or ``TERM``; string values accept canonical names matching
     `list_term_programs()`_.  `wcstwidth()`_ defaults to ``True``; all other functions
     default to ``False``.
@@ -901,6 +904,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
 .. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
+.. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190

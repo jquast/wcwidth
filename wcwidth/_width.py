@@ -184,11 +184,13 @@ def width(
         _narrower = overrides.narrower
         _vs16_narrower = overrides.vs16_narrower
         _vs15_wider = overrides.vs15_wider
+        _zeroer = overrides.zeroer
         _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
     else:
         _narrower = ()
         _vs16_narrower = ()
         _vs15_wider = ()
+        _zeroer = ()
         _grapheme_overrides = {}
 
     strict = control_codes == 'strict'
@@ -431,6 +433,8 @@ def width(
         # Apply single-codepoint terminal overrides (pre-merged tuples)
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
+        elif w == 2 and _zeroer and bisearch(ucs, _zeroer):
+            w = 0
         if w > 0:
             # virama+consonant extends current cluster; otherwise start new
             if prev_was_virama:
