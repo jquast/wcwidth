@@ -146,6 +146,15 @@ def wcswidth(
         char = pwcs[idx]
         ucs = ord(char)
 
+        #
+        # Much of the logic below matches the logic in width(), but is repeated for improved
+        # performance, they are given matching index reference numbers (starting at #5).
+        #
+        # 5. ZWJ (U+200D): consumed without contributing width.
+        # Virama codepoints are treated as zero-width combining marks (Mn). When a
+        # virama+consonant sequence forms a conjunct, its width is capped at 2 cells
+        # (matching the terminal consensus: ghostty, foot, Windows Terminal).
+
         # ZWJ (U+200D)
         if ucs == 0x200D:
             if prev_was_virama:
@@ -198,7 +207,7 @@ def wcswidth(
             idx += 1
             continue
 
-        # Regional Indicator & Fitzpatrick (both above BMP)
+        # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 ri_before = 0
@@ -215,7 +224,7 @@ def wcswidth(
                 idx += 1
                 continue
 
-        # Normal character: measure with wcwidth
+        # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w < 0:
             # C0/C1 control character

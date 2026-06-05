@@ -403,7 +403,7 @@ def width(
             idx += 1
             continue
 
-        # Regional Indicator & Fitzpatrick (both above BMP)
+        # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
                 ri_before = 0
@@ -420,7 +420,7 @@ def width(
                 idx += 1
                 continue
 
-        # Normal character: measure with wcwidth
+        # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
         # Apply single-codepoint terminal overrides (pre-merged tuples)
         if w == 2 and _narrower and bisearch(ucs, _narrower):
