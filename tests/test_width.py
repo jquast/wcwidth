@@ -173,6 +173,8 @@ EDGE_CASES = [
     ('\tA\u0CBE\rB\u0CBE\b', 10, 'backspace_flush_below_max_extent'),
     ('\tA\u0CBE\rB\u0CBE\x1b', 10, 'esc_flush_below_max_extent'),
     ('\tA\u0CBE\rB\u0CBE\x00', 10, 'zero_width_flush_below_max_extent'),
+    ('\tA\u0CBE\rB\u0CBE\x01', 10, 'illegal_ctrl_flush_below_max_extent'),
+    ('\tA\u0CBE\rB\u0CBE\n', 10, 'vertical_ctrl_flush_below_max_extent'),
 ]
 
 

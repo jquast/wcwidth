@@ -74,7 +74,7 @@ def wcswidth(
     last_measured_ucs = -1
     prev_was_virama = False
     cluster_width = 0
-    _VS16_TABLE = VS16_NARROW_TO_WIDE['9.0.0']
+    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     _bisearch = bisearch
 
     while idx < end:
@@ -99,7 +99,7 @@ def wcswidth(
 
         # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
-            if _bisearch(last_measured_ucs, _VS16_TABLE):
+            if _bisearch(last_measured_ucs, vs16_nw_table):
                 cluster_width = 2
             last_measured_idx = -2  # prevent double application
             idx += 1
