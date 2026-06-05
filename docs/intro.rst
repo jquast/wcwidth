@@ -42,7 +42,8 @@ and `wcswidth()`_.  These functions return -1 when C0 and C1 control codes are p
 
 An easy-to-use `width()`_ function is provided as a wrapper of `wcswidth()`_ that is also capable of
 measuring most terminal control codes and sequences, like colors, bold, tabstops, and horizontal
-cursor movement.
+cursor movement. `width()`_ argument ``term_program`` may provide more accurate terminal measurement
+Corrections_ as a wrapper of `wcstwidth()`_.
 
 Text-justification is solved by the sequence-aware functions `ljust()`_, `rjust()`_, `center()`_,
 and the grapheme-aware function `wrap()`_, serving as drop-in replacements to python standard
@@ -53,8 +54,8 @@ The `clip()`_ function extracts substrings by their displayed column positions, 
 
 The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation of
 grapheme and terminal control sequence boundaries as required by editors or REPLs with cursor
-control.  `iter_graphemes_reverse()`_, and `grapheme_boundary_before()`_ are often necessary for
-backward cursor control over complex unicode.
+control.  `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ are necessary for backward
+cursor control over complex unicode.
 
 Discrepancies
 -------------
@@ -64,19 +65,20 @@ You may find that support *varies* for complex unicode sequences or codepoints.
 This library may be considered to presume the terminal is enabled for DEC Private Mode 2027
 ("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
 is often the default mode for those terminals that support it: Windows Terminal, WezTerm, ghostty,
-contour, and foot. This library does support any single legacy alternate "legacy width" measurement,
-but does provide Corrections_ for those terminals without grapheme support.
+contour, and foot. This library does support any specific "legacy width" measurement, but does
+provide Corrections_ for those terminals without grapheme support.
 
-See Also:
+See also:
 
 - `Grapheme Clusters and Terminal Emulators`_
 - `terminal-unicode-core.tex`_
 - `State of Terminal Emulators in 2025`_
+- `Report of terminals supporting Graphemes (2027)`_
 
-The `jquast/ucs-detect`_ project publish the results of compliance to our standard for Wide
+The `jquast/ucs-detect`_ project publishes automatic results of compliance to our standard for Wide
 character, Languages, grapheme clustering, complex or combining scripts, emojis, zero-width joiner,
 variations, and regional indicator (flags) as a `General Tabulated Summary`_ by terminal emulator
-software and version. The results of ucs-detect project create our correction tables.
+software and version. The results of the ucs-detect project create our correction tables.
 
 ========
 Overview
@@ -977,6 +979,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
+.. _`Report of terminals supporting Graphemes (2027)`: https://ucs-detect.readthedocs.io/results.html#terminal-features
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
