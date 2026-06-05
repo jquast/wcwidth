@@ -345,7 +345,7 @@ def width(
             cluster_start = -1
             continue
 
-        # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
+        # 5. Inline grapheme-clustering: ZWJ, Virama, VS16, Regional Indicators,
         #    Fitzpatrick, Mc, wcwidth
         ucs = ord(char)
 

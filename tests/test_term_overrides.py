@@ -439,3 +439,34 @@ def test_wcswidth_virama_conjunct(text, term_program, expected):
 def test_wcswidth_language_no_override(text, term_program, expected):
     """Terminals without language overrides return spec width."""
     assert wcwidth.wcswidth(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u1000\u1031X', 'kitty', 2),  # Burmese C+Mc mid-string flush via cluster_text
+    ('X\u1000\u1031', 'kitty', 2),  # ASCII then Burmese C+Mc append
+    ('\u1000\u1031\u1000\u1031', 'kitty', 2),  # two Burmese C+Mc with flush between
+    ('\u0915\u093eX', 'kitty', 2),  # Devanagari C+Mc mid-string flush
+])
+def test_width_cluster_text_override_mid_string(text, term_program, expected):
+    """Width() flushes cluster via cluster_text override when followed by another char."""
+    assert wcwidth.width(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\u0e01\u0e33X', 'kitty', 2),  # Thai C+Lo override pair then ASCII
+    ('X\u0e01\u0e33', 'kitty', 2),  # ASCII then Thai override pair
+    ('\u0e01\u0e33\u0e01\u0e33', 'kitty', 2),  # two Thai override pairs
+])
+def test_width_candidate_override_mid_string(text, term_program, expected):
+    """Width() flushes cluster via candidate override when two Lo chars form a pair."""
+    assert wcwidth.width(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
+    ('\r\u1000\u1031', 'xterm', 2),  # CR reset, cluster extends beyond prior max_extent
+    ('\r\u0915\u093e', 'xterm', 2),  # Devanagari same pattern
+    ('XX\b\b\u1000\u1031', 'xterm', 2),  # backspace then cluster does not exceed prior max
+])
+def test_width_epilogue_max_extent_update(text, term_program, expected):
+    """Width() updates max_extent in epilogue when final cluster extends beyond prior max."""
+    assert wcwidth.width(text, term_program=term_program) == expected

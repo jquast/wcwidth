@@ -153,7 +153,7 @@ def wcswidth(
         # 5. ZWJ (U+200D): consumed without contributing width.
         # Virama codepoints are treated as zero-width combining marks (Mn). When a
         # virama+consonant sequence forms a conjunct, its width is capped at 2 cells
-        # (matching the terminal consensus: ghostty, foot, Windows Terminal).
+        # matching behavior of popular terminals (PR #224)
 
         # ZWJ (U+200D)
         if ucs == 0x200D:
