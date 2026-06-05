@@ -103,7 +103,7 @@ _SET_WIDE_OVERRIDES_AC239184 = {
     ),
 }
 
-# For terminals: konsole
+# For terminals: konsole, mintty
 _SET_WIDE_OVERRIDES_17E94D9C = {
     'narrower': (
         (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
@@ -125,19 +125,6 @@ _SET_WIDE_OVERRIDES_17E94D9C = {
         (0x1fadf, 0x1fadf,),  # Splatter
         (0x1fae9, 0x1faea,),  # Face With Bags Under Eye..Distorted Face
         (0x1faef, 0x1faef,),  # Fight Cloud
-    ),
-    'wider': (
-    ),
-}
-
-# For terminals: mintty
-_SET_WIDE_OVERRIDES_69823C79 = {
-    'narrower': (
-        (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
-        (0x0268a, 0x0268f,),  # Monogram For Yang       ..Digram For Greater Yin
-        (0x02ffc, 0x02fff,),  # Ideographic Description ..Ideographic Description
-        (0x031e4, 0x031e5,),  # Cjk Stroke Hxg          ..Cjk Stroke Szp
-        (0x031ef, 0x031ef,),  # Ideographic Description Character Subtraction
     ),
     'wider': (
     ),
@@ -277,7 +264,7 @@ WIDE_OVERRIDES = {
     'foot': _SET_WIDE_OVERRIDES_FDE5FC81,
     'iterm2': _SET_WIDE_OVERRIDES_AC239184,
     'konsole': _SET_WIDE_OVERRIDES_17E94D9C,
-    'mintty': _SET_WIDE_OVERRIDES_69823C79,
+    'mintty': _SET_WIDE_OVERRIDES_17E94D9C,
     'mlterm': _SET_WIDE_OVERRIDES_9EA595DD,
     'pterm': _SET_WIDE_OVERRIDES_8CF816C1,
     'rio': _SET_WIDE_OVERRIDES_8CF816C1,
