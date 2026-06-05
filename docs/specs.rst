@@ -111,7 +111,7 @@ reflecting its *positive advance width* as defined in `General Category`_
 and the ``Mc`` do not break the association. For example, a consonant followed
 by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
 
-Any grapheme cluster width is limisted to 2 cells beginning release 0.8.0 (`PR #224`_).
+Any grapheme cluster width is limisted to 2 cells since 0.8.0, `PR #224`_.
 
 Virama Conjunct Formation
 -------------------------
@@ -126,7 +126,7 @@ described in the Virama section header).
 - A ``Virama`` contributes 0 width (category ``Mn``).
 - A ``Consonant`` immediately following a ``Virama`` adds its width to the
   current grapheme cluster.
-- The cluster total is capped at 2 cells (see `Grapheme Cluster Width Cap`_).
+- The cluster total is capped at 2 cells since 0.8.0, `PR #224`_.
 - ``Mn`` marks do not break conjunct context within the same `aksara`_.
 - ZWJ (`U+200D`_) after a virama is consumed without breaking conjunct state,
   supporting explicit half-form requests (virama + ZWJ + consonant).
