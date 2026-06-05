@@ -128,8 +128,9 @@ anywhere in the string.
 wcstwidth()
 -----------
 
-Same behavior as `wcswidth()`_ with automatic terminal-specific Corrections_
-(``term_program=True`` is the default, reading ``TERM_PROGRAM`` or ``TERM``):
+Same behavior as `wcswidth()`_ with automatic terminal-specific Corrections_, reading
+``TERM_PROGRAM`` or ``TERM`` when ``True`` (default), or caller can provide terminal query
+XTVERSION_ or ENQ_ response:
 
 .. code-block:: python
 
