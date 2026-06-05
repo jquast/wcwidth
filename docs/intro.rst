@@ -126,7 +126,8 @@ anywhere in the string.
 wcstwidth()
 -----------
 
-Same behavior as `wcswidth()`_ with an optional terminal-specific Corrections_:
+Same behavior as `wcswidth()`_ with automatic terminal-specific Corrections_
+(``term_program=True`` is the default, reading ``TERM_PROGRAM`` or ``TERM``):
 
 .. code-block:: python
 
@@ -140,12 +141,19 @@ Same behavior as `wcswidth()`_ with an optional terminal-specific Corrections_:
 width()
 -------
 
-Use function `width()`_ to measure a string with improved handling of ``control_codes``.
+Use function `width()`_ to measure a string with improved handling of ``control_codes`` and
+measurement Corrections_ through ``term_program``:.
 
 .. code-block:: python
 
     >>> # same support as wcswidth(), eg. regional indicator flag:
     >>> wcwidth.width('\U0001F1FF\U0001F1FC')
+    2
+    >>> # set term_program=True to use wcstwidth()
+    >>> wcwidth.width('\U0001F1FF\U0001F1FC', term_program=True)
+    1
+    >>> # or set term_program for measurement of a specific terminal
+    >>> wcwidth.width('\U0001F1FF\U0001F1FC', term_program='contour')
     2
     >>> # but also supports sequences, like SGR colored text, "WARN", followed by reset
     >>> wcwidth.width('\x1b[38;2;255;150;100mWARN\x1b[0m')
@@ -179,8 +187,9 @@ terminal sequences for slightly improved performance. Note that TAB (``'\t'``) i
 character and is also ignored, you may want to use `str.expandtabs()`_, first.
 
 Use ``control_codes='strict'`` when input is known to contain some control sequences, such as
-SGR color, bold, hyperlinks and cursor movement. Any sequence that cannot be accurately parsed,
-such as clearing the screen, vertical, or absolute cursor movement will raise ``ValueError``:
+SGR color, bold, hyperlinks and cursor movement. Any sequence that cannot be accurately parsed
+for horizontal measurement, such as clearing the screen, vertical, or absolute cursor movement will
+raise ``ValueError``:
 
 .. code-block:: python
 
@@ -407,12 +416,14 @@ Corrections
 
 Corrections are automatically applied depending on detected or given terminal software name
 beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
-differs from the standard.
+differs from the standard.  These corrections are sourced from the `jquast/ucs-detect`_ project.
 
 The ``term_program`` parameter is available on all width-measuring functions: `wcstwidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
 
-``term_program=False`` (default) disables corrections.  Use ``term_program=True`` for automatic
+`wcstwidth()`_ defaults to ``term_program=True``, auto-detecting the terminal from the
+``TERM_PROGRAM`` or ``TERM`` environment variable.  All other functions default to
+``term_program=False``, disabling corrections.  Use ``term_program=True`` for automatic
 detection by environment values of ``TERM`` and ``TERM_PROGRAM``.
 
 .. code-block:: python
@@ -433,9 +444,9 @@ detection by environment values of ``TERM`` and ``TERM_PROGRAM``.
     8
 
 Only detectable_ terminals are included: those that identify themselves by XTVERSION_, ENQ_, any
-``TERM_PROGRAM`` or a unique ``TERM`` environment value.  For the most accurate detection, query the
-terminal's software version via XTVERSION_ (``CSI > q``) using a higher-level interactive terminal
-library like `jquast/blessed`_:
+``TERM_PROGRAM`` or a unique ``TERM`` environment value.  For the most accurate correction tables,
+query the terminal's software version via XTVERSION_ (``CSI > q``) using a higher-level interactive
+terminal library like `jquast/blessed`_:
 
 .. code-block:: python
 
@@ -447,7 +458,9 @@ library like `jquast/blessed`_:
     >>> wcwidth.width('\u2630', term_program=sw_ver.name)
     1
 
-Use `list_term_programs()`_ to see all recognized terminal names:
+This is important because ``TERM_PROGRAM`` is not forwarded for remote hosts, like SSH, and many
+terminals may only be identified using XTVERSION_ or ENQ_.  Use `list_term_programs()`_ to see all
+recognized names:
 
 .. BEGIN_LIST_TERM_PROGRAMS
 .. code-block:: python
@@ -462,9 +475,12 @@ Use `list_term_programs()`_ to see all recognized terminal names:
 
 .. END_LIST_TERM_PROGRAMS
 
-``term_program=False`` (the default) disables terminal corrections.  For automatic tests and other
-purposes that require consistency, clear or unset ``TERM`` and ``TERM_PROGRAM`` in the test
-environment such as in ``conftest.py`` with pytest:
+``term_program=False`` (the default for `width()`_, `ljust()`_, `rjust()`_, `center()`_,
+`wrap()`_, and `clip()`_) disables terminal corrections.  `wcstwidth()`_ defaults to
+``term_program=True`` for auto-detection.
+
+For automatic tests and other purposes that require cross-environment consistency, set static values
+or unset ``TERM`` and ``TERM_PROGRAM`` environment values, such as in ``conftest.py`` with pytest:
 
 .. code-block:: python
 
@@ -478,8 +494,6 @@ environment such as in ``conftest.py`` with pytest:
             os.environ['TERM'] = saved_term
         if saved_tprog is not None:
             os.environ['TERM_PROGRAM'] = saved_tprog
-
-These corrections are sourced from the `jquast/ucs-detect`_ project.
 
 ==========
 Developing
@@ -639,9 +653,10 @@ History
 0.8.0 *(unreleased)*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program`` for `wcstwidth()`_, `width()`_, `clip()`_, `wrap()`_,
-    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` (default) disables corrections; ``True``
+    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables corrections; ``True``
     auto-detects by ``TERM_PROGRAM`` or ``TERM``; string values accept canonical names matching
-    `list_term_programs()`_.
+    `list_term_programs()`_.  `wcstwidth()`_ defaults to ``True``; all other functions
+    default to ``False``.
   * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
   * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and

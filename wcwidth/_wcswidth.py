@@ -201,7 +201,7 @@ def wcstwidth(
     n: Optional[int] = None,
     unicode_version: str = 'auto',
     ambiguous_width: int = 1,
-    term_program: bool | str = False,
+    term_program: bool | str = True,
 ) -> int:
     """
     Given a unicode string, return its printable length on a terminal given by ``term_program``.
@@ -218,8 +218,8 @@ def wcstwidth(
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :param term_program: Terminal software identifier for table correction.
-        ``False`` (default) disables override lookup.  ``True`` reads the
-        ``TERM_PROGRAM`` or ``TERM`` environment variable for auto-detection.
+        ``True`` (default) reads the ``TERM_PROGRAM`` or ``TERM`` environment
+        variable for auto-detection.  ``False`` disables override lookup.
         Accepts a canonical terminal name matching :func:`list_term_programs`,
         such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
