@@ -76,8 +76,6 @@ def wcswidth(
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     _bisearch = bisearch
-    _cap2 = (0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
 
     while idx < end:
         char = pwcs[idx]
@@ -132,17 +130,17 @@ def wcswidth(
         if w > 0:
             # virama+consonant extends current cluster; otherwise start new
             if prev_was_virama:
-                cluster_width += w
+                cluster_width = 2
             else:
                 if cluster_width:
-                    total_width += _cap2[cluster_width]
+                    total_width += cluster_width
                 cluster_width = w
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character
-            cluster_width += 1
+            cluster_width = 2
             last_measured_idx = -2
             prev_was_virama = False
         else:
@@ -150,5 +148,5 @@ def wcswidth(
         idx += 1
 
     if cluster_width:
-        total_width += _cap2[cluster_width]
+        total_width += cluster_width
     return total_width
