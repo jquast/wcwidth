@@ -76,6 +76,7 @@ def wcswidth(
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     _bisearch = bisearch
+    _cap2 = (0, 1, 2, 2, 2, 2, 2)
 
     while idx < end:
         char = pwcs[idx]
@@ -133,7 +134,7 @@ def wcswidth(
                 cluster_width += w
             else:
                 if cluster_width:
-                    total_width += cluster_width if cluster_width < 2 else 2
+                    total_width += _cap2[cluster_width]
                 cluster_width = w
             last_measured_idx = idx
             last_measured_ucs = ucs
@@ -148,5 +149,5 @@ def wcswidth(
         idx += 1
 
     if cluster_width:
-        total_width += cluster_width if cluster_width < 2 else 2
+        total_width += _cap2[cluster_width]
     return total_width

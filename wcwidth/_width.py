@@ -173,6 +173,7 @@ def width(
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     _bisearch = bisearch
+    _cap2 = (0, 1, 2, 2, 2, 2, 2)
 
     while idx < text_len:
         char = text[idx]
@@ -181,7 +182,7 @@ def width(
         if char == '\x1b':
             # Flush pending cluster before processing escape sequence
             if cluster_width:
-                current_col += cluster_width if cluster_width < 2 else 2
+                current_col += _cap2[cluster_width]
                 if current_col > max_extent:
                     max_extent = current_col
                 cluster_width = 0
@@ -241,7 +242,7 @@ def width(
             if strict:
                 raise ValueError(f"Illegal control character {ord(char):#x} at position {idx}")
             if cluster_width:
-                current_col += cluster_width if cluster_width < 2 else 2
+                current_col += _cap2[cluster_width]
                 if current_col > max_extent:
                     max_extent = current_col
                 cluster_width = 0
@@ -254,7 +255,7 @@ def width(
             if strict:
                 raise ValueError(f"Vertical movement character {ord(char):#x} at position {idx}")
             if cluster_width:
-                current_col += cluster_width if cluster_width < 2 else 2
+                current_col += _cap2[cluster_width]
                 if current_col > max_extent:
                     max_extent = current_col
                 cluster_width = 0
@@ -266,7 +267,7 @@ def width(
         # 3. Horizontal movement characters
         if char in HORIZONTAL_CTRL:
             if cluster_width:
-                current_col += cluster_width if cluster_width < 2 else 2
+                current_col += _cap2[cluster_width]
                 if current_col > max_extent:
                     max_extent = current_col
                 cluster_width = 0
@@ -292,7 +293,7 @@ def width(
         # 4. Zero-width control characters
         if char in ZERO_WIDTH_CTRL:
             if cluster_width:
-                current_col += cluster_width if cluster_width < 2 else 2
+                current_col += _cap2[cluster_width]
                 if current_col > max_extent:
                     max_extent = current_col
                 cluster_width = 0
@@ -350,7 +351,7 @@ def width(
                 cluster_width += w
             else:
                 if cluster_width:
-                    current_col += cluster_width if cluster_width < 2 else 2
+                    current_col += _cap2[cluster_width]
                     if current_col > max_extent:
                         max_extent = current_col
                 cluster_width = w
@@ -367,7 +368,7 @@ def width(
         idx += 1
 
     if cluster_width:
-        current_col += cluster_width if cluster_width < 2 else 2
+        current_col += _cap2[cluster_width]
         if current_col > max_extent:
             max_extent = current_col
     return max_extent
