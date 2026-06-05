@@ -199,9 +199,9 @@ def test_balinese_script():
     phrase = ("\u1B13"    # Category 'Lo', EAW 'N' -- BALINESE LETTER KA
               "\u1B28"    # Category 'Lo', EAW 'N' -- BALINESE LETTER PA KAPAL
               "\u1B2E"    # Category 'Lo', EAW 'N' -- BALINESE LETTER LA
-              "\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG
+              "\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG (virama)
     expect_length_each = (1, 1, 1, 0)
-    expect_length_phrase = 4
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -462,8 +462,22 @@ def test_virama_conjunct(phrase, expected):
 ])
 def test_virama_conjunct_mc_vowel(phrase, expected):
     """Mc combines into base; cluster capped at 2."""
-    assert wcwidth.wcswidth(phrase, term_program=False) == expected
-    assert wcwidth.width(phrase, term_program=False) == expected
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+
+
+@pytest.mark.parametrize("phrase,expected", [
+    ("\uA9A0\uA9C0\uA9B1\uA9C0\uA9AE", 2),  # Javanese C+V+C+V+C: TA+PANGKON+SA+PANGKON+WA
+    ("\uA9A0\uA9C0\uA9B1", 2),               # Javanese C+V+C: TA+PANGKON+SA
+    ("\u1B04\u1B44\u1B05", 2),               # Balinese C+V+C: A+ADEG ADEG+I
+    ("\U000111C0\U000111C0", 0),             # Sharada virama alone (zero-width)
+])
+def test_virama_mc_category_overlap(phrase, expected):
+    """Virama codepoints in Mc category check ISC before Mc."""
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
 
 
 @pytest.mark.parametrize("phrase,expected", [
