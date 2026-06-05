@@ -25,7 +25,7 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          get_term_overrides)
 from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
-from .table_grapheme import ISC_CONSONANT, GRAPHEME_EXTEND
+from .table_grapheme import GRAPHEME_EXTEND
 
 
 def _scan_zwj_cluster_end(text: str, start: int, end: int) -> int:
@@ -135,8 +135,7 @@ def wcswidth(
     last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
-    last_was_virama = False
-    conjunct_pending = False
+    prev_was_virama = False
     cluster_start = -1
     total_before_cluster = 0
 
@@ -146,7 +145,7 @@ def wcswidth(
 
         # ZWJ (U+200D)
         if ucs == 0x200D:
-            if last_was_virama:
+            if prev_was_virama:
                 idx += 1
             elif idx + 1 < end:
                 # Check for terminal grapheme override when base char is ExtPict/RI
@@ -161,7 +160,7 @@ def wcswidth(
                         last_base_or_idx = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
-                        last_was_virama = False
+                        prev_was_virama = False
                         cluster_start = -1
                         idx = cluster_end
                         continue
@@ -173,10 +172,10 @@ def wcswidth(
                 else:
                     last_base_or_idx = _GraphemeState.ZWJ_OPEN
                 last_measured_w = 0
-                last_was_virama = False
+                prev_was_virama = False
                 idx += 2
             else:
-                last_was_virama = False
+                prev_was_virama = False
                 idx += 1
             continue
 
@@ -224,17 +223,6 @@ def wcswidth(
                 idx += 1
                 continue
 
-        # Virama conjunct formation
-        if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            if conjunct_pending:
-                total_width += 1
-            last_base_or_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-            conjunct_pending = True
-            idx += 1
-            continue
-
         # Normal character: measure with wcwidth
         w = _wcwidth(char)
         if w < 0:
@@ -261,30 +249,21 @@ def wcswidth(
             if cluster_start < 0:
                 cluster_start = idx
                 total_before_cluster = total_width
-            if conjunct_pending:
-                total_width += 1
-                conjunct_pending = False
             if not applied:
                 total_width += w
             last_base_or_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w
-            last_was_virama = False
+            prev_was_virama = False
         elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
-            if conjunct_pending:
-                total_width += 1
-                conjunct_pending = False
-            else:
-                total_width += 1
+            total_width += 1
             last_base_or_idx = _GraphemeState.NO_BASE
-            last_was_virama = False
+            prev_was_virama = False
         else:
-            last_was_virama = ucs in _ISC_VIRAMA_SET
+            prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
-    if conjunct_pending:
-        total_width += 1
     if _grapheme_overrides and cluster_start >= 0:
         cluster = pwcs[cluster_start:end]
         override_w = _grapheme_overrides.get(cluster)

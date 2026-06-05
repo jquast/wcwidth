@@ -32,7 +32,6 @@ from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
-from .table_grapheme import ISC_CONSONANT
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                TEXT_SIZING_PATTERN,
                                CURSOR_MOVEMENT_SEQUENCE,
@@ -205,8 +204,7 @@ def width(
     last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
-    last_was_virama = False
-    conjunct_pending = False
+    prev_was_virama = False
     _max_extent_before = 0
     cluster_start = -1
     col_before_cluster = 0
@@ -315,12 +313,12 @@ def width(
             continue
 
         # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
-        #    Fitzpatrick, Virama conjuncts, Mc, wcwidth
+        #    Fitzpatrick, Mc, wcwidth
         ucs = ord(char)
 
         # ZWJ (U+200D)
         if ucs == 0x200D:
-            if last_was_virama:
+            if prev_was_virama:
                 idx += 1
             elif idx + 1 < text_len:
                 # Check for terminal grapheme override when base char is ExtPict/RI
@@ -336,7 +334,7 @@ def width(
                         last_base_or_idx = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
-                        last_was_virama = False
+                        prev_was_virama = False
                         cluster_start = -1
                         idx = cluster_end
                         continue
@@ -348,10 +346,10 @@ def width(
                 else:
                     last_base_or_idx = _GraphemeState.ZWJ_OPEN
                 last_measured_w = 0
-                last_was_virama = False
+                prev_was_virama = False
                 idx += 2
             else:
-                last_was_virama = False
+                prev_was_virama = False
                 idx += 1
             continue
 
@@ -401,18 +399,6 @@ def width(
                 idx += 1
                 continue
 
-        # Virama conjunct formation
-        if last_was_virama and bisearch(ucs, ISC_CONSONANT):
-            if conjunct_pending:
-                current_col += 1
-                max_extent = max(max_extent, current_col)
-            last_base_or_idx = idx
-            last_measured_ucs = ucs
-            last_was_virama = False
-            conjunct_pending = True
-            idx += 1
-            continue
-
         # Normal character: measure with wcwidth
         w = _wcwidth(char)
         # Apply single-codepoint terminal overrides (pre-merged tuples)
@@ -440,33 +426,23 @@ def width(
                 col_before_cluster = current_col
                 max_extent_before_cluster = max_extent
             _max_extent_before = max_extent
-            if conjunct_pending:
-                current_col += 1
-                conjunct_pending = False
             if not applied:
                 current_col += w
             max_extent = max(max_extent, current_col)
             last_base_or_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w
-            last_was_virama = False
+            prev_was_virama = False
         elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character adds 1
-            if conjunct_pending:
-                current_col += 1
-                conjunct_pending = False
-            else:
-                current_col += 1
+            current_col += 1
             max_extent = max(max_extent, current_col)
             last_base_or_idx = _GraphemeState.NO_BASE
-            last_was_virama = False
+            prev_was_virama = False
         else:
-            last_was_virama = ucs in _ISC_VIRAMA_SET
+            prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
-    if conjunct_pending:
-        current_col += 1
-        max_extent = max(max_extent, current_col)
     if _grapheme_overrides and cluster_start >= 0:
         cluster = text[cluster_start:text_len]
         override_w = _grapheme_overrides.get(cluster)
