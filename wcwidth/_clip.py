@@ -619,7 +619,9 @@ def _clip_painter(
                         f"{n_backward} cells left from column {col}, "
                         f"exceeding string start"
                     )
-                col = max(0, col - n_backward)
+                col -= n_backward
+                if col < 0:
+                    col = 0
                 idx = m.end()
                 continue
 

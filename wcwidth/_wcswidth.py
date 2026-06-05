@@ -131,13 +131,17 @@ def wcswidth(
     total_width = 0
     idx = 0
 
-    # grapheme-clustering state
-    last_base_or_idx: int | _GraphemeState = _GraphemeState.NO_BASE
+    # grapheme-clustering state and local re-binding for performance
+    last_measured_idx = -2
+    base_state = _GraphemeState.NO_BASE
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
     cluster_start = -1
     total_before_cluster = 0
+    cluster_width = 0
+    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
+    _bisearch = bisearch
 
     while idx < end:
         char = pwcs[idx]
@@ -150,14 +154,15 @@ def wcswidth(
             elif idx + 1 < end:
                 # Check for terminal grapheme override when base char is ExtPict/RI
                 if (_grapheme_overrides
-                        and last_base_or_idx >= 0
+                        and last_measured_idx >= 0
                         and last_measured_ucs in _EMOJI_ZWJ_SET):
-                    cluster_end = _scan_zwj_cluster_end(pwcs, last_base_or_idx, end)
-                    cluster = pwcs[last_base_or_idx:cluster_end]
+                    cluster_end = _scan_zwj_cluster_end(pwcs, last_measured_idx, end)
+                    cluster = pwcs[last_measured_idx:cluster_end]
                     override_w = _grapheme_overrides.get(cluster)
                     if override_w is not None:
                         total_width += (override_w - last_measured_w)
-                        last_base_or_idx = _GraphemeState.NO_BASE
+                        last_measured_idx = -2
+                        base_state = _GraphemeState.NO_BASE
                         last_measured_ucs = -1
                         last_measured_w = 0
                         prev_was_virama = False
@@ -167,10 +172,10 @@ def wcswidth(
                 # No override; ZWJ breaks VS adjacency.
                 # ZWJ_BLOCKED prevents double-widening when base was already VS16'd.
                 # VS15 is blocked for both ZWJ states.
-                if last_base_or_idx == _GraphemeState.VS16_APPLIED:
-                    last_base_or_idx = _GraphemeState.ZWJ_BLOCKED
+                if base_state == _GraphemeState.VS16_APPLIED:
+                    base_state = _GraphemeState.ZWJ_BLOCKED
                 else:
-                    last_base_or_idx = _GraphemeState.ZWJ_OPEN
+                    base_state = _GraphemeState.ZWJ_OPEN
                 last_measured_w = 0
                 prev_was_virama = False
                 idx += 2
@@ -179,30 +184,28 @@ def wcswidth(
                 idx += 1
             continue
 
-        # VS16 (U+FE0F): converts preceding narrow character to wide.
+        # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if (ucs == 0xFE0F
-                and (last_base_or_idx >= 0
-                     or last_base_or_idx == _GraphemeState.ZWJ_OPEN)):
-            base_ucs = (ord(pwcs[last_base_or_idx]) if last_base_or_idx >= 0
-                        else last_measured_ucs)
-            vs16_wide = bisearch(base_ucs, VS16_NARROW_TO_WIDE['9.0.0'])
-            if _vs16_narrower and bisearch(base_ucs, _vs16_narrower):
-                vs16_wide = False
-            if vs16_wide:
-                total_width += 1
-            last_base_or_idx = _GraphemeState.VS16_APPLIED
+                and (last_measured_idx >= 0
+                     or base_state == _GraphemeState.ZWJ_OPEN)):
+            if _vs16_narrower and _bisearch(last_measured_ucs, _vs16_narrower):
+                pass
+            elif _bisearch(last_measured_ucs, vs16_nw_table):
+                cluster_width = 2
+            last_measured_idx = -2  # prevent double application
+            base_state = _GraphemeState.VS16_APPLIED
             idx += 1
             continue
 
         # VS15 (U+FE0E): text variation selector, requests narrow presentation.
-        if ucs == 0xFE0E and last_base_or_idx >= 0:
-            base_ucs = ord(pwcs[last_base_or_idx])
+        if ucs == 0xFE0E and last_measured_idx >= 0:
+            base_ucs = ord(pwcs[last_measured_idx])
             vs15_narrow = bisearch(base_ucs, VS15_WIDE_TO_NARROW['9.0.0'])
             if _vs15_wider and bisearch(base_ucs, _vs15_wider):
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 total_width -= 1
-            last_base_or_idx = _GraphemeState.VS15_APPLIED
+            base_state = _GraphemeState.VS15_APPLIED
             idx += 1
             continue
 
@@ -232,41 +235,61 @@ def wcswidth(
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
         if w > 0:
-            applied = False
-            if _grapheme_overrides and cluster_start >= 0:
-                candidate = pwcs[cluster_start:idx + 1]
-                override_w = _grapheme_overrides.get(candidate)
-                if override_w is not None:
-                    total_width = total_before_cluster + override_w
-                    cluster_start = -1
-                    applied = True
+            # virama+consonant extends current cluster; otherwise start new
+            if prev_was_virama:
+                cluster_width = 2
+            else:
+                if cluster_width:
+                    # flush previous cluster, check for grapheme overrides
+                    flushed = False
+                    if _grapheme_overrides and cluster_start >= 0:
+                        # check if cluster+current forms a known override
+                        candidate = pwcs[cluster_start:idx + 1]
+                        override_w = _grapheme_overrides.get(candidate)
+                        if override_w is not None:
+                            total_width = total_before_cluster + override_w
+                            flushed = True
+                            cluster_width = 0
+                        else:
+                            cluster_text = pwcs[cluster_start:idx]
+                            override_w = _grapheme_overrides.get(cluster_text)
+                            if override_w is not None:
+                                total_width = total_before_cluster + override_w
+                            else:
+                                total_width += cluster_width
+                    else:
+                        total_width += cluster_width
+                    if not flushed:
+                        cluster_width = w
+                        cluster_start = idx
+                        total_before_cluster = total_width
                 else:
-                    cluster = pwcs[cluster_start:idx]
-                    override_w = _grapheme_overrides.get(cluster)
-                    if override_w is not None:
-                        total_width = total_before_cluster + override_w
-                    cluster_start = -1
-            if cluster_start < 0:
-                cluster_start = idx
-                total_before_cluster = total_width
-            if not applied:
-                total_width += w
-            last_base_or_idx = idx
+                    cluster_width = w
+                    cluster_start = idx
+                    total_before_cluster = total_width
+            last_measured_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w
+            base_state = _GraphemeState.NO_BASE
             prev_was_virama = False
-        elif last_base_or_idx >= 0 and bisearch(ucs, _CATEGORY_MC_TABLE):
-            # Spacing Combining Mark (Mc) following a base character adds 1
-            total_width += 1
-            last_base_or_idx = _GraphemeState.NO_BASE
+        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
+            # Spacing Combining Mark (Mc) following a base character
+            cluster_width = 2
+            last_measured_idx = -2
+            base_state = _GraphemeState.NO_BASE
             prev_was_virama = False
         else:
             prev_was_virama = ucs in _ISC_VIRAMA_SET
         idx += 1
 
-    if _grapheme_overrides and cluster_start >= 0:
-        cluster = pwcs[cluster_start:end]
-        override_w = _grapheme_overrides.get(cluster)
-        if override_w is not None:
-            total_width = total_before_cluster + override_w
+    if cluster_width:
+        if _grapheme_overrides and cluster_start >= 0:
+            cluster_text = pwcs[cluster_start:end]
+            override_w = _grapheme_overrides.get(cluster_text)
+            if override_w is not None:
+                total_width = total_before_cluster + override_w
+            else:
+                total_width += cluster_width
+        else:
+            total_width += cluster_width
     return total_width

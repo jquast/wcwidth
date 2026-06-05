@@ -308,8 +308,8 @@ def test_devanagari_script():
               "\u093F")   # MatraL, Category 'Mc', East Asian Width property 'N' -- DEVANAGARI VOWEL SIGN I
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (2, 0, 0, 1)
     expect_length_each = (1, 0, 1, 0)
-    # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
-    expect_length_phrase = 3
+    # grapheme cluster capped at 2 cells (ghostty, foot, Windows Terminal)
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -330,8 +330,8 @@ def test_tamil_script():
     # 23107-terminal-suppt.pdf suggests wcwidth.wcwidth should return (3, 0, 0, 4)
     expect_length_each = (1, 0, 1, 0)
 
-    # virama conjunct collapses KA+virama+SSA into one cell, Mc adds +1
-    expect_length_phrase = 3
+    # grapheme cluster capped at 2 cells (ghostty, foot, Windows Terminal)
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -353,8 +353,8 @@ def test_kannada_script():
               "\u0cc8")   # MatraUR, Category 'Mc', East Asian Width property 'N' -- KANNADA VOWEL SIGN AI
     # 23107-terminal-suppt.pdf suggests should be (2, 0, 3, 1)
     expect_length_each = (1, 0, 1, 0)
-    # virama conjunct collapses RA+virama+JHA into one cell, Mc adds +1
-    expect_length_phrase = 3
+    # grapheme cluster capped at 2 cells (ghostty, foot, Windows Terminal)
+    expect_length_phrase = 2
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -437,16 +437,16 @@ def test_mc_width_consistency(repeat):
 
 
 @pytest.mark.parametrize("phrase,expected", [
-    ("\u0999\u09CD\u0997\u09C7", 3),
-    ("\u0915\u094D\u0924\u093F", 3),
-    ("\u0915\u094D\u0930\u093F", 3),
-    ("\u0A95\u0ACD\u0A95\u0ACB", 3),
-    ("\u0938\u094D\u0924\u094D\u0930", 3),
+    ("\u0999\u09CD\u0997\u09C7", 2),
+    ("\u0915\u094D\u0924\u093F", 2),
+    ("\u0915\u094D\u0930\u093F", 2),
+    ("\u0A95\u0ACD\u0A95\u0ACB", 2),
+    ("\u0938\u094D\u0924\u094D\u0930", 2),
     ("\u0938\u094D\u0924", 2),
     ("\u0915\u094D\u0020", 2),
     ("\u09A4\u09CD\u200D\u09AA", 2),
     ("\u0915\u094D\u200D\u0924", 2),
-    ("\u0D15\u0D4D\u0D15\u0D41\u0D02", 3),
+    ("\u0D15\u0D4D\u0D15\u0D41\u0D02", 2),
     ("\u0915\u094D\u0924\u0941\u0902", 2),
 ])
 def test_virama_conjunct(phrase, expected):
@@ -455,22 +455,22 @@ def test_virama_conjunct(phrase, expected):
 
 
 @pytest.mark.parametrize("phrase,expected", [
-    ("\u0995\u09CD\u09A4\u09BF", 3),       # Bengali C+V+C+Mc: ক্তি
-    ("\u0915\u094D\u0924\u093F", 3),       # Devanagari C+V+C+Mc: क्ति
+    ("\u0995\u09CD\u09A4\u09BF", 2),       # Bengali C+V+C+Mc: ক্তি (capped at 2)
+    ("\u0915\u094D\u0924\u093F", 2),       # Devanagari C+V+C+Mc: क्ति (capped at 2)
     ("\u0995\u09CD\u09A4", 2),             # C+V+C (no Mc), unchanged
     ("\u0995\u09BF", 2),                   # C+Mc (no virama), unchanged
 ])
 def test_virama_conjunct_mc_vowel(phrase, expected):
-    """Mc adds +1 following base, matching uucode."""
+    """Mc combines into base; cluster capped at 2."""
     assert wcwidth.wcswidth(phrase, term_program=False) == expected
     assert wcwidth.width(phrase, term_program=False) == expected
 
 
 @pytest.mark.parametrize("phrase,expected", [
     ("\u1000\u1039\u1000", 2),             # Burmese KA+VIRAMA+KA
-    ("\u1000\u1039\u1000\u1039\u1002", 3),  # Burmese KA+V+KA+V+GA
+    ("\u1000\u1039\u1000\u1039\u1002", 2),  # Burmese KA+V+KA+V+GA (capped)
     ("\u1000\u1039\u200D\u1000", 2),       # Burmese KA+V+ZWJ+KA
-    ("\u1782\u17D2\u1782\u17C1", 3),       # Khmer KO+COENG+KO+VOWEL_E (Mc closes)
+    ("\u1782\u17D2\u1782\u17C1", 2),       # Khmer KO+COENG+KO+VOWEL_E (capped)
     ("\u1780\u17D2\u1780", 2),             # Khmer KA+COENG+KA
 ])
 def test_virama_conjunct_invisible_stacker(phrase, expected):

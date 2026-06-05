@@ -155,6 +155,7 @@ def test_text_sizing_sequence(given_sequence, expected_text, expected_params, ex
     ('\x1b]66;w=2;A\x07\x1b]66;w=3;B\x07', 5),
     ('\x1b]66;s=2:w=3;text\x1b\\', 6),
     ('\x1b[31m\x1b]66;w=2;AB\x07\x1b[0m', 2),
+    ('\x1b]66;;\x01\x07', 0),
 ])
 def test_strings_with_text_sizing(text, expected):
     """Verify measured width strings containing OSC66."""
