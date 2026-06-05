@@ -19,7 +19,7 @@ __lazy_modules__ = [
 from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
-from ._wcswidth import wcswidth, _scan_zwj_cluster_end
+from ._wcswidth import wcswidth, wcstwidth, _scan_zwj_cluster_end
 from ._constants import (_EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,
@@ -58,7 +58,12 @@ def _width_ignored_codes(text: str, ambiguous_width: int = 1,
 
     Strips escape sequences and control characters, then measures remaining text.
     """
-    return wcswidth(
+    if term_program is False:
+        return wcswidth(
+            strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
+            ambiguous_width=ambiguous_width,
+        )
+    return wcstwidth(
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
         ambiguous_width=ambiguous_width,
         term_program=term_program,

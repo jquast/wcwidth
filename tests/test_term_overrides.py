@@ -49,7 +49,7 @@ def test_resolve_terminal_auto_detect():
 def test_wcswidth_no_override():
     """Wcswidth works normally without term_program or with empty string."""
     assert wcwidth.wcswidth('hello') == 5
-    assert wcwidth.wcswidth('hello', term_program='') == 5
+    assert wcwidth.wcstwidth('hello', term_program='') == 5
 
 
 @pytest.mark.parametrize('char,expected_default,expected_vte', [
@@ -59,7 +59,7 @@ def test_wcswidth_no_override():
 def test_wcswidth_vte_override(char, expected_default, expected_vte):
     """VTE override narrows wide characters."""
     assert wcwidth.wcswidth(char) == expected_default
-    assert wcwidth.wcswidth(char, term_program='VTE') == expected_vte
+    assert wcwidth.wcstwidth(char, term_program='VTE') == expected_vte
 
 
 @pytest.mark.parametrize('text,kwargs,expected', [
@@ -77,13 +77,13 @@ def test_vs16_override_basic():
     """VS16 override is applied to heart emoji variation."""
     heart_vs16 = '\u2764\ufe0f'
     assert wcwidth.wcswidth(heart_vs16) == 2
-    assert wcwidth.wcswidth(heart_vs16, term_program='VTE') == 1
+    assert wcwidth.wcstwidth(heart_vs16, term_program='VTE') == 1
     assert wcwidth.width(heart_vs16, term_program='VTE') == 1
 
 
 def test_vs16_libvterm_no_override():
     """Libvterm is not a known terminal; falls back to spec VS16 (returns 2)."""
-    assert wcwidth.wcswidth('\u23ed\ufe0f', term_program='libvterm') == 2
+    assert wcwidth.wcstwidth('\u23ed\ufe0f', term_program='libvterm') == 2
     assert wcwidth.width('\u23ed\ufe0f', term_program='libvterm') == 2
 
 
@@ -94,45 +94,45 @@ def test_wcwidth_unchanged():
         wcwidth.wcwidth('\u2630', term_program='VTE')  # type: ignore[call-arg]
 
 
-def test_wcswidth_term_program():
+def test_wcstwidth_term_program():
     """Empty term_program disables override lookup."""
-    assert wcwidth.wcswidth('\u2630', term_program='') == 2
-    assert wcwidth.wcswidth('\u2630', term_program='VTE') == 1
+    assert wcwidth.wcstwidth('\u2630', term_program='') == 2
+    assert wcwidth.wcstwidth('\u2630', term_program='VTE') == 1
     assert wcwidth.wcswidth('\u2630') == 2
     assert wcwidth.width('\u2630') == 2
 
 
 def test_wcswidth_ascii_unchanged():
     """ASCII text is unaffected by terminal overrides."""
-    assert wcwidth.wcswidth('hello world', term_program='VTE') == 11
-    assert wcwidth.wcswidth('hello world', term_program='kitty') == 11
+    assert wcwidth.wcstwidth('hello world', term_program='VTE') == 11
+    assert wcwidth.wcstwidth('hello world', term_program='kitty') == 11
 
 
 def test_vs15_standalone():
     """VS15 (U+FE0E) alone measures as width 0."""
     assert wcwidth.wcswidth('\ufe0e') == 0
-    assert wcwidth.wcswidth('\ufe0e', term_program='VTE') == 0
+    assert wcwidth.wcstwidth('\ufe0e', term_program='VTE') == 0
 
 
 def test_vs15_no_override():
     """VS15 after a character not in any override table has no effect."""
     base = '\u2630'
     assert wcwidth.wcswidth(base + '\ufe0e') == wcwidth.wcswidth(base)
-    assert wcwidth.wcswidth(base + '\ufe0e', term_program='kitty') == wcwidth.wcswidth(base)
+    assert wcwidth.wcstwidth(base + '\ufe0e', term_program='kitty') == wcwidth.wcstwidth(base)
 
 
 def test_vs15_wider_override_unchanged():
     """VS15 narrows by default; VTE wider override restores width 2."""
     assert wcwidth.wcswidth('\u231a') == 2
     assert wcwidth.wcswidth('\u231a\ufe0e') == 1
-    assert wcwidth.wcswidth('\u231a\ufe0e', term_program='VTE') == 2
+    assert wcwidth.wcstwidth('\u231a\ufe0e', term_program='VTE') == 2
     assert wcwidth.width('\u231a\ufe0e') == 1
     assert wcwidth.width('\u231a\ufe0e', term_program='VTE') == 2
 
 
 def test_grapheme_override_zwj_not_in_table():
     """ZWJ cluster not in override table falls through without error."""
-    assert wcwidth.wcswidth('😀\u200d😀', term_program='VTE') == 2
+    assert wcwidth.wcstwidth('😀\u200d😀', term_program='VTE') == 2
     assert wcwidth.width('😀\u200d😀', term_program='VTE') == 2
 
 
@@ -157,14 +157,14 @@ def test_width_vs15_override():
 def test_grapheme_override_wcswidth_family(term_program, expected):
     """Wcswidth ZWJ grapheme override applied only for recognized terminals with overrides."""
     family = '\U0001F468\u200D\U0001F466'
-    assert wcwidth.wcswidth(family, term_program=term_program) == expected
+    assert wcwidth.wcstwidth(family, term_program=term_program) == expected
 
 
 def test_grapheme_override_multi_zwj_alacritty():
     """Wcswidth handles multi-ZWJ grapheme override."""
     family4 = '\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466'
     default = wcwidth.wcswidth(family4)
-    override = wcwidth.wcswidth(family4, term_program='alacritty')
+    override = wcwidth.wcstwidth(family4, term_program='alacritty')
     assert default == 2
     assert override == 8
 
@@ -181,20 +181,20 @@ def test_grapheme_override_width_alacritty(func, kwargs):
 
 def test_grapheme_override_ascii_unchanged():
     """ASCII text is unaffected by grapheme overrides."""
-    assert wcwidth.wcswidth('hello', term_program='alacritty') == 5
+    assert wcwidth.wcstwidth('hello', term_program='alacritty') == 5
     assert wcwidth.width('hello', term_program='alacritty') == 5
 
 
 def test_grapheme_override_zwj_at_end():
     """ZWJ at end of string does not trigger override scan."""
     text = '\U0001F468\u200D'
-    assert wcwidth.wcswidth(text, term_program='alacritty') == 2
+    assert wcwidth.wcstwidth(text, term_program='alacritty') == 2
 
 
 def test_grapheme_override_fitzpatrick():
     """Fitzpatrick modifier between base and ZWJ handled correctly."""
     text = '\u26F9\U0001F3FB\u200D\u2640\uFE0F'
-    assert wcwidth.wcswidth(text, term_program='alacritty') == 4
+    assert wcwidth.wcstwidth(text, term_program='alacritty') == 4
 
 
 def test_list_term_programs():
@@ -218,7 +218,7 @@ def test_grapheme_override_invalid_term_names():
 def test_grapheme_override_zwj_no_extpict_base():
     """ZWJ after non-ExtPict base does not trigger override scan."""
     text = 'a\u200D\u200D'
-    assert wcwidth.wcswidth(text, term_program='alacritty') == 1
+    assert wcwidth.wcstwidth(text, term_program='alacritty') == 1
 
 
 @pytest.mark.parametrize('text,term,expected', [
@@ -228,7 +228,7 @@ def test_grapheme_override_zwj_no_extpict_base():
 ])
 def test_grapheme_override_scanner_edges(text, term, expected):
     """Scanner edge cases for ZWJ chains."""
-    assert wcwidth.wcswidth(text, term_program=term) == expected
+    assert wcwidth.wcstwidth(text, term_program=term) == expected
 
 
 def test_grapheme_override_missing_module():
@@ -285,9 +285,9 @@ def test_resolve_terminal_xterm_auto_detected(env_var):
 
 
 @pytest.mark.parametrize('func,text,expected_default,expected_xterm', [
-    (wcwidth.wcswidth, '\U0001f1e6', 2, 1),
+    (wcwidth.wcstwidth, '\U0001f1e6', 2, 1),
     (wcwidth.width, '\U0001f1e6', 2, 1),
-    (wcwidth.wcswidth, '\u231a\ufe0e', 1, 2),
+    (wcwidth.wcstwidth, '\u231a\ufe0e', 1, 2),
     (wcwidth.width, '\u231a\ufe0e', 1, 2),
 ])
 def test_xterm_overrides_applied(func, text, expected_default, expected_xterm):
@@ -359,7 +359,7 @@ def test_merge_ranges(args, expected):
 def test_sfz_override_foot():
     """Foot narrows Fitzpatrick modifiers."""
     assert wcwidth.wcswidth('\U0001F3FB') == 2
-    assert wcwidth.wcswidth('\U0001F3FB', term_program='foot') == 1
+    assert wcwidth.wcstwidth('\U0001F3FB', term_program='foot') == 1
 
 
 @pytest.mark.parametrize('value,expected', [
@@ -390,7 +390,7 @@ def test_resolve_terminal_strips_whitespace(value, expected):
 ])
 def test_wcswidth_language_grapheme(text, term_program, expected):
     """Language grapheme clusters use per-terminal override tables."""
-    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+    assert wcwidth.wcstwidth(text, term_program=term_program) == expected
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
@@ -415,7 +415,7 @@ def test_width_language_grapheme(text, term_program, expected):
 ])
 def test_wcswidth_mixed_language_ascii(text, term_program, expected):
     """Language grapheme overrides do not affect ASCII and mix correctly."""
-    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+    assert wcwidth.wcstwidth(text, term_program=term_program) == expected
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
@@ -428,7 +428,7 @@ def test_wcswidth_mixed_language_ascii(text, term_program, expected):
 ])
 def test_wcswidth_virama_conjunct(text, term_program, expected):
     """Virama conjunct grapheme clusters use per-terminal overrides."""
-    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+    assert wcwidth.wcstwidth(text, term_program=term_program) == expected
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
@@ -438,7 +438,7 @@ def test_wcswidth_virama_conjunct(text, term_program, expected):
 ])
 def test_wcswidth_language_no_override(text, term_program, expected):
     """Terminals without language overrides return spec width."""
-    assert wcwidth.wcswidth(text, term_program=term_program) == expected
+    assert wcwidth.wcstwidth(text, term_program=term_program) == expected
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
