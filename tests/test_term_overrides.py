@@ -432,6 +432,15 @@ def test_wcswidth_virama_conjunct(text, term_program, expected):
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
+    ('\u0915\u094D\u200D\u0937', False, 2),     # Devanagari C+Virama+ZWJ+C (explicit ZWJ conjunct)
+    ('\u0915\u094D\u200D\u0937', 'xterm', 2),
+])
+def test_wcswidth_virama_zwj_conjunct(text, term_program, expected):
+    """Virama+ZWJ conjunct skips ZWJ and forms a capped conjunct."""
+    assert wcwidth.wcstwidth(text, term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('text,term_program,expected', [
     ('\u1000\u1031', 'xterm', 2),  # Burmese: no xterm override
     ('\u0915\u093e', 'xterm', 2),  # Devanagari: no xterm override
     ('\u0c05\u0c02', 'xterm', 2),  # Telugu: no xterm override
