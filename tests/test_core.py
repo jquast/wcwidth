@@ -464,6 +464,8 @@ def test_virama_conjunct_mc_vowel(phrase, expected):
     """Mc combines into base; cluster capped at 2."""
     assert wcwidth.wcswidth(phrase) == expected
     assert wcwidth.width(phrase) == expected
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
 
 
 @pytest.mark.parametrize("phrase,expected", [

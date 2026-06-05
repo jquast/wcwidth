@@ -15,11 +15,14 @@ from __future__ import annotations
 import io
 import os
 import re
+import sys
+import glob
 import string
-import difflib
+import hashlib
 import zipfile
 import argparse
 import datetime
+import textwrap
 import functools
 import unicodedata
 from pathlib import Path
@@ -33,16 +36,26 @@ except ImportError:
     from typing_extensions import Self
 
 # 3rd party
+import yaml
 import jinja2
 import requests
 import urllib3.util
 import dateutil.parser
+
+try:
+    # 3rd party
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    # 3rd party
+    from yaml import SafeLoader
+
 
 EXCLUDE_VERSIONS = ['2.0.0', '2.1.2', '3.0.0', '3.1.0', '3.2.0', '4.0.0']
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_DATA = os.path.join(PATH_UP, 'data')
 PATH_TESTS = os.path.join(PATH_UP, 'tests')
+PATH_UCS_DETECT_DATA = os.path.join(PATH_UP, 'ucs-detect', 'data')
 # "wcwidth/bin/update-tables.py", even on Windows
 # not really a path, if the git repo isn't named "wcwidth"
 THIS_FILEPATH = ('wcwidth/' +
@@ -77,7 +90,9 @@ HANGUL_JAMO_ZEROWIDTH = (
     *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
 )
 
-HEX_STR_VS16 = 'FE0F'
+# Variation Selector-15 and 16
+HEX_STR_VS15, HEX_STR_VS16 = ('FE0E', 'FE0F')
+
 # Grapheme Break Property values from UAX #29
 GRAPHEME_BREAK_PROPERTIES = (
     'CR', 'LF', 'Control', 'Extend', 'ZWJ', 'Regional_Indicator',
@@ -87,11 +102,10 @@ INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
 
 def _bisearch(ucs, table):
-    """A copy of wcwwidth._bisearch, to prevent having issues when depending on code that imports
-    our generated code."""
+    """A copy of wcwwidth._bisearch."""
+    # to prevent having issues when depending on code that imports our generated code.
     lbound = 0
     ubound = len(table) - 1
-
     if ucs < table[0][0] or ucs > table[ubound][1]:
         return 0
     while ubound >= lbound:
@@ -102,7 +116,6 @@ def _bisearch(ucs, table):
             ubound = mid - 1
         else:
             return 1
-
     return 0
 
 
@@ -396,9 +409,9 @@ def fetch_table_wide_data() -> UnicodeTableRenderCtx:
     # Subtract Default_Ignorable_Code_Point characters (they should be zero-width).
     # Exception: U+115F HANGUL CHOSEONG FILLER remains wide for jamo composition.
     # See https://github.com/jquast/wcwidth/issues/118
-    default_ignorable = parse_derived_core_property(
+    default_ignorable = set(parse_derived_core_property(
         fname=UnicodeDataFile.DerivedCoreProperties(version),
-        property_name='Default_Ignorable_Code_Point')
+        property_name='Default_Ignorable_Code_Point'))
     default_ignorable.discard(0x115F)  # Keep HANGUL CHOSEONG FILLER as wide
     table[version].values = table[version].values.difference(default_ignorable)
 
@@ -604,6 +617,47 @@ def fetch_table_vs16_data() -> UnicodeTableRenderCtx:
     }
 
     return UnicodeTableRenderCtx('VS16_NARROW_TO_WIDE', table)
+
+
+def fetch_table_vs15_data() -> UnicodeTableRenderCtx:
+    """
+    Fetch and create a "wide to narrow variation-15" lookup table.
+
+    Characters in this table are normally wide, but when combined with a variation
+    selector-15 (\\uFE0E), they become narrow. The table is built from ''text style''
+    entries in ``emoji-variation-sequences.txt``, filtered to only wide characters.
+
+    This mirrors ``fetch_table_vs16_data``, which builds the ''narrow to wide''
+    variation-16 table from ''emoji style'' entries.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    unicode_latest = fetch_unicode_versions()[-1]
+
+    wide_tables = fetch_table_wide_data().table
+    unicode_version = UnicodeVersion.parse('9.0.0')
+
+    # Parse FE0E (text style) entries from the latest emoji release
+    table[unicode_version] = parse_vs_data(
+        fname=UnicodeDataFile.EmojiVariationSequences(unicode_latest),
+        ubound_unicode_version=unicode_version,
+        hex_str_vs=HEX_STR_VS15)
+
+    # Parse and join the earlier-format emoji release
+    table[unicode_version].values.update(
+        parse_vs_data(fname=UnicodeDataFile.LegacyEmojiVariationSequences(),
+                      ubound_unicode_version=unicode_version,
+                      hex_str_vs=HEX_STR_VS15).values)
+
+    # Keep only characters that are already wide (width 2) -- these are the
+    # ones where VS15 has a narrowing effect. Narrow characters (width 1)
+    # stay narrow regardless.
+    wide_table = wide_tables[unicode_latest].as_value_ranges()
+    table[unicode_version].values = {
+        ucs for ucs in table[unicode_version].values
+        if _bisearch(ucs, wide_table)
+    }
+
+    return UnicodeTableRenderCtx('VS15_WIDE_TO_NARROW', table)
 
 
 def parse_vs_data(fname: str, ubound_unicode_version: UnicodeVersion, hex_str_vs: str):
@@ -842,6 +896,7 @@ def parse_indic_syllabic_category(fname: str) -> dict[str, TableDef]:
     }
 
 
+@functools.lru_cache(maxsize=None)
 def parse_derived_core_property(fname: str, property_name: str) -> set[int]:
     """Parse DerivedCoreProperties.txt for a specific property."""
     print(f'parsing {fname} for {property_name}: ', end='', flush=True)
@@ -1111,43 +1166,469 @@ class UnicodeDataFile:
         return [os.path.join(PATH_DATA, match.string) for match in filename_matches]
 
 
-def replace_if_modified(new_filename: str, original_filename: str) -> None:
+def update_readme_term_programs() -> bool:
     """
-    Replace original file with new file only if there are significant changes.
+    Update the ``list_term_programs()`` example in ``README.rst``.
 
-    If only the 'This code generated' timestamp line differs, discard the new file. If there are
-    other changes or the original doesn't exist, replace it.
+    The section between ``.. BEGIN_LIST_TERM_PROGRAMS`` and ``.. END_LIST_TERM_PROGRAMS``
+    is replaced with the current sorted terminal names (first 5 followed by ``...``).
+
+    Returns True if the file was modified.
     """
-    if os.path.exists(original_filename):
-        with open(original_filename, encoding='utf-8') as f1, \
-                open(new_filename, encoding='utf-8') as f2:
-            old_lines = f1.readlines()
-            new_lines = f2.readlines()
+    readme_path = os.path.join(PATH_UP, 'README.rst')
+    with open(readme_path, encoding='utf-8') as fin:
+        original = fin.read()
 
-        # Generate diff
-        diff_lines = list(difflib.unified_diff(old_lines, new_lines,
-                                               fromfile=original_filename,
-                                               tofile=new_filename,
-                                               lineterm=''))
+    tp = collect_term_programs()
+    all_names = sorted(tp.known_terminals | tp.aliases.keys())
+    display = textwrap.fill(repr(tuple(all_names)), width=79,
+                            subsequent_indent='     ',
+                            break_on_hyphens=False)
 
-        # Check if only the 'This code generated' line is different
-        significant_changes = False
-        for line in diff_lines:
-            if (line.startswith(('@@', '---', '+++')) or
-                    (line.startswith(('-', '+')) and 'This code generated' in line)):
-                continue
-            else:
-                significant_changes = line.startswith(('-', '+'))
-            if significant_changes:
-                break
+    output_lines = [
+        '.. BEGIN_LIST_TERM_PROGRAMS',
+        '.. code-block:: python',
+        '',
+        '    >>> wcwidth.list_term_programs()',
+        f'    {display}',
+        '',
+        '.. END_LIST_TERM_PROGRAMS',
+    ]
+    replacement = '\n'.join(output_lines)
 
-        if not significant_changes:
-            # only the code-generated timestamp changed, remove the .new file
-            os.remove(new_filename)
-            return False
-    # Significant changes found, replace the original
-    os.replace(new_filename, original_filename)
-    return True
+    pattern = re.compile(
+        r'\.\. BEGIN_LIST_TERM_PROGRAMS\n.*?\n\.\. END_LIST_TERM_PROGRAMS',
+        re.DOTALL,
+    )
+    modified = pattern.sub(replacement, original)
+
+    if modified != original:
+        with open(readme_path, 'w', encoding='utf-8', newline='\n') as fout:
+            fout.write(modified)
+        return True
+    return False
+
+
+# These appear to share the same engines.
+SOFTWARE_SHARED_ENGINES = {
+    'QTerminal': 'qtermwidget',
+    'cool-retro-term': 'qtermwidget',
+    'Hyper': 'xterm.js',
+    'Tabby': 'xterm.js',
+    'st-luke': 'st',
+}
+
+VTE_CANONICAL = 'vte'
+
+
+def canonical_name(software_name: str, software_version: str) -> str:
+    """Determine the canonical terminal name, applying VTE and known consolidations."""
+    if 'VTE' in software_version:
+        return VTE_CANONICAL.lower()
+    return SOFTWARE_SHARED_ENGINES.get(software_name, software_name).lower()
+
+
+def parse_wchar_codepoint(wchar: str) -> int:
+    r"""
+    Extract the primary codepoint from a wchar string.
+
+    The ``wchar`` field in ucs-detect YAML is stored as a literal Python escape string
+    (e.g. ``'\\u2630'``, ``'\\U0001f468'``), not as the actual Unicode character.
+    Decode it first, then return the ordinal of the first character.
+
+    For VS16/VS15 sequences like ``'\\u231a\\ufe0e'``, returns the base codepoint (0x231A).
+    """
+    decoded = wchar.encode('ascii').decode('unicode_escape')
+    if len(decoded) > 1 and decoded[-1] in ('\ufe0f', '\ufe0e'):
+        return ord(decoded[0])
+    return ord(decoded)
+
+
+@dataclass(frozen=True)
+class TerminalOverrides:
+    """Per-terminal codepoint override ranges for narrower/wider measurements."""
+    narrower: list[tuple[str, str, str]]
+    wider: list[tuple[str, str, str]]
+
+    def items(self) -> list[tuple[str, list[tuple[str, str, str]]]]:
+        return [('narrower', self.narrower), ('wider', self.wider)]
+
+
+@dataclass(frozen=True)
+class DedupedOverrides:
+    """Deduplicated override data: shared sets keyed by hash, terminal-to-hash refs."""
+    shared_sets: dict[str, TerminalOverrides]
+    terminal_refs: dict[str, str]
+
+
+def dedup_override_table(
+    table: Mapping[str, TerminalOverrides],
+) -> DedupedOverrides:
+    """Deduplicate override table by hashing."""
+    shared_sets: dict[str, TerminalOverrides] = {}
+    terminal_refs: dict[str, str] = {}
+    for term_name, overrides in table.items():
+        key = (tuple(overrides.narrower),
+               tuple(overrides.wider))
+        hash_key = hashlib.sha256(repr(key).encode()).hexdigest()[:8]
+        if hash_key not in shared_sets:
+            shared_sets[hash_key] = overrides
+        terminal_refs[term_name] = hash_key
+    return DedupedOverrides(shared_sets=shared_sets, terminal_refs=terminal_refs)
+
+
+@dataclass(frozen=True)
+class MergedOverridesCategory:
+    """A single category within the merged overrides table."""
+    variable_name: str
+    shared_sets: Mapping[str, TerminalOverrides]
+    terminal_refs: Mapping[str, str]
+    set_terminals: Mapping[str, tuple[str, ...]]
+
+
+@dataclass(frozen=True)
+class MergedOverridesRenderCtx(RenderContext):
+    """Render context for all single-codepoint override tables in one file."""
+    categories: Sequence[MergedOverridesCategory]
+
+
+@dataclass
+class MergedOverridesRenderDef(RenderDefinition):
+    render_context: MergedOverridesRenderCtx
+
+    @classmethod
+    def new(cls, categories: Sequence[MergedOverridesCategory]) -> Self:
+        return cls(
+            jinja_filename='table_overrides.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_overrides.py'),
+            render_context=MergedOverridesRenderCtx(categories=categories),
+        )
+
+
+@dataclass(frozen=True)
+class GraphemeOverridePerTerminalRenderCtx(RenderContext):
+    """Render context for a single terminal's grapheme overrides."""
+    canonical_name: str
+    graphemes: dict[str, int]
+    terminals: list[str]      # All terminals that share this same grapheme data
+
+
+@dataclass
+class GraphemeOverridePerTerminalRenderDef(RenderDefinition):
+    render_context: GraphemeOverridePerTerminalRenderCtx
+
+    @classmethod
+    def new(cls, canonical_name: str, graphemes: dict[str, int],
+            terminals: list[str]) -> Self:
+        safe_name = canonical_name.replace('-', '_').replace('.', '_')
+        filename = f'table_grapheme_overrides/{safe_name}.py'
+        return cls(
+            jinja_filename='grapheme_override_per_terminal.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', filename),
+            render_context=GraphemeOverridePerTerminalRenderCtx(
+                canonical_name=canonical_name,
+                graphemes=graphemes,
+                terminals=terminals,
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class GraphemeRegistryRenderCtx(RenderContext):
+    """Render context for the grapheme override hash registry."""
+
+    registry: dict[str, str]
+
+
+@dataclass
+class GraphemeRegistryRenderDef(RenderDefinition):
+    render_context: GraphemeRegistryRenderCtx
+
+    @classmethod
+    def new(cls, registry: dict[str, str]) -> Self:
+        return cls(
+            jinja_filename='grapheme_registry.py.j2',
+            output_filename=os.path.join(
+                PATH_UP, 'wcwidth', 'table_grapheme_overrides', '_registry.py'),
+            render_context=GraphemeRegistryRenderCtx(registry=registry),
+        )
+
+
+def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
+    """Convert a set of codepoint integers to hex range descriptions."""
+    if not values:
+        return []
+    sorted_vals = sorted(values)
+    ranges = []
+    start = end = sorted_vals[0]
+    for val in sorted_vals[1:]:
+        if val == end + 1:
+            end = val
+        else:
+            ranges.append((start, end))
+            start = end = val
+    ranges.append((start, end))
+
+    result: list[tuple[str, str, str]] = []
+    for lo, hi in ranges:
+        hex_start, hex_end = f'0x{lo:05x}', f'0x{hi:05x}'
+        name_start = name_ucs(chr(lo)) or '(nil)'
+        name_end = name_ucs(chr(hi)) or '(nil)'
+        if name_start != name_end:
+            txt = f'{name_start[:24].rstrip():24s}..{name_end[:24].rstrip()}'
+        else:
+            txt = name_start[:48]
+        result.append((hex_start, hex_end, txt))
+    return result
+
+
+@functools.lru_cache(maxsize=1)
+def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
+    """Return (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    items: list[tuple[str, str, Any]] = []
+    for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
+        with open(yaml_path, encoding='utf-8') as f:
+            doc = yaml.load(f, Loader=SafeLoader)
+        name = doc.get('software_name', '')
+        ver = doc.get('software_version', '')
+        canonical = canonical_name(name, ver)
+        items.append((os.path.basename(yaml_path), canonical, doc))
+    return items
+
+
+def make_single_override(
+    category: str,
+    known_terminals: frozenset[str],
+) -> Mapping[str, TerminalOverrides]:
+    """
+    Collect single-codepoint overrides for a given test_results category.
+
+    Returns a dict mapping canonical_name to 'TerminalOverrides'.
+
+    - 'narrower' means terminal measured 1, but wcwidth measured 2,
+    - 'wider' means terminal measured 2, but wcwidth measured 1.
+    """
+    narrower: dict[str, set[int]] = {}
+    wider: dict[str, set[int]] = {}
+
+    for _, canonical, doc in load_ucs_detect_yaml():
+        test_results = doc.get('test_results', {})
+        cat_results = test_results.get(category, {})
+        for _ver, ver_data in cat_results.items():
+            for entry in ver_data.get('failed_codepoints', []):
+                wchar = entry['wchar']
+                ucs = parse_wchar_codepoint(wchar)
+                term_w = entry['measured_by_terminal']
+                wc_w = entry['measured_by_wcwidth']
+                if term_w == 1 and wc_w == 2:
+                    narrower.setdefault(canonical, set()).add(ucs)
+                # 'wider' entries in emoji_vs16_results are from the vs16n baseline test
+                # (base character measured without VS16, expected width 1).  Kitty rendering
+                # these codepoints as 2 cells without VS16 is a WIDE_OVERRIDES issue, not
+                # VS16.  Terminal multiplexer entries (e.g. tmux, libvterm) are excluded by
+                # known_terminals filtering below.
+                elif category != 'emoji_vs16_results' and term_w == 2 and wc_w == 1:
+                    wider.setdefault(canonical, set()).add(ucs)
+
+    result: dict[str, TerminalOverrides] = {}
+    all_names = sorted(set(narrower.keys()) | set(wider.keys()))
+    for name in all_names:
+        result[name] = TerminalOverrides(
+            narrower=values_to_hex_ranges(narrower.get(name, set())),
+            wider=values_to_hex_ranges(wider.get(name, set())),
+        )
+    result = {
+        name: data for name, data in result.items()
+        if name in known_terminals
+    }
+    return result
+
+
+def collect_grapheme_overrides(
+    known_terminals: frozenset[str],
+) -> Mapping[str, dict[str, int]]:
+    """
+    Collect multi-codepoint grapheme overrides from emoji_zwj_results, ri_results and
+    language_results.
+
+    Returns a dict mapping canonical_name -> {grapheme_string: terminal_measured_width}. Only
+    includes entries where the terminal measurement differs from wcwidth. Grapheme strings are
+    stored as Python source string literals suitable for code generation.
+    """
+    result: dict[str, dict[str, int]] = {}
+    categories = ('emoji_zwj_results', 'ri_results')
+
+    for _, canonical, doc in load_ucs_detect_yaml():
+        test_results = doc.get('test_results', {})
+        term_graphemes: dict[str, int] = {}
+        for category in categories:
+            cat_results = test_results.get(category, {})
+            for _ver, ver_data in cat_results.items():
+                for entry in ver_data.get('failed_codepoints', []):
+                    wchar = entry['wchar']
+                    term_w = entry['measured_by_terminal']
+                    wc_w = entry['measured_by_wcwidth']
+                    if term_w != wc_w:
+                        decoded = wchar.encode('ascii').decode('unicode_escape')
+                        term_graphemes[decoded] = term_w
+
+        lang_results = test_results.get('language_results')
+        if lang_results:
+            for lang_data in lang_results.values():
+                if not isinstance(lang_data, dict):
+                    continue
+                for entry in lang_data.get('failed', []):
+                    if 'inherited_from' in entry:
+                        continue
+                    wchar = entry['wchars']
+                    term_w = entry['measured_by_terminal']
+                    wc_w = entry['measured_by_wcwidth']
+                    if term_w != wc_w:
+                        decoded = wchar.encode('ascii').decode('unicode_escape')
+                        term_graphemes[decoded] = term_w
+
+        if term_graphemes:
+            result.setdefault(canonical, {}).update(term_graphemes)
+
+    result = {
+        name: data for name, data in result.items()
+        if name in known_terminals
+    }
+    return result
+
+
+def _make_merged_category(variable_name: str,
+                          table: Mapping[str, TerminalOverrides]) -> MergedOverridesCategory:
+    deduped = dedup_override_table(table)
+    set_terminals: dict[str, tuple[str, ...]] = {}
+    for term_name, hash_key in deduped.terminal_refs.items():
+        set_terminals.setdefault(hash_key, []).append(term_name)
+    set_terminals = {k: tuple(sorted(v)) for k, v in set_terminals.items()}
+    return MergedOverridesCategory(variable_name, deduped.shared_sets,
+                                   deduped.terminal_refs, set_terminals)
+
+
+def fetch_override_grapheme_data(known_terminals: frozenset[str]) -> list[RenderDefinition]:
+    """Generate shared GRAPHEME_OVERRIDES files, deduplicating identical tables."""
+    table = collect_grapheme_overrides(known_terminals)
+
+    # Group terminals by stable hash of their grapheme data
+    hash_groups: dict[str, list[str]] = {}
+    terminal_hashes: dict[str, str] = {}
+
+    for canonical_name, graphemes in sorted(table.items()):
+        if not graphemes:
+            continue
+        sorted_items = tuple(sorted(graphemes.items()))
+        hash_key = hashlib.sha256(repr(sorted_items).encode()).hexdigest()[:8]
+        hash_groups.setdefault(hash_key, []).append(canonical_name)
+        terminal_hashes[canonical_name] = hash_key
+
+    result: list[RenderDefinition] = []
+
+    # Generate one shared file per unique hash
+    for hash_key, terminals in sorted(hash_groups.items()):
+        graphemes = table[terminals[0]]
+        shared_name = f'_known_{hash_key}'
+        result.append(
+            GraphemeOverridePerTerminalRenderDef.new(shared_name, graphemes, terminals))
+
+    # Generate registry mapping terminal -> hash
+    result.append(GraphemeRegistryRenderDef.new(terminal_hashes))
+
+    return result
+
+
+@dataclass(frozen=True)
+class TermPrograms:
+    """Canonical terminal names and aliases collected from ucs-detect data."""
+    known_terminals: frozenset[str]
+    aliases: dict[str, str]
+
+
+@functools.lru_cache(maxsize=1)
+def collect_term_programs() -> TermPrograms:
+    """Collect canonical terminal names and aliases from ucs-detect data."""
+    # Only terminals detectable by XTVERSION, ENQ, TERM_PROGRAM, or unique TERM are included.
+    known: set[str] = set()
+    tprog_aliases: dict[str, str] = {}
+    term_aliases: dict[str, str] = {}
+
+    for _, canonical, doc in load_ucs_detect_yaml():
+        tr = doc.get('terminal_results') or {}
+        method = tr.get('software_method', '') or ''
+        env = doc.get('environment') or {}
+        tprog = (env.get('TERM_PROGRAM', '') or '').strip()
+        term = (env.get('TERM', '') or '').strip()
+        ver = doc.get('software_version', '') or ''
+
+        has_xtversion = method in ('XTVERSION', 'ENQ') or 'VTE' in ver
+        has_tprog = bool(tprog)
+        has_dist_term = bool(term and term.lower() not in ('xterm-256color', 'xterm'))
+
+        if not (has_xtversion or has_tprog or has_dist_term):
+            print(f'terminal "{canonical}" ({ver}) is not auto-detectable', file=sys.stderr)
+            continue
+
+        known.add(canonical)
+
+        if has_tprog:
+            key = tprog.lower()
+            if key and key != canonical:
+                tprog_aliases[key] = canonical
+
+        if has_dist_term:
+            key = term.lower()
+            if key != canonical:
+                term_aliases.setdefault(key, canonical)
+
+    # aliases for well-known TERM_PROGRAM values not in ucs-detect data.
+    tprog_aliases.update({
+        'rxvt': 'urxvt',
+        'vscode': 'xterm.js',
+    })
+
+    # hardcoded aliases for well-known TERM values not in ucs-detect data.
+    term_aliases.update({
+        'putty': 'pterm',
+    })
+
+    # Terminal multiplexers (subterminals) depend on a host terminal for
+    # rendering; their cursor-position reports from ucs-detect are not
+    # reliable indicators of display width.
+    _multiplexers = frozenset({'gnu screen', 'libvterm', 'tmux', 'zellij'})
+    known -= _multiplexers
+    term_aliases = {k: v for k, v in term_aliases.items() if v not in _multiplexers}
+    tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in _multiplexers}
+
+    return TermPrograms(
+        known_terminals=frozenset(known),
+        aliases={**term_aliases, **tprog_aliases},
+    )
+
+
+@dataclass(frozen=True)
+class TermProgramTableRenderCtx(RenderContext):
+    """Render context for terminal program data."""
+    known_terminals: frozenset[str]
+    aliases: dict[str, str]
+
+
+@dataclass
+class TermProgramTableRenderDef(RenderDefinition):
+    render_context: TermProgramTableRenderCtx
+
+    @classmethod
+    def new(cls) -> Self:
+        tp = collect_term_programs()
+        return cls(
+            jinja_filename='term_programs.py.j2',
+            output_filename=os.path.join(PATH_UP, 'wcwidth', 'table_term_programs.py'),
+            render_context=TermProgramTableRenderCtx(
+                known_terminals=tp.known_terminals,
+                aliases=tp.aliases,
+            ),
+        )
 
 
 def fetch_all_emoji_files() -> None:
@@ -1250,6 +1731,46 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
         fetch_all_emoji_files()
 
 
+def cleanup_stale_grapheme_files() -> None:
+    """Remove stale per-terminal grapheme override files and unreferenced _known_* files."""
+    overrides_dir = os.path.join(PATH_UP, 'wcwidth', 'table_grapheme_overrides')
+    # Because hashes can change at any given next release, this is a big part of why we prefix our
+    # files with '_' to indicate to "please do not try to import and use them!", at least not without
+    # great care via _registry.py -- because they could disappear at any next release.
+    #
+    # Load registry to determine which _known_* files are still referenced
+    registry: dict[str, str] = {}
+    registry_path = os.path.join(overrides_dir, '_registry.py')
+    if os.path.exists(registry_path):
+        # std imports
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('_registry', registry_path)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            registry = getattr(mod, '_REGISTRY', {})
+
+    active_hashes = set(registry.values())
+
+    for filename in sorted(os.listdir(overrides_dir)):
+        if not filename.endswith('.py'):
+            continue
+        if filename in ('__init__.py', '_registry.py'):
+            continue
+        if filename.startswith('_known_'):
+            # Remove _known_* files whose hash is not in the registry
+            hash_key = filename[len('_known_'):-len('.py')]
+            if hash_key not in active_hashes:
+                filepath = os.path.join(overrides_dir, filename)
+                os.unlink(filepath)
+                print(f'removed unreferenced {filepath}')
+            continue
+        # Remove old per-terminal override files (now covered by shared _known_* files)
+        filepath = os.path.join(overrides_dir, filename)
+        os.unlink(filepath)
+        print(f'removed obsolete {filepath}')
+
+
 def main(only_fetch: bool = False, fetch_all_versions: bool = False,
          check_last_modified: bool = False) -> None:
     """Update east-asian, combining and zero width tables."""
@@ -1270,10 +1791,10 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
     # language options using jinja2 templates, with minimal modification of the
     # code.
     def get_codegen_definitions() -> Iterator[RenderDefinition]:
-        yield UnicodeVersionPyRenderDef.new(
-            UnicodeVersionPyRenderCtx([fetch_unicode_versions()[-1]])  # Only latest
-        )
+        latest_version = fetch_unicode_versions()[-1]
+        yield UnicodeVersionPyRenderDef.new(UnicodeVersionPyRenderCtx([latest_version]))
         yield UnicodeTableRenderDef.new('table_vs16.py', fetch_table_vs16_data())
+        yield UnicodeTableRenderDef.new('table_vs15.py', fetch_table_vs15_data())
         yield UnicodeTableRenderDef.new('table_wide.py', fetch_table_wide_data())
         yield UnicodeTableRenderDef.new('table_zero.py', fetch_table_zero_data())
         yield UnicodeTableRenderDef.new('table_mc.py', fetch_table_category_mc_data())
@@ -1281,18 +1802,35 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         yield GraphemeTableRenderDef.new(fetch_table_grapheme_data())
         yield UnicodeVersionRstRenderDef.new(fetch_source_headers())
 
+        kt = collect_term_programs().known_terminals
+        yield MergedOverridesRenderDef.new([
+            _make_merged_category('WIDE_OVERRIDES', make_single_override('unicode_wide_results', kt)),
+            _make_merged_category('SRI_OVERRIDES', make_single_override('sri_results', kt)),
+            _make_merged_category('SFZ_OVERRIDES', make_single_override('sfz_results', kt)),
+            _make_merged_category('VS16_OVERRIDES', make_single_override('emoji_vs16_results', kt)),
+            _make_merged_category('VS15_OVERRIDES', make_single_override('emoji_vs15_results', kt)),
+        ])
+        yield from fetch_override_grapheme_data(kt)
+        yield TermProgramTableRenderDef.new()
+
     for render_def in get_codegen_definitions():
+        print(f'write {render_def.output_filename}: ', flush=True, end='')
         new_filename = render_def.output_filename + '.new'
         with open(new_filename, 'w', encoding='utf-8', newline='\n') as fout:
-            print(f'write {new_filename}: ', flush=True, end='')
             for data in render_def.generate():
                 fout.write(data)
 
-        if not replace_if_modified(new_filename, render_def.output_filename):
-            print(f'discarded {new_filename} (timestamp-only change)')
-        else:
-            assert render_def.output_filename != 'table_vs16.py', ('table_vs16 not expected to change!')
-            print('ok')
+        os.replace(new_filename, render_def.output_filename)
+        print('ok')
+
+    # Update README.rst list_term_programs() example with current terminal names
+    if update_readme_term_programs():
+        print('updated README.rst: list_term_programs() example')
+    else:
+        print('README.rst: list_term_programs() example is up-to-date')
+
+    # Remove stale grapheme override files no longer referenced by _registry.py
+    cleanup_stale_grapheme_files()
 
 
 if __name__ == '__main__':

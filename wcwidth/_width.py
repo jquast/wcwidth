@@ -1,5 +1,7 @@
 """This is a high-level width() supporting terminal output."""
 
+from __future__ import annotations
+
 from typing import Literal
 
 __lazy_modules__ = [
@@ -9,18 +11,23 @@ __lazy_modules__ = [
     "wcwidth.bisearch",
     "wcwidth.control_codes",
     "wcwidth.escape_sequences",
+    "wcwidth.table_grapheme",
     "wcwidth.table_vs16",
     "wcwidth.text_sizing",
 ]
 # local
+from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
-from ._wcswidth import wcswidth
+from ._wcswidth import wcswidth, wcstwidth, _scan_zwj_cluster_end
 from ._constants import (_EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,
                          _FITZPATRICK_RANGE,
-                         _REGIONAL_INDICATOR_SET)
+                         _REGIONAL_INDICATOR_SET,
+                         resolve_terminal,
+                         get_term_overrides)
+from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
 from .control_codes import ILLEGAL_CTRL, VERTICAL_CTRL, HORIZONTAL_CTRL, ZERO_WIDTH_CTRL
@@ -44,15 +51,22 @@ _CONTROL_CHAR_TABLE = str.maketrans('', '', (
 ))
 
 
-def _width_ignored_codes(text: str, ambiguous_width: int = 1) -> int:
+def _width_ignored_codes(text: str, ambiguous_width: int = 1,
+                         term_program: bool | str = False) -> int:
     """
     Fast path for width() with control_codes='ignore'.
 
     Strips escape sequences and control characters, then measures remaining text.
     """
-    return wcswidth(
+    if term_program is False:
+        return wcswidth(
+            strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
+            ambiguous_width=ambiguous_width,
+        )
+    return wcstwidth(
         strip_sequences(text).translate(_CONTROL_CHAR_TABLE),
-        ambiguous_width=ambiguous_width
+        ambiguous_width=ambiguous_width,
+        term_program=term_program,
     )
 
 
@@ -62,6 +76,7 @@ def width(
     control_codes: Literal['parse', 'strict', 'ignore'] = 'parse',
     tabsize: int = 8,
     ambiguous_width: int = 1,
+    term_program: bool | str = False,
 ) -> int:
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
@@ -84,14 +99,20 @@ def width(
           any kinds of control codes or sequences. TAB ``\t`` is zero-width; to ensure
           tab expansion, pre-process text using :func:`str.expandtabs`.
 
-    :param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.
-        Must be positive. Has no effect when ``control_codes='ignore'``.
-    :param ambiguous_width: Width to use for East Asian Ambiguous (A)
-        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
+    :param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.  Must be
+        positive. Has no effect when ``control_codes='ignore'``.
+    :param ambiguous_width: Width to use for East Asian Ambiguous (A) characters. Default is ``1``
+        (narrow). Set to ``2`` for CJK contexts.
+    :param term_program: Terminal software identifier for table correction.
+        ``False`` (default) disables override lookup.  ``True`` reads the
+        ``TERM_PROGRAM`` or ``TERM`` environment variable for auto-detection.
+        Accepts a canonical terminal name matching :func:`list_term_programs`,
+        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
+
+        .. versionadded:: 0.8.0
     :returns: Maximum cursor position reached, "extent", accounting for cursor movement sequences
         present in ``text`` according to given parameters.  This represents the rightmost column the
         cursor reaches.  Always a non-negative integer.
-
     :raises ValueError: If ``control_codes='strict'`` and control characters with indeterminate
         effects, such as vertical movement or clear sequences are encountered, or on unexpected
         C0 or C1 control code. Also raised when ``control_codes`` is not one of the valid values.
@@ -127,7 +148,7 @@ def width(
         >>> width('1\x1b[10C', control_codes='ignore')   # faster but wrong in this case
         1
     """
-    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals
+    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks
     # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
     # in consideration of this function a likely "hot path", they are inline, breaking many pylint
     # complexity rules.
@@ -151,7 +172,24 @@ def width(
 
     # Fast path for ignore mode, useful if you know the text is already free of control codes
     if control_codes == 'ignore':
-        return _width_ignored_codes(text, ambiguous_width)
+        return _width_ignored_codes(text, ambiguous_width, term_program=term_program)
+
+    # Resolve terminal software for override lookup
+    term_canonical = resolve_terminal(term_program)
+
+    # Skip override lookup when no terminal detected (avoids lru_cache call overhead).
+    # Extract locals for hot-loop performance (NamedTuple attribute access is slow).
+    if term_canonical:
+        overrides = get_term_overrides(term_canonical)
+        _narrower = overrides.narrower
+        _vs16_narrower = overrides.vs16_narrower
+        _vs15_wider = overrides.vs15_wider
+        _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
+    else:
+        _narrower = ()
+        _vs16_narrower = ()
+        _vs15_wider = ()
+        _grapheme_overrides = {}
 
     strict = control_codes == 'strict'
     # Track absolute positions: tab stops need modulo on absolute column, CR resets to 0.
@@ -166,12 +204,19 @@ def width(
     # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
-    # grapheme-clustering state and local re-bindings for performance
-    last_measured_idx = -2
+    # grapheme-clustering state and local re-binding for performance.
+    # Widths accumulate in cluster_width and flush at boundaries (see _wcswidth.py)
+    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no base available)
     last_measured_ucs = -1
+    last_measured_w = 0
     prev_was_virama = False
+    _max_extent_before = 0
+    cluster_start = -1
+    col_before_cluster = 0
+    max_extent_before_cluster = 0
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
+    vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']
     _bisearch = bisearch
 
     while idx < text_len:
@@ -232,6 +277,7 @@ def width(
             # Escape sequences break VS16 adjacency: reset last-measured state
             last_measured_idx = -2
             last_measured_ucs = -1
+            cluster_start = -1
             if current_col > max_extent:
                 max_extent = current_col
             continue
@@ -248,6 +294,7 @@ def width(
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         if char in VERTICAL_CTRL:
@@ -261,6 +308,7 @@ def width(
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         # 3. Horizontal movement characters
@@ -287,6 +335,7 @@ def width(
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
         # 4. Zero-width control characters
@@ -299,29 +348,64 @@ def width(
             idx += 1
             last_measured_idx = -2
             last_measured_ucs = -1
+            cluster_start = -1
             continue
 
+        # 5. Inline grapheme-clustering: ZWJ, Virama, VS16, Regional Indicators,
+        #    Fitzpatrick, Mc, wcwidth
         ucs = ord(char)
 
-        # 5. Inline grapheme-clustering: ZWJ, VS16, Regional Indicators,
-        #    Fitzpatrick, Virama conjuncts, Mc, wcwidth
-        # Virama codepoints are treated as zero-width combining marks (Mn), matching
-        # Ghostty's uucode library.  Whether a virama+consonant sequence should
-        # collapse to 1 or 2 cells is undefined by Unicode; we follow uucode's (1).
+        # ZWJ (U+200D)
         if ucs == 0x200D:
             if prev_was_virama:
                 idx += 1
             elif idx + 1 < text_len:
+                # Check for terminal grapheme override when base char is ExtPict/RI
+                if (_grapheme_overrides
+                        and last_measured_idx >= 0
+                        and last_measured_ucs in _EMOJI_ZWJ_SET):
+                    cluster_end = _scan_zwj_cluster_end(text, last_measured_idx, text_len)
+                    cluster = text[last_measured_idx:cluster_end]
+                    override_w = _grapheme_overrides.get(cluster)
+                    if override_w is not None:
+                        current_col += (override_w - last_measured_w)
+                        max_extent = max(max_extent, current_col)
+                        last_measured_idx = -2
+                        last_measured_ucs = -1
+                        last_measured_w = 0
+                        prev_was_virama = False
+                        cluster_start = -1
+                        idx = cluster_end
+                        continue
+                # No override; ZWJ breaks VS adjacency.
+                # VS16 already set last_measured_idx = -2, blocking further VS16.
+                last_measured_w = 0
+                prev_was_virama = False
                 idx += 2
             else:
+                prev_was_virama = False
                 idx += 1
             continue
 
         # 6. VS16 (U+FE0F): converts preceding narrow character to wide.
         if ucs == 0xFE0F and last_measured_idx >= 0:
-            if _bisearch(last_measured_ucs, vs16_nw_table):
+            if _vs16_narrower and _bisearch(last_measured_ucs, _vs16_narrower):
+                pass
+            elif _bisearch(last_measured_ucs, vs16_nw_table):
                 cluster_width = 2
             last_measured_idx = -2  # prevent double application
+            idx += 1
+            continue
+
+        # VS15 (U+FE0E): text variation selector, requests narrow presentation.
+        if ucs == 0xFE0E and last_measured_idx >= 0:
+            base_ucs = last_measured_ucs
+            vs15_narrow = bisearch(base_ucs, vs15_wn_table)
+            if _vs15_wider and bisearch(base_ucs, _vs15_wider):
+                vs15_narrow = False
+            if vs15_narrow and last_measured_w == 2:
+                current_col -= 1
+                max_extent = max(_max_extent_before, current_col)
             idx += 1
             continue
 
@@ -344,18 +428,51 @@ def width(
 
         # 8. Normal character: measure with wcwidth
         w = _wcwidth(char)
+        # Apply single-codepoint terminal overrides (pre-merged tuples)
+        if w == 2 and _narrower and bisearch(ucs, _narrower):
+            w = 1
         if w > 0:
             # virama+consonant extends current cluster; otherwise start new
             if prev_was_virama:
                 cluster_width = 2
-            else:
-                if cluster_width:
+            elif cluster_width:
+                # flush previous cluster, check for grapheme overrides
+                flushed = False
+                if _grapheme_overrides and cluster_start >= 0:
+                    # Two-phase override lookup (see _wcswidth.py)
+                    candidate = text[cluster_start:idx + 1]
+                    override_w = _grapheme_overrides.get(candidate)
+                    if override_w is not None:
+                        current_col = col_before_cluster + override_w
+                        max_extent = max(max_extent_before_cluster, current_col)
+                        flushed = True
+                        cluster_width = 0
+                    else:
+                        cluster_text = text[cluster_start:idx]
+                        override_w = _grapheme_overrides.get(cluster_text)
+                        if override_w is not None:
+                            current_col = col_before_cluster + override_w
+                            max_extent = max(max_extent_before_cluster, current_col)
+                        else:
+                            current_col += cluster_width
+                else:
                     current_col += cluster_width
-                    if current_col > max_extent:
-                        max_extent = current_col
+                if current_col > max_extent:
+                    max_extent = current_col
+                if not flushed:
+                    cluster_width = w
+                    cluster_start = idx
+                    col_before_cluster = current_col
+                    max_extent_before_cluster = max_extent
+            else:
                 cluster_width = w
+                cluster_start = idx
+                col_before_cluster = current_col
+                max_extent_before_cluster = max_extent
             last_measured_idx = idx
             last_measured_ucs = ucs
+            last_measured_w = w
+            _max_extent_before = max_extent
             prev_was_virama = False
         elif ucs in _ISC_VIRAMA_SET:
             prev_was_virama = True
@@ -369,7 +486,18 @@ def width(
         idx += 1
 
     if cluster_width:
-        current_col += cluster_width
-        if current_col > max_extent:
-            max_extent = current_col
+        if _grapheme_overrides and cluster_start >= 0:
+            cluster_text = text[cluster_start:text_len]
+            override_w = _grapheme_overrides.get(cluster_text)
+            if override_w is not None:
+                current_col = col_before_cluster + override_w
+                max_extent = max(max_extent_before_cluster, current_col)
+            else:
+                current_col += cluster_width
+                if current_col > max_extent:
+                    max_extent = current_col
+        else:
+            current_col += cluster_width
+            if current_col > max_extent:
+                max_extent = current_col
     return max_extent

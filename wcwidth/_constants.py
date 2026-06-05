@@ -1,4 +1,11 @@
 """Shared data tables and constants for wcwidth.py, _wcwidth.py, and _wcswidth.py."""
+from __future__ import annotations
+
+# std imports
+import os
+from functools import lru_cache
+
+from typing import Tuple, NamedTuple
 
 # local
 from .table_mc import CATEGORY_MC
@@ -9,7 +16,16 @@ from .table_grapheme import (ISC_VIRAMA,
                              ISC_INVISIBLE_STACKER,
                              GRAPHEME_REGIONAL_INDICATOR)
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
+from .table_overrides import (SFZ_OVERRIDES,
+                              SRI_OVERRIDES,
+                              VS15_OVERRIDES,
+                              VS16_OVERRIDES,
+                              WIDE_OVERRIDES)
 from .unicode_versions import list_versions
+from .table_term_programs import ALIASES, KNOWN_TERMINALS
+
+_RangeTuple = Tuple[Tuple[int, int], ...]
+
 
 __all__ = (
     "_REGIONAL_INDICATOR_SET",
@@ -21,6 +37,9 @@ __all__ = (
     "_ZERO_WIDTH_TABLE",
     "_WIDE_EASTASIAN_TABLE",
     "_AMBIGUOUS_TABLE",
+    "resolve_terminal",
+    "get_term_overrides",
+    "list_term_programs",
 )
 
 _REGIONAL_INDICATOR_SET = frozenset(
@@ -41,3 +60,92 @@ _FITZPATRICK_RANGE = (0x1F3FB, 0x1F3FF)
 _ZERO_WIDTH_TABLE = ZERO_WIDTH[_LATEST_VERSION]
 _WIDE_EASTASIAN_TABLE = WIDE_EASTASIAN[_LATEST_VERSION]
 _AMBIGUOUS_TABLE = AMBIGUOUS_EASTASIAN[_LATEST_VERSION]
+
+
+def list_term_programs() -> tuple[str, ...]:
+    """
+    Return all recognized values for the ``term_program`` argument.
+
+    Includes canonical terminal names and their TERM/TERM_PROGRAM aliases.
+
+    .. versionadded:: 0.8.0
+    """
+    return tuple(sorted(KNOWN_TERMINALS | ALIASES.keys()))
+
+
+def _merge_ranges(*tuples: _RangeTuple) -> _RangeTuple:
+    """Merge multiple sorted range tuples into one sorted, non-overlapping tuple."""
+    all_ranges: list[tuple[int, int]] = []
+    for t in tuples:
+        all_ranges.extend(t)
+    if not all_ranges:
+        return ()
+    all_ranges.sort(key=lambda r: r[0])
+    merged = [all_ranges[0]]
+    for lo, hi in all_ranges[1:]:
+        _, prev_hi = merged[-1]
+        if lo <= prev_hi:
+            merged[-1] = (merged[-1][0], max(prev_hi, hi))
+        else:
+            merged.append((lo, hi))
+    return tuple(merged)
+
+
+class TerminalOverrides(NamedTuple):
+    """Pre-merged override range tuples for a single terminal."""
+
+    narrower: _RangeTuple
+    vs16_narrower: _RangeTuple
+    vs15_wider: _RangeTuple
+
+
+_EMPTY_OVERRIDES = TerminalOverrides((), (), ())
+
+
+@lru_cache(maxsize=32)
+def get_term_overrides(term_canonical: str) -> TerminalOverrides:
+    """Return a TerminalOverrides, with all empty tuples when there are no overrides."""
+    # wide, sri, sfz: all narrow characters Unicode expects wide (no 'wider' data exists)
+    narrower = _merge_ranges(
+        WIDE_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
+        SRI_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
+        SFZ_OVERRIDES.get(term_canonical, {}).get('narrower', ()),
+    )
+    vs16_narrower = VS16_OVERRIDES.get(term_canonical, {}).get('narrower', ())
+    vs15_wider = VS15_OVERRIDES.get(term_canonical, {}).get('wider', ())
+    # vs15_narrower intentionally excluded: no known terminal narrows VS15
+    # vs16_wider intentionally excluded: any 'wider' entries in emoji_vs16_results
+    #   ucs-detect YAML are from the vs16n baseline test (base char without VS16),
+    #   not actual VS16 correction data.
+
+    if not (narrower or vs16_narrower or vs15_wider):
+        return _EMPTY_OVERRIDES
+    return TerminalOverrides(narrower, vs16_narrower, vs15_wider)
+
+
+@lru_cache(maxsize=32)
+def resolve_terminal(term_program: bool | str = False) -> str | None:
+    """
+    Resolve a terminal identifier to its canonical name.
+
+    :param term_program: Terminal identifier.  ``False`` (default) disables override lookup.
+        ``True`` reads the ``TERM_PROGRAM`` environment variable, falling back to ``TERM``.
+        A string value is used directly (canonical name, alias, XTVERSION/ENQ result, etc.).
+    :returns: Canonical terminal name if recognized, ``None`` otherwise.
+
+    The auto-detection path (``term_program=True``) reads environment variables at call time
+    and caches the result.  The environment is assumed immutable for the process lifetime;
+    callers that change ``TERM`` or ``TERM_PROGRAM`` mid-process must call
+    :func:`resolve_terminal.cache_clear` afterward.
+    """
+    if term_program is False:
+        return None
+    if term_program is True:
+        term_program = os.environ.get('TERM_PROGRAM', '') or os.environ.get('TERM', '')
+    if not term_program:
+        return None
+    key = term_program.strip().lower()
+    canonical = ALIASES.get(key, key)
+    if canonical not in KNOWN_TERMINALS:
+        return None
+    return canonical

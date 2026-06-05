@@ -59,7 +59,8 @@ The NULL character (`U+0000`_).
 
 Any character following ZWJ (`U+200D`_) when preceded by an emoji
 (`Extended_Pictographic`_ property) or `Regional Indicator`_ in sequence by
-function :func:`wcwidth.wcswidth`. When ZWJ follows a non-emoji character
+function :func:`wcwidth.wcswidth`, following grapheme cluster boundary rules
+of `Unicode Standard Annex #29`_. When ZWJ follows a non-emoji character
 (including CJK), only the ZWJ itself is zero-width; the following character
 is measured normally.
 
@@ -83,9 +84,9 @@ measured as `Width of 0`_ or `Width of 2`_.
 Width of 2
 ----------
 
-Any character defined by `East Asian`_ Fullwidth (``F``) or Wide (``W``)
-properties in `EastAsianWidth.txt`_ files, except those that are defined by the
-Category code of `Nonspacing Mark`_ (``Mn``).
+Any character defined by `East Asian`_ (`Unicode Standard Annex #11`_) Fullwidth
+(``F``) or Wide (``W``) properties in `EastAsianWidth.txt`_ files, except those
+that are defined by the Category code of `Nonspacing Mark`_ (``Mn``).
 
 `Regional Indicator`_ symbols (`U+1F1E6`_ through `U+1F1FF`_). Though
 classified as Neutral in `EastAsianWidth.txt`_, terminals universally render
@@ -100,8 +101,14 @@ Any characters of `Modifier Symbol`_ category, ``'Sk'`` where ``'FULLWIDTH'`` is
 present in comment of `UnicodeData.txt`_, aprox. 3 characters.
 
 Any character with `U+FE0F`_ (Variation Selector 16) defined as ``emoji style``
-in `emoji-variation-sequences.txt`_: VS16 adds 1 cell to the narrow character
-it directly follows, making the pair width 2. Wide characters are unchanged.
+in `emoji-variation-sequences.txt`_, per `UTS #51`_ and `Unicode Standard
+Section 23.4`_: VS16 adds 1 cell to the narrow character it directly follows,
+making the pair width 2. Wide characters are unchanged.
+
+Any character with `U+FE0E`_ (Variation Selector 15) defined as ``text style``
+in `emoji-variation-sequences.txt`_, per `UTS #51`_ and `Unicode Standard
+Section 23.4`_: VS15 subtracts 1 cell from the wide character it directly
+follows, making the pair width 1. Narrow characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
@@ -120,7 +127,7 @@ Virama Conjunct Formation
 In `Brahmic scripts`_, `IndicSyllabicCategory.txt`_ defines two categories
 that trigger `conjunct`_ formation between consonants: `Virama`_ ("may act
 as a Pure_Killer or Invisible_Stacker depending on context") and
-``Invisible_Stacker``_ ("not visible by itself; causes conjunct formation
+`Invisible_Stacker`_ ("not visible by itself; causes conjunct formation
 or consonant stacking", the "only as consonant stackers" category
 described in the Virama section header).
 
@@ -153,6 +160,7 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`U+2029`: https://codepoints.net/U+2029
 .. _`U+D7B0`: https://codepoints.net/U+D7B0
 .. _`U+FE0F`: https://codepoints.net/U+FE0F
+.. _`U+FE0E`: https://codepoints.net/U+FE0E
 .. _`U+115F`: https://codepoints.net/U+115F
 .. _`DerivedGeneralCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedGeneralCategory.txt
 .. _`DerivedCoreProperties.txt`: https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt
@@ -169,6 +177,7 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`U+D7FF`: https://codepoints.net/U+D7FF
 .. _`UnicodeData.txt`: https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 .. _`East Asian`: https://www.unicode.org/reports/tr11/
+.. _`Unicode Standard Annex #11`: https://www.unicode.org/reports/tr11/
 .. _`U+1F1E6`: https://codepoints.net/U+1F1E6
 .. _`U+1F1FF`: https://codepoints.net/U+1F1FF
 .. _`U+1F3FB`: https://codepoints.net/U+1F3FB
@@ -176,6 +185,7 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`Regional Indicator`: https://www.unicode.org/charts/PDF/U1F100.pdf
 .. _`Emoji Modifier`: https://unicode.org/reports/tr51/#Emoji_Modifiers
 .. _`Extended_Pictographic`: https://www.unicode.org/reports/tr51/#def_extended_pictographic
+.. _`UTS #51`: https://www.unicode.org/reports/tr51/
 .. _`Nonspacing Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
 .. _`IndicSyllabicCategory.txt`: https://www.unicode.org/Public/UCD/latest/ucd/IndicSyllabicCategory.txt
 .. _`Indic_Syllabic_Category`: https://www.unicode.org/reports/tr44/#Indic_Syllabic_Category
@@ -186,5 +196,6 @@ See also: `L2/2023/23107`_ "Proper Complex Script Support in Text Terminals".
 .. _`aksara`: https://www.unicode.org/glossary/#aksara
 .. _`L2/2023/23107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`Unicode Standard Section 23.4`: https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-23/#G77993
 .. _`uncodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224

@@ -35,9 +35,10 @@ from ._width import width
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
-from ._wcswidth import wcswidth
+from ._wcswidth import wcswidth, wcstwidth
 from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import propagate_sgr
+from ._constants import list_term_programs
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
@@ -68,11 +69,11 @@ from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip 
 
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
-__all__ = ('wcwidth', 'wcswidth', 'width', 'iter_sequences', 'iter_graphemes',
+__all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_graphemes',
            'iter_graphemes_reverse', 'grapheme_boundary_before',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
-           'list_versions', 'propagate_sgr', 'Hyperlink', 'HyperlinkParams',
-           'TextSizing', 'TextSizingParams')
+           'list_versions', 'list_term_programs', 'propagate_sgr',
+           'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')
 
 # Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
 # like flit_core, maybe there is some better way but for now we have to duplicate it in both places

@@ -39,7 +39,7 @@ from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes
 from .table_mc import CATEGORY_MC
-from ._wcswidth import wcswidth
+from ._wcswidth import wcswidth, wcstwidth
 from .sgr_state import (_SGR_PATTERN,
                         _SGR_STATE_DEFAULT,
                         _sgr_state_update,
@@ -75,6 +75,7 @@ __all__ = (
     'list_versions',
     'wcwidth',
     'wcswidth',
+    'wcstwidth',
     'width',
     'iter_sequences',
     'ljust',
