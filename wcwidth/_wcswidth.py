@@ -100,7 +100,7 @@ def wcswidth(
     .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
-    # pylint: disable=too-complex,too-many-branches,duplicate-code
+    # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
     # This function intentionally keeps all logic inline for performance.
 
     # Fast path: pure ASCII printable strings are always width == length
@@ -238,35 +238,34 @@ def wcswidth(
             # virama+consonant extends current cluster; otherwise start new
             if prev_was_virama:
                 cluster_width = 2
-            else:
-                if cluster_width:
-                    # flush previous cluster, check for grapheme overrides
-                    flushed = False
-                    if _grapheme_overrides and cluster_start >= 0:
-                        # check if cluster+current forms a known override
-                        candidate = pwcs[cluster_start:idx + 1]
-                        override_w = _grapheme_overrides.get(candidate)
+            elif cluster_width:
+                # flush previous cluster, check for grapheme overrides
+                flushed = False
+                if _grapheme_overrides and cluster_start >= 0:
+                    # check if cluster+current forms a known override
+                    candidate = pwcs[cluster_start:idx + 1]
+                    override_w = _grapheme_overrides.get(candidate)
+                    if override_w is not None:
+                        total_width = total_before_cluster + override_w
+                        flushed = True
+                        cluster_width = 0
+                    else:
+                        cluster_text = pwcs[cluster_start:idx]
+                        override_w = _grapheme_overrides.get(cluster_text)
                         if override_w is not None:
                             total_width = total_before_cluster + override_w
-                            flushed = True
-                            cluster_width = 0
                         else:
-                            cluster_text = pwcs[cluster_start:idx]
-                            override_w = _grapheme_overrides.get(cluster_text)
-                            if override_w is not None:
-                                total_width = total_before_cluster + override_w
-                            else:
-                                total_width += cluster_width
-                    else:
-                        total_width += cluster_width
-                    if not flushed:
-                        cluster_width = w
-                        cluster_start = idx
-                        total_before_cluster = total_width
+                            total_width += cluster_width
                 else:
+                    total_width += cluster_width
+                if not flushed:
                     cluster_width = w
                     cluster_start = idx
                     total_before_cluster = total_width
+            else:
+                cluster_width = w
+                cluster_start = idx
+                total_before_cluster = total_width
             last_measured_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w

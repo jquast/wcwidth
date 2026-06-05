@@ -144,7 +144,7 @@ def width(
         >>> width('1\x1b[10C', control_codes='ignore')   # faster but wrong in this case
         1
     """
-    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type
+    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks
     # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
     # in consideration of this function a likely "hot path", they are inline, breaking many pylint
     # complexity rules.
@@ -445,41 +445,40 @@ def width(
             # virama+consonant extends current cluster; otherwise start new
             if prev_was_virama:
                 cluster_width = 2
-            else:
-                if cluster_width:
-                    # flush previous cluster, check for grapheme overrides
-                    flushed = False
-                    if _grapheme_overrides and cluster_start >= 0:
-                        # check if cluster+current forms a known override
-                        candidate = text[cluster_start:idx + 1]
-                        override_w = _grapheme_overrides.get(candidate)
+            elif cluster_width:
+                # flush previous cluster, check for grapheme overrides
+                flushed = False
+                if _grapheme_overrides and cluster_start >= 0:
+                    # check if cluster+current forms a known override
+                    candidate = text[cluster_start:idx + 1]
+                    override_w = _grapheme_overrides.get(candidate)
+                    if override_w is not None:
+                        current_col = col_before_cluster + override_w
+                        max_extent = max(max_extent_before_cluster, current_col)
+                        flushed = True
+                        cluster_width = 0
+                    else:
+                        cluster_text = text[cluster_start:idx]
+                        override_w = _grapheme_overrides.get(cluster_text)
                         if override_w is not None:
                             current_col = col_before_cluster + override_w
                             max_extent = max(max_extent_before_cluster, current_col)
-                            flushed = True
-                            cluster_width = 0
                         else:
-                            cluster_text = text[cluster_start:idx]
-                            override_w = _grapheme_overrides.get(cluster_text)
-                            if override_w is not None:
-                                current_col = col_before_cluster + override_w
-                                max_extent = max(max_extent_before_cluster, current_col)
-                            else:
-                                current_col += cluster_width
-                    else:
-                        current_col += cluster_width
-                    if current_col > max_extent:
-                        max_extent = current_col
-                    if not flushed:
-                        cluster_width = w
-                        cluster_start = idx
-                        col_before_cluster = current_col
-                        max_extent_before_cluster = max_extent
+                            current_col += cluster_width
                 else:
+                    current_col += cluster_width
+                if current_col > max_extent:
+                    max_extent = current_col
+                if not flushed:
                     cluster_width = w
                     cluster_start = idx
                     col_before_cluster = current_col
                     max_extent_before_cluster = max_extent
+            else:
+                cluster_width = w
+                cluster_start = idx
+                col_before_cluster = current_col
+                max_extent_before_cluster = max_extent
             last_measured_idx = idx
             last_measured_ucs = ucs
             last_measured_w = w
