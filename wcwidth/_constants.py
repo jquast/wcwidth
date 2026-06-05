@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # std imports
 import os
-from enum import IntEnum
 from functools import lru_cache
 
 from typing import Tuple, NamedTuple
@@ -26,25 +25,6 @@ from .unicode_versions import list_versions
 from .table_term_programs import ALIASES, KNOWN_TERMINALS
 
 _RangeTuple = Tuple[Tuple[int, int], ...]
-
-
-class _GraphemeState(IntEnum):
-    """Track VS/ZWJ clustering state for base character."""
-
-    #: No base established (initial, or reset after cursor move / escape).
-    NO_BASE = -1
-
-    #: VS15 applied; blocks further VS.
-    VS15_APPLIED = -2
-
-    #: VS16 applied; blocks further VS.
-    VS16_APPLIED = -3
-
-    #: ZWJ consumed, base not VS16'd; VS16 may connect across ZWJ.
-    ZWJ_OPEN = -4
-
-    #: ZWJ consumed, base already VS16'd; block VS16 across ZWJ.
-    ZWJ_BLOCKED = -5
 
 
 __all__ = (
