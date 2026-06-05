@@ -357,13 +357,15 @@ def width(
             last_measured_idx = idx
             last_measured_ucs = ucs
             prev_was_virama = False
+        elif ucs in _ISC_VIRAMA_SET:
+            prev_was_virama = True
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
             # Spacing Combining Mark (Mc) following a base character
             cluster_width = 2
             last_measured_idx = -2
             prev_was_virama = False
         else:
-            prev_was_virama = ucs in _ISC_VIRAMA_SET
+            prev_was_virama = False
         idx += 1
 
     if cluster_width:

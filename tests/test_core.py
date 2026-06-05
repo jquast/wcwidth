@@ -199,9 +199,9 @@ def test_balinese_script():
     phrase = ("\u1B13"    # Category 'Lo', EAW 'N' -- BALINESE LETTER KA
               "\u1B28"    # Category 'Lo', EAW 'N' -- BALINESE LETTER PA KAPAL
               "\u1B2E"    # Category 'Lo', EAW 'N' -- BALINESE LETTER LA
-              "\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG
+              "\u1B44")   # Category 'Mc', EAW 'N' -- BALINESE ADEG ADEG (virama)
     expect_length_each = (1, 1, 1, 0)
-    expect_length_phrase = 4
+    expect_length_phrase = 3
 
     # exercise,
     length_each = tuple(map(wcwidth.wcwidth, phrase))
@@ -450,6 +450,30 @@ def test_mc_width_consistency(repeat):
     ("\u0915\u094D\u0924\u0941\u0902", 2),
 ])
 def test_virama_conjunct(phrase, expected):
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+
+
+@pytest.mark.parametrize("phrase,expected", [
+    ("\u0995\u09CD\u09A4\u09BF", 2),       # Bengali C+V+C+Mc: ক্তি (capped at 2)
+    ("\u0915\u094D\u0924\u093F", 2),       # Devanagari C+V+C+Mc: क्ति (capped at 2)
+    ("\u0995\u09CD\u09A4", 2),             # C+V+C (no Mc), unchanged
+    ("\u0995\u09BF", 2),                   # C+Mc (no virama), unchanged
+])
+def test_virama_conjunct_mc_vowel(phrase, expected):
+    """Mc combines into base; cluster capped at 2."""
+    assert wcwidth.wcswidth(phrase) == expected
+    assert wcwidth.width(phrase) == expected
+
+
+@pytest.mark.parametrize("phrase,expected", [
+    ("\uA9A0\uA9C0\uA9B1\uA9C0\uA9AE", 2),  # Javanese C+V+C+V+C: TA+PANGKON+SA+PANGKON+WA
+    ("\uA9A0\uA9C0\uA9B1", 2),               # Javanese C+V+C: TA+PANGKON+SA
+    ("\u1B04\u1B44\u1B05", 2),               # Balinese C+V+C: A+ADEG ADEG+I
+    ("\U000111C0\U000111C0", 0),             # Sharada virama alone (zero-width)
+])
+def test_virama_mc_category_overlap(phrase, expected):
+    """Virama codepoints in Mc category check ISC before Mc."""
     assert wcwidth.wcswidth(phrase) == expected
     assert wcwidth.width(phrase) == expected
 

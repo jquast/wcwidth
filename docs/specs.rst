@@ -105,13 +105,14 @@ it directly follows, making the pair width 2. Wide characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
-:func:`wcwidth.width`. The ``Mc`` character adds +1 to the cluster width,
+:func:`wcwidth.width`. The ``Mc`` character caps the cluster width at 2,
 reflecting its *positive advance width* as defined in `General Category`_
 (Table 4-4). Zero-width combining marks (``Mn``) between the base character
 and the ``Mc`` do not break the association. For example, a consonant followed
-by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as base + 1.
+by a Nukta (``Mn``) and then a vowel sign (``Mc``) is measured as a cluster of
+width 2.
 
-Any grapheme cluster width is limisted to 2 cells since 0.8.0, `PR #224`_.
+Any grapheme cluster width is limited to 2 cells since 0.8.0, `PR #224`_.
 
 Virama Conjunct Formation
 -------------------------
@@ -123,7 +124,10 @@ as a Pure_Killer or Invisible_Stacker depending on context") and
 or consonant stacking", the "only as consonant stackers" category
 described in the Virama section header).
 
-- A ``Virama`` contributes 0 width (category ``Mn``).
+- A ``Virama`` contributes 0 width.
+- Most viramas have category ``Mn``, but six have category ``Mc``
+  (`Spacing Combining Mark`_): these are recognised as viramas first,
+  not as ``Mc``, so they begin a conjunct rather than capping the cluster.
 - A ``Consonant`` immediately following a ``Virama`` adds its width to the
   current grapheme cluster.
 - The cluster total is capped at 2 cells since 0.8.0, `PR #224`_.
