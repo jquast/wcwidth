@@ -539,10 +539,12 @@ History
 =======
 
 0.8.0 *(unreleased)*
-  * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Improved** performance on Python 3.15 using standard library iter_graphemes() `PR #206`_.
+  * **Improved** memory usage and import time for Python 3.15 using lazy imports `PR #221`_.
   * **Bugfix** Invisible_Stacker viramas now form conjuncts (Burmese, Khmer, etc.) and
-    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #XXX`_.
+    change some Virama width calculations to match `jacobsandlund/uucode`_ (ghostty) `PR #223`_.
+  * **Updated** graphemes width maximum now 2, matching Ghostty, foot, and Windows Terminal `PR
+    #224`_.
 
 0.7.0 *2026-05-02*
   * **New** support for `kitty text sizing protocol`_ (OSC 66) in `width()`_ and `clip()`_.
@@ -776,6 +778,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #204`: https://github.com/jquast/wcwidth/pull/204
 .. _`PR #206`: https://github.com/jquast/wcwidth/pull/206
 .. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
+.. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
+.. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
