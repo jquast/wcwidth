@@ -130,8 +130,11 @@ def wcswidth(
     total_width = 0
     idx = 0
 
-    # grapheme-clustering state and local re-binding for performance
-    last_measured_idx = -2
+    # grapheme-clustering state and local re-binding for performance.
+    # Widths accumulate in cluster_width and flush at boundaries.  A cluster is a base character
+    # plus combining marks, deferring the flush lets grapheme overrides replace the measured width
+    # retrospectively.
+    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no base available)
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
@@ -240,7 +243,9 @@ def wcswidth(
                 # flush previous cluster, check for grapheme overrides
                 flushed = False
                 if _grapheme_overrides and cluster_start >= 0:
-                    # check if cluster+current forms a known override
+                    # Two-phase override lookup: candidate (cluster+current) catches Lo+Lo pairs
+                    # where both chars bear width (Thai KO KAI + SARA AM).  cluster_text (cluster
+                    # alone) catches C+Mc clusters where the override key is shorter.
                     candidate = pwcs[cluster_start:idx + 1]
                     override_w = _grapheme_overrides.get(candidate)
                     if override_w is not None:

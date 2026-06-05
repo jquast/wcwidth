@@ -199,8 +199,9 @@ def width(
     # - ambiguous_width=2: full positional args needed (results differ, separate cache is correct)
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
-    # grapheme-clustering state and local re-bindings for performance
-    last_measured_idx = -2
+    # grapheme-clustering state and local re-binding for performance.
+    # Widths accumulate in cluster_width and flush at boundaries (see _wcswidth.py)
+    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no base available)
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
@@ -433,7 +434,7 @@ def width(
                 # flush previous cluster, check for grapheme overrides
                 flushed = False
                 if _grapheme_overrides and cluster_start >= 0:
-                    # check if cluster+current forms a known override
+                    # Two-phase override lookup (see _wcswidth.py)
                     candidate = text[cluster_start:idx + 1]
                     override_w = _grapheme_overrides.get(candidate)
                     if override_w is not None:
