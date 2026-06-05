@@ -94,16 +94,12 @@ def test_wcwidth_unchanged():
         wcwidth.wcwidth('\u2630', term_program='VTE')  # type: ignore[call-arg]
 
 
-def test_wcswidth_empty_term_program_disables():
+def test_wcswidth_term_program():
     """Empty term_program disables override lookup."""
     assert wcwidth.wcswidth('\u2630', term_program='') == 2
     assert wcwidth.wcswidth('\u2630', term_program='VTE') == 1
-
-
-def test_wcswidth_false_term_program_disables():
-    """term_program=False disables override lookup."""
-    assert wcwidth.wcswidth('\u2630', term_program=False) == 2
-    assert wcwidth.width('\u2630', term_program=False) == 2
+    assert wcwidth.wcswidth('\u2630') == 2
+    assert wcwidth.width('\u2630') == 2
 
 
 def test_wcswidth_ascii_unchanged():
