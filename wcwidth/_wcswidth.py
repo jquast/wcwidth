@@ -247,12 +247,16 @@ def wcstwidth(
         _vs16_narrower = overrides.vs16_narrower
         _vs15_wider = overrides.vs15_wider
         _zeroer = overrides.zeroer
+        _narrow_wider = overrides.narrow_wider
+        _narrow_zeroer = overrides.narrow_zeroer
         _grapheme_overrides = table_grapheme_overrides.get(term_canonical)
     else:
         _narrower = ()
         _vs16_narrower = ()
         _vs15_wider = ()
         _zeroer = ()
+        _narrow_wider = ()
+        _narrow_zeroer = ()
         _grapheme_overrides = {}
 
     # Select wcwidth call pattern for best lru_cache performance
@@ -368,6 +372,10 @@ def wcstwidth(
         if w == 2 and _narrower and bisearch(ucs, _narrower):
             w = 1
         elif w == 2 and _zeroer and bisearch(ucs, _zeroer):
+            w = 0
+        if w == 1 and _narrow_wider and bisearch(ucs, _narrow_wider):
+            w = 2
+        elif w == 1 and _narrow_zeroer and bisearch(ucs, _narrow_zeroer):
             w = 0
         if w > 0:
             # virama+consonant extends current cluster; otherwise start new

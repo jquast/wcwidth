@@ -1250,11 +1250,13 @@ class TerminalOverrides:
     narrower: list[tuple[str, str, str]]
     wider: list[tuple[str, str, str]]
     zeroer: list[tuple[str, str, str]]
+    narrow_zeroer: list[tuple[str, str, str]]
 
     def items(self) -> list[tuple[str, list[tuple[str, str, str]]]]:
         return [('narrower', self.narrower),
                 ('wider', self.wider),
-                ('zeroer', self.zeroer)]
+                ('zeroer', self.zeroer),
+                ('narrow_zeroer', self.narrow_zeroer)]
 
 
 @dataclass(frozen=True)
@@ -1273,7 +1275,8 @@ def dedup_override_table(
     for term_name, overrides in table.items():
         key = (tuple(overrides.narrower),
                tuple(overrides.wider),
-               tuple(overrides.zeroer))
+               tuple(overrides.zeroer),
+               tuple(overrides.narrow_zeroer))
         hash_key = hashlib.sha256(repr(key).encode()).hexdigest()[:8]
         if hash_key not in shared_sets:
             shared_sets[hash_key] = overrides
@@ -1416,6 +1419,7 @@ def make_single_override(
     zeroer: dict[str, set[int]] = {}
     narrower: dict[str, set[int]] = {}
     wider: dict[str, set[int]] = {}
+    narrow_zeroer_map: dict[str, set[int]] = {}
 
     for _, canonical, doc in load_ucs_detect_yaml():
         test_results = doc.get('test_results', {})
@@ -1428,6 +1432,8 @@ def make_single_override(
                 wc_w = entry['measured_by_wcwidth']
                 if term_w == 0 and wc_w == 2:
                     zeroer.setdefault(canonical, set()).add(ucs)
+                elif term_w == 0 and wc_w == 1 and category == 'narrow_results':
+                    narrow_zeroer_map.setdefault(canonical, set()).add(ucs)
                 elif term_w == 1 and wc_w == 2:
                     narrower.setdefault(canonical, set()).add(ucs)
                 # 'wider' entries in emoji_vs16_results are from the vs16n baseline test
@@ -1439,12 +1445,14 @@ def make_single_override(
                     wider.setdefault(canonical, set()).add(ucs)
 
     result: dict[str, TerminalOverrides] = {}
-    all_names = sorted(set(zeroer.keys()) | set(narrower.keys()) | set(wider.keys()))
+    all_names = sorted(set(zeroer.keys()) | set(narrower.keys()) | set(wider.keys())
+                       | set(narrow_zeroer_map.keys()))
     for name in all_names:
         result[name] = TerminalOverrides(
             narrower=values_to_hex_ranges(narrower.get(name, set())),
             wider=values_to_hex_ranges(wider.get(name, set())),
             zeroer=values_to_hex_ranges(zeroer.get(name, set())),
+            narrow_zeroer=values_to_hex_ranges(narrow_zeroer_map.get(name, set())),
         )
     result = {
         name: data for name, data in result.items()
@@ -1818,6 +1826,7 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
             _make_merged_category('SFZ_OVERRIDES', make_single_override('sfz_results', kt)),
             _make_merged_category('VS16_OVERRIDES', make_single_override('emoji_vs16_results', kt)),
             _make_merged_category('VS15_OVERRIDES', make_single_override('emoji_vs15_results', kt)),
+            _make_merged_category('NARROW_OVERRIDES', make_single_override('narrow_results', kt)),
         ])
         yield from fetch_override_grapheme_data(kt)
         yield TermProgramTableRenderDef.new()
