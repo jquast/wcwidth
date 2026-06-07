@@ -653,7 +653,7 @@ languages:
 History
 =======
 
-0.8.0 *(unreleased)*
+0.8.0 *2026-06-05*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program`` for `wcstwidth()`_, `width()`_, `clip()`_, `wrap()`_,
     `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables corrections; ``True``
