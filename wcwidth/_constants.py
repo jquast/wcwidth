@@ -16,17 +16,12 @@ from .table_grapheme import (ISC_VIRAMA,
                              ISC_INVISIBLE_STACKER,
                              GRAPHEME_REGIONAL_INDICATOR)
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .table_overrides import (SFZ_OVERRIDES,
+from .table_overrides import (NARROW_OVERRIDES,
+                              SFZ_OVERRIDES,
                               SRI_OVERRIDES,
                               VS15_OVERRIDES,
                               VS16_OVERRIDES,
                               WIDE_OVERRIDES)
-
-try:
-    # local
-    from .table_overrides import NARROW_OVERRIDES
-except ImportError:
-    NARROW_OVERRIDES: dict = {}
 # local
 from .unicode_versions import list_versions
 from .table_term_programs import ALIASES, KNOWN_TERMINALS
@@ -129,7 +124,7 @@ def get_term_overrides(term_canonical: str) -> TerminalOverrides:
         SFZ_OVERRIDES.get(term_canonical, {}).get('zeroer', ()),
     )
     narrow_wider = NARROW_OVERRIDES.get(term_canonical, {}).get('wider', ())
-    narrow_zeroer = NARROW_OVERRIDES.get(term_canonical, {}).get('zeroer', ())
+    narrow_zeroer = NARROW_OVERRIDES.get(term_canonical, {}).get('narrow_zeroer', ())
     # vs15_narrower intentionally excluded: no known terminal narrows VS15
     # vs16_wider intentionally excluded: any 'wider' entries in emoji_vs16_results
     #   ucs-detect YAML are from the vs16n baseline test (base char without VS16),

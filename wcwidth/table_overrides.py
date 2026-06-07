@@ -703,7 +703,24 @@ VS15_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'xterm.js': _SET_VS15_OVERRIDES_EC2D40AC,
 }
 
+# For terminals: kitty, konsole, wezterm
+_SET_NARROW_OVERRIDES_C50BD06A: dict[str, tuple[tuple[int, int], ...]] = {
+    'narrow_zeroer': (
+        (0x000ad, 0x000ad,),  # SOFT HYPHEN
+        (0x00600, 0x00605,),  # ARABIC NUMBER SIGN      ..ARABIC NUMBER MARK ABOVE
+        (0x006dd, 0x006dd,),  # ARABIC END OF AYAH
+        (0x0070f, 0x0070f,),  # SYRIAC ABBREVIATION MARK
+        (0x00890, 0x00891,),  # ARABIC POUND MARK ABOVE ..ARABIC PIASTRE MARK ABOV
+        (0x008e2, 0x008e2,),  # ARABIC DISPUTED END OF AYAH
+        (0x110bd, 0x110bd,),  # KAITHI NUMBER SIGN
+        (0x110cd, 0x110cd,),  # KAITHI NUMBER SIGN ABOVE
+    ),
+}
+
 NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
+    'kitty': _SET_NARROW_OVERRIDES_C50BD06A,
+    'konsole': _SET_NARROW_OVERRIDES_C50BD06A,
+    'wezterm': _SET_NARROW_OVERRIDES_C50BD06A,
 }
 
 __all__ = ['WIDE_OVERRIDES', 'SRI_OVERRIDES', 'SFZ_OVERRIDES', 'VS16_OVERRIDES', 'VS15_OVERRIDES', 'NARROW_OVERRIDES']

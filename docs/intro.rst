@@ -417,9 +417,10 @@ possible timeout, slow network, or non-response when working with "dumb terminal
 Corrections
 -----------
 
-Corrections are automatically applied depending on detected or given terminal software name
+Corrections may be automatically applied depending on the detected or given terminal software name
 beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
-differs from the standard.  These corrections are sourced from the `jquast/ucs-detect`_ project.
+differs from the python wcwidth standard_.  These corrections are sourced from the
+`jquast/ucs-detect`_ project.
 
 The ``term_program`` parameter is available on all width-measuring functions: `wcstwidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
