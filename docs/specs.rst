@@ -19,7 +19,7 @@ its docstring and specifications of related control codes, `XTerm Control Sequen
 Text Sizing Protocol`_.
 
 Each string yielded by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth` to
-accurately measure the width of a **grapheme**. Although :func:`wcwidth.iter_graphemes` matches
+accurately measure the width of a grapheme. Although :func:`wcwidth.iter_graphemes` matches
 behavior of Python 3.15 `uncodedata.iter_graphemes()`_ it differs in its return value,
 :func:`wcwidth.iter_graphemes` yields only strings, while :func:`unicodedata.iter_graphemes` yields
 ``unicodedata.Segment`` class objects.
@@ -33,7 +33,7 @@ The following have a column width of -1 for function :func:`wcwidth.wcwidth`
 - ``C1`` control characters and ``DEL`` (`U+007F`_ through `U+00A0`_).
 
 If any character in sequence contains ``C0`` or ``C1`` control characters, the final
-return value of of :func:`wcwidth.wcswidth` is -1.
+return value of :func:`wcwidth.wcswidth` is -1.
 
 Width of 0
 ----------
