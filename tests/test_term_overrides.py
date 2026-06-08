@@ -8,7 +8,11 @@ import pytest
 # local
 import wcwidth
 import wcwidth.table_grapheme_overrides as grapheme_overrides
-from wcwidth._constants import _merge_ranges, resolve_terminal, list_term_programs
+from wcwidth._constants import (_EMPTY_OVERRIDES,
+                                _merge_ranges,
+                                resolve_terminal,
+                                get_term_overrides,
+                                list_term_programs)
 from wcwidth.table_overrides import VS15_OVERRIDES
 
 
@@ -360,6 +364,99 @@ def test_sfz_override_foot():
     """Foot narrows Fitzpatrick modifiers."""
     assert wcwidth.wcswidth('\U0001F3FB') == 2
     assert wcwidth.wcstwidth('\U0001F3FB', term_program='foot') == 1
+
+
+@pytest.mark.parametrize('term_program,expected', [
+    ('kitty', 0),
+    ('bobcat', 0),
+    (False, 2),
+])
+def test_sfz_zeroer(term_program, expected):
+    """Standalone Fitzpatrick modifiers zeroed per terminal."""
+    assert wcwidth.wcswidth('\U0001F3FB') == 2
+    assert wcwidth.wcstwidth('\U0001F3FB', term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('kwargs,expected', [
+    ({}, 0),
+    ({'control_codes': 'ignore'}, 0),
+])
+def test_width_zeroer(kwargs, expected):
+    """Width() zeroes standalone Fitzpatrick modifiers for kitty."""
+    assert wcwidth.width('\U0001F3FB', term_program='kitty', **kwargs) == expected
+
+
+def test_empty_overrides_includes_zeroer():
+    """_EMPTY_OVERRIDES has six empty tuple fields."""
+    assert _EMPTY_OVERRIDES.narrower == ()
+    assert _EMPTY_OVERRIDES.vs16_narrower == ()
+    assert _EMPTY_OVERRIDES.vs15_wider == ()
+    assert _EMPTY_OVERRIDES.zeroer == ()
+    assert _EMPTY_OVERRIDES.narrow_wider == ()
+    assert _EMPTY_OVERRIDES.narrow_zeroer == ()
+
+
+def test_get_term_overrides_returns_empty_when_no_overrides():
+    """get_term_overrides returns _EMPTY_OVERRIDES when terminal has no override data."""
+    get_term_overrides.cache_clear()
+    overrides = get_term_overrides('no-such-terminal')
+    assert overrides is _EMPTY_OVERRIDES
+
+
+def test_get_term_overrides_reads_narrow_zeroer_key():
+    """get_term_overrides reads 'narrow_zeroer' key from NARROW_OVERRIDES."""
+    get_term_overrides.cache_clear()
+    overrides = get_term_overrides('kitty')
+    assert len(overrides.narrow_zeroer) == 9
+    assert overrides.narrow_zeroer[0] == (0x00AD, 0x00AD)
+
+
+def test_get_term_overrides_narrow_wider_still_empty():
+    """get_term_overrides narrow_wider is empty when no 'wider' entries exist."""
+    get_term_overrides.cache_clear()
+    overrides = get_term_overrides('konsole')
+    assert overrides.narrow_wider == ()
+
+
+@pytest.mark.parametrize('codepoint', [
+    '\u00ad',
+    '\u0600',
+    '\u0605',
+    '\u06dd',
+    '\u070f',
+    '\u0890',
+    '\u0891',
+    '\u08e2',
+    '\U000110bd',
+    '\U000110cd',
+])
+def test_narrow_zeroer_cf_codepoints(codepoint):
+    """Cf format characters are zeroed by kitty/konsole/wezterm narrow_zeroer."""
+    assert wcwidth.wcswidth(codepoint) == 1
+    assert wcwidth.wcstwidth(codepoint, term_program='kitty') == 0
+    assert wcwidth.wcstwidth(codepoint, term_program='konsole') == 0
+    assert wcwidth.wcstwidth(codepoint, term_program='wezterm') == 0
+
+
+@pytest.mark.parametrize('func', [wcwidth.wcstwidth, wcwidth.width])
+def test_narrow_zeroer_not_applied_for_other_terminals(func):
+    """Terminals without narrow overrides keep width 1 for Cf characters."""
+    assert func('\u0600', term_program='xterm') == 1
+    assert func('\u0600', term_program='ghostty') == 1
+    assert func('\u0600', term_program='') == 1
+
+
+@pytest.mark.parametrize('func,term_program,expected', [
+    (wcwidth.wcstwidth, 'kitty', 0),
+    (wcwidth.width, 'kitty', 0),
+    (wcwidth.wcstwidth, 'konsole', 0),
+    (wcwidth.width, 'konsole', 0),
+    (wcwidth.wcstwidth, 'wezterm', 0),
+    (wcwidth.width, 'wezterm', 0),
+])
+def test_narrow_zeroer_width(func, term_program, expected):
+    """Width() matches wcstwidth() for narrow_zeroer overrides."""
+    assert func('\u0600', term_program=term_program) == expected
 
 
 @pytest.mark.parametrize('value,expected', [

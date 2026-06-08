@@ -7,7 +7,7 @@ Terminals: {{ terminals|join(', ') }}
 """
 # pylint: skip-file
 GRAPHEMES = {
-{%- for grapheme_str, terminal_width in graphemes.items() %}
+{%- for grapheme_str, terminal_width in graphemes | dictsort %}
     '{{ grapheme_str }}': {{ terminal_width }},
 {%- endfor %}
 }

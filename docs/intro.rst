@@ -73,7 +73,7 @@ See also:
 - `Grapheme Clusters and Terminal Emulators`_
 - `terminal-unicode-core.tex`_
 - `State of Terminal Emulators in 2025`_
-- `Report of terminals supporting Graphemes (2027)`_
+- `Perfecting Terminal Character Width Using Correction Tables (2026)`_
 
 The `jquast/ucs-detect`_ project publishes automatic results of compliance to our standard for Wide
 character, Languages, grapheme clustering, complex or combining scripts, emojis, zero-width joiner,
@@ -417,9 +417,10 @@ possible timeout, slow network, or non-response when working with "dumb terminal
 Corrections
 -----------
 
-Corrections are automatically applied depending on detected or given terminal software name
+Corrections may be automatically applied depending on the detected or given terminal software name
 beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
-differs from the standard.  These corrections are sourced from the `jquast/ucs-detect`_ project.
+differs from the python wcwidth standard_.  These corrections are sourced from the
+`jquast/ucs-detect`_ project.
 
 The ``term_program`` parameter is available on all width-measuring functions: `wcstwidth()`_,
 `width()`_, `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_.
@@ -653,10 +654,14 @@ languages:
 History
 =======
 
+0.8.1 *2026-06-08*
+  * **Improved** `wcstwidth()`_ with new ``zeroer``, ``narrow_wider``, and ``narrow_zeroer``
+    Corrections_. `PR #226`_
+
 0.8.0 *2026-06-05*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
   * **New** argument, ``term_program`` for `wcstwidth()`_, `width()`_, `clip()`_, `wrap()`_,
-    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables corrections; ``True``
+    `ljust()`_, `rjust()`_, and `center()`_.  ``False`` disables Corrections_; ``True``
     auto-detects by ``TERM_PROGRAM`` or ``TERM``; string values accept canonical names matching
     `list_term_programs()`_.  `wcstwidth()`_ defaults to ``True``; all other functions
     default to ``False``.
@@ -901,6 +906,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #221`: https://github.com/jquast/wcwidth/pull/221
 .. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
+.. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
@@ -980,7 +986,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
-.. _`Report of terminals supporting Graphemes (2027)`: https://ucs-detect.readthedocs.io/results.html#terminal-features
+.. _`Perfecting Terminal Character Width Using Correction Tables`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
