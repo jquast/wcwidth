@@ -11,7 +11,7 @@ from __future__ import annotations
 {%- set terminal_refs = category.terminal_refs -%}
 {%- set set_terminals = category.set_terminals -%}
 {%- if shared_sets %}
-{%- for hash_key, overrides in shared_sets.items() %}
+{%- for hash_key, overrides in shared_sets | dictsort %}
 {%- set terminals = set_terminals.get(hash_key, ()) %}
 
 # For terminals: {{ terminals | join(', ') }}
@@ -30,7 +30,7 @@ _SET_{{ varname }}_{{ hash_key | upper }}: dict[str, tuple[tuple[int, int], ...]
 {%- endif %}
 
 {{ varname }}: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
-{%- for term_name, hash_key in terminal_refs.items() %}
+{%- for term_name, hash_key in terminal_refs | dictsort %}
     '{{ term_name }}': _SET_{{ varname }}_{{ hash_key | upper }},
 {%- endfor %}
 }

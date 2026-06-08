@@ -15,7 +15,7 @@ _REGISTRY = {
     'iterm2': '8589765c',
     'kitty': 'c0a2cdbf',
     'konsole': 'c2157f7e',
-    'mintty': 'c0d5dc9e',
+    'mintty': '3d4826b8',
     'mlterm': 'c3db41c0',
     'pterm': '5bfac390',
     'rio': '8f94b404',

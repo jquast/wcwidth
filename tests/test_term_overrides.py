@@ -396,6 +396,13 @@ def test_empty_overrides_includes_zeroer():
     assert _EMPTY_OVERRIDES.narrow_zeroer == ()
 
 
+def test_get_term_overrides_returns_empty_when_no_overrides():
+    """get_term_overrides returns _EMPTY_OVERRIDES when terminal has no override data."""
+    get_term_overrides.cache_clear()
+    overrides = get_term_overrides('no-such-terminal')
+    assert overrides is _EMPTY_OVERRIDES
+
+
 def test_get_term_overrides_reads_narrow_zeroer_key():
     """get_term_overrides reads 'narrow_zeroer' key from NARROW_OVERRIDES."""
     get_term_overrides.cache_clear()

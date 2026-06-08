@@ -73,7 +73,7 @@ See also:
 - `Grapheme Clusters and Terminal Emulators`_
 - `terminal-unicode-core.tex`_
 - `State of Terminal Emulators in 2025`_
-- `Report of terminals supporting Graphemes (2027)`_
+- `Perfecting Terminal Character Width Using Correction Tables (2026)`_
 
 The `jquast/ucs-detect`_ project publishes automatic results of compliance to our standard for Wide
 character, Languages, grapheme clustering, complex or combining scripts, emojis, zero-width joiner,
@@ -654,8 +654,9 @@ languages:
 History
 =======
 
-0.8.1 *2026-06-06*
-  * **Improved** Corrections_ for Standalone Fitzpatricks as zero and others, `PR #226`_
+0.8.1 *2026-06-08*
+  * **Improved** `wcstwidth()`_ with new ``zeroer``, ``narrow_wider``, and ``narrow_zeroer``
+    Corrections_. `PR #226`_
 
 0.8.0 *2026-06-05*
   * **New** support for Variation Selector 15 Emojis as narrow, `Issue #211`_.
@@ -985,7 +986,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
-.. _`Report of terminals supporting Graphemes (2027)`: https://ucs-detect.readthedocs.io/results.html#terminal-features
+.. _`Perfecting Terminal Character Width Using Correction Tables`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
