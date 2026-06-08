@@ -407,14 +407,14 @@ def test_get_term_overrides_reads_narrow_zeroer_key():
     """get_term_overrides reads 'narrow_zeroer' key from NARROW_OVERRIDES."""
     get_term_overrides.cache_clear()
     overrides = get_term_overrides('kitty')
-    assert len(overrides.narrow_zeroer) == 8
+    assert len(overrides.narrow_zeroer) == 9
     assert overrides.narrow_zeroer[0] == (0x00AD, 0x00AD)
 
 
 def test_get_term_overrides_narrow_wider_still_empty():
     """get_term_overrides narrow_wider is empty when no 'wider' entries exist."""
     get_term_overrides.cache_clear()
-    overrides = get_term_overrides('kitty')
+    overrides = get_term_overrides('konsole')
     assert overrides.narrow_wider == ()
 
 
