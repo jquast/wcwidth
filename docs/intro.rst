@@ -419,7 +419,7 @@ Corrections
 
 Corrections may be automatically applied depending on the detected or given terminal software name
 beginning with wcwidth release 0.8.0. This allows to correct widths for terminal software that
-differs from the python wcwidth standard_.  These corrections are sourced from the
+differs from the python wcwidth specification_.  These corrections are sourced from the
 `jquast/ucs-detect`_ project.
 
 The ``term_program`` parameter is available on all width-measuring functions: `wcstwidth()`_,
@@ -986,7 +986,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
-.. _`Perfecting Terminal Character Width Using Correction Tables`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
+.. _`Perfecting Terminal Character Width Using Correction Tables (2026)`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
