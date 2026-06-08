@@ -16,13 +16,12 @@ from .table_grapheme import (ISC_VIRAMA,
                              ISC_INVISIBLE_STACKER,
                              GRAPHEME_REGIONAL_INDICATOR)
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .table_overrides import (NARROW_OVERRIDES,
-                              SFZ_OVERRIDES,
+from .table_overrides import (SFZ_OVERRIDES,
                               SRI_OVERRIDES,
                               VS15_OVERRIDES,
                               VS16_OVERRIDES,
-                              WIDE_OVERRIDES)
-# local
+                              WIDE_OVERRIDES,
+                              NARROW_OVERRIDES)
 from .unicode_versions import list_versions
 from .table_term_programs import ALIASES, KNOWN_TERMINALS
 
