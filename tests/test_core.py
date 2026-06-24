@@ -497,6 +497,22 @@ def test_zwj_at_end_of_string():
     assert wcwidth.wcswidth('a\u200D') == 1
 
 
+def test_wcswidth_n_exceeds_length():
+    """
+    wcswidth() with n > len(string) returns same as n=None.
+
+    Passing n larger than the string length should not raise IndexError;
+    it should behave identically to measuring the whole string.
+    """
+    # ASCII string
+    assert wcwidth.wcswidth('hello', 10) == 5
+    # Wide characters
+    assert wcwidth.wcswidth('\u30B3\u30F3', 5) == 4
+    # ZWJ cluster
+    family = '\U0001F468\u200D\U0001F469\u200D\U0001F467'
+    assert wcwidth.wcswidth(family, len(family) + 1) == wcwidth.wcswidth(family)
+
+
 def test_soft_hyphen():
     # Test SOFT HYPHEN, category 'Cf' usually are zero-width, but most
     # implementations agree to draw it was '1' cell, visually
