@@ -145,7 +145,7 @@ width()
 -------
 
 Use function `width()`_ to measure a string with improved handling of ``control_codes`` and
-measurement Corrections_ through ``term_program``:.
+measurement Corrections_ through ``term_program``:
 
 .. code-block:: python
 
