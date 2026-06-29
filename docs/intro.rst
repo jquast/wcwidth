@@ -654,6 +654,10 @@ languages:
 History
 =======
 
+0.8.2 *2026-06-29*
+  * **Bugfix** Do not raise IndexError when given legacy POSIX ``n`` argument to `wcswidth()`_ or
+    `wcstwidth()`_ exceed string length without raising IndexError
+
 0.8.1 *2026-06-08*
   * **Improved** `wcstwidth()`_ with new ``zeroer``, ``narrow_wider``, and ``narrow_zeroer``
     Corrections_. `PR #226`_
