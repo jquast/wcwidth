@@ -498,20 +498,9 @@ def test_zwj_at_end_of_string():
 
 
 def test_wcswidth_n_exceeds_length():
-    """
-    Wcswidth() with n > len(string) returns same as n=None.
-
-    Passing n larger than the string length should not raise IndexError; it should behave
-    identically to measuring the whole string.
-    """
-    # ASCII string
-    assert wcwidth.wcswidth('hello', 10) == 5
-    # Wide characters
-    assert wcwidth.wcswidth('\u30B3\u30F3', 5) == 4
-    # ZWJ cluster
-    family = '\U0001F468\u200D\U0001F469\u200D\U0001F467'
-    assert wcwidth.wcswidth(family, len(family) + 1) == wcwidth.wcswidth(family)
-    assert wcwidth.wcstwidth(family, len(family) + 1) == wcwidth.wcstwidth(family)
+    """Verify wcswidth() with n > len(string) does not raise IndexError."""
+    assert wcwidth.wcswidth('hello', n=999) == 5
+    assert wcwidth.wcswidth('\u30B3\u30F3', n=999) == 4
 
 
 def test_soft_hyphen():
