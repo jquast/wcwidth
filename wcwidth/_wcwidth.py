@@ -135,6 +135,8 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
 
     See :ref:`Specification` for details of cell measurement.
     """
+    if isinstance(wc, str) and len(wc) > 1:
+        raise TypeError(f'wcwidth() expects a single character, got a string of length {len(wc)}')
     ucs = ord(wc) if wc else 0
 
     # small optimization: early return of 1 for printable ASCII, this provides
