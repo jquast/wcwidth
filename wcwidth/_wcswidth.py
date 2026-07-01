@@ -92,6 +92,8 @@ def wcswidth(
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
 
+    if not isinstance(pwcs, str):
+        raise TypeError(f'wcswidth() expects a string, got {type(pwcs).__name__}')
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
