@@ -48,7 +48,9 @@ def ljust(
         >>> wcwidth.ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '👨‍👩‍👧    '
     """
-    if text.isascii() and text.isprintable():
+    if len(fillchar) != 1:
+        raise TypeError('The fill character must be exactly one character long')
+        if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
         text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width,
@@ -98,7 +100,9 @@ def rjust(
         >>> wcwidth.rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '    👨‍👩‍👧'
     """
-    if text.isascii() and text.isprintable():
+    if len(fillchar) != 1:
+        raise TypeError('The fill character must be exactly one character long')
+        if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
         text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width,
@@ -153,7 +157,9 @@ def center(
         >>> wcwidth.center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '  👨‍👩‍👧  '
     """
-    if text.isascii() and text.isprintable():
+    if len(fillchar) != 1:
+        raise TypeError('The fill character must be exactly one character long')
+        if text.isascii() and text.isprintable():
         text_width = len(text)
     else:
         text_width = width(text, control_codes=control_codes, ambiguous_width=ambiguous_width,
