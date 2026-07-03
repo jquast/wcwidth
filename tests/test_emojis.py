@@ -257,3 +257,55 @@ def test_vs16_effect():
     # verify.
     assert length_each == expect_length_each
     assert length_phrase == expect_length_phrase
+
+
+def test_control_after_zwj_returns_negative_one():
+    """A C0/C1 control following a ZWJ must not be swallowed; result is -1.
+
+    The BEL (U+0007) is a C0 control.  Previously the character following a ZWJ was
+    skipped unconditionally, silently swallowing the control and yielding a positive
+    width.  Per the docstring, C0/C1 controls must yield -1.
+    """
+    # 'a' ZWJ BEL 'b': the BEL is a control and must surface as -1.
+    assert wcwidth.wcswidth('a‍\x07b') == -1
+    assert wcwidth.wcstwidth('a‍\x07b', term_program=False) == -1
+    # A control after a *valid* emoji ZWJ join must still yield -1.
+    assert wcwidth.wcswidth('\U0001F468‍\U0001F469‍\x07') == -1
+    assert wcwidth.wcstwidth('\U0001F468‍\U0001F469‍\x07', term_program=False) == -1
+
+
+@pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
+def test_wide_char_after_leading_zwj_is_measured():
+    """A leading ZWJ has no base to join, so the following wide char is measured.
+
+    Previously the character after the ZWJ was skipped unconditionally, swallowing the
+    CJK ideograph and yielding 0 instead of its true width of 2.
+    """
+    # Leading ZWJ then CJK '一' (U+4E00, wide == 2).
+    assert wcwidth.wcwidth('一') == 2
+    assert wcwidth.wcswidth('‍一') == 2
+    assert wcwidth.wcstwidth('‍一', term_program=False) == 2
+
+
+@pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
+def test_zwj_swallow_regression_sample():
+    """Lock a sample of ZWJ-adjacent widths that must not regress with the fix.
+
+    Legitimate emoji ZWJ-sequences still combine to a single cluster, and ZWJ following
+    any measured base still consumes the joined character.  Only leading ZWJ and
+    following controls are treated differently.
+    """
+    # (text, expected width) -- unchanged by the fix, must stay correct.
+    samples = (
+        ('', 0),
+        ('hello', 5),
+        ('一二三', 6),                       # CJK, three wide chars
+        ('\U0001F468‍\U0001F469', 2),               # man ZWJ woman -> combined
+        ('\U0001F468‍\U0001F469‍\U0001F467', 2),  # man ZWJ woman ZWJ girl
+        ('\U0001F469\U0001F3FB', 2),                     # woman + fitzpatrick
+        ('\U0001F468‍a', 2),                        # ExtPict base ZWJ 'a' -> joined
+        ('世‍\U0001F600', 2),                   # CJK base ZWJ emoji -> joined
+    )
+    for text, expected in samples:
+        assert wcwidth.wcswidth(text) == expected, text
+        assert wcwidth.wcstwidth(text, term_program=False) == expected, text

@@ -109,6 +109,7 @@ def wcswidth(
     last_measured_w = 0
     prev_was_virama = False
     cluster_width = 0
+    seen_base = False  # a base character has been measured (for ZWJ join gating)
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']
     _bisearch = bisearch
@@ -125,11 +126,22 @@ def wcswidth(
         if ucs == 0x200D:
             if prev_was_virama:
                 idx += 1
-            elif idx + 1 < end:
+            elif (idx + 1 < end
+                  and seen_base
+                  and _wcwidth(pwcs[idx + 1]) >= 0):
+                # ZWJ following a measured base continues the grapheme cluster, so the
+                # joined character is consumed without contributing additional width.
+                # A following C0/C1 control is excluded (its wcwidth is negative) so it
+                # is not swallowed and still yields -1 when measured by the loop.
                 last_measured_w = 0
                 prev_was_virama = False
                 idx += 2
             else:
+                # No measured base to join to (e.g. a leading ZWJ), or a C0/C1 control
+                # follows: consume only the ZWJ (zero width) and let the loop measure
+                # the next character normally.  This preserves -1 for a following
+                # control and counts a following wide/narrow character.
+                last_measured_w = 0
                 prev_was_virama = False
                 idx += 1
             continue
@@ -183,6 +195,7 @@ def wcswidth(
             last_measured_ucs = ucs
             last_measured_w = w
             prev_was_virama = False
+            seen_base = True
         elif ucs in _ISC_VIRAMA_SET:
             prev_was_virama = True
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
@@ -276,6 +289,7 @@ def wcstwidth(
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
+    seen_base = False  # a base character has been measured (for ZWJ join gating)
     cluster_start = -1
     total_before_cluster = 0
     cluster_width = 0
@@ -319,9 +333,22 @@ def wcstwidth(
                         continue
                 # No override; ZWJ breaks VS adjacency.
                 # VS16 already set last_measured_idx = -2, blocking further VS16.
-                last_measured_w = 0
-                prev_was_virama = False
-                idx += 2
+                if seen_base and _wcwidth(pwcs[idx + 1]) >= 0:
+                    # ZWJ following a measured base continues the grapheme cluster, so
+                    # the joined character is consumed without contributing width.  A
+                    # following C0/C1 control is excluded (its wcwidth is negative) so
+                    # it is not swallowed and still yields -1 when measured by the loop.
+                    last_measured_w = 0
+                    prev_was_virama = False
+                    idx += 2
+                else:
+                    # No measured base to join to (e.g. a leading ZWJ), or a C0/C1
+                    # control follows: consume only the ZWJ and let the loop measure
+                    # the next character normally.  This preserves -1 for a following
+                    # control and counts a following wide/narrow character.
+                    last_measured_w = 0
+                    prev_was_virama = False
+                    idx += 1
             else:
                 prev_was_virama = False
                 idx += 1
@@ -417,6 +444,7 @@ def wcstwidth(
             last_measured_ucs = ucs
             last_measured_w = w
             prev_was_virama = False
+            seen_base = True
         elif ucs in _ISC_VIRAMA_SET:
             prev_was_virama = True
         elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):
