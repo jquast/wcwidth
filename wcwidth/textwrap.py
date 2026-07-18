@@ -500,10 +500,6 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         # exceeds and we return from within the loop. Type checker requires this.
         return idx  # pragma: no cover
 
-    def _find_first_grapheme_end(self, text: str) -> int:
-        """Find the end position of the first grapheme."""
-        return len(next(iter_graphemes(text)))
-
     def _find_first_visible_break(self, text: str) -> int:
         """End of leading escape sequences plus the first grapheme."""
         idx = 0
