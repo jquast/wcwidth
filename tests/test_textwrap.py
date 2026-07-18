@@ -387,6 +387,16 @@ OSC_END_BEL = '\x1b]8;;\x07'
             '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
             '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\here\x1b]8;;\x1b\\',
         ],
+    ),
+    (   # wide grapheme after OSC 8 open at width 1 (must not hang)
+        '\x1b]8;;u\x07😀',
+        1,
+        ['\x1b]8;id=00000001;u\x07😀\x1b]8;;\x07'],
+    ),
+    (   # CJK wide char after OSC 8 open at width 1 (must not hang)
+        '\x1b]8;;u\x07あ',
+        1,
+        ['\x1b]8;id=00000001;u\x07あ\x1b]8;;\x07'],
     ),])
 def test_wrap_hyperlink_word_boundary(text, w, expected):
     """OSC hyperlink sequences should act as word boundaries."""
