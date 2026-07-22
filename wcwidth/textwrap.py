@@ -508,8 +508,6 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             if match is None:
                 break
             idx = match.end()
-        if idx >= len(text):
-            return len(text)
         return idx + len(next(iter_graphemes(text, start=idx)))
 
     def _rstrip_visible(self, text: str) -> str:
