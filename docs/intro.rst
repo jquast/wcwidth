@@ -654,6 +654,10 @@ languages:
 History
 =======
 
+0.8.3 *2026-07-22*
+  * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
+    wide characters. `PR #231`_
+
 0.8.2 *2026-06-29*
   * **Bugfix** Do not raise IndexError when given legacy POSIX ``n`` argument to `wcswidth()`_ or
     `wcstwidth()`_ exceed string length without raising IndexError
@@ -911,6 +915,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
 .. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
+.. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190

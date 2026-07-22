@@ -387,6 +387,16 @@ OSC_END_BEL = '\x1b]8;;\x07'
             '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
             '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\here\x1b]8;;\x1b\\',
         ],
+    ),
+    (   # wide grapheme after OSC 8 open at width 1 (must not hang)
+        '\x1b]8;;u\x07😀',
+        1,
+        ['\x1b]8;id=00000001;u\x07😀\x1b]8;;\x07'],
+    ),
+    (   # CJK wide char after OSC 8 open at width 1 (must not hang)
+        '\x1b]8;;u\x07あ',
+        1,
+        ['\x1b]8;id=00000001;u\x07あ\x1b]8;;\x07'],
     ),])
 def test_wrap_hyperlink_word_boundary(text, w, expected):
     """OSC hyperlink sequences should act as word boundaries."""
@@ -491,3 +501,13 @@ def test_wrap_bare_esc():
     """Bare ESC not part of a recognized sequence is treated as zero-width."""
     assert wrap('ab\x1bcd ef', 5) == ['ab\x1bcd', 'ef']
     assert wrap('ab\x1b\x00cdef', 3) == ['ab\x1b\x00c', 'def']
+
+
+def test_wrap_bare_esc_at_line_start():
+    """
+    Exercises the bare-ESC safety break in _find_first_visible_break.
+
+    A bare \\x1b that does not match ZERO_WIDTH_PATTERN triggers a safety 'break' statement but is
+    not found in any practical terminal sequence or string (ESC followed by NUL).
+    """
+    assert wrap('\x1b\x00あ', 1) == ['\x1b', '\x00', 'あ']
