@@ -81,6 +81,14 @@ Width of 1
 String characters are measured width of 1 when they are not
 measured as `Width of 0`_ or `Width of 2`_.
 
+Any character with `U+FE0E`_ (Variation Selector 15) defined as ``text style``
+in `emoji-variation-sequences.txt`_, per `UTS #51`_ and `Unicode Standard
+Section 23.4`_: VS15 subtracts 1 cell from the wide character it directly
+follows, making the pair width 1. Narrow characters are unchanged.
+
+.. note:: Variation Selector 15 width specification is contested, see
+          https://github.com/jquast/wcwidth/issues/211
+
 Width of 2
 ----------
 
@@ -104,11 +112,6 @@ Any character with `U+FE0F`_ (Variation Selector 16) defined as ``emoji style``
 in `emoji-variation-sequences.txt`_, per `UTS #51`_ and `Unicode Standard
 Section 23.4`_: VS16 adds 1 cell to the narrow character it directly follows,
 making the pair width 2. Wide characters are unchanged.
-
-Any character with `U+FE0E`_ (Variation Selector 15) defined as ``text style``
-in `emoji-variation-sequences.txt`_, per `UTS #51`_ and `Unicode Standard
-Section 23.4`_: VS15 subtracts 1 cell from the wide character it directly
-follows, making the pair width 1. Narrow characters are unchanged.
 
 Any character of non-zero width followed by an ``Mc`` (`Spacing Combining Mark`_)
 character when measured in sequence by :func:`wcwidth.wcswidth` or
