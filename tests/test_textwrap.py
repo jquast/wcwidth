@@ -501,3 +501,13 @@ def test_wrap_bare_esc():
     """Bare ESC not part of a recognized sequence is treated as zero-width."""
     assert wrap('ab\x1bcd ef', 5) == ['ab\x1bcd', 'ef']
     assert wrap('ab\x1b\x00cdef', 3) == ['ab\x1b\x00c', 'def']
+
+
+def test_wrap_bare_esc_at_line_start():
+    """
+    Exercises the bare-ESC safety break in _find_first_visible_break.
+
+    A bare \\x1b that does not match ZERO_WIDTH_PATTERN triggers a safety 'break' statement but is
+    not found in any practical terminal sequence or string (ESC followed by NUL).
+    """
+    assert wrap('\x1b\x00あ', 1) == ['\x1b', '\x00', 'あ']
