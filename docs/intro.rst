@@ -480,8 +480,7 @@ recognized names:
 .. END_LIST_TERM_PROGRAMS
 
 ``term_program=False`` (the default for `width()`_, `ljust()`_, `rjust()`_, `center()`_,
-`wrap()`_, and `clip()`_) disables terminal corrections.  `wcstwidth()`_ defaults to
-``term_program=True`` for auto-detection.
+`wrap()`_, and `clip()`_) disables terminal corrections.
 
 For automatic tests and other purposes that require cross-environment consistency, set static values
 or unset ``TERM`` and ``TERM_PROGRAM`` environment values, such as in ``conftest.py`` with pytest:
@@ -659,8 +658,8 @@ History
     wide characters. `PR #231`_
 
 0.8.2 *2026-06-29*
-  * **Bugfix** Do not raise IndexError when given legacy POSIX ``n`` argument to `wcswidth()`_ or
-    `wcstwidth()`_ exceed string length without raising IndexError
+  * **Bugfix** Do not raise IndexError when legacy POSIX ``n`` argument to `wcswidth()`_ or
+    `wcstwidth()`_ exceeds the given string length. `PR #230`_
 
 0.8.1 *2026-06-08*
   * **Improved** `wcstwidth()`_ with new ``zeroer``, ``narrow_wider``, and ``narrow_zeroer``
