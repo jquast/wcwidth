@@ -440,12 +440,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 actual_end = hyphen_end
             else:
                 actual_end = self._find_break_position(chunk, space_left)
-                # If no progress possible (e.g., wide char exceeds line width),
-                # force at least one grapheme to avoid infinite loop.
-                # Only force when cur_line is empty; if line has content,
-                # appending nothing is safe and the line will be committed.
-                if actual_end == 0 and not cur_line:
-                    actual_end = self._find_first_grapheme_end(chunk)
+                # Include first visible unit when break would take only leading sequences.
+                if not cur_line and (
+                        actual_end == 0
+                        or (actual_end < len(chunk)
+                            and self._width(chunk[:actual_end]) == 0)):
+                    actual_end = self._find_first_visible_break(chunk)
             cur_line.append(chunk[:actual_end])
             reversed_chunks[-1] = chunk[actual_end:]
 
@@ -500,9 +500,15 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         # exceeds and we return from within the loop. Type checker requires this.
         return idx  # pragma: no cover
 
-    def _find_first_grapheme_end(self, text: str) -> int:
-        """Find the end position of the first grapheme."""
-        return len(next(iter_graphemes(text)))
+    def _find_first_visible_break(self, text: str) -> int:
+        """End of leading escape sequences plus the first grapheme."""
+        idx = 0
+        while idx < len(text) and text[idx] == '\x1b':
+            match = ZERO_WIDTH_PATTERN.match(text, idx)
+            if match is None:
+                break
+            idx = match.end()
+        return idx + len(next(iter_graphemes(text, start=idx)))
 
     def _rstrip_visible(self, text: str) -> str:
         """Strip trailing visible whitespace, preserving trailing sequences."""
