@@ -301,6 +301,81 @@ TEST(only_escape_sequences)
     free(out);
 }
 
+static int
+do_wrap_text(const char *text, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
+{
+    return wrap_u8_text(text, strlen(text), opts, out, out_len);
+}
+
+TEST(preserve_newlines_basic)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 40;
+    const char *exp[] = {"line one", "", "line two"};
+    ASSERT_EQ(0, do_wrap_text("line one\n\nline two", &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+}
+
+TEST(preserve_newlines_wrapping)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    const char *exp[] = {"hello", "world", "", "foo bar", "baz"};
+    ASSERT_EQ(0, do_wrap_text("hello world\n\nfoo bar baz", &o, &out, &len));
+    check_lines(out, len, exp, 5);
+    free(out);
+}
+
+TEST(preserve_newlines_empty_input)
+{
+    char *out;
+    size_t len;
+    int r = wrap_u8_text("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len);
+    ASSERT_EQ(0, r);
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(preserve_newlines_only_newlines)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"", "", ""};
+    ASSERT_EQ(0, do_wrap_text("\n\n\n", &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+}
+
+TEST(preserve_newlines_whitespace_only_lines)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 40;
+    const char *exp[] = {"hello", "", "world"};
+    ASSERT_EQ(0, do_wrap_text("hello\n   \nworld", &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+}
+
+TEST(preserve_newlines_single_paragraph)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 40;
+    const char *exp[] = {"hello world"};
+    ASSERT_EQ(0, do_wrap_text("hello world", &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -322,6 +397,12 @@ main(void)
     RUN_TEST(newline_as_whitespace);
     RUN_TEST(max_lines_with_no_more_content);
     RUN_TEST(only_escape_sequences);
+    RUN_TEST(preserve_newlines_basic);
+    RUN_TEST(preserve_newlines_wrapping);
+    RUN_TEST(preserve_newlines_empty_input);
+    RUN_TEST(preserve_newlines_only_newlines);
+    RUN_TEST(preserve_newlines_whitespace_only_lines);
+    RUN_TEST(preserve_newlines_single_paragraph);
 
     return test_summary();
 }

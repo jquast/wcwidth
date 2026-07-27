@@ -4,37 +4,25 @@ libwcwidth
 
 A portable C11 library mainly for CLI/TUI programs that carefully produce output for Terminals.
 
-This is published as a companion of the Python `wcwidth`_ package.
+This is a companion library of the Python `wcwidth`_ package.
+
+The Python documentation_ closely matches this C library, except that the C API provides
+UTF-8 and codepoint array interfaces.
 
 .. _wcwidth: https://github.com/jquast/wcwidth
+.. _documentation: https://wcwidth.readthedocs.io/
 
-The lowest-level functions in this library are derived from POSIX.1-2001 and POSIX.1-2008
-`wcwidth(3)`_ and `wcswidth(3)`_, which this library precisely copies by interface as `wcwidth()`_
-and `wcswidth()`_.  These functions return -1 when C0 and C1 control codes are present.
+The lowest-level functions are derived from POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
+`wcswidth(3)`_, which this library implements as `wcwidth_u32()`_ and `wcswidth_u32()`_.  These
+functions return -1 when C0 and C1 control codes are present.
 
-An easy-to-use `width_u8()`_ and `width_u32()`_ function is provided as a wrapper of `wcswidth()`_,
-that is also capable of measuring most terminal control codes and sequences, like colors, bold,
-tabstops, and horizontal cursor movement.
+`width_u8()`_ is a higher-level wrapper of `wcswidth_u8()`_ that also measures terminal control
+sequences, like colors, bold, tabstops, horizontal cursor movement, OSC 8 hyperlinks and others.
 
-TODO: keep migrating documentation ..:
+`wcstwidth_u8()`_ provides terminal-specific corrections, for accurate width measurement by
+latest terminal program described, described in the Python Corrections_ documentation.
 
-.. ::
-
-    `width()`_ argument ``term_program`` may provide more accurate terminal measurement Corrections_ as
-    a wrapper of `wcstwidth()`_.
-
-    Text-justification is solved by the sequence-aware functions `ljust()`_, `rjust()`_, `center()`_,
-    and the grapheme-aware function `wrap()`_, serving as drop-in replacements to python standard
-    functions.
-
-    The `clip()`_ function extracts substrings by their displayed column positions, and
-    `strip_sequences()`_ removes terminal escape sequences from text altogether.
-
-    The iterator functions `iter_graphemes()`_ and `iter_sequences()`_ allow for careful navigation of
-    grapheme and terminal control sequence boundaries as required by editors or REPLs with cursor
-    control.  `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ are necessary for backward
-    cursor control over complex unicode.
-
+.. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
 
 Quick Start
 -----------
@@ -43,7 +31,11 @@ Build static library::
 
     make
 
-Run tests::
+Build example programs::
+
+    make examples
+
+Tests::
 
     make test
 
@@ -51,33 +43,32 @@ Format::
 
     make format
 
-Link into your project::
+Link with your own project::
 
     gcc -Ilibwcwidth/include myapp.c -Llibwcwidth/build -lwcwidth
 
 Example Programs
 ----------------
 
-Three small CLI utilities are included to demonstrate use of this library.
+Three small CLI utilities demonstrate use of this library.
 
-**textwrap**, unicode, CJK, emoji, terminal sequence-aware text wrapping tool.
-TODO demonstrate terminal sequence support succiently?
-::
+**textwrap** -- Unicode, CJK, emoji, and terminal sequence-aware text wrapping::
 
     $ textwrap 42 README.rst
-    A portable C11 library for measuring
-    the display width of Unicode strings
-    on terminal emulators.  This is a C11
+    ==========
+    libwcwidth
+    ==========
+
+    A portable C11 library mainly for CLI/TUI
+    programs that carefully produce output
+    for Terminals.
+
     ...
 
-TODO: support all of the textwrap options as CLI arguments
-
-Uses ``$COLUMNS`` if no width argument is given.  Use ``-v`` to append a red
+Uses environment value, ``$COLUMNS``, if no width argument is given.  Use ``-v`` to append a red
 carriage-return marker.
 
-**width**
-TODO demonstrate CJK and emoji and such
-::
+**width** -- report the display width of each line::
 
     $ width README.rst
     80
@@ -86,15 +77,13 @@ TODO demonstrate CJK and emoji and such
     67
     ...
 
-Use ``-v`` for rewrite to output with prefixed width::
+    $ echo 'コンニチハ' | width
+    10
 
     $ width -v <<< "café résumé"
     11:café résumé
 
-**align**
-TODO: just show align right of README?
-demonstrate left, right, and center alignment
-::
+**align** -- demonstrate left, right, and center alignment::
 
     $ echo "hello" | align 40
     hello                                         hello                    hello
@@ -102,6 +91,71 @@ demonstrate left, right, and center alignment
 API
 ---
 
-TODO: Use sphinx apidocs, publish independently to libwcwidth.readthedocs.org,
-cross-reference each other's documentation by external reference to and from python
-wcwidth so that they don't build together.
+TODO Sphinx documentation for the C API (will be) published at `libwcwidth.readthedocs.org`_.
+
+The C API mirrors the Python API.  For detailed semantics of each function, see
+the Python documentation_ for now. TODO: C API documentation will soon be published!
+
+.. _libwcwidth.readthedocs.org: https://libwcwidth.readthedocs.org/
+
+The ``control_codes`` parameter is the ``wcwidth_control_mode_t`` enum:
+
+====================================  ================================================
+Python                                C
+====================================  ================================================
+``control_codes='parse'``             ``WCWIDTH_PARSE``
+``control_codes='strict'``            ``WCWIDTH_STRICT``
+``control_codes='ignore'``            ``WCWIDTH_IGNORE``
+====================================  ================================================
+
+``WCWIDTH_STRICT`` returns ``-1`` and sets ``*error`` on failure.  Pass
+``NULL`` for ``error`` if the specific cause isn't needed:
+
+.. code-block:: c
+
+    int err = 0;
+    int w = width_u8("\n", 1, WCWIDTH_STRICT, &WCWIDTH_WIDTH_OPTS_DEFAULT, &err);
+    if (w < 0) {
+        /* err is set to an error code */
+    }
+
+Allocation: `ljust_u8()`_, `rjust_u8()`_, `center_u8()`_, `clip_u8()`_,
+`wrap_u8()`_, and `wrap_u8_text()`_ return ``malloc``\ 'd strings the caller must ``free``.
+
+For example::
+
+    char *out = NULL;
+    size_t out_len = 0;
+    wcwidth_wrap_opts_t opts = WCWIDTH_WRAP_OPTS_DEFAULT;
+    opts.width = 72;
+
+    if (wrap_u8_text(text, text_len, &opts, &out, &out_len) == 0) {
+        fwrite(out, 1, out_len, stdout);
+        free(out);
+    }
+
+Supported Terminals
+-------------------
+
+TODO: use code generation (".. BEGIN_LIST_TERM_PROGRAMS")
+
+The following canonical terminal names are accepted by ``term_program``::
+
+    alacritty bobcat contour extraterm foot ghostty hyper iterm2 kitty
+    konsole mintty mlterm pterm putty rio st tabby terminology vscode
+    vte warp wezterm xterm
+
+For the most accurate corrections, query the terminal's software version via
+XTVERSION_ (``CSI > q``) and pass the canonical name.
+
+.. _XTVERSION: https://wcwidth.readthedocs.io/en/latest/introduction.html#corrections
+
+Unicode Version
+---------------
+
+TODO: use code generation!
+
+Tables generated from Unicode |unicode_version|.
+
+.. |unicode_version| replace:: 17.0.0
+

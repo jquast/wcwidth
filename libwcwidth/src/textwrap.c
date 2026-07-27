@@ -1353,3 +1353,109 @@ wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char
     lines_free(&lines);
     return 0;
 }
+
+static bool
+is_all_whitespace_or_empty(const char *s, size_t len)
+{
+    size_t i;
+    if (len == 0)
+        return true;
+    for (i = 0; i < len; i++) {
+        char ch = s[i];
+        if (ch != ' ' && ch != '\t' && ch != '\r')
+            return false;
+    }
+    return true;
+}
+
+int
+wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
+             size_t *out_len)
+{
+    lines_t lines;
+    const char *p = text;
+    const char *end = text + text_len;
+    size_t i;
+
+    *out = NULL;
+    *out_len = 0;
+
+    lines_init(&lines);
+
+    while (p < end) {
+        const char *nl = memchr(p, '\n', (size_t) (end - p));
+        size_t seg_len = nl ? (size_t) (nl - p) : (size_t) (end - p);
+
+        if (is_all_whitespace_or_empty(p, seg_len)) {
+            if (!lines_push(&lines, "", 0)) {
+                lines_free(&lines);
+                return -1;
+            }
+        }
+        else {
+            char *wrapped = NULL;
+            size_t wrapped_len = 0;
+
+            if (wrap_u8(p, seg_len, opts, &wrapped, &wrapped_len) != 0) {
+                lines_free(&lines);
+                return -1;
+            }
+
+            if (wrapped_len > 0) {
+                const char *wp = wrapped;
+                const char *we = wrapped + wrapped_len;
+                while (wp < we) {
+                    const char *wnl = memchr(wp, '\n', (size_t) (we - wp));
+                    size_t wl = wnl ? (size_t) (wnl - wp) : (size_t) (we - wp);
+                    if (!lines_push(&lines, wp, wl)) {
+                        free(wrapped);
+                        lines_free(&lines);
+                        return -1;
+                    }
+                    wp += wl;
+                    if (wnl)
+                        wp++;
+                }
+            }
+
+            free(wrapped);
+        }
+
+        p += seg_len;
+        if (nl)
+            p++;
+    }
+
+    /* Compute total output size */
+    {
+        size_t total = 0;
+        for (i = 0; i < lines.count; i++)
+            total += strlen(lines.data[i]);
+        if (lines.count > 1)
+            total += lines.count - 1;
+
+        *out = malloc(total + 1);
+        if (*out == NULL) {
+            lines_free(&lines);
+            return -1;
+        }
+
+        {
+            char *dp = *out;
+            for (i = 0; i < lines.count; i++) {
+                size_t n = strlen(lines.data[i]);
+                memcpy(dp, lines.data[i], n);
+                dp += n;
+                if (i + 1 < lines.count) {
+                    *dp = '\n';
+                    dp++;
+                }
+            }
+            *dp = '\0';
+        }
+        *out_len = total;
+    }
+
+    lines_free(&lines);
+    return 0;
+}

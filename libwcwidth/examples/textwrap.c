@@ -132,10 +132,10 @@ main(int argc, char **argv)
     opts.expand_tabs = 1;
     opts.replace_whitespace = 1;
 
-    /* Wrap */
+    /* Wrap, preserving paragraph breaks */
     char *out = NULL;
     size_t out_len = 0;
-    if (wrap_u8(text, text_len, &opts, &out, &out_len) != 0) {
+    if (wrap_u8_text(text, text_len, &opts, &out, &out_len) != 0) {
         free(text);
         fprintf(stderr, "textwrap: wrapping failed\n");
         return 1;
