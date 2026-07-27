@@ -1,5 +1,6 @@
 __pycache__
 .coverage
+*.py,cover
 .cache
 .tox
 *.egg-info
