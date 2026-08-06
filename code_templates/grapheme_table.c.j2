@@ -3,10 +3,10 @@
  *
  * Grapheme cluster break tables for Unicode version {{ unicode_version }}.
  */
-#include "wcwidth/tables.h"
+#include "wcwidth/generated_tables.h"
 
 {%- for var_name, table_def in tables.items() %}
-{%- set c_name = c_name_map[var_name] %}
+{%- set c_name = symbols[var_name] %}
 
 const wcwidth_interval_t {{ c_name }}[] = {
 {%- for hex_start, hex_end, txt_description in table_def.hex_range_descriptions %}
@@ -14,6 +14,7 @@ const wcwidth_interval_t {{ c_name }}[] = {
 {%- endfor %}
 };
 
-const size_t {{ c_name }}_LEN = sizeof({{ c_name }}) / sizeof({{ c_name }}[0]);
+_Static_assert(sizeof({{ c_name }}) / sizeof({{ c_name }}[0]) == {{ c_name }}_LEN,
+               "{{ c_name }}_LEN out of date");
 
 {% endfor -%}

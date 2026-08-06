@@ -1,7 +1,5 @@
 /*
  * Binary search in Unicode interval tables.
- *
- * Port of wcwidth/bisearch.py.
  */
 #include "wcwidth/tables.h"
 

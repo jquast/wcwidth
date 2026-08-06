@@ -6,6 +6,7 @@ __pycache__
 *.egg-info
 *.egg
 *.pyc
+*.so
 *.swp
 build
 /libwcwidth/build-cmake

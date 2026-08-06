@@ -6,6 +6,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 # library
+# Keep this source list in parity with pyproject.toml's
+# [[tool.setuptools.ext-modules]] sources; the Makefile globs src/*.c itself.
 
 set(LIBWCWIDTH_SOURCES
     src/bisearch.c
@@ -21,6 +23,8 @@ set(LIBWCWIDTH_SOURCES
     src/sgr.c
     src/hyperlink.c
     src/text_sizing.c
+    src/terminal_override.c
+    src/utf8.c
     # Generated tables
     src/tables/table_wide.c
     src/tables/table_zero.c
@@ -29,6 +33,8 @@ set(LIBWCWIDTH_SOURCES
     src/tables/table_mc.c
     src/tables/table_vs15.c
     src/tables/table_vs16.c
+    src/tables/table_terminal_overrides.c
+    src/tables/table_term_programs.c
 )
 
 add_library(wcwidth ${LIBWCWIDTH_SOURCES})

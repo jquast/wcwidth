@@ -1,5 +1,6 @@
 #include "test_common.h"
 #include "wcwidth/textwrap.h"
+#include "wcwidth/utf8.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -66,343 +67,113 @@ check_lines(char *out, size_t out_len, const char **expected, size_t nexpected)
     free_lines(lines, nlines);
 }
 
-static int
-do_wrap(const char *text, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
-{
-    return wrap_u8(text, strlen(text), opts, out, out_len);
-}
-
-TEST(simple_wrap)
+TEST(wrap_basic)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 5;
     const char *exp[] = {"hello", "world"};
-    ASSERT_EQ(0, do_wrap("hello world", &o, &out, &len));
+
+    o.width = 5;
+    ASSERT_EQ(0, wrap_u8("hello world", 11, &o, &out, &len));
     check_lines(out, len, exp, 2);
     free(out);
-}
 
-TEST(no_wrap_needed)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 20;
-    const char *exp[] = {"hello world"};
-    ASSERT_EQ(0, do_wrap("hello world", &o, &out, &len));
-    check_lines(out, len, exp, 1);
-    free(out);
-}
-
-TEST(cjk_two_cells_each)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 4;
-    const char *exp[] = {"中文", "字符"};
-    ASSERT_EQ(0, do_wrap("中文字符", &o, &out, &len));
-    check_lines(out, len, exp, 2);
+    const char *exp2[] = {"\xe4\xb8\xad\xe6\x96\x87", "\xe5\xad\x97\xe7\xac\xa6"};
+    ASSERT_EQ(0, wrap_u8("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97\xe7\xac\xa6", 12, &o, &out, &len));
+    check_lines(out, len, exp2, 2);
     free(out);
-}
 
-TEST(initial_indent)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    o.initial_indent = "> ";
-    const char *exp[] = {"> hello", "world"};
-    ASSERT_EQ(0, do_wrap("hello world", &o, &out, &len));
-    check_lines(out, len, exp, 2);
-    free(out);
-}
-
-TEST(subsequent_indent)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    o.subsequent_indent = "  ";
-    const char *exp[] = {"hello", "  world"};
-    ASSERT_EQ(0, do_wrap("hello world", &o, &out, &len));
-    check_lines(out, len, exp, 2);
-    free(out);
-}
-
-TEST(long_word_breaking)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 5;
-    const char *exp[] = {"hello", "world"};
-    ASSERT_EQ(0, do_wrap("helloworld", &o, &out, &len));
-    check_lines(out, len, exp, 2);
-    free(out);
-}
-
-TEST(hyphen_breaking)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    const char *exp[] = {"hello-", "there-", "world"};
-    ASSERT_EQ(0, do_wrap("hello-there-world", &o, &out, &len));
-    check_lines(out, len, exp, 3);
-    free(out);
-}
-
-TEST(empty_input)
-{
-    char *out;
-    size_t len;
-    int r = wrap_u8("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len);
-    ASSERT_EQ(0, r);
+    ASSERT_EQ(0, wrap_u8("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
     ASSERT_EQ((int64_t) 0, (int64_t) len);
     free(out);
 }
 
-TEST(single_word_exact_width)
+TEST(wrap_text_basic)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 5;
-    const char *exp[] = {"hello"};
-    ASSERT_EQ(0, do_wrap("hello", &o, &out, &len));
-    check_lines(out, len, exp, 1);
-    free(out);
-}
-
-TEST(sgr_propagation)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 6;
-    o.propagate_sgr = true;
-    const char *text = "\x1b[1;34mHello world\x1b[0m";
-    ASSERT_EQ(0, wrap_u8(text, strlen(text), &o, &out, &len));
-    /* Both lines should have the SGR sequence */
-    ASSERT_TRUE(strstr(out, "\x1b[1;34m") != NULL);
-    /* Second line (after \n) should also have it */
-    char *nl = strchr(out, '\n');
-    ASSERT_TRUE(nl != NULL);
-    ASSERT_TRUE(strstr(nl + 1, "\x1b[1;34m") != NULL);
-    free(out);
-}
-
-TEST(max_lines_truncation)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    o.max_lines = 2;
-    ASSERT_EQ(0, wrap_u8("one two three four five", 23, &o, &out, &len));
-    /* Placeholder appears (may have leading space stripped if alone) */
-    ASSERT_TRUE(out != NULL);
-    free(out);
-}
-
-TEST(multiple_spaces_collapsed)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 5;
-    const char *exp[] = {"hello", "world"};
-    ASSERT_EQ(0, do_wrap("hello    world", &o, &out, &len));
-    check_lines(out, len, exp, 2);
-    free(out);
-}
-
-TEST(no_break_long_words)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    o.break_long_words = false;
-    const char *exp[] = {"helloworld"};
-    ASSERT_EQ(0, do_wrap("helloworld", &o, &out, &len));
-    check_lines(out, len, exp, 1);
-    free(out);
-}
-
-TEST(without_sgr_propagation)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 6;
-    o.propagate_sgr = false;
-    const char *text = "\x1b[1mHello world\x1b[0m";
-    ASSERT_EQ(0, wrap_u8(text, strlen(text), &o, &out, &len));
-    char *nl = strchr(out, '\n');
-    ASSERT_TRUE(nl != NULL);
-    ASSERT_TRUE(strstr(nl + 1, "\x1b[1m") == NULL);
-    free(out);
-}
-
-TEST(tab_expansion)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 20;
-    ASSERT_EQ(0, wrap_u8("hello\tworld", 11, &o, &out, &len));
-    ASSERT_TRUE(strstr(out, "hello") != NULL);
-    ASSERT_TRUE(strstr(out, "world") != NULL);
-    free(out);
-}
-
-TEST(newline_as_whitespace)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 20;
-    const char *exp[] = {"hello world"};
-    ASSERT_EQ(0, do_wrap("hello\nworld", &o, &out, &len));
-    check_lines(out, len, exp, 1);
-    free(out);
-}
-
-TEST(max_lines_with_no_more_content)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 40;
-    o.max_lines = 5;
-    const char *exp[] = {"hello world"};
-    ASSERT_EQ(0, do_wrap("hello world", &o, &out, &len));
-    check_lines(out, len, exp, 1);
-    free(out);
-}
-
-TEST(only_escape_sequences)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    /* Disable SGR propagation for raw escape sequence passthrough */
-    o.propagate_sgr = false;
-    const char *text = "\x1b[31m\x1b[1m";
-    ASSERT_EQ(0, wrap_u8(text, strlen(text), &o, &out, &len));
-    ASSERT_TRUE(memcmp(out, text, strlen(text)) == 0);
-    free(out);
-}
-
-static int
-do_wrap_text(const char *text, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
-{
-    return wrap_u8_text(text, strlen(text), opts, out, out_len);
-}
-
-TEST(preserve_newlines_basic)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 40;
     const char *exp[] = {"line one", "", "line two"};
-    ASSERT_EQ(0, do_wrap_text("line one\n\nline two", &o, &out, &len));
-    check_lines(out, len, exp, 3);
-    free(out);
-}
 
-TEST(preserve_newlines_wrapping)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 10;
-    const char *exp[] = {"hello", "world", "", "foo bar", "baz"};
-    ASSERT_EQ(0, do_wrap_text("hello world\n\nfoo bar baz", &o, &out, &len));
-    check_lines(out, len, exp, 5);
-    free(out);
-}
-
-TEST(preserve_newlines_empty_input)
-{
-    char *out;
-    size_t len;
-    int r = wrap_u8_text("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len);
-    ASSERT_EQ(0, r);
-    ASSERT_EQ((int64_t) 0, (int64_t) len);
-    free(out);
-}
-
-TEST(preserve_newlines_only_newlines)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"", "", ""};
-    ASSERT_EQ(0, do_wrap_text("\n\n\n", &o, &out, &len));
-    check_lines(out, len, exp, 3);
-    free(out);
-}
-
-TEST(preserve_newlines_whitespace_only_lines)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 40;
-    const char *exp[] = {"hello", "", "world"};
-    ASSERT_EQ(0, do_wrap_text("hello\n   \nworld", &o, &out, &len));
+    ASSERT_EQ(0, wrap_u8_text("line one\n\nline two", 18, &o, &out, &len));
     check_lines(out, len, exp, 3);
     free(out);
 }
 
-TEST(preserve_newlines_single_paragraph)
+TEST(wrap_embedded_nul)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 40;
-    const char *exp[] = {"hello world"};
-    ASSERT_EQ(0, do_wrap_text("hello world", &o, &out, &len));
-    check_lines(out, len, exp, 1);
+
+    o.width = 5;
+    ASSERT_EQ(0, wrap_u8("ab\x00"
+                         "cd ef",
+                         8, &o, &out, &len));
+    ASSERT_EQ((int64_t) 8, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out,
+                        "ab\x00"
+                        "cd\nef",
+                        8));
     free(out);
+}
+
+TEST(wrap_u32_parity)
+{
+    char *out8;
+    size_t len8;
+    uint32_t stack[64];
+    size_t count;
+    const uint32_t *expect;
+    uint32_t *out32;
+    size_t len32;
+    const uint32_t cps[] = {'h', 0x00E9, 'l', 'l', 'o', ' ', 'w', 0x00F6, 'r', 'l', 'd'};
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 5;
+    ASSERT_EQ(0, wrap_u8("h\xc3\xa9llo w\xc3\xb6rld", 13, &o, &out8, &len8));
+    ASSERT_EQ(0, wrap_u32(cps, 11, &o, &out32, &len32));
+    expect = wcwidth_decode_u32(out8, len8, stack, 64, &count);
+    ASSERT_EQ((int64_t) count, (int64_t) len32);
+    ASSERT_EQ(0, memcmp(expect, out32, count * sizeof(uint32_t)));
+    free(out8);
+    free(out32);
+}
+
+TEST(wrap_text_u32_parity)
+{
+    char *out8;
+    size_t len8;
+    uint32_t stack[64];
+    size_t count;
+    const uint32_t *expect;
+    uint32_t *out32;
+    size_t len32;
+    const uint32_t cps[] = {'l',  'i', 'n', 'e', ' ', 'o', 'n', 'e', '\n',
+                            '\n', 'l', 'i', 'n', 'e', ' ', 't', 'w', 'o'};
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 40;
+    ASSERT_EQ(0, wrap_u8_text("line one\n\nline two", 18, &o, &out8, &len8));
+    ASSERT_EQ(0, wrap_u32_text(cps, 18, &o, &out32, &len32));
+    expect = wcwidth_decode_u32(out8, len8, stack, 64, &count);
+    ASSERT_EQ((int64_t) count, (int64_t) len32);
+    ASSERT_EQ(0, memcmp(expect, out32, count * sizeof(uint32_t)));
+    free(out8);
+    free(out32);
 }
 
 int
 main(void)
 {
-    RUN_TEST(simple_wrap);
-    RUN_TEST(no_wrap_needed);
-    RUN_TEST(cjk_two_cells_each);
-    RUN_TEST(initial_indent);
-    RUN_TEST(subsequent_indent);
-    RUN_TEST(long_word_breaking);
-    RUN_TEST(hyphen_breaking);
-    RUN_TEST(empty_input);
-    RUN_TEST(single_word_exact_width);
-    RUN_TEST(sgr_propagation);
-    RUN_TEST(max_lines_truncation);
-    RUN_TEST(multiple_spaces_collapsed);
-    RUN_TEST(no_break_long_words);
-    RUN_TEST(without_sgr_propagation);
-    RUN_TEST(tab_expansion);
-    RUN_TEST(newline_as_whitespace);
-    RUN_TEST(max_lines_with_no_more_content);
-    RUN_TEST(only_escape_sequences);
-    RUN_TEST(preserve_newlines_basic);
-    RUN_TEST(preserve_newlines_wrapping);
-    RUN_TEST(preserve_newlines_empty_input);
-    RUN_TEST(preserve_newlines_only_newlines);
-    RUN_TEST(preserve_newlines_whitespace_only_lines);
-    RUN_TEST(preserve_newlines_single_paragraph);
-
+    RUN_TEST(wrap_basic);
+    RUN_TEST(wrap_text_basic);
+    RUN_TEST(wrap_embedded_nul);
+    RUN_TEST(wrap_u32_parity);
+    RUN_TEST(wrap_text_u32_parity);
     return test_summary();
 }

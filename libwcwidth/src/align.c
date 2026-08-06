@@ -1,9 +1,8 @@
 /*
  * Terminal-aware text alignment: ljust, rjust, center.
- *
- * Port of wcwidth/align.py.
  */
 #include "wcwidth/align.h"
+#include "wcwidth/utf8.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,7 +26,7 @@ is_ascii_printable(const char *text, size_t text_len)
 
 static int
 measure_width(const char *text, size_t text_len, wcwidth_control_mode_t control_codes,
-              int ambiguous_width, const char *term_program)
+              int ambiguous_width, const char *term_program, int *error)
 {
     if (is_ascii_printable(text, text_len)) {
         return (int) text_len;
@@ -39,8 +38,7 @@ measure_width(const char *text, size_t text_len, wcwidth_control_mode_t control_
             .ambiguous_width = ambiguous_width,
             .term_program = term_program,
         };
-        int error = 0;
-        int w = width_u8(text, text_len, control_codes, &opts, &error);
+        int w = width_u8(text, text_len, control_codes, &opts, error);
         if (w < 0) {
             return -1;
         }
@@ -48,18 +46,35 @@ measure_width(const char *text, size_t text_len, wcwidth_control_mode_t control_
     }
 }
 
+/* Append *fillchar* *count* times to *dst*; returns the advanced pointer. */
+static char *
+fill_repeat(char *dst, const char *fillchar, size_t fillchar_len, size_t count)
+{
+    size_t i;
+
+    for (i = 0; i < count; i++) {
+        memcpy(dst, fillchar, fillchar_len);
+        dst += fillchar_len;
+    }
+    return dst;
+}
+
 char *
-ljust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
-         wcwidth_control_mode_t control_codes, int ambiguous_width, const char *term_program,
-         size_t *out_len)
+ljust_u8(const char *text, size_t text_len, size_t dest_width, const char *fillchar,
+         size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+         const char *term_program, size_t *out_len, int *error)
 {
     int text_width;
     size_t padding;
     size_t total;
     char *result;
 
-    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program);
-    if (text_width < 0) {
+    if (error != NULL) {
+        *error = WCWIDTH_ERROR_NONE;
+    }
+
+    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program, error);
+    if (text_width < 0 || (error != NULL && *error != WCWIDTH_ERROR_NONE)) {
         if (out_len != NULL) {
             *out_len = 0;
         }
@@ -67,7 +82,7 @@ ljust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
     }
 
     padding = ((size_t) text_width < dest_width) ? (dest_width - (size_t) text_width) : 0;
-    total = text_len + padding;
+    total = text_len + padding * fillchar_len;
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {
@@ -78,7 +93,7 @@ ljust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
     }
 
     memcpy(result, text, text_len);
-    memset(result + text_len, (int) (unsigned char) fillchar, padding);
+    fill_repeat(result + text_len, fillchar, fillchar_len, padding);
     result[total] = '\0';
 
     if (out_len != NULL) {
@@ -88,17 +103,21 @@ ljust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
 }
 
 char *
-rjust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
-         wcwidth_control_mode_t control_codes, int ambiguous_width, const char *term_program,
-         size_t *out_len)
+rjust_u8(const char *text, size_t text_len, size_t dest_width, const char *fillchar,
+         size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+         const char *term_program, size_t *out_len, int *error)
 {
     int text_width;
     size_t padding;
     size_t total;
     char *result;
 
-    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program);
-    if (text_width < 0) {
+    if (error != NULL) {
+        *error = WCWIDTH_ERROR_NONE;
+    }
+
+    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program, error);
+    if (text_width < 0 || (error != NULL && *error != WCWIDTH_ERROR_NONE)) {
         if (out_len != NULL) {
             *out_len = 0;
         }
@@ -106,7 +125,7 @@ rjust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
     }
 
     padding = ((size_t) text_width < dest_width) ? (dest_width - (size_t) text_width) : 0;
-    total = padding + text_len;
+    total = padding * fillchar_len + text_len;
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {
@@ -116,8 +135,8 @@ rjust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
         return NULL;
     }
 
-    memset(result, (int) (unsigned char) fillchar, padding);
-    memcpy(result + padding, text, text_len);
+    fill_repeat(result, fillchar, fillchar_len, padding);
+    memcpy(result + padding * fillchar_len, text, text_len);
     result[total] = '\0';
 
     if (out_len != NULL) {
@@ -127,9 +146,9 @@ rjust_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
 }
 
 char *
-center_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
-          wcwidth_control_mode_t control_codes, int ambiguous_width, const char *term_program,
-          size_t *out_len)
+center_u8(const char *text, size_t text_len, size_t dest_width, const char *fillchar,
+          size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+          const char *term_program, size_t *out_len, int *error)
 {
     int text_width;
     size_t total_padding;
@@ -138,8 +157,12 @@ center_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
     size_t total;
     char *result;
 
-    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program);
-    if (text_width < 0) {
+    if (error != NULL) {
+        *error = WCWIDTH_ERROR_NONE;
+    }
+
+    text_width = measure_width(text, text_len, control_codes, ambiguous_width, term_program, error);
+    if (text_width < 0 || (error != NULL && *error != WCWIDTH_ERROR_NONE)) {
         if (out_len != NULL) {
             *out_len = 0;
         }
@@ -149,15 +172,14 @@ center_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
     total_padding = ((size_t) text_width < dest_width) ? (dest_width - (size_t) text_width) : 0;
 
     /*
-     * Matching Python str.center eccentric behavior:
-     * When dest_width is odd, extra padding goes on the left;
-     * when dest_width is even, extra padding goes on the right.
+     * str.center eccentricity: odd dest_width puts the extra padding on the
+     * left, even on the right.
      * See https://jazcap53.github.io/pythons-eccentric-strcenter.html
      */
     left_pad = (total_padding / 2) + (total_padding & dest_width & 1);
     right_pad = total_padding - left_pad;
 
-    total = left_pad + text_len + right_pad;
+    total = left_pad * fillchar_len + text_len + right_pad * fillchar_len;
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {
@@ -167,13 +189,89 @@ center_u8(const char *text, size_t text_len, size_t dest_width, char fillchar,
         return NULL;
     }
 
-    memset(result, (int) (unsigned char) fillchar, left_pad);
-    memcpy(result + left_pad, text, text_len);
-    memset(result + left_pad + text_len, (int) (unsigned char) fillchar, right_pad);
+    {
+        char *dst = fill_repeat(result, fillchar, fillchar_len, left_pad);
+        memcpy(dst, text, text_len);
+        fill_repeat(dst + text_len, fillchar, fillchar_len, right_pad);
+    }
     result[total] = '\0';
 
     if (out_len != NULL) {
         *out_len = total;
     }
     return result;
+}
+
+/* Signature shared by ljust_u8(), rjust_u8(), and center_u8(). */
+typedef char *(*justify_fn)(const char *, size_t, size_t, const char *, size_t,
+                            wcwidth_control_mode_t, int, const char *, size_t *, int *);
+
+/*
+ * Encode a codepoint array to UTF-8, run a justification function, and decode
+ * the result back to a malloc'd codepoint array.  Returns NULL on error, with
+ * *error set as for the _u8() forms (WCWIDTH_ERROR_NONE = allocation failure).
+ */
+static uint32_t *
+justify_u32(const uint32_t *codepoints, size_t n, size_t dest_width, const char *fillchar,
+            size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+            const char *term_program, size_t *out_len, int *error, justify_fn justify)
+{
+    char enc_stack[512];
+    size_t enc_len;
+    char *utf8;
+    uint32_t *result;
+
+    if (error != NULL) {
+        *error = WCWIDTH_ERROR_NONE;
+    }
+    if (out_len != NULL) {
+        *out_len = 0;
+    }
+
+    utf8 = wcwidth_encode_u32(codepoints, n, enc_stack, sizeof(enc_stack), &enc_len);
+    if (utf8 == NULL) {
+        return NULL;
+    }
+    {
+        size_t byte_len = 0;
+        char *bytes = justify(utf8, enc_len, dest_width, fillchar, fillchar_len, control_codes,
+                              ambiguous_width, term_program, &byte_len, error);
+
+        if (utf8 != enc_stack) {
+            free(utf8);
+        }
+        if (bytes == NULL) {
+            return NULL; /* *error already set by justify */
+        }
+        result = wcwidth_decode_u32_heap(bytes, byte_len, out_len);
+        free(bytes);
+    }
+    return result;
+}
+
+uint32_t *
+ljust_u32(const uint32_t *codepoints, size_t n, size_t dest_width, const char *fillchar,
+          size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+          const char *term_program, size_t *out_len, int *error)
+{
+    return justify_u32(codepoints, n, dest_width, fillchar, fillchar_len, control_codes,
+                       ambiguous_width, term_program, out_len, error, ljust_u8);
+}
+
+uint32_t *
+rjust_u32(const uint32_t *codepoints, size_t n, size_t dest_width, const char *fillchar,
+          size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+          const char *term_program, size_t *out_len, int *error)
+{
+    return justify_u32(codepoints, n, dest_width, fillchar, fillchar_len, control_codes,
+                       ambiguous_width, term_program, out_len, error, rjust_u8);
+}
+
+uint32_t *
+center_u32(const uint32_t *codepoints, size_t n, size_t dest_width, const char *fillchar,
+           size_t fillchar_len, wcwidth_control_mode_t control_codes, int ambiguous_width,
+           const char *term_program, size_t *out_len, int *error)
+{
+    return justify_u32(codepoints, n, dest_width, fillchar, fillchar_len, control_codes,
+                       ambiguous_width, term_program, out_len, error, center_u8);
 }

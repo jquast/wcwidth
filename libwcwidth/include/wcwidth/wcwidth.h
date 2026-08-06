@@ -1,7 +1,5 @@
 /*
  * Unicode character display width: wcwidth, wcswidth, wcstwidth.
- *
- * Port of wcwidth/_wcwidth.py and wcwidth/_wcswidth.py.
  */
 #ifndef WCWIDTH_H
 #define WCWIDTH_H
@@ -29,7 +27,7 @@ int wcwidth_u32(uint32_t codepoint, int ambiguous_width);
 /*
  * Return the display width of a string of Unicode codepoints.
  *
- * *n*: maximum number of codepoints to measure (use (size_t)-1 for entire array).
+ * *n*: number of codepoints in the array.
  *
  * This function handles grapheme clusters (ZWJ, VS16, virama, RI pairs, etc.).
  */

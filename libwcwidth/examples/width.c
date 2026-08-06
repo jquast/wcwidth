@@ -54,7 +54,7 @@ readline(FILE *fp, char **buf, size_t *cap)
         (*buf)[len++] = (char) c;
     }
     if (c == EOF && len == 0)
-        return 0;
+        return (size_t) -1; /* EOF */
     if (len + 1 < *cap)
         (*buf)[len] = '\0';
     return len;
@@ -94,11 +94,7 @@ main(int argc, char **argv)
 
     while (1) {
         size_t len = readline(fp, &line, &cap);
-        if (len == 0 && line == NULL) {
-            free(line);
-            break;
-        }
-        if (len == 0)
+        if (len == (size_t) -1) /* EOF */
             break;
 
         int w = width_u8(line, len, WCWIDTH_PARSE, &opts, NULL);

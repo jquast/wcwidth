@@ -1,17 +1,19 @@
 /*
  * Grapheme cluster segmentation for UTF-8 text.
  *
- * Port of wcwidth/grapheme.py. Implements the UAX #29 grapheme cluster
- * boundary algorithm using pre-computed Unicode interval tables.
+ * Implements the UAX #29 grapheme cluster boundary algorithm using pre-computed
+ * Unicode interval tables.
  */
 #include "wcwidth/grapheme.h"
 #include "wcwidth/tables.h"
+#include "wcwidth/generated_tables.h"
+#include "wcwidth/unicode.h"
+#include "wcwidth/utf8.h"
 
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 
 typedef enum
 {
@@ -47,455 +49,12 @@ struct wcwidth_grapheme_iter_t
     bool exhausted;
 };
 
-static int utf8_decode_one(const char *s, size_t len, uint32_t *cp_out, size_t *byte_len_out);
 static gcb_t gcb_of(uint32_t ucs);
-static bool is_extended_pictographic(uint32_t ucs);
 static bool is_incb_linker(uint32_t ucs);
 static bool is_incb_consonant(uint32_t ucs);
 static bool is_incb_extend(uint32_t ucs);
 static bool should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb,
                          int *ri_count_out);
-
-/*
- * Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
- */
-
-#define UTF8_ACCEPT 0
-#define UTF8_REJECT 12
-
-static const uint8_t _utf8_transition[] = {
-    /* The first part maps bytes to character classes to reduce
-     * the size of the transition table and create bitmasks. */
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    9,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    7,
-    8,
-    8,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    10,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    4,
-    3,
-    3,
-    11,
-    6,
-    6,
-    6,
-    5,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    8,
-    /* The second part is a transition table that maps a combination
-     * of a state of the automaton and a character class to a state. */
-    0,
-    12,
-    24,
-    36,
-    60,
-    96,
-    84,
-    12,
-    12,
-    12,
-    48,
-    72,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    0,
-    12,
-    12,
-    12,
-    12,
-    12,
-    0,
-    12,
-    0,
-    12,
-    12,
-    12,
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    24,
-    12,
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    24,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    36,
-    12,
-    36,
-    12,
-    12,
-    12,
-    36,
-    12,
-    12,
-    12,
-    12,
-    12,
-    36,
-    12,
-    36,
-    12,
-    12,
-    12,
-    36,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-    12,
-};
-
-static uint32_t
-_utf8_decode_step(uint32_t *state, uint32_t *codep, uint8_t byte)
-{
-    uint32_t type = _utf8_transition[byte];
-    *codep = (*state != UTF8_ACCEPT) ? (byte & 0x3Fu) | (*codep << 6) : (0xFFu >> type) & byte;
-    *state = _utf8_transition[256 + *state + type];
-    return *state;
-}
-
-/*
- * Decode one complete UTF-8 codepoint from *s*.
- *
- * Returns number of bytes consumed on success, sets *cp_out.
- * Returns 0 on error (truncated or invalid), sets *cp_out = 0xFFFD and
- * *byte_len_out to bytes consumed before error (at least 1).
- *
- * Rejects overlong sequences, surrogates (U+D800-U+DFFF), and values
- * above U+10FFFF.
- */
-static int
-utf8_decode_one(const char *s, size_t len, uint32_t *cp_out, size_t *byte_len_out)
-{
-    uint32_t state = UTF8_ACCEPT;
-    uint32_t codep = 0;
-    size_t consumed;
-
-    for (consumed = 0; consumed < len; consumed++) {
-        uint32_t prev_state = state;
-        if (_utf8_decode_step(&state, &codep, (uint8_t) s[consumed]) == UTF8_ACCEPT) {
-            *cp_out = codep;
-            *byte_len_out = consumed + 1;
-            return 1;
-        }
-        if (state == UTF8_REJECT) {
-            /* Invalid byte: emit replacement char and report bytes consumed.
-             * If the rejection happens on the first byte of a multi-byte
-             * sequence, consume just that byte. Otherwise consume all bytes
-             * seen so far (the maximal subpart). */
-            if (prev_state == UTF8_ACCEPT && consumed > 0) {
-                consumed--;
-            }
-            break;
-        }
-    }
-
-    /* Truncated or invalid: emit replacement char */
-    *cp_out = 0xFFFD;
-    *byte_len_out = consumed > 0 ? consumed : 1;
-    return 0;
-}
 
 /*
  * Pre-decode *text* of length *len* into arrays of codepoints and byte offsets.
@@ -523,8 +82,10 @@ predecode(const char *text, size_t len, uint32_t **cp_out, size_t **offsets_out,
         uint32_t ucs;
         size_t blen;
 
-        if (!utf8_decode_one(text + pos, len - pos, &ucs, &blen)) {
-            /* Invalid byte -- treat as individual codepoint */
+        blen = wcwidth_utf8_decode_single(text + pos, len - pos, &ucs);
+        if (ucs == 0xFFFD && (blen < 3 || (unsigned char) text[pos] != 0xEF)) {
+            /* Malformed input: consume one byte as the raw value, matching
+             * the pre-decode contract for invalid sequences. */
             ucs = (unsigned char) text[pos];
             blen = 1;
         }
@@ -577,14 +138,6 @@ gcb_of(uint32_t ucs)
         return GCB_LVT;
 
     return GCB_OTHER;
-}
-
-static bool
-is_extended_pictographic(uint32_t ucs)
-{
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC,
-                            WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC_LEN)
-           != 0;
 }
 
 static bool
@@ -715,7 +268,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
     if (prev_gcb == GCB_ZWJ && cp_idx > 0) {
         uint32_t curr_ucs = cp[cp_idx];
 
-        if (is_extended_pictographic(curr_ucs)) {
+        if (wcwidth_is_extended_pictographic(curr_ucs)) {
             size_t i = cp_idx;
             /* skip the ZWJ at cp_idx - 1 */
             if (i > 1) {
@@ -729,7 +282,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
                             break;
                         i--;
                     }
-                    else if (is_extended_pictographic(prev_cp)) {
+                    else if (wcwidth_is_extended_pictographic(prev_cp)) {
                         *ri_count_out = 0;
                         return false;
                     }

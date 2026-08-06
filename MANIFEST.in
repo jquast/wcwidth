@@ -1,0 +1,11 @@
+# sdist contents: mirrors the previous hatchling sdist include list, plus the
+# libwcwidth C sources needed to build the optional extension from source.
+include LICENSE README.rst tox.ini .gitignore .pylintrc
+include requirements-*.in requirements-*.txt
+recursive-include wcwidth *.py *.pyi py.typed
+recursive-include libwcwidth *
+recursive-include bin *.py
+recursive-include code_templates *.j2 *.py
+recursive-include docs *.rst *.py
+recursive-include tests *.py
+recursive-include ucs-detect/data *

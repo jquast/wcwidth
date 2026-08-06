@@ -1,7 +1,5 @@
 /*
  * SGR (Select Graphic Rendition) escape sequence state machine.
- *
- * Port of wcwidth/sgr_state.py.
  */
 #include "wcwidth/sgr.h"
 
@@ -420,7 +418,7 @@ extract_sgr_params(const char *line, size_t line_len, size_t pos, const char **p
 }
 
 int
-wcwidth_sgr_propagate(char **lines, size_t nlines)
+wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens, size_t nlines)
 {
     wcwidth_sgr_state_t state;
     size_t li;
@@ -429,14 +427,12 @@ wcwidth_sgr_propagate(char **lines, size_t nlines)
 
     for (li = 0; li < nlines; li++) {
         char *line = lines[li];
-        size_t line_len;
-        char prefix[64];
+        size_t line_len = line_lens[li];
+        char prefix[WCWIDTH_SGR_PROPAGATE_SPARE];
         size_t prefix_len;
         size_t suffix_len;
         const char reset[] = "\x1b[0m";
         size_t pos;
-
-        line_len = strlen(line);
 
         /* (1) generate restore prefix from carried-over state */
         wcwidth_sgr_to_escape(&state, prefix, sizeof(prefix));
@@ -467,7 +463,7 @@ wcwidth_sgr_propagate(char **lines, size_t nlines)
         }
 
         /* (4) heuristic capacity check */
-        if (line_len + prefix_len + suffix_len + 1 > line_len + 64) {
+        if (line_len + prefix_len + suffix_len + 1 > line_len + WCWIDTH_SGR_PROPAGATE_SPARE) {
             return -1;
         }
 
@@ -480,6 +476,10 @@ wcwidth_sgr_propagate(char **lines, size_t nlines)
         /* (6) append suffix */
         if (suffix_len > 0) {
             memcpy(line + line_len + prefix_len, reset, suffix_len + 1);
+        }
+
+        if (out_lens != NULL) {
+            out_lens[li] = line_len + prefix_len + suffix_len;
         }
     }
 

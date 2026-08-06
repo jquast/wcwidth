@@ -1,12 +1,15 @@
 /*
  * Terminal-aware string width with escape sequence parsing and cursor tracking.
- *
- * Port of wcwidth/_width.py width().
  */
 #include "wcwidth/width.h"
 #include "wcwidth/escape.h"
 #include "wcwidth/text_sizing.h"
+#include "wcwidth/tables.h"
+#include "wcwidth/generated_tables.h"
+#include "wcwidth/unicode.h"
+#include "wcwidth/utf8.h"
 #include "wcwidth/wcwidth.h"
+#include "wcwidth/terminal_override.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,16 +26,6 @@
 /* Threshold for fast-path downgrade: strings longer than this are checked
  * for cursor-movement controls; when absent, mode downgrades to 'ignore'. */
 #define FAST_PATH_MIN_LEN 20
-
-typedef enum
-{
-    WCWIDTH_ERROR_NONE = 0,
-    WCWIDTH_ERROR_INDETERMINATE,
-    WCWIDTH_ERROR_ILLEGAL_CTRL,
-    WCWIDTH_ERROR_VERTICAL_CTRL,
-    WCWIDTH_ERROR_CURSOR_LEFT_EXCEED,
-    WCWIDTH_ERROR_CURSOR_LEFT_ABSOLUTE,
-} wcwidth_error_t;
 
 const wcwidth_width_opts_t WCWIDTH_WIDTH_OPTS_DEFAULT = {
     .tabsize = 8,
@@ -73,140 +66,22 @@ is_horizontal_ctrl(uint32_t ucs)
     return ucs == 0x08 || ucs == 0x09 || ucs == 0x0D;
 }
 
+/*
+ * Decode the codepoint immediately preceding byte position pos.  Returns its
+ * starting offset, or (size_t) -1 at the start of the string.
+ */
 static size_t
-utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
+prev_codepoint(const char *text, size_t pos, uint32_t *cp_out)
 {
-    unsigned char c;
-    uint32_t cp;
-    size_t expected;
-    size_t i;
-
-    if (len == 0) {
-        *cp_out = 0xFFFD;
-        return 0;
+    size_t j = pos;
+    if (j == 0) {
+        return (size_t) -1;
     }
-
-    c = (unsigned char) s[0];
-
-    if (c < 0x80) {
-        *cp_out = c;
-        return 1;
-    }
-
-    if (c < 0xC0) {
-        *cp_out = 0xFFFD;
-        return 1;
-    }
-    if (c < 0xE0) {
-        expected = 2;
-        cp = c & 0x1F;
-    }
-    else if (c < 0xF0) {
-        expected = 3;
-        cp = c & 0x0F;
-    }
-    else if (c < 0xF8) {
-        expected = 4;
-        cp = c & 0x07;
-    }
-    else {
-        *cp_out = 0xFFFD;
-        return 1;
-    }
-
-    if (expected > len) {
-        *cp_out = 0xFFFD;
-        return len;
-    }
-
-    for (i = 1; i < expected; i++) {
-        unsigned char cc = (unsigned char) s[i];
-        if ((cc & 0xC0) != 0x80) {
-            *cp_out = 0xFFFD;
-            return i;
-        }
-        cp = (cp << 6) | (cc & 0x3F);
-    }
-
-    if (expected == 2 && cp < 0x80) {
-        *cp_out = 0xFFFD;
-        return expected;
-    }
-    if (expected == 3 && cp < 0x800) {
-        *cp_out = 0xFFFD;
-        return expected;
-    }
-    if (expected == 4 && cp < 0x10000) {
-        *cp_out = 0xFFFD;
-        return expected;
-    }
-
-    if (cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
-        *cp_out = 0xFFFD;
-        return expected;
-    }
-
-    *cp_out = cp;
-    return expected;
-}
-
-#include "wcwidth/tables.h"
-#include "wcwidth/generated_tables.h"
-#include "wcwidth/wcwidth_config.h"
-
-static bool
-is_regional_indicator(uint32_t ucs)
-{
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR,
-                            WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR_LEN)
-           != 0;
-}
-
-static bool
-is_virama(uint32_t ucs)
-{
-    /*
-     * IndicSyllabicCategory Virama + Invisible_Stacker codepoints.
-     * Same table as wcswidth.c.
-     */
-    static const wcwidth_interval_t virama_table[] = {
-        {0x0094d, 0x0094d}, {0x009cd, 0x009cd}, {0x00a4d, 0x00a4d}, {0x00acd, 0x00acd},
-        {0x00b4d, 0x00b4d}, {0x00bcd, 0x00bcd}, {0x00c4d, 0x00c4d}, {0x00ccd, 0x00ccd},
-        {0x00d4d, 0x00d4d}, {0x00dca, 0x00dca}, {0x01039, 0x01039}, {0x017d2, 0x017d2},
-        {0x01a60, 0x01a60}, {0x01b44, 0x01b44}, {0x01bab, 0x01bab}, {0x0a806, 0x0a806},
-        {0x0a8c4, 0x0a8c4}, {0x0a9c0, 0x0a9c0}, {0x0aaf6, 0x0aaf6}, {0x10a3f, 0x10a3f},
-        {0x11046, 0x11046}, {0x110b9, 0x110b9}, {0x11133, 0x11133}, {0x111c0, 0x111c0},
-        {0x11235, 0x11235}, {0x1134d, 0x1134d}, {0x113d0, 0x113d0}, {0x11442, 0x11442},
-        {0x114c2, 0x114c2}, {0x115bf, 0x115bf}, {0x1163f, 0x1163f}, {0x116b6, 0x116b6},
-        {0x11839, 0x11839}, {0x1193e, 0x1193e}, {0x119e0, 0x119e0}, {0x11a47, 0x11a47},
-        {0x11a99, 0x11a99}, {0x11c3f, 0x11c3f}, {0x11d45, 0x11d45}, {0x11d97, 0x11d97},
-        {0x11f42, 0x11f42},
-    };
-    static const size_t virama_table_len = sizeof virama_table / sizeof virama_table[0];
-    return wcwidth_bisearch(ucs, virama_table, virama_table_len) != 0;
-}
-
-#define FITZPATRICK_MIN 0x1F3FB
-#define FITZPATRICK_MAX 0x1F3FF
-
-static bool
-is_fitzpatrick(uint32_t ucs)
-{
-    return ucs >= FITZPATRICK_MIN && ucs <= FITZPATRICK_MAX;
-}
-
-static bool
-is_extended_pictographic(uint32_t ucs)
-{
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC,
-                            WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC_LEN)
-           != 0;
-}
-
-static bool
-is_emoji_zwj_set(uint32_t ucs)
-{
-    return is_extended_pictographic(ucs) || is_regional_indicator(ucs);
+    do {
+        j--;
+    } while (j > 0 && ((unsigned char) text[j] & 0xC0) == 0x80);
+    wcwidth_utf8_decode_single(text + j, pos - j, cp_out);
+    return j;
 }
 
 static size_t
@@ -386,8 +261,22 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
     }
 }
 
+/* Commit a pending grapheme cluster to the running column total. */
+static void
+flush_cluster(int *current_col, int *max_extent, int *cluster_width)
+{
+    if (*cluster_width) {
+        *current_col += *cluster_width;
+        if (*current_col > *max_extent) {
+            *max_extent = *current_col;
+        }
+        *cluster_width = 0;
+    }
+}
+
 static int
-_width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous_width, int *error)
+_width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous_width,
+             const char *term_program, int *error)
 {
     size_t idx;
     int current_col;
@@ -397,6 +286,39 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
     uint32_t last_measured_ucs;
     int last_measured_w;
     bool prev_was_virama;
+    const wcwidth_terminal_override_t *term;
+    const wcwidth_interval_t *narrower = NULL;
+    size_t narrower_len = 0;
+    const wcwidth_interval_t *vs16_narrower = NULL;
+    size_t vs16_narrower_len = 0;
+    const wcwidth_interval_t *vs15_wider = NULL;
+    size_t vs15_wider_len = 0;
+    const wcwidth_interval_t *zeroer = NULL;
+    size_t zeroer_len = 0;
+    const wcwidth_interval_t *narrow_wider = NULL;
+    size_t narrow_wider_len = 0;
+    const wcwidth_interval_t *narrow_zeroer = NULL;
+    size_t narrow_zeroer_len = 0;
+    bool has_graphemes = false;
+    int cluster_start;
+    int col_before_cluster;
+
+    term = wcwidth_resolve_terminal(term_program);
+    if (term != NULL) {
+        narrower = term->set->narrower;
+        narrower_len = term->set->narrower_len;
+        vs16_narrower = term->set->vs16_narrower;
+        vs16_narrower_len = term->set->vs16_narrower_len;
+        vs15_wider = term->set->vs15_wider;
+        vs15_wider_len = term->set->vs15_wider_len;
+        zeroer = term->set->zeroer;
+        zeroer_len = term->set->zeroer_len;
+        narrow_wider = term->set->narrow_wider;
+        narrow_wider_len = term->set->narrow_wider_len;
+        narrow_zeroer = term->set->narrow_zeroer;
+        narrow_zeroer_len = term->set->narrow_zeroer_len;
+        has_graphemes = term->grapheme_entries_len > 0;
+    }
 
     /* Fast path: pure ASCII printable (no control chars, no high bytes). */
     {
@@ -422,19 +344,14 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
     last_measured_ucs = 0;
     last_measured_w = 0;
     prev_was_virama = false;
+    cluster_start = -1;
+    col_before_cluster = 0;
 
     while (idx < n) {
         unsigned char b = (unsigned char) text[idx];
 
         if (b == ESC) {
-            /* Flush pending cluster. */
-            if (cluster_width) {
-                current_col += cluster_width;
-                if (current_col > max_extent) {
-                    max_extent = current_col;
-                }
-                cluster_width = 0;
-            }
+            flush_cluster(&current_col, &max_extent, &cluster_width);
 
             {
                 wcwidth_esc_result_t result;
@@ -484,22 +401,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
 
                         case WCWIDTH_ESC_OSC66: {
                             wcwidth_text_sizing_t ts;
-                            char meta_buf[64];
-                            ts.params.scale = 1;
-                            ts.params.width = 0;
-                            ts.params.numerator = 0;
-                            ts.params.denominator = 0;
-                            ts.params.vertical_align = 0;
-                            ts.params.horizontal_align = 0;
-                            ts.text = result.ts_text;
-                            ts.text_len = result.ts_text_len;
-                            ts.terminator = result.ts_terminator;
-                            if (result.ts_meta_len > 0 && result.ts_meta_len < sizeof(meta_buf)) {
-                                /* NUL-terminate meta for strtol-based parsing. */
-                                memcpy(meta_buf, result.ts_meta, result.ts_meta_len);
-                                meta_buf[result.ts_meta_len] = '\0';
-                                wcwidth_ts_parse_params(meta_buf, result.ts_meta_len, &ts.params);
-                            }
+                            wcwidth_ts_from_esc(&result, &ts);
                             current_col += wcwidth_ts_display_width(&ts, ambiguous_width);
                             break;
                         }
@@ -512,10 +414,12 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                 }
             }
 
-            /* Escape sequences break VS16/VS15 adjacency. */
+            /* Escape sequences break VS16/VS15 adjacency.  prev_was_virama
+             * survives (as in the pure reference): control characters and
+             * escapes do not end a pending virama conjunct. */
             last_measured_idx = -2;
             last_measured_ucs = 0;
-            prev_was_virama = false;
+            cluster_start = -1;
 
             if (current_col > max_extent) {
                 max_extent = current_col;
@@ -526,14 +430,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
         if (b < 0x20) {
             uint32_t ucs = b;
 
-            /* Flush pending cluster. */
-            if (cluster_width) {
-                current_col += cluster_width;
-                if (current_col > max_extent) {
-                    max_extent = current_col;
-                }
-                cluster_width = 0;
-            }
+            flush_cluster(&current_col, &max_extent, &cluster_width);
 
             if (is_illegal_ctrl(ucs)) {
                 if (strict) {
@@ -549,7 +446,9 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             }
             else if (is_horizontal_ctrl(ucs)) {
                 if (ucs == 0x09) {
-                    current_col += tabsize - (current_col % tabsize);
+                    if (tabsize > 0) {
+                        current_col += tabsize - (current_col % tabsize);
+                    }
                 }
                 else if (ucs == 0x08) {
                     if (current_col > 0) {
@@ -558,7 +457,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                 }
                 else {
                     if (strict) {
-                        *error = WCWIDTH_ERROR_CURSOR_LEFT_ABSOLUTE;
+                        *error = WCWIDTH_ERROR_HORIZONTAL_MOVEMENT;
                         return -1;
                     }
                     current_col = 0;
@@ -573,18 +472,12 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             idx++;
             last_measured_idx = -2;
             last_measured_ucs = 0;
-            prev_was_virama = false;
+            cluster_start = -1;
             continue;
         }
 
         if (b == 0x7F) {
-            if (cluster_width) {
-                current_col += cluster_width;
-                if (current_col > max_extent) {
-                    max_extent = current_col;
-                }
-                cluster_width = 0;
-            }
+            flush_cluster(&current_col, &max_extent, &cluster_width);
             if (strict) {
                 *error = WCWIDTH_ERROR_ILLEGAL_CTRL;
                 return -1;
@@ -592,22 +485,16 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             idx++;
             last_measured_idx = -2;
             last_measured_ucs = 0;
-            prev_was_virama = false;
+            cluster_start = -1;
             continue;
         }
 
         {
             uint32_t ucs;
-            size_t consumed = utf8_decode_single(text + idx, n - idx, &ucs);
+            size_t consumed = wcwidth_utf8_decode_single(text + idx, n - idx, &ucs);
 
             if (ucs >= 0x80 && ucs < 0xA0) {
-                if (cluster_width) {
-                    current_col += cluster_width;
-                    if (current_col > max_extent) {
-                        max_extent = current_col;
-                    }
-                    cluster_width = 0;
-                }
+                flush_cluster(&current_col, &max_extent, &cluster_width);
                 if (strict) {
                     *error = WCWIDTH_ERROR_ILLEGAL_CTRL;
                     return -1;
@@ -615,22 +502,55 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                 idx += consumed;
                 last_measured_idx = -2;
                 last_measured_ucs = 0;
-                prev_was_virama = false;
+                cluster_start = -1;
                 continue;
             }
 
+            /* 5. Inline grapheme-clustering: ZWJ, Virama, VS16, Regional
+             * Indicators, Fitzpatrick, Mc, wcwidth */
             if (ucs == 0x200D) {
                 if (prev_was_virama) {
                     idx += consumed;
                 }
                 else if (idx + consumed < n) {
-                    /* Skip ZWJ and the next codepoint (they form a zero-width unit). */
-                    uint32_t next_ucs;
-                    size_t next_consumed =
-                        utf8_decode_single(text + idx + consumed, n - idx - consumed, &next_ucs);
+                    /* Check for a terminal grapheme override when the base
+                     * char is ExtPict/RI. */
+                    if (has_graphemes && last_measured_idx >= 0
+                        && wcwidth_is_emoji_zwj_set(last_measured_ucs)) {
+                        size_t cluster_end =
+                            wcwidth_scan_zwj_cluster_end_u8(text, n, (size_t) last_measured_idx);
+                        uint32_t cluster_cps[32];
+                        size_t cluster_cps_len = wcwidth_decode_cluster(
+                            text, (size_t) last_measured_idx, cluster_end, cluster_cps, 32);
+                        if (cluster_cps_len < 32) {
+                            int override_w = wcwidth_grapheme_override_lookup(term, cluster_cps,
+                                                                              cluster_cps_len);
+                            if (override_w >= 0) {
+                                current_col += override_w - last_measured_w;
+                                if (current_col > max_extent) {
+                                    max_extent = current_col;
+                                }
+                                last_measured_idx = -2;
+                                last_measured_ucs = 0;
+                                last_measured_w = 0;
+                                prev_was_virama = false;
+                                cluster_start = -1;
+                                idx = cluster_end;
+                                continue;
+                            }
+                        }
+                    }
+                    /* No override; ZWJ breaks VS16/VS15 adjacency. */
                     last_measured_w = 0;
                     prev_was_virama = false;
-                    idx += consumed + next_consumed;
+                    idx += consumed;
+                    {
+                        /* Skip the next codepoint (they form a zero-width unit). */
+                        uint32_t next_ucs;
+                        size_t next_consumed =
+                            wcwidth_utf8_decode_single(text + idx, n - idx, &next_ucs);
+                        idx += next_consumed;
+                    }
                 }
                 else {
                     prev_was_virama = false;
@@ -639,9 +559,11 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                 continue;
             }
 
+            /* 6. VS16 (U+FE0F): converts preceding narrow character to wide. */
             if (ucs == 0xFE0F && last_measured_idx >= 0) {
-                if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS16,
-                                     WCWIDTH_TABLE_VS16_LEN)) {
+                if (!wcwidth_bisearch(last_measured_ucs, vs16_narrower, vs16_narrower_len)
+                    && wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS16,
+                                        WCWIDTH_TABLE_VS16_LEN)) {
                     cluster_width = 2;
                 }
                 last_measured_idx = -2;
@@ -650,25 +572,36 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             }
 
             if (ucs == 0xFE0E && last_measured_idx >= 0) {
-                if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS15, WCWIDTH_TABLE_VS15_LEN)
-                    && last_measured_w == 2) {
+                bool vs15_narrow =
+                    wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS15, WCWIDTH_TABLE_VS15_LEN)
+                    != 0;
+                if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
+                    vs15_narrow = false;
+                }
+                if (vs15_narrow && last_measured_w == 2) {
+                    /* Not clamped: the pending cluster's width is added on
+                     * flush, so a negative column here yields the narrowed
+                     * width. */
                     current_col -= 1;
-                    if (current_col < 0) {
-                        current_col = 0;
-                    }
                 }
                 idx += consumed;
                 continue;
             }
 
+            /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
             if (ucs > 0xFFFF) {
-                if (is_regional_indicator(ucs)) {
+                if (wcwidth_is_regional_indicator(ucs)) {
+                    /* Count consecutive preceding Regional Indicators; an odd
+                     * count pairs this one with the previous (zero-width). */
                     int ri_before = 0;
-                    /* Count preceding Regional Indicators via backward scan.
-                     * This is approximate: since we don't store all past ucs,
-                     * we use the last_measured_ucs and heuristic. */
-                    if (last_measured_ucs != 0 && is_regional_indicator(last_measured_ucs)) {
-                        ri_before = 1;
+                    size_t j = idx;
+                    for (;;) {
+                        uint32_t prev_ucs;
+                        j = prev_codepoint(text, j, &prev_ucs);
+                        if (j == (size_t) -1 || !wcwidth_is_regional_indicator(prev_ucs)) {
+                            break;
+                        }
+                        ri_before++;
                     }
                     if (ri_before % 2 == 1) {
                         last_measured_ucs = ucs;
@@ -676,13 +609,14 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                         continue;
                     }
                 }
-                else if (is_fitzpatrick(ucs) && last_measured_ucs != 0
-                         && is_emoji_zwj_set(last_measured_ucs)) {
+                else if (wcwidth_is_fitzpatrick(ucs) && last_measured_ucs != 0
+                         && wcwidth_is_emoji_zwj_set(last_measured_ucs)) {
                     idx += consumed;
                     continue;
                 }
             }
 
+            /* 8. Normal character: measure with wcwidth. */
             {
                 int w = wcwidth_u32(ucs, ambiguous_width);
                 if (w < 0) {
@@ -691,26 +625,97 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                     idx += consumed;
                     continue;
                 }
+                /* Apply single-codepoint terminal overrides (pre-merged sets). */
+                if (w == 2 && wcwidth_bisearch(ucs, narrower, narrower_len)) {
+                    w = 1;
+                }
+                else if (w == 2 && wcwidth_bisearch(ucs, zeroer, zeroer_len)) {
+                    w = 0;
+                }
+                if (w == 1 && wcwidth_bisearch(ucs, narrow_wider, narrow_wider_len)) {
+                    w = 2;
+                }
+                else if (w == 1 && wcwidth_bisearch(ucs, narrow_zeroer, narrow_zeroer_len)) {
+                    w = 0;
+                }
                 if (w > 0) {
+                    /* virama+consonant extends the current cluster; otherwise
+                     * flush the previous cluster, checking grapheme overrides. */
                     if (prev_was_virama) {
                         cluster_width = 2;
                     }
                     else if (cluster_width) {
-                        current_col += cluster_width;
+                        bool flushed = false;
+                        if (has_graphemes && cluster_start >= 0) {
+                            uint32_t candidate_cps[32];
+                            size_t candidate_len = wcwidth_decode_cluster(
+                                text, (size_t) cluster_start, idx + consumed, candidate_cps, 32);
+                            if (candidate_len < 32) {
+                                /* Two-phase: the candidate (cluster + current
+                                 * char) matches clusters ending at this char;
+                                 * the cluster alone matches C+Mc overrides
+                                 * stored without the trailing Mc.  Only the
+                                 * candidate match flushes; the cluster match
+                                 * continues with the current char. */
+                                int override_w = wcwidth_grapheme_override_lookup(
+                                    term, candidate_cps, candidate_len);
+                                if (override_w >= 0) {
+                                    current_col = col_before_cluster + override_w;
+                                    if (current_col > max_extent) {
+                                        max_extent = current_col;
+                                    }
+                                    flushed = true;
+                                    cluster_width = 0;
+                                }
+                                else {
+                                    uint32_t cluster_cps[32];
+                                    size_t cluster_len = wcwidth_decode_cluster(
+                                        text, (size_t) cluster_start, idx, cluster_cps, 32);
+                                    if (cluster_len < 32) {
+                                        int cluster_w = wcwidth_grapheme_override_lookup(
+                                            term, cluster_cps, cluster_len);
+                                        if (cluster_w >= 0) {
+                                            current_col = col_before_cluster + cluster_w;
+                                            if (current_col > max_extent) {
+                                                max_extent = current_col;
+                                            }
+                                        }
+                                        else {
+                                            current_col += cluster_width;
+                                        }
+                                    }
+                                    else {
+                                        current_col += cluster_width;
+                                    }
+                                }
+                            }
+                            else {
+                                current_col += cluster_width;
+                            }
+                        }
+                        else {
+                            current_col += cluster_width;
+                        }
                         if (current_col > max_extent) {
                             max_extent = current_col;
                         }
-                        cluster_width = w;
+                        if (!flushed) {
+                            cluster_width = w;
+                            cluster_start = (int) idx;
+                            col_before_cluster = current_col;
+                        }
                     }
                     else {
                         cluster_width = w;
+                        cluster_start = (int) idx;
+                        col_before_cluster = current_col;
                     }
                     last_measured_idx = (int) idx;
                     last_measured_ucs = ucs;
                     last_measured_w = w;
                     prev_was_virama = false;
                 }
-                else if (is_virama(ucs)) {
+                else if (wcwidth_is_virama(ucs)) {
                     prev_was_virama = true;
                 }
                 else if (last_measured_idx >= 0
@@ -731,7 +736,26 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
 
     /* Flush final pending cluster. */
     if (cluster_width) {
-        current_col += cluster_width;
+        if (has_graphemes && cluster_start >= 0) {
+            uint32_t cluster_cps[32];
+            size_t cluster_len =
+                wcwidth_decode_cluster(text, (size_t) cluster_start, n, cluster_cps, 32);
+            if (cluster_len < 32) {
+                int override_w = wcwidth_grapheme_override_lookup(term, cluster_cps, cluster_len);
+                if (override_w >= 0) {
+                    current_col = col_before_cluster + override_w;
+                }
+                else {
+                    current_col += cluster_width;
+                }
+            }
+            else {
+                current_col += cluster_width;
+            }
+        }
+        else {
+            current_col += cluster_width;
+        }
         if (current_col > max_extent) {
             max_extent = current_col;
         }
@@ -788,7 +812,8 @@ width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_
         return _width_ignore(utf8, n, ambiguous_width, term_program, error);
     }
 
-    return _width_parse(utf8, n, effective_mode == WCWIDTH_STRICT, tabsize, ambiguous_width, error);
+    return _width_parse(utf8, n, effective_mode == WCWIDTH_STRICT, tabsize, ambiguous_width,
+                        term_program, error);
 }
 
 int

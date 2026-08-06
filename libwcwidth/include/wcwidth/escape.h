@@ -1,7 +1,5 @@
 /*
  * Terminal escape sequence classification.
- *
- * Port of wcwidth/escape_sequences.py.
  */
 #ifndef WCWIDTH_ESCAPE_H
 #define WCWIDTH_ESCAPE_H
@@ -71,6 +69,7 @@ bool wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
                              wcwidth_esc_result_t *result);
 
 /* Strip all terminal escape sequences from text.
+ * OSC 66 inner display text is preserved as visible output.
  * Writes result to *out* (caller-provided buffer).
  * *out_cap*: capacity of out buffer.
  * *out_len*: filled with actual bytes written (excluding NUL terminator if any).
@@ -81,6 +80,14 @@ bool wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
 size_t wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_cap,
                             size_t *out_len);
 
+/*
+ * Codepoint-array variant of wcwidth_escape_strip(): encodes the codepoints
+ * to UTF-8, strips, and decodes the result back to a codepoint array.  The
+ * returned array is *out_len* codepoints and the caller does a single free()
+ * of it; returns NULL on allocation failure.
+ */
+uint32_t *wcwidth_escape_strip_u32(const uint32_t *codepoints, size_t n, size_t *out_len);
+
 /* Callback for iterating over text segments.
  * segment: text segment
  * seg_len: length of segment
@@ -90,9 +97,8 @@ size_t wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t
 typedef void (*wcwidth_escape_iter_fn)(const char *segment, size_t seg_len, bool is_escape,
                                        void *userdata);
 
-/* Iterate over text, calling *fn* for each segment (escape or visible text).
- * This is the zero-allocation equivalent of Python's iter_sequences().
- */
+/* Iterate over text, calling *fn* for each segment (escape or visible text),
+ * without allocating. */
 void wcwidth_escape_iter(const char *text, size_t text_len, wcwidth_escape_iter_fn fn,
                          void *userdata);
 

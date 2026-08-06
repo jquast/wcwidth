@@ -1,7 +1,5 @@
 /*
  * Text truncation with sequence awareness.
- *
- * Port of wcwidth/_clip.py clip().
  */
 #include "wcwidth/clip.h"
 #include "wcwidth/escape.h"
@@ -10,10 +8,12 @@
 #include "wcwidth/sgr.h"
 #include "wcwidth/text_sizing.h"
 #include "wcwidth/wcwidth.h"
+#include "wcwidth/utf8.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -81,18 +81,6 @@ strbuf_append_char(strbuf_t *sb, char c)
 }
 
 static void
-strbuf_append_repeat(strbuf_t *sb, char c, size_t count)
-{
-    strbuf_grow(sb, sb->len + count + 1);
-    if (sb->buf == NULL || sb->cap < sb->len + count + 1) {
-        return;
-    }
-    memset(sb->buf + sb->len, c, count);
-    sb->len += count;
-    sb->buf[sb->len] = '\0';
-}
-
-static void
 strbuf_free(strbuf_t *sb)
 {
     free(sb->buf);
@@ -137,10 +125,17 @@ strbuf_detach(strbuf_t *sb, size_t *out_len)
 static int
 grapheme_width(const char *g, size_t g_len, int ambiguous_width, const char *term_program)
 {
+    int w;
+
     if (term_program != NULL && term_program[0] != '\0') {
-        return wcstwidth_u8(g, g_len, ambiguous_width, term_program);
+        w = wcstwidth_u8(g, g_len, ambiguous_width, term_program);
     }
-    return wcswidth_u8(g, g_len, ambiguous_width);
+    else {
+        w = wcswidth_u8(g, g_len, ambiguous_width);
+    }
+    /* control characters measure -1 via wcswidth, but the pure clip measures
+     * them as zero-width (via width()); clamp to match */
+    return (w < 0) ? 0 : w;
 }
 
 static bool
@@ -158,13 +153,13 @@ is_indeterminate_seq(const wcwidth_esc_result_t *result)
  * *clipped_buf may be realloc'd; caller must free it.
  */
 static int
-process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_end, char fillchar,
-                  int tabsize, int ambiguous_width, const char *term_program,
-                  wcwidth_control_mode_t control_codes, const wcwidth_hyperlink_params_t *params,
-                  size_t match_end, int col, size_t *close_end, int *inner_width,
-                  char *open_seq_buf, size_t *open_seq_len, char **clipped_buf,
-                  size_t *clipped_buf_cap, size_t *clipped_inner_len, char *close_seq_buf,
-                  size_t *close_seq_len, int *clipped_width, int *hl_col_end)
+process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_end,
+                  const char *fillchar, size_t fillchar_len, int tabsize, int ambiguous_width,
+                  const char *term_program, wcwidth_control_mode_t control_codes,
+                  const wcwidth_hyperlink_params_t *params, size_t match_end, int col,
+                  size_t *close_end, int *inner_width, char *open_seq_buf, size_t *open_seq_len,
+                  char **clipped_buf, size_t *clipped_buf_cap, size_t *clipped_inner_len,
+                  char *close_seq_buf, size_t *close_seq_len, int *clipped_width, int *hl_col_end)
 {
     size_t cs, ce;
     int iw;
@@ -180,10 +175,8 @@ process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_en
         const char *inner_text = text + match_end;
         size_t inner_len = cs - match_end;
         int error2 = 0;
-        wcwidth_width_opts_t opts;
-        opts.tabsize = tabsize;
-        opts.ambiguous_width = ambiguous_width;
-        opts.term_program = term_program;
+        wcwidth_width_opts_t opts = {
+            .tabsize = tabsize, .ambiguous_width = ambiguous_width, .term_program = term_program};
         iw = width_u8(inner_text, inner_len, control_codes, &opts, &error2);
         if (iw < 0) {
             iw = 0;
@@ -226,9 +219,10 @@ process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_en
 
         {
             size_t dummy_len = 0;
-            char *clipped =
-                clip_u8(inner_text, inner_len, inner_clip_start, inner_clip_end_val, control_codes,
-                        tabsize, ambiguous_width, term_program, false, fillchar, &dummy_len);
+            int dummy_error = WCWIDTH_ERROR_NONE;
+            char *clipped = clip_u8(inner_text, inner_len, inner_clip_start, inner_clip_end_val,
+                                    control_codes, tabsize, ambiguous_width, term_program, false,
+                                    -1, fillchar, fillchar_len, &dummy_len, &dummy_error);
             if (clipped == NULL) {
                 return -1;
             }
@@ -250,10 +244,9 @@ process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_en
         /* Measure clipped inner width. */
         {
             int error2 = 0;
-            wcwidth_width_opts_t opts;
-            opts.tabsize = tabsize;
-            opts.ambiguous_width = ambiguous_width;
-            opts.term_program = term_program;
+            wcwidth_width_opts_t opts = {.tabsize = tabsize,
+                                         .ambiguous_width = ambiguous_width,
+                                         .term_program = term_program};
             *clipped_width =
                 width_u8(*clipped_buf, *clipped_inner_len, control_codes, &opts, &error2);
             if (*clipped_width < 0) {
@@ -268,255 +261,307 @@ process_hyperlink(const char *text, size_t text_len, size_t v_start, size_t v_en
     }
 }
 
-static bool
-clip_simple(const char *text, size_t text_len, size_t v_start, size_t v_end, char fillchar,
-            int tabsize, int ambiguous_width, const char *term_program,
-            wcwidth_control_mode_t control_codes, bool strict, bool propagate_sgr,
-            wcwidth_sgr_state_t *captured_style, bool *style_captured, strbuf_t *sb)
+/*
+ * Emit callback for clipped text-sizing output.  *ctx distinguishes the
+ * simple (strbuf) and painter (cell) output paths.
+ */
+typedef bool (*ts_emit_fn)(void *ctx, const char *s, size_t s_len, int w, int col, bool is_fill);
+
+/*
+ * Serialize non-default text-sizing params as 'key=value' joined by ':',
+ * as ts_make_sequence does.  Returns bytes written (excluding NUL); the NUL
+ * is written when it fits.
+ */
+static size_t
+ts_params_to_str(const wcwidth_ts_params_t *params, char *out, size_t out_cap)
 {
-    wcwidth_sgr_state_t current_style;
-    bool track_sgr;
-    size_t idx;
-    int col;
+    static const char keys[] = {'s', 'w', 'n', 'd', 'v', 'h'};
+    static const int defaults[] = {1, 0, 0, 0, 0, 0};
+    const int vals[] = {params->scale,       params->width,          params->numerator,
+                        params->denominator, params->vertical_align, params->horizontal_align};
+    size_t written = 0;
+    size_t i;
 
-    track_sgr = propagate_sgr;
-    current_style = WCWIDTH_SGR_STATE_DEFAULT;
-    *style_captured = false;
-    col = 0;
-    idx = 0;
+    for (i = 0; i < sizeof(keys); i++) {
+        char num[16];
+        int num_len;
+        size_t k;
 
-    while (idx < text_len) {
-        unsigned char ch = (unsigned char) text[idx];
+        if (vals[i] == defaults[i])
+            continue;
+        if (written > 0 && written < out_cap)
+            out[written++] = ':';
+        if (written < out_cap)
+            out[written++] = keys[i];
+        if (written < out_cap)
+            out[written++] = '=';
+        num_len = snprintf(num, sizeof(num), "%d", vals[i]);
+        for (k = 0; k < (size_t) num_len && written < out_cap; k++)
+            out[written++] = num[k];
+    }
+    if (written < out_cap)
+        out[written] = '\0';
+    return written;
+}
 
-        /* Early exit: past visible region. */
-        if (col >= (int) v_end && ch != '\r' && ch != '\x08' && ch != '\t' && ch != ESC) {
-            if (*style_captured) {
+/* Build an OSC 66 sequence: ESC ] 66 ; params ; text terminator.
+ * The terminator is stored as its last byte: BEL (1 byte) or '\\' of the
+ * two-byte ST terminator ESC \. */
+static size_t
+ts_make_sequence(const wcwidth_ts_params_t *params, const char *text, size_t text_len,
+                 char terminator, char *out, size_t out_cap)
+{
+    static const char prefix[] = "\x1b]66;";
+    char params_buf[64];
+    size_t params_len = ts_params_to_str(params, params_buf, sizeof(params_buf));
+    size_t term_len = (terminator == '\\') ? 2 : 1;
+    size_t total = sizeof(prefix) - 1 + params_len + 1 + text_len + term_len;
+
+    if (total <= out_cap) {
+        memcpy(out, prefix, sizeof(prefix) - 1);
+        memcpy(out + sizeof(prefix) - 1, params_buf, params_len);
+        out[sizeof(prefix) - 1 + params_len] = ';';
+        memcpy(out + sizeof(prefix) - 1 + params_len + 1, text, text_len);
+        if (terminator == '\\') {
+            out[total - 2] = ESC;
+            out[total - 1] = '\\';
+        }
+        else {
+            out[total - 1] = terminator;
+        }
+        out[total] = '\0';
+    }
+    return total;
+}
+
+/* Emit a rebuilt OSC 66 sequence via *emit*, heap-allocating when needed. */
+static void
+ts_emit_seq(ts_emit_fn emit, void *ctx, const wcwidth_ts_params_t *params, const char *text,
+            size_t text_len, char terminator, int w, int col)
+{
+    char stack[256];
+    char *seq = stack;
+    size_t cap = sizeof(stack);
+    size_t seq_len = ts_make_sequence(params, text, text_len, terminator, stack, cap);
+
+    if (seq_len > cap) {
+        seq = (char *) malloc(seq_len + 1);
+        if (seq == NULL)
+            return; /* best effort: skip on allocation failure */
+        ts_make_sequence(params, text, text_len, terminator, seq, seq_len + 1);
+    }
+    emit(ctx, seq, seq_len, w, col, false);
+    if (seq != stack)
+        free(seq);
+}
+
+/* One grapheme unit of a text-sizing display: bytes, display width. */
+typedef struct
+{
+    const char *text;
+    size_t text_len;
+    int width;
+} ts_unit_t;
+
+/* Emitter for the simple output path: appends directly to the output buffer. */
+typedef struct
+{
+    strbuf_t *sb;
+    const char *fillchar;
+    size_t fillchar_len;
+} ts_simple_ctx_t;
+
+static bool
+ts_emit_simple(void *vctx, const char *s, size_t s_len, int w, int col, bool is_fill)
+{
+    ts_simple_ctx_t *ctx = (ts_simple_ctx_t *) vctx;
+
+    (void) w;
+    (void) col;
+    if (is_fill) {
+        strbuf_append(ctx->sb, ctx->fillchar, ctx->fillchar_len);
+    }
+    else {
+        strbuf_append(ctx->sb, s, s_len);
+    }
+    return true;
+}
+
+/*
+ * Emit a text-sizing (OSC 66) sequence clipped to (v_start, v_end).
+ * Fully-visible grapheme units are re-emitted as a rebuilt OSC 66 sequence
+ * (with a recalculated w parameter); partially visible units are replaced
+ * with fillchar.  Returns the new column.
+ */
+static int
+clip_text_sizing(const wcwidth_text_sizing_t *ts, int col, int v_start, int v_end,
+                 int ambiguous_width, const char *term_program, ts_emit_fn emit, void *ctx)
+{
+    int ts_width;
+    int rel_start;
+    int rel_end;
+    int unit_pos;
+    int flush_col_pos;
+    ts_unit_t *units = NULL;
+    size_t n_units = 0;
+    size_t units_cap = 0;
+    wcwidth_grapheme_iter_t *iter;
+    const char *g;
+    size_t g_len;
+    int want;
+    int scale;
+    strbuf_t pending;
+    int pending_w = 0;
+    int pending_count = 0;
+    size_t ui;
+
+    ts_width = wcwidth_ts_display_width(ts, ambiguous_width);
+
+    /* Fully visible: emit the whole sequence. */
+    if (col >= v_start && col + ts_width <= v_end) {
+        ts_emit_seq(emit, ctx, &ts->params, ts->text, ts->text_len, ts->terminator, ts_width, col);
+        return col + ts_width;
+    }
+    /* Fully outside: just advance the column. */
+    if (col >= v_end || col + ts_width <= v_start)
+        return col + ts_width;
+
+    /* Partial overlap: decompose into grapheme units. */
+    rel_start = (v_start > col) ? (v_start - col) : 0;
+    rel_end = (v_end < col + ts_width) ? (v_end - col) : ts_width;
+    scale = ts->params.scale;
+    want = ts->params.width;
+
+    iter = wcwidth_grapheme_iter_new(ts->text, ts->text_len);
+    if (iter == NULL)
+        return col + ts_width;
+
+    while (want == 0 || n_units < (size_t) want) {
+        size_t new_cap;
+        ts_unit_t *nd;
+
+        g = wcwidth_grapheme_next(iter, &g_len);
+        if (g == NULL || g_len == 0)
+            break;
+        if (n_units >= units_cap) {
+            new_cap = units_cap ? units_cap * 2 : 8;
+            nd = (ts_unit_t *) realloc(units, new_cap * sizeof(ts_unit_t));
+            if (nd == NULL)
                 break;
-            }
-            if (!track_sgr) {
-                const char *next = (const char *) memchr(text + idx + 1, ESC, text_len - idx - 1);
-                if (next == NULL) {
-                    break;
-                }
-                idx = (size_t) (next - text);
-                continue;
-            }
+            units = nd;
+            units_cap = new_cap;
         }
-
-        if (ch == ESC) {
-            wcwidth_esc_result_t result;
-
-            if (!wcwidth_escape_classify(text, text_len, idx, &result)) {
-                strbuf_append_char(sb, ESC);
-                idx++;
-                continue;
-            }
-
-            /* SGR: update state, do not emit. */
-            if (result.type == WCWIDTH_ESC_SGR && track_sgr) {
-                wcwidth_sgr_update(&current_style, result.sgr_params, result.sgr_params_len);
-                idx += result.length;
-                continue;
-            }
-
-            /* OSC 8 hyperlink. */
-            if (result.type == WCWIDTH_ESC_OSC8_OPEN) {
-                wcwidth_hyperlink_params_t hl_params;
-                if (wcwidth_hyperlink_parse_open(result.start, result.length, &hl_params)) {
-                    char open_seq_buf[256], close_seq_buf[256];
-                    size_t open_len, close_len, ce, clipped_len;
-                    int action, inner_w, clipped_w, hl_end;
-                    char *hl_buf = NULL;
-                    size_t hl_buf_cap = 0;
-
-                    action = process_hyperlink(
-                        text, text_len, v_start, v_end, fillchar, tabsize, ambiguous_width,
-                        term_program, control_codes, &hl_params, idx + result.length, col, &ce,
-                        &inner_w, open_seq_buf, &open_len, &hl_buf, &hl_buf_cap, &clipped_len,
-                        close_seq_buf, &close_len, &clipped_w, &hl_end);
-
-                    if (action < 0) {
-                        free(hl_buf);
-                        return false;
-                    }
-                    if (action == 0) {
-                        strbuf_append(sb, result.start, result.length);
-                        idx += result.length;
-                    }
-                    else if (action == 1) {
-                        idx = ce;
-                    }
-                    else if (action == 2) {
-                        col += inner_w;
-                        idx = ce;
-                    }
-                    else {
-                        strbuf_append(sb, open_seq_buf, open_len);
-                        strbuf_append(sb, hl_buf, clipped_len);
-                        strbuf_append(sb, close_seq_buf, close_len);
-                        if (track_sgr && !*style_captured) {
-                            *captured_style = current_style;
-                            *style_captured = true;
-                        }
-                        col += inner_w;
-                        idx = ce;
-                    }
-                    free(hl_buf);
-                }
-                else {
-                    strbuf_append(sb, result.start, result.length);
-                    idx += result.length;
-                }
-                continue;
-            }
-
-            /* OSC 66 Text Sizing. */
-            if (result.type == WCWIDTH_ESC_OSC66) {
-                wcwidth_text_sizing_t ts;
-                char meta_buf[64];
-                int ts_width;
-
-                ts.params.scale = 1;
-                ts.params.width = 0;
-                ts.params.numerator = 0;
-                ts.params.denominator = 0;
-                ts.params.vertical_align = 0;
-                ts.params.horizontal_align = 0;
-                ts.text = result.ts_text;
-                ts.text_len = result.ts_text_len;
-                ts.terminator = result.ts_terminator;
-
-                if (result.ts_meta_len > 0 && result.ts_meta_len < sizeof(meta_buf)) {
-                    memcpy(meta_buf, result.ts_meta, result.ts_meta_len);
-                    meta_buf[result.ts_meta_len] = '\0';
-                    wcwidth_ts_parse_params(meta_buf, result.ts_meta_len, &ts.params);
-                }
-                ts_width = wcwidth_ts_display_width(&ts, ambiguous_width);
-
-                if (col >= (int) v_start && col + ts_width <= (int) v_end) {
-                    strbuf_append(sb, result.start, result.length);
-                    if (track_sgr && !*style_captured) {
-                        *captured_style = current_style;
-                        *style_captured = true;
-                    }
-                    col += ts_width;
-                }
-                else if (col < (int) v_end && col + ts_width > (int) v_start) {
-                    int clip_start = (v_start > (size_t) col) ? (int) v_start : col;
-                    int clip_end = ((int) v_end < col + ts_width) ? (int) v_end : col + ts_width;
-                    int fill_count = clip_end - clip_start;
-                    if (fill_count > 0) {
-                        strbuf_append_repeat(sb, fillchar, (size_t) fill_count);
-                    }
-                    if (track_sgr && !*style_captured) {
-                        *captured_style = current_style;
-                        *style_captured = true;
-                    }
-                    col += ts_width;
-                }
-                else {
-                    col += ts_width;
-                }
-                idx += result.length;
-                continue;
-            }
-
-            /* Indeterminate sequences: error in strict mode. */
-            if (strict && is_indeterminate_seq(&result)) {
-                return false;
-            }
-
-            /* Any other recognized sequence: preserve as-is. */
-            strbuf_append(sb, result.start, result.length);
-            idx += result.length;
-            continue;
+        units[n_units].text = g;
+        units[n_units].text_len = g_len;
+        if (want > 0) {
+            units[n_units].width = scale;
         }
-
-        /* Tab expansion. */
-        if (ch == '\t') {
-            if (tabsize > 0) {
-                int next_tab = col + (tabsize - (col % tabsize));
-                while (col < next_tab) {
-                    if ((int) v_start <= col && col < (int) v_end) {
-                        strbuf_append_char(sb, ' ');
-                        if (track_sgr && !*style_captured) {
-                            *captured_style = current_style;
-                            *style_captured = true;
-                        }
-                    }
-                    col++;
-                }
-            }
-            else {
-                strbuf_append_char(sb, '\t');
-            }
-            idx++;
-            continue;
+        else {
+            units[n_units].width = grapheme_width(g, g_len, ambiguous_width, term_program) * scale;
         }
+        n_units++;
+    }
+    wcwidth_grapheme_iter_free(iter);
 
-        /* Carriage return / backspace. */
-        if (ch == '\r' && control_codes != WCWIDTH_IGNORE) {
-            col = 0;
-            idx++;
-            continue;
-        }
-        if (ch == '\x08' && control_codes != WCWIDTH_IGNORE) {
-            if (col > 0)
-                col--;
-            idx++;
-            continue;
-        }
-
-        /* Grapheme cluster. */
-        {
-            wcwidth_grapheme_iter_t *giter;
-            const char *grapheme;
-            size_t g_len;
-            int g_w;
-
-            giter = wcwidth_grapheme_iter_new(text + idx, text_len - idx);
-            if (giter == NULL)
-                return false;
-            grapheme = wcwidth_grapheme_next(giter, &g_len);
-            if (grapheme == NULL || g_len == 0) {
-                wcwidth_grapheme_iter_free(giter);
-                idx++;
-                continue;
-            }
-            g_w = grapheme_width(grapheme, g_len, ambiguous_width, term_program);
-
-            if (g_w == 0) {
-                if ((int) v_start <= col && col < (int) v_end) {
-                    strbuf_append(sb, grapheme, g_len);
-                }
-            }
-            else if (col >= (int) v_start && col + g_w <= (int) v_end) {
-                strbuf_append(sb, grapheme, g_len);
-                if (track_sgr && !*style_captured) {
-                    *captured_style = current_style;
-                    *style_captured = true;
-                }
-            }
-            else if (col < (int) v_end && col + g_w > (int) v_start) {
-                int clip_start = (v_start > (size_t) col) ? (int) v_start : col;
-                int clip_end = ((int) v_end < col + g_w) ? (int) v_end : col + g_w;
-                int fill_count = clip_end - clip_start;
-                if (fill_count > 0) {
-                    strbuf_append_repeat(sb, fillchar, (size_t) fill_count);
-                }
-                if (track_sgr && !*style_captured) {
-                    *captured_style = current_style;
-                    *style_captured = true;
-                }
-            }
-
-            col += g_w;
-            idx += g_len;
-            wcwidth_grapheme_iter_free(giter);
+    /* Pad to the declared width with empty units. */
+    if (want > 0) {
+        while (n_units < (size_t) want) {
+            size_t new_cap = units_cap ? units_cap * 2 : 8;
+            ts_unit_t *nd = (ts_unit_t *) realloc(units, new_cap * sizeof(ts_unit_t));
+            if (nd == NULL)
+                break;
+            units = nd;
+            units_cap = new_cap;
+            units[n_units].text = "";
+            units[n_units].text_len = 0;
+            units[n_units].width = scale;
+            n_units++;
         }
     }
 
-    return true;
+    strbuf_init(&pending, 64);
+    unit_pos = 0;
+    flush_col_pos = col;
+
+    for (ui = 0; ui < n_units; ui++) {
+        int unit_w = units[ui].width;
+        int unit_end = unit_pos + unit_w;
+        int overlap;
+
+        if (unit_w == 0) {
+            unit_pos = unit_end;
+            continue;
+        }
+        if (unit_end <= rel_start) {
+            unit_pos = unit_end;
+            continue;
+        }
+        if (unit_pos >= rel_end)
+            break;
+
+        overlap = (unit_end < rel_end ? unit_end : rel_end)
+                  - (unit_pos > rel_start ? unit_pos : rel_start);
+        if (overlap == unit_w && unit_w > 0) {
+            if (pending_count == 0)
+                flush_col_pos = col + (unit_pos > rel_start ? unit_pos : rel_start);
+            strbuf_append(&pending, units[ui].text, units[ui].text_len);
+            pending_w += unit_w;
+            pending_count++;
+        }
+        else {
+            int i;
+
+            if (pending_count > 0) {
+                wcwidth_ts_params_t new_params;
+
+                new_params.scale = scale;
+                new_params.width = (want > 0) ? pending_count : 0;
+                new_params.numerator = ts->params.numerator;
+                new_params.denominator = ts->params.denominator;
+                new_params.vertical_align = ts->params.vertical_align;
+                new_params.horizontal_align = ts->params.horizontal_align;
+                ts_emit_seq(emit, ctx, &new_params, pending.buf, pending.len, ts->terminator,
+                            pending_w, flush_col_pos);
+                pending.len = 0;
+                pending_w = 0;
+                pending_count = 0;
+            }
+            for (i = 0; i < overlap; i++) {
+                emit(ctx, NULL, 0, 1, col + (unit_pos > rel_start ? unit_pos : rel_start) + i,
+                     true);
+            }
+        }
+        unit_pos = unit_end;
+    }
+
+    /* Final flush of pending units. */
+    if (pending_count > 0) {
+        wcwidth_ts_params_t new_params;
+
+        new_params.scale = scale;
+        new_params.width = (want > 0) ? pending_count : 0;
+        new_params.numerator = ts->params.numerator;
+        new_params.denominator = ts->params.denominator;
+        new_params.vertical_align = ts->params.vertical_align;
+        new_params.horizontal_align = ts->params.horizontal_align;
+        ts_emit_seq(emit, ctx, &new_params, pending.buf, pending.len, ts->terminator, pending_w,
+                    flush_col_pos);
+    }
+
+    strbuf_free(&pending);
+    free(units);
+    return col + ts_width;
+}
+
+/* Record the SGR state active at the first visible cell. */
+static void
+capture_style(bool track_sgr, wcwidth_sgr_state_t current_style,
+              wcwidth_sgr_state_t *captured_style, bool *style_captured)
+{
+    if (track_sgr && !*style_captured) {
+        *captured_style = current_style;
+        *style_captured = true;
+    }
 }
 
 typedef struct
@@ -527,6 +572,7 @@ typedef struct
     int width;
     bool is_hyperlink;
     bool use_fillchar; /* if true, reconstruction uses fillchar instead of text */
+    bool owned;        /* text points to a malloc'd copy owned by this cell */
 } painter_cell_t;
 
 typedef struct
@@ -535,6 +581,7 @@ typedef struct
     int order;
     const char *text;
     size_t text_len;
+    bool owned; /* text points to a malloc'd copy owned by this seq */
 } painter_seq_t;
 
 typedef struct
@@ -562,6 +609,12 @@ painter_cells_init(painter_cells_t *pc)
 static void
 painter_cells_free(painter_cells_t *pc)
 {
+    size_t i;
+
+    for (i = 0; i < pc->count; i++) {
+        if (pc->data[i].owned)
+            free((void *) pc->data[i].text);
+    }
     free(pc->data);
     pc->data = NULL;
     pc->count = 0;
@@ -579,6 +632,12 @@ painter_seqs_init(painter_seqs_t *ps)
 static void
 painter_seqs_free(painter_seqs_t *ps)
 {
+    size_t i;
+
+    for (i = 0; i < ps->count; i++) {
+        if (ps->data[i].owned)
+            free((void *) ps->data[i].text);
+    }
     free(ps->data);
     ps->data = NULL;
     ps->count = 0;
@@ -587,11 +646,18 @@ painter_seqs_free(painter_seqs_t *ps)
 
 static bool
 painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, int write_col,
-                    bool is_hyperlink, bool text_is_fillchar, char fillchar,
+                    bool is_hyperlink, const char *fillchar, size_t fillchar_len,
                     wcwidth_sgr_state_t *current_style, wcwidth_sgr_state_t *captured_style,
                     bool *style_captured, bool track_sgr)
 {
     int offset;
+
+    /* s == NULL marks a fill cell: its content is *fillchar. */
+    bool text_is_fillchar = (s == NULL);
+    if (text_is_fillchar) {
+        s = fillchar;
+        s_len = fillchar_len;
+    }
 
     for (offset = 0; offset < w; offset++) {
         int src_col = write_col + offset;
@@ -600,8 +666,12 @@ painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, 
         if (src_col > 0) {
             for (j = 0; j < cells->count; j++) {
                 if (cells->data[j].col == src_col - 1 && cells->data[j].width == 2) {
-                    cells->data[j].text = &fillchar;
-                    cells->data[j].text_len = 1;
+                    if (cells->data[j].owned) {
+                        free((void *) cells->data[j].text);
+                        cells->data[j].owned = false;
+                    }
+                    cells->data[j].text = fillchar;
+                    cells->data[j].text_len = fillchar_len;
                     cells->data[j].width = 1;
                     cells->data[j].is_hyperlink = false;
                     cells->data[j].use_fillchar = true;
@@ -615,8 +685,12 @@ painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, 
                 bool found = false;
                 for (k = 0; k < cells->count; k++) {
                     if (cells->data[k].col == src_col + 1) {
-                        cells->data[k].text = &fillchar;
-                        cells->data[k].text_len = 1;
+                        if (cells->data[k].owned) {
+                            free((void *) cells->data[k].text);
+                            cells->data[k].owned = false;
+                        }
+                        cells->data[k].text = fillchar;
+                        cells->data[k].text_len = fillchar_len;
                         cells->data[k].width = 1;
                         cells->data[k].is_hyperlink = false;
                         found = true;
@@ -632,11 +706,12 @@ painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, 
                     cells->data = nd;
                     cells->cap = nc;
                     cells->data[cells->count].col = src_col + 1;
-                    cells->data[cells->count].text = &fillchar;
-                    cells->data[cells->count].text_len = 1;
+                    cells->data[cells->count].text = fillchar;
+                    cells->data[cells->count].text_len = fillchar_len;
                     cells->data[cells->count].width = 1;
                     cells->data[cells->count].is_hyperlink = false;
                     cells->data[cells->count].use_fillchar = true;
+                    cells->data[cells->count].owned = false;
                     cells->count++;
                 }
                 break;
@@ -649,6 +724,9 @@ painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, 
         size_t j = 0;
         while (j < cells->count) {
             if (cells->data[j].col >= write_col && cells->data[j].col < write_col + w) {
+                if (cells->data[j].owned) {
+                    free((void *) cells->data[j].text);
+                }
                 cells->data[j] = cells->data[cells->count - 1];
                 cells->count--;
             }
@@ -668,18 +746,58 @@ painter_write_cells(painter_cells_t *cells, const char *s, size_t s_len, int w, 
         cells->cap = nc;
     }
     cells->data[cells->count].col = write_col;
-    cells->data[cells->count].text = s;
-    cells->data[cells->count].text_len = s_len;
     cells->data[cells->count].width = w;
     cells->data[cells->count].is_hyperlink = is_hyperlink;
     cells->data[cells->count].use_fillchar = text_is_fillchar;
+    if (text_is_fillchar) {
+        /* fill cells carry a borrowed fillchar pointer; reconstruction uses
+         * the fillchar parameter, not this text */
+        cells->data[cells->count].text = fillchar;
+        cells->data[cells->count].text_len = fillchar_len;
+        cells->data[cells->count].owned = false;
+    }
+    else {
+        /* copy: the source text may be a stack buffer or freed heap */
+        char *copy = (char *) malloc(s_len + 1);
+        if (copy == NULL)
+            return false;
+        memcpy(copy, s, s_len);
+        copy[s_len] = '\0';
+        cells->data[cells->count].text = copy;
+        cells->data[cells->count].text_len = s_len;
+        cells->data[cells->count].owned = true;
+    }
     cells->count++;
 
-    if (track_sgr && !*style_captured) {
-        *captured_style = *current_style;
-        *style_captured = true;
-    }
+    capture_style(track_sgr, *current_style, captured_style, style_captured);
     return true;
+}
+
+/* Emitter for the painter output path: writes into the cell model. */
+typedef struct
+{
+    painter_cells_t *cells;
+    const char *fillchar;
+    size_t fillchar_len;
+    wcwidth_sgr_state_t *current_style;
+    wcwidth_sgr_state_t *captured_style;
+    bool *style_captured;
+    bool track_sgr;
+} ts_painter_ctx_t;
+
+static bool
+ts_emit_painter(void *vctx, const char *s, size_t s_len, int w, int col, bool is_fill)
+{
+    ts_painter_ctx_t *ctx = (ts_painter_ctx_t *) vctx;
+
+    if (is_fill) {
+        return painter_write_cells(ctx->cells, NULL, 0, 1, col, false, ctx->fillchar,
+                                   ctx->fillchar_len, ctx->current_style, ctx->captured_style,
+                                   ctx->style_captured, ctx->track_sgr);
+    }
+    return painter_write_cells(ctx->cells, s, s_len, w, col, false, ctx->fillchar,
+                               ctx->fillchar_len, ctx->current_style, ctx->captured_style,
+                               ctx->style_captured, ctx->track_sgr);
 }
 
 static bool
@@ -693,9 +811,18 @@ painter_add_seq(painter_seqs_t *seqs, int *seq_order, int col, const char *text,
         seqs->data = nd;
         seqs->cap = nc;
     }
+    /* copy: the source text may be a stack buffer or freed heap */
+    {
+        char *copy = (char *) malloc(text_len + 1);
+        if (copy == NULL)
+            return false;
+        memcpy(copy, text, text_len);
+        copy[text_len] = '\0';
+        seqs->data[seqs->count].text = copy;
+        seqs->data[seqs->count].owned = true;
+    }
     seqs->data[seqs->count].col = col;
     seqs->data[seqs->count].order = (*seq_order)++;
-    seqs->data[seqs->count].text = text;
     seqs->data[seqs->count].text_len = text_len;
     seqs->count++;
     return true;
@@ -749,7 +876,7 @@ find_seqs_at(const painter_seqs_t *seqs, int col, size_t *indices, size_t idx_ca
 
 static void
 reconstruct_painter(const painter_cells_t *cells, const painter_seqs_t *seqs, int v_start,
-                    int v_end, char fillchar, strbuf_t *sb)
+                    int v_end, const char *fillchar, size_t fillchar_len, strbuf_t *sb)
 {
     int max_c = max_cell_col(cells);
     int max_s = max_seq_col(seqs);
@@ -784,7 +911,7 @@ reconstruct_painter(const painter_cells_t *cells, const painter_seqs_t *seqs, in
             size_t ci = find_cell_at(cells, walk_col);
             if (ci != (size_t) -1) {
                 if (cells->data[ci].use_fillchar) {
-                    strbuf_append_char(sb, fillchar);
+                    strbuf_append(sb, fillchar, fillchar_len);
                 }
                 else {
                     strbuf_append(sb, cells->data[ci].text, cells->data[ci].text_len);
@@ -793,7 +920,7 @@ reconstruct_painter(const painter_cells_t *cells, const painter_seqs_t *seqs, in
             }
             else {
                 if (v_start <= walk_col && walk_col <= max_c) {
-                    strbuf_append_char(sb, fillchar);
+                    strbuf_append(sb, fillchar, fillchar_len);
                 }
                 walk_col++;
             }
@@ -837,56 +964,179 @@ reconstruct_painter(const painter_cells_t *cells, const painter_seqs_t *seqs, in
     }
 }
 
+/* Output abstraction shared by the two clip paths: the painter path records
+ * overlapping cells and cursor movement into a cell model before
+ * reconstruction; the simple path appends directly to the output buffer. */
+typedef struct
+{
+    bool painter;
+    strbuf_t *sb;           /* simple output */
+    painter_cells_t *cells; /* painter cell model */
+    painter_seqs_t *seqs;
+    int *seq_order;
+    const char *fillchar;
+    size_t fillchar_len;
+    bool track_sgr;
+    wcwidth_sgr_state_t *current_style;
+    wcwidth_sgr_state_t *captured_style;
+    bool *style_captured;
+} clip_out_t;
+
+/* Emit a raw sequence (escape sequence or zero-width text).  The simple path
+ * appends it; the painter path records it in the sequence model. */
 static bool
-clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, char fillchar,
-             int tabsize, int ambiguous_width, const char *term_program,
-             wcwidth_control_mode_t control_codes, bool strict, bool propagate_sgr,
-             wcwidth_sgr_state_t *captured_style, bool *style_captured, strbuf_t *sb)
+clip_out_seq(clip_out_t *o, const char *text, size_t len, int col)
+{
+    if (o->painter) {
+        return painter_add_seq(o->seqs, o->seq_order, col, text, len);
+    }
+    strbuf_append(o->sb, text, len);
+    return true;
+}
+
+/* Emit visible grapheme text (width > 0).  The painter path writes it into
+ * the cell model; the simple path appends it and captures the active SGR
+ * state (the painter captures inside painter_write_cells). */
+static bool
+clip_out_cells(clip_out_t *o, const char *text, size_t len, int width, int col, bool is_hyperlink)
+{
+    if (o->painter) {
+        return painter_write_cells(o->cells, text, len, width, col, is_hyperlink, o->fillchar,
+                                   o->fillchar_len, o->current_style, o->captured_style,
+                                   o->style_captured, o->track_sgr);
+    }
+    strbuf_append(o->sb, text, len);
+    capture_style(o->track_sgr, *o->current_style, o->captured_style, o->style_captured);
+    return true;
+}
+
+/* Fill the visible columns [col, col+count) with fillchar. */
+static bool
+clip_out_fill(clip_out_t *o, int col, int count)
+{
+    if (o->painter) {
+        int off;
+        for (off = col; off < col + count; off++) {
+            if (!painter_write_cells(o->cells, NULL, 0, 1, off, false, o->fillchar, o->fillchar_len,
+                                     o->current_style, o->captured_style, o->style_captured,
+                                     o->track_sgr))
+                return false;
+        }
+        return true;
+    }
+    while (count-- > 0) {
+        strbuf_append(o->sb, o->fillchar, o->fillchar_len);
+    }
+    capture_style(o->track_sgr, *o->current_style, o->captured_style, o->style_captured);
+    return true;
+}
+
+/* Expand one tab column: the simple path emits a literal space (not the
+ * fillchar), the painter path a fillchar cell. */
+static bool
+clip_out_tab(clip_out_t *o, int col)
+{
+    if (o->painter) {
+        return painter_write_cells(o->cells, NULL, 0, 1, col, false, o->fillchar, o->fillchar_len,
+                                   o->current_style, o->captured_style, o->style_captured,
+                                   o->track_sgr);
+    }
+    strbuf_append_char(o->sb, ' ');
+    capture_style(o->track_sgr, *o->current_style, o->captured_style, o->style_captured);
+    return true;
+}
+
+static bool
+clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const char *fillchar,
+         size_t fillchar_len, int tabsize, int ambiguous_width, const char *term_program,
+         wcwidth_control_mode_t control_codes, bool strict, bool propagate_sgr,
+         wcwidth_sgr_state_t *captured_style, bool *style_captured, strbuf_t *sb, bool painter_mode,
+         int *error)
 {
     painter_cells_t cells;
     painter_seqs_t seqs;
     int seq_order = 0;
+    clip_out_t out;
     wcwidth_sgr_state_t current_style;
     bool track_sgr;
     int col;
     size_t idx;
 
-    painter_cells_init(&cells);
-    painter_seqs_init(&seqs);
-
+    if (painter_mode) {
+        painter_cells_init(&cells);
+        painter_seqs_init(&seqs);
+    }
     track_sgr = propagate_sgr;
     current_style = WCWIDTH_SGR_STATE_DEFAULT;
     *style_captured = false;
     col = 0;
     idx = 0;
 
+    out.painter = painter_mode;
+    out.sb = sb;
+    out.cells = &cells;
+    out.seqs = &seqs;
+    out.seq_order = &seq_order;
+    out.fillchar = fillchar;
+    out.fillchar_len = fillchar_len;
+    out.track_sgr = track_sgr;
+    out.current_style = &current_style;
+    out.captured_style = captured_style;
+    out.style_captured = style_captured;
+
     while (idx < text_len) {
         unsigned char ch = (unsigned char) text[idx];
 
-        if (col >= (int) v_end && *style_captured && ch != ESC)
-            break;
+        /* Early exit past the visible region: the painter stops once the
+         * style is captured; the simple path additionally skips plain-text
+         * runs without escapes when SGR tracking is disabled. */
+        if (col >= (int) v_end) {
+            if (painter_mode) {
+                if (*style_captured && ch != ESC) {
+                    break;
+                }
+            }
+            else if (ch != '\r' && ch != '\x08' && ch != '\t' && ch != ESC) {
+                if (*style_captured) {
+                    break;
+                }
+                if (!track_sgr) {
+                    const char *next =
+                        (const char *) memchr(text + idx + 1, ESC, text_len - idx - 1);
+                    if (next == NULL) {
+                        break;
+                    }
+                    idx = (size_t) (next - text);
+                    continue;
+                }
+            }
+        }
 
         if (ch == ESC) {
             wcwidth_esc_result_t result;
 
             if (!wcwidth_escape_classify(text, text_len, idx, &result)) {
-                if (!painter_add_seq(&seqs, &seq_order, col, text + idx, 1))
-                    goto alloc_fail;
-                if (track_sgr && !*style_captured) {
-                    *captured_style = current_style;
-                    *style_captured = true;
+                if (!clip_out_seq(&out, text + idx, 1, col)) {
+                    goto fail;
+                }
+                if (painter_mode) {
+                    capture_style(track_sgr, current_style, captured_style, style_captured);
                 }
                 idx++;
                 continue;
             }
 
+            /* SGR: update state, do not emit. */
             if (result.type == WCWIDTH_ESC_SGR && track_sgr) {
                 wcwidth_sgr_update(&current_style, result.sgr_params, result.sgr_params_len);
                 idx += result.length;
                 continue;
             }
 
-            if (result.type == WCWIDTH_ESC_OSC8_OPEN) {
+            /* OSC 8 hyperlink.  A dangling close is an empty-url open per
+             * the reference implementation: process it as a unit so that
+             * empty hyperlinks (close without matching open) are dropped. */
+            if (result.type == WCWIDTH_ESC_OSC8_OPEN || result.type == WCWIDTH_ESC_OSC8_CLOSE) {
                 wcwidth_hyperlink_params_t hl_params;
                 if (wcwidth_hyperlink_parse_open(result.start, result.length, &hl_params)) {
                     char open_seq_buf[256], close_seq_buf[256];
@@ -896,23 +1146,22 @@ clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, ch
                     size_t hl_buf_cap = 0;
 
                     action = process_hyperlink(
-                        text, text_len, v_start, v_end, fillchar, tabsize, ambiguous_width,
-                        term_program, control_codes, &hl_params, idx + result.length, col, &ce,
-                        &inner_w, open_seq_buf, &open_len, &hl_buf, &hl_buf_cap, &clipped_len,
-                        close_seq_buf, &close_len, &clipped_w, &hl_end);
+                        text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize,
+                        ambiguous_width, term_program, control_codes, &hl_params,
+                        idx + result.length, col, &ce, &inner_w, open_seq_buf, &open_len, &hl_buf,
+                        &hl_buf_cap, &clipped_len, close_seq_buf, &close_len, &clipped_w, &hl_end);
 
                     if (action < 0) {
                         free(hl_buf);
-                        goto alloc_fail;
+                        goto fail;
                     }
                     if (action == 0) {
-                        if (!painter_add_seq(&seqs, &seq_order, col, result.start, result.length)) {
+                        if (!clip_out_seq(&out, result.start, result.length, col)) {
                             free(hl_buf);
-                            goto alloc_fail;
+                            goto fail;
                         }
-                        if (track_sgr && !*style_captured) {
-                            *captured_style = current_style;
-                            *style_captured = true;
+                        if (painter_mode) {
+                            capture_style(track_sgr, current_style, captured_style, style_captured);
                         }
                         idx += result.length;
                     }
@@ -924,24 +1173,20 @@ clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, ch
                         idx = ce;
                     }
                     else {
-                        if (!painter_add_seq(&seqs, &seq_order, col, open_seq_buf, open_len)) {
+                        /* VISIBLE: re-emit open, clipped content, close. */
+                        if (!clip_out_seq(&out, open_seq_buf, open_len, col)) {
                             free(hl_buf);
-                            goto alloc_fail;
+                            goto fail;
                         }
-                        if (track_sgr && !*style_captured) {
-                            *captured_style = current_style;
-                            *style_captured = true;
-                        }
-                        if (!painter_write_cells(&cells, hl_buf, clipped_len, clipped_w, col, true,
-                                                 false, fillchar, &current_style, captured_style,
-                                                 style_captured, track_sgr)) {
+                        capture_style(track_sgr, current_style, captured_style, style_captured);
+                        if (!clip_out_cells(&out, hl_buf, clipped_len, clipped_w, col, true)) {
                             free(hl_buf);
-                            goto alloc_fail;
+                            goto fail;
                         }
                         col += clipped_w;
-                        if (!painter_add_seq(&seqs, &seq_order, col, close_seq_buf, close_len)) {
+                        if (!clip_out_seq(&out, close_seq_buf, close_len, col)) {
                             free(hl_buf);
-                            goto alloc_fail;
+                            goto fail;
                         }
                         col = hl_end;
                         idx = ce;
@@ -949,145 +1194,149 @@ clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, ch
                     free(hl_buf);
                 }
                 else {
-                    if (!painter_add_seq(&seqs, &seq_order, col, result.start, result.length))
-                        goto alloc_fail;
-                    if (track_sgr && !*style_captured) {
-                        *captured_style = current_style;
-                        *style_captured = true;
+                    if (!clip_out_seq(&out, result.start, result.length, col)) {
+                        goto fail;
+                    }
+                    if (painter_mode) {
+                        capture_style(track_sgr, current_style, captured_style, style_captured);
                     }
                     idx += result.length;
                 }
                 continue;
             }
 
+            /* OSC 66 Text Sizing. */
             if (result.type == WCWIDTH_ESC_OSC66) {
                 wcwidth_text_sizing_t ts;
-                char meta_buf[64];
-                int ts_width;
+                wcwidth_ts_from_esc(&result, &ts);
 
-                ts.params.scale = 1;
-                ts.params.width = 0;
-                ts.params.numerator = 0;
-                ts.params.denominator = 0;
-                ts.params.vertical_align = 0;
-                ts.params.horizontal_align = 0;
-                ts.text = result.ts_text;
-                ts.text_len = result.ts_text_len;
-                ts.terminator = result.ts_terminator;
+                if (painter_mode) {
+                    ts_painter_ctx_t pctx;
 
-                if (result.ts_meta_len > 0 && result.ts_meta_len < sizeof(meta_buf)) {
-                    memcpy(meta_buf, result.ts_meta, result.ts_meta_len);
-                    meta_buf[result.ts_meta_len] = '\0';
-                    wcwidth_ts_parse_params(meta_buf, result.ts_meta_len, &ts.params);
-                }
-                ts_width = wcwidth_ts_display_width(&ts, ambiguous_width);
-
-                if (col >= (int) v_start && col + ts_width <= (int) v_end) {
-                    if (!painter_write_cells(&cells, result.start, result.length, ts_width, col,
-                                             false, false, fillchar, &current_style, captured_style,
-                                             style_captured, track_sgr))
-                        goto alloc_fail;
-                    col += ts_width;
-                }
-                else if (col < (int) v_end && col + ts_width > (int) v_start) {
-                    int c_start = ((int) v_start > col) ? (int) v_start : col;
-                    int c_end = ((int) v_end < col + ts_width) ? (int) v_end : col + ts_width;
-                    int off;
-                    for (off = c_start; off < c_end; off++) {
-                        if (!painter_write_cells(&cells, &fillchar, 1, 1, off, false, true,
-                                                 fillchar, &current_style, captured_style,
-                                                 style_captured, track_sgr))
-                            goto alloc_fail;
-                    }
-                    col += ts_width;
+                    pctx.cells = &cells;
+                    pctx.fillchar = fillchar;
+                    pctx.fillchar_len = fillchar_len;
+                    pctx.current_style = &current_style;
+                    pctx.captured_style = captured_style;
+                    pctx.style_captured = style_captured;
+                    pctx.track_sgr = track_sgr;
+                    col = clip_text_sizing(&ts, col, (int) v_start, (int) v_end, ambiguous_width,
+                                           term_program, ts_emit_painter, &pctx);
+                    capture_style(track_sgr, current_style, captured_style, style_captured);
                 }
                 else {
-                    col += ts_width;
-                }
-                idx += result.length;
-                continue;
-            }
+                    ts_simple_ctx_t sctx;
+                    int ts_width = wcwidth_ts_display_width(&ts, ambiguous_width);
+                    int prev_col = col;
 
-            if (strict && is_indeterminate_seq(&result))
-                goto fail_return;
-
-            if (result.type == WCWIDTH_ESC_HPA) {
-                col = result.cursor_n - 1;
-                idx += result.length;
-                continue;
-            }
-
-            if (result.type == WCWIDTH_ESC_CUF) {
-                int n_forward = result.cursor_n;
-                int move_end = col + n_forward;
-                if (col < (int) v_end && move_end > (int) v_start) {
-                    int x;
-                    for (x = (col > (int) v_start ? col : (int) v_start);
-                         x < (move_end < (int) v_end ? move_end : (int) v_end); x++) {
-                        if (!painter_write_cells(&cells, &fillchar, 1, 1, x, false, true, fillchar,
-                                                 &current_style, captured_style, style_captured,
-                                                 track_sgr))
-                            goto alloc_fail;
+                    sctx.sb = sb;
+                    sctx.fillchar = fillchar;
+                    sctx.fillchar_len = fillchar_len;
+                    col = clip_text_sizing(&ts, col, (int) v_start, (int) v_end, ambiguous_width,
+                                           term_program, ts_emit_simple, &sctx);
+                    if ((prev_col >= (int) v_start && prev_col + ts_width <= (int) v_end)
+                        || (prev_col < (int) v_end && prev_col + ts_width > (int) v_start)) {
+                        capture_style(track_sgr, current_style, captured_style, style_captured);
                     }
                 }
-                col = move_end;
                 idx += result.length;
                 continue;
             }
 
-            if (result.type == WCWIDTH_ESC_CUB) {
-                int n_backward = result.cursor_n;
-                if (strict && n_backward > col)
-                    goto fail_return;
-                col -= n_backward;
-                if (col < 0)
-                    col = 0;
-                idx += result.length;
-                continue;
+            /* Indeterminate sequences: error in strict mode. */
+            if (strict && is_indeterminate_seq(&result)) {
+                *error = WCWIDTH_ERROR_INDETERMINATE;
+                goto fail;
             }
 
-            /* Any other sequence. */
-            if (!painter_add_seq(&seqs, &seq_order, col, result.start, result.length))
-                goto alloc_fail;
-            if (track_sgr && !*style_captured) {
-                *captured_style = current_style;
-                *style_captured = true;
+            /* Cursor movement: only the painter path resolves these into the
+             * cell model; the simple path passes them through as sequences. */
+            if (painter_mode) {
+                if (result.type == WCWIDTH_ESC_HPA) {
+                    col = result.cursor_n - 1;
+                    idx += result.length;
+                    continue;
+                }
+
+                if (result.type == WCWIDTH_ESC_CUF) {
+                    int n_forward = result.cursor_n;
+                    int move_end = col + n_forward;
+                    if (col < (int) v_end && move_end > (int) v_start) {
+                        int x;
+                        for (x = (col > (int) v_start ? col : (int) v_start);
+                             x < (move_end < (int) v_end ? move_end : (int) v_end); x++) {
+                            if (!painter_write_cells(&cells, NULL, 0, 1, x, false, fillchar,
+                                                     fillchar_len, &current_style, captured_style,
+                                                     style_captured, track_sgr))
+                                goto fail;
+                        }
+                    }
+                    col = move_end;
+                    idx += result.length;
+                    continue;
+                }
+
+                if (result.type == WCWIDTH_ESC_CUB) {
+                    int n_backward = result.cursor_n;
+                    if (strict && n_backward > col) {
+                        *error = WCWIDTH_ERROR_CURSOR_LEFT_EXCEED;
+                        goto fail;
+                    }
+                    col -= n_backward;
+                    if (col < 0) {
+                        col = 0;
+                    }
+                    idx += result.length;
+                    continue;
+                }
+            }
+
+            /* Any other recognized sequence: preserve as-is. */
+            if (!clip_out_seq(&out, result.start, result.length, col)) {
+                goto fail;
+            }
+            if (painter_mode) {
+                capture_style(track_sgr, current_style, captured_style, style_captured);
             }
             idx += result.length;
             continue;
         }
 
-        if (ch == '\r') {
+        /* Carriage return / backspace: movement for the painter path (which
+         * only runs in parse/strict modes) and in parse/strict modes;
+         * passed through as text otherwise. */
+        if (ch == '\r' && (painter_mode || control_codes != WCWIDTH_IGNORE)) {
             col = 0;
             idx++;
             continue;
         }
-        if (ch == '\x08') {
-            if (col > 0)
+        if (ch == '\x08' && (painter_mode || control_codes != WCWIDTH_IGNORE)) {
+            if (col > 0) {
                 col--;
+            }
             idx++;
             continue;
         }
 
+        /* Tab expansion. */
         if (ch == '\t') {
             if (tabsize > 0) {
                 int next_tab = col + (tabsize - (col % tabsize));
                 while (col < next_tab) {
                     if ((int) v_start <= col && col < (int) v_end) {
-                        if (!painter_write_cells(&cells, &fillchar, 1, 1, col, false, true,
-                                                 fillchar, &current_style, captured_style,
-                                                 style_captured, track_sgr))
-                            goto alloc_fail;
+                        if (!clip_out_tab(&out, col)) {
+                            goto fail;
+                        }
                     }
                     col++;
                 }
             }
             else {
-                if (!painter_add_seq(&seqs, &seq_order, col, "\t", 1))
-                    goto alloc_fail;
-                if (track_sgr && !*style_captured) {
-                    *captured_style = current_style;
-                    *style_captured = true;
+                if (!clip_out_seq(&out, "\t", 1, col)) {
+                    goto fail;
+                }
+                if (painter_mode) {
+                    capture_style(track_sgr, current_style, captured_style, style_captured);
                 }
             }
             idx++;
@@ -1096,14 +1345,14 @@ clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, ch
 
         /* Grapheme cluster. */
         {
-            wcwidth_grapheme_iter_t *giter;
+            wcwidth_grapheme_iter_t *giter = wcwidth_grapheme_iter_new(text + idx, text_len - idx);
             const char *grapheme;
             size_t g_len;
             int g_w;
 
-            giter = wcwidth_grapheme_iter_new(text + idx, text_len - idx);
-            if (giter == NULL)
-                goto alloc_fail;
+            if (giter == NULL) {
+                goto fail;
+            }
             grapheme = wcwidth_grapheme_next(giter, &g_len);
             if (grapheme == NULL || g_len == 0) {
                 wcwidth_grapheme_iter_free(giter);
@@ -1114,54 +1363,48 @@ clip_painter(const char *text, size_t text_len, size_t v_start, size_t v_end, ch
 
             if (g_w == 0) {
                 if ((int) v_start <= col && col < (int) v_end) {
-                    if (!painter_add_seq(&seqs, &seq_order, col, grapheme, g_len)) {
+                    if (!clip_out_seq(&out, grapheme, g_len, col)) {
                         wcwidth_grapheme_iter_free(giter);
-                        goto alloc_fail;
+                        goto fail;
                     }
-                    if (track_sgr && !*style_captured) {
-                        *captured_style = current_style;
-                        *style_captured = true;
+                    if (painter_mode) {
+                        capture_style(track_sgr, current_style, captured_style, style_captured);
                     }
                 }
             }
             else if (col >= (int) v_start && col + g_w <= (int) v_end) {
-                if (!painter_write_cells(&cells, grapheme, g_len, g_w, col, false, false, fillchar,
-                                         &current_style, captured_style, style_captured,
-                                         track_sgr)) {
+                if (!clip_out_cells(&out, grapheme, g_len, g_w, col, false)) {
                     wcwidth_grapheme_iter_free(giter);
-                    goto alloc_fail;
+                    goto fail;
                 }
             }
             else if (col < (int) v_end && col + g_w > (int) v_start) {
                 int c_start = ((int) v_start > col) ? (int) v_start : col;
                 int c_end = ((int) v_end < col + g_w) ? (int) v_end : col + g_w;
-                int off;
-                for (off = c_start; off < c_end; off++) {
-                    if (!painter_write_cells(&cells, &fillchar, 1, 1, off, false, true, fillchar,
-                                             &current_style, captured_style, style_captured,
-                                             track_sgr)) {
-                        wcwidth_grapheme_iter_free(giter);
-                        goto alloc_fail;
-                    }
+                if (!clip_out_fill(&out, c_start, c_end - c_start)) {
+                    wcwidth_grapheme_iter_free(giter);
+                    goto fail;
                 }
             }
 
+            wcwidth_grapheme_iter_free(giter);
             col += g_w;
             idx += g_len;
-            wcwidth_grapheme_iter_free(giter);
         }
     }
 
-    reconstruct_painter(&cells, &seqs, (int) v_start, (int) v_end, fillchar, sb);
-
-    painter_cells_free(&cells);
-    painter_seqs_free(&seqs);
+    if (painter_mode) {
+        reconstruct_painter(&cells, &seqs, (int) v_start, (int) v_end, fillchar, fillchar_len, sb);
+        painter_cells_free(&cells);
+        painter_seqs_free(&seqs);
+    }
     return true;
 
-alloc_fail:
-fail_return:
-    painter_cells_free(&cells);
-    painter_seqs_free(&seqs);
+fail:
+    if (painter_mode) {
+        painter_cells_free(&cells);
+        painter_seqs_free(&seqs);
+    }
     return false;
 }
 
@@ -1205,17 +1448,19 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
 char *
 clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-        const char *term_program, bool propagate_sgr, char fillchar, size_t *out_len)
+        const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar,
+        size_t fillchar_len, size_t *out_len, int *error)
 {
     strbuf_t sb;
     wcwidth_sgr_state_t captured_style;
     bool style_captured;
     bool strict;
-    bool overtyping;
     bool has_esc;
 
     if (out_len != NULL)
         *out_len = 0;
+    if (error != NULL)
+        *error = WCWIDTH_ERROR_NONE;
 
     /* Boundary: empty range. */
     if (v_end <= v_start) {
@@ -1268,14 +1513,19 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
 
     strict = (control_codes == WCWIDTH_STRICT);
 
-    /* Determine whether painter's algorithm is needed. */
-    overtyping = false;
-    if (control_codes != WCWIDTH_IGNORE) {
+    /* Determine whether painter's algorithm is needed.  Matches the pure
+     * implementation: 'ignore' disables it; -1 auto-detects from cursor
+     * movement characters; 0/1 force it off/on. */
+    if (control_codes == WCWIDTH_IGNORE) {
+        overtyping = 0;
+    }
+    else if (overtyping < 0) {
+        overtyping = 0;
         if (memchr(text, '\x08', text_len) != NULL || memchr(text, '\r', text_len) != NULL) {
-            overtyping = true;
+            overtyping = 1;
         }
         else if (has_esc) {
-            overtyping = wcwidth_escape_has_cursor_movement(text, text_len);
+            overtyping = wcwidth_escape_has_cursor_movement(text, text_len) ? 1 : 0;
         }
     }
 
@@ -1286,21 +1536,11 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     captured_style = WCWIDTH_SGR_STATE_DEFAULT;
     style_captured = false;
 
-    if (overtyping) {
-        if (!clip_painter(text, text_len, v_start, v_end, fillchar, tabsize, ambiguous_width,
-                          term_program, control_codes, strict, propagate_sgr, &captured_style,
-                          &style_captured, &sb)) {
-            strbuf_free(&sb);
-            return NULL;
-        }
-    }
-    else {
-        if (!clip_simple(text, text_len, v_start, v_end, fillchar, tabsize, ambiguous_width,
-                         term_program, control_codes, strict, propagate_sgr, &captured_style,
-                         &style_captured, &sb)) {
-            strbuf_free(&sb);
-            return NULL;
-        }
+    if (!clip_run(text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize, ambiguous_width,
+                  term_program, control_codes, strict, propagate_sgr, &captured_style,
+                  &style_captured, &sb, overtyping != 0, error)) {
+        strbuf_free(&sb);
+        return NULL;
     }
 
     if (propagate_sgr && style_captured) {
@@ -1308,4 +1548,44 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     }
 
     return strbuf_detach(&sb, out_len);
+}
+
+uint32_t *
+clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
+         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
+         const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar,
+         size_t fillchar_len, size_t *out_len, int *error)
+{
+    char enc_stack[512];
+    size_t enc_len;
+    char *utf8;
+    uint32_t *result;
+
+    if (out_len != NULL) {
+        *out_len = 0;
+    }
+    if (error != NULL) {
+        *error = WCWIDTH_ERROR_NONE;
+    }
+
+    utf8 = wcwidth_encode_u32(codepoints, n, enc_stack, sizeof(enc_stack), &enc_len);
+    if (utf8 == NULL) {
+        return NULL;
+    }
+    {
+        size_t byte_len = 0;
+        char *bytes = clip_u8(utf8, enc_len, v_start, v_end, control_codes, tabsize,
+                              ambiguous_width, term_program, propagate_sgr, overtyping, fillchar,
+                              fillchar_len, &byte_len, error);
+
+        if (utf8 != enc_stack) {
+            free(utf8);
+        }
+        if (bytes == NULL) {
+            return NULL; /* *error already set by clip_u8 */
+        }
+        result = wcwidth_decode_u32_heap(bytes, byte_len, out_len);
+        free(bytes);
+    }
+    return result;
 }

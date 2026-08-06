@@ -1,12 +1,9 @@
 /*
  * Display width of a single Unicode codepoint.
- *
- * Port of wcwidth/_wcwidth.py.
  */
 #include "wcwidth/wcwidth.h"
 #include "wcwidth/tables.h"
 #include "wcwidth/generated_tables.h"
-#include "wcwidth/wcwidth_config.h"
 
 int
 wcwidth_u32(uint32_t ucs, int ambiguous_width)

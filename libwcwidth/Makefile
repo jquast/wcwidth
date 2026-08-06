@@ -13,6 +13,9 @@ CFLAGS  ?= -std=c11 -Wall -Wextra -O2 -g
 INCLUDE  = -Iinclude
 BUILD    = build
 
+ASAN_CFLAGS  = -std=c11 -Wall -Wextra -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer
+UBSAN_CFLAGS = -std=c11 -Wall -Wextra -O2 -g -fsanitize=undefined -fno-omit-frame-pointer
+
 LIB_SRCS  = $(wildcard src/*.c) $(wildcard src/tables/*.c)
 LIB_OBJS  = $(patsubst %.c,$(BUILD)/%.o,$(LIB_SRCS))
 TEST_SRCS = $(wildcard tests/test_*.c)
@@ -25,11 +28,27 @@ LIB = $(BUILD)/libwcwidth.a
 FORMAT_DIRS = src include tests examples
 FORMAT_FILES = $(shell find $(FORMAT_DIRS) -name '*.c' -o -name '*.h' | sort)
 
-.PHONY: all clean test examples format format-check
+.PHONY: all clean test examples format format-check asan ubsan valgrind
 
 all: $(LIB) examples
 
 examples: $(EX_BINS)
+
+# AddressSanitizer + UndefinedBehaviorSanitizer build; catches buffer
+# overflows, use-after-free, leaks, and signed integer overflow.
+asan: clean test
+asan: CFLAGS = $(ASAN_CFLAGS)
+
+# UndefinedBehaviorSanitizer only; the lightest sanitizer configuration.
+ubsan: clean test
+ubsan: CFLAGS = $(UBSAN_CFLAGS)
+
+# Run the test binaries under valgrind with full leak checking.
+valgrind: $(TEST_BINS)
+	@for t in $(TEST_BINS); do \
+	    echo "=== valgrind: $$(basename $$t) ==="; \
+	    valgrind --leak-check=full --error-exitcode=1 $$t || exit 1; \
+	done
 
 $(LIB): $(LIB_OBJS)
 	@mkdir -p $(dir $@)

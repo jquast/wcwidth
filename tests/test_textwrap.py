@@ -9,6 +9,7 @@ import textwrap
 import pytest
 
 # local
+import wcwidth
 from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
@@ -511,3 +512,33 @@ def test_wrap_bare_esc_at_line_start():
     not found in any practical terminal sequence or string (ESC followed by NUL).
     """
     assert wrap('\x1b\x00あ', 1) == ['\x1b', '\x00', 'あ']
+
+
+def test_wrap_embedded_nul():
+    """Embedded NUL characters are preserved through wrapping."""
+    assert wcwidth.wrap('ab\x00cd ef', 5) == ['ab\x00cd', 'ef']
+    assert wcwidth.wrap('a\x00b', 5) == ['a\x00b']
+    assert wcwidth.wrap('\x00ab', 5) == ['\x00ab']
+
+
+def test_wrap_tab_expansion_counts_codepoints():
+    """Tab expansion column counts codepoints, not UTF-8 bytes."""
+    assert wcwidth.wrap('A\U0001f680\tB', 40) == ['A\U0001f680      B']
+    assert wcwidth.wrap('A\u4e2d\tB', 40) == ['A\u4e2d      B']
+    assert wcwidth.wrap('\x1b[?25l\tX', 40) == ['\x1b[?25l  X']
+
+
+def test_wrap_osc_boundaries():
+    """OSC sequences (OSC 66, OSC 0, hyperlink open) create word boundaries."""
+    assert wcwidth.wrap('abcdefgh\x1b]66;bad\x07X', 8) == ['abcdefgh', '\x1b]66;bad\x07X']
+    assert wcwidth.wrap('abcd\x1b]66;w=5;hello\x07efgh', 8) == ['abcd\x1b]66;w=5;hello\x07efgh']
+    assert wcwidth.wrap('abcd\x1b]0;title\x07efgh', 8) == ['abcd\x1b]0;title\x07efgh']
+    assert wcwidth.wrap('abc\x1b]8;id=x;http://example.com\x1b\\WXYZ\x1b]8;;\x1b\\def', 8) == [
+        'abc\x1b]8;id=x;http://example.com\x1b\\WXYZ\x1b]8;;\x1b\\', 'def']
+
+
+def test_wrap_unterminated_osc():
+    """Unterminated OSC consumes only the ESC ] prefix."""
+    assert wcwidth.wrap('a\x1b]66;', 30) == ['a\x1b]66;']
+    assert wcwidth.wrap('\x1b]66;', 30) == ['\x1b]66;']
+    assert wcwidth.wrap('a\x1b]0;title', 30) == ['a\x1b]0;title']

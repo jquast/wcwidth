@@ -6,272 +6,158 @@
 static char *
 call_ljust(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
-    return ljust_u8(text, strlen(text), dest_width, fillchar, WCWIDTH_PARSE, 1, NULL, out_len);
+    int error = WCWIDTH_ERROR_NONE;
+    return ljust_u8(text, strlen(text), dest_width, &fillchar, 1, WCWIDTH_PARSE, 1, NULL, out_len,
+                    &error);
 }
 
 static char *
 call_rjust(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
-    return rjust_u8(text, strlen(text), dest_width, fillchar, WCWIDTH_PARSE, 1, NULL, out_len);
+    int error = WCWIDTH_ERROR_NONE;
+    return rjust_u8(text, strlen(text), dest_width, &fillchar, 1, WCWIDTH_PARSE, 1, NULL, out_len,
+                    &error);
 }
 
 static char *
 call_center(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
-    return center_u8(text, strlen(text), dest_width, fillchar, WCWIDTH_PARSE, 1, NULL, out_len);
+    int error = WCWIDTH_ERROR_NONE;
+    return center_u8(text, strlen(text), dest_width, &fillchar, 1, WCWIDTH_PARSE, 1, NULL, out_len,
+                     &error);
 }
 
-TEST(ljust_ascii)
+TEST(ljust_basic)
 {
     size_t len;
+    int error = WCWIDTH_ERROR_NONE;
     char *result = call_ljust("hi", 5, ' ', &len);
     ASSERT_EQ(5, len);
     ASSERT_STREQ("hi   ", result);
     free(result);
-}
 
-TEST(ljust_wide)
-{
     /* U+4E2D ("中") = 3 UTF-8 bytes, display width 2 */
-    size_t len;
-    char *result = call_ljust("\xe4\xb8\xad", 4, ' ', &len);
+    result = call_ljust("\xe4\xb8\xad", 4, ' ', &len);
     ASSERT_EQ(5, len);
     ASSERT_STREQ("\xe4\xb8\xad  ", result);
     free(result);
-}
 
-TEST(ljust_already_wider)
-{
-    size_t len;
-    char *result = call_ljust("hello", 3, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("hello", result);
+    /* C-only: NULL out_len is allowed */
+    result = ljust_u8("hi", 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, &error);
+    ASSERT_STREQ("hi   ", result);
     free(result);
-}
 
-TEST(ljust_empty_text)
-{
-    size_t len;
-    char *result = call_ljust("", 5, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("     ", result);
-    free(result);
-}
-
-TEST(rjust_ascii)
-{
-    size_t len;
-    char *result = call_rjust("hi", 5, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("   hi", result);
-    free(result);
-}
-
-TEST(rjust_wide)
-{
-    /* U+4E2D ("中") = 3 UTF-8 bytes, display width 2 */
-    size_t len;
-    char *result = call_rjust("\xe4\xb8\xad", 4, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("  \xe4\xb8\xad", result);
-    free(result);
-}
-
-TEST(rjust_already_wider)
-{
-    size_t len;
-    char *result = call_rjust("hello", 3, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("hello", result);
-    free(result);
-}
-
-TEST(rjust_empty_text)
-{
-    size_t len;
-    char *result = call_rjust("", 5, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("     ", result);
-    free(result);
-}
-
-TEST(center_even_width)
-{
-    /* dest_width=6, text_width=2, total_padding=4, left=2, right=2 */
-    size_t len;
-    char *result = call_center("hi", 6, ' ', &len);
-    ASSERT_EQ(6, len);
-    ASSERT_STREQ("  hi  ", result);
-    free(result);
-}
-
-TEST(center_odd_width_dest_even)
-{
-    /*
-     * dest_width=5, text_width=2, total_padding=3
-     * left = 3/2 + (3 & 5 & 1) = 1 + (3 & 1) = 1 + 1 = 2
-     * right = 3 - 2 = 1
-     */
-    size_t len;
-    char *result = call_center("hi", 5, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("  hi ", result);
-    free(result);
-}
-
-TEST(center_odd_width_dest_odd)
-{
-    /*
-     * dest_width=3, text_width=1, total_padding=2
-     * left = 2/2 + (2 & 3 & 1) = 1 + (2 & 1) = 1 + 0 = 1
-     * right = 2 - 1 = 1
-     */
-    size_t len;
-    char *result = call_center("a", 3, ' ', &len);
-    ASSERT_EQ(3, len);
-    ASSERT_STREQ(" a ", result);
-    free(result);
-}
-
-TEST(center_two_char_dest_odd)
-{
-    /*
-     * dest_width=3, text_width=2, total_padding=1
-     * left = 1/2 + (1 & 3 & 1) = 0 + (1 & 1) = 1
-     * right = 1 - 1 = 0
-     */
-    size_t len;
-    char *result = call_center("ab", 3, ' ', &len);
-    ASSERT_EQ(3, len);
-    ASSERT_STREQ(" ab", result);
-    free(result);
-}
-
-TEST(center_already_wider)
-{
-    size_t len;
-    char *result = call_center("hello", 3, ' ', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("hello", result);
-    free(result);
-}
-
-TEST(center_empty_text)
-{
-    size_t len;
-    char *result = call_center("", 4, ' ', &len);
-    ASSERT_EQ(4, len);
-    ASSERT_STREQ("    ", result);
-    free(result);
-}
-
-TEST(ljust_custom_fill)
-{
-    size_t len;
-    char *result = call_ljust("hi", 5, '.', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("hi...", result);
-    free(result);
-}
-
-TEST(rjust_custom_fill)
-{
-    size_t len;
-    char *result = call_rjust("hi", 5, '.', &len);
-    ASSERT_EQ(5, len);
-    ASSERT_STREQ("...hi", result);
-    free(result);
-}
-
-TEST(center_custom_fill)
-{
-    size_t len;
-    char *result = call_center("hi", 6, '-', &len);
-    ASSERT_EQ(6, len);
-    ASSERT_STREQ("--hi--", result);
-    free(result);
-}
-
-TEST(ljust_sgr)
-{
-    /* "\x1b[31mhi\x1b[0m" has display width 2, text_len 11 */
-    size_t len;
-    char *result = call_ljust("\x1b[31mhi\x1b[0m", 5, ' ', &len);
-    ASSERT_EQ(14, len);
-    ASSERT_STREQ("\x1b[31mhi\x1b[0m   ", result);
-    free(result);
-}
-
-TEST(rjust_sgr)
-{
-    size_t len;
-    char *result = call_rjust("\x1b[31mhi\x1b[0m", 5, ' ', &len);
-    ASSERT_EQ(14, len);
-    ASSERT_STREQ("   \x1b[31mhi\x1b[0m", result);
-    free(result);
-}
-
-TEST(center_sgr)
-{
-    size_t len;
-    char *result = call_center("\x1b[31mhi\x1b[0m", 6, ' ', &len);
-    ASSERT_EQ(15, len);
-    ASSERT_STREQ("  \x1b[31mhi\x1b[0m  ", result);
-    free(result);
-}
-
-TEST(ljust_null_out_len)
-{
-    char *result = ljust_u8("hi", 2, 5, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
-    ASSERT_TRUE(result != NULL);
+    /* C-only: NULL error is allowed */
+    result = ljust_u8("hi", 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
     ASSERT_STREQ("hi   ", result);
     free(result);
 }
 
-TEST(rjust_null_out_len)
+TEST(rjust_basic)
 {
-    char *result = rjust_u8("hi", 2, 5, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
-    ASSERT_TRUE(result != NULL);
+    size_t len;
+    int error = WCWIDTH_ERROR_NONE;
+    char *result = call_rjust("hi", 5, ' ', &len);
+    ASSERT_EQ(5, len);
+    ASSERT_STREQ("   hi", result);
+    free(result);
+
+    result = call_rjust("\xe4\xb8\xad", 4, ' ', &len);
+    ASSERT_EQ(5, len);
+    ASSERT_STREQ("  \xe4\xb8\xad", result);
+    free(result);
+
+    result = rjust_u8("hi", 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, &error);
+    ASSERT_STREQ("   hi", result);
+    free(result);
+
+    result = rjust_u8("hi", 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
     ASSERT_STREQ("   hi", result);
     free(result);
 }
 
-TEST(center_null_out_len)
+TEST(center_basic)
 {
-    char *result = center_u8("hi", 2, 6, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
-    ASSERT_TRUE(result != NULL);
+    size_t len;
+    int error = WCWIDTH_ERROR_NONE;
+    char *result = call_center("hi", 6, ' ', &len);
+    ASSERT_EQ(6, len);
     ASSERT_STREQ("  hi  ", result);
+    free(result);
+
+    result = call_center("\xe4\xb8\xad", 4, '-', &len);
+    ASSERT_EQ(5, len);
+    ASSERT_STREQ("-\xe4\xb8\xad-", result);
+    free(result);
+
+    result = center_u8("hi", 2, 6, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, &error);
+    ASSERT_STREQ("  hi  ", result);
+    free(result);
+
+    result = center_u8("hi", 2, 6, " ", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+    ASSERT_STREQ("  hi  ", result);
+    free(result);
+}
+
+TEST(ljust_u32_basic)
+{
+    size_t len;
+    int error = WCWIDTH_ERROR_NONE;
+    const uint32_t cps[] = {'h', 'i'};
+    const uint32_t expect[] = {'h', 'i', ' ', ' ', ' '};
+    uint32_t *result = ljust_u32(cps, 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, &len, &error);
+    ASSERT_NOT_NULL(result);
+    ASSERT_EQ((size_t) 5, len);
+    ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
+    free(result);
+
+    /* U+4E2D ("中") = display width 2, padded to 4 cells with 2 spaces */
+    {
+        const uint32_t zhong[] = {0x4E2D};
+        const uint32_t exp2[] = {0x4E2D, ' ', ' '};
+
+        result = ljust_u32(zhong, 1, 4, " ", 1, WCWIDTH_PARSE, 1, NULL, &len, &error);
+        ASSERT_NOT_NULL(result);
+        ASSERT_EQ((size_t) 3, len);
+        ASSERT_EQ(0, memcmp(exp2, result, sizeof(exp2)));
+        free(result);
+    }
+}
+
+TEST(rjust_u32_basic)
+{
+    size_t len;
+    int error = WCWIDTH_ERROR_NONE;
+    const uint32_t cps[] = {'h', 'i'};
+    const uint32_t expect[] = {' ', ' ', ' ', 'h', 'i'};
+    uint32_t *result = rjust_u32(cps, 2, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, &len, &error);
+    ASSERT_NOT_NULL(result);
+    ASSERT_EQ((size_t) 5, len);
+    ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
+    free(result);
+}
+
+TEST(center_u32_basic)
+{
+    size_t len;
+    int error = WCWIDTH_ERROR_NONE;
+    const uint32_t cps[] = {'h', 'i'};
+    const uint32_t expect[] = {' ', ' ', 'h', 'i', ' ', ' '};
+    uint32_t *result = center_u32(cps, 2, 6, " ", 1, WCWIDTH_PARSE, 1, NULL, &len, &error);
+    ASSERT_NOT_NULL(result);
+    ASSERT_EQ((size_t) 6, len);
+    ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
     free(result);
 }
 
 int
 main(void)
 {
-    RUN_TEST(ljust_ascii);
-    RUN_TEST(ljust_wide);
-    RUN_TEST(ljust_already_wider);
-    RUN_TEST(ljust_empty_text);
-    RUN_TEST(ljust_custom_fill);
-    RUN_TEST(ljust_sgr);
-    RUN_TEST(ljust_null_out_len);
-
-    RUN_TEST(rjust_ascii);
-    RUN_TEST(rjust_wide);
-    RUN_TEST(rjust_already_wider);
-    RUN_TEST(rjust_empty_text);
-    RUN_TEST(rjust_custom_fill);
-    RUN_TEST(rjust_sgr);
-    RUN_TEST(rjust_null_out_len);
-
-    RUN_TEST(center_even_width);
-    RUN_TEST(center_odd_width_dest_even);
-    RUN_TEST(center_odd_width_dest_odd);
-    RUN_TEST(center_two_char_dest_odd);
-    RUN_TEST(center_already_wider);
-    RUN_TEST(center_empty_text);
-    RUN_TEST(center_custom_fill);
-    RUN_TEST(center_sgr);
-    RUN_TEST(center_null_out_len);
-
+    RUN_TEST(ljust_basic);
+    RUN_TEST(rjust_basic);
+    RUN_TEST(center_basic);
+    RUN_TEST(ljust_u32_basic);
+    RUN_TEST(rjust_u32_basic);
+    RUN_TEST(center_u32_basic);
     return test_summary();
 }

@@ -47,7 +47,7 @@ readline(FILE *fp, char **buf, size_t *cap)
         (*buf)[len++] = (char) c;
     }
     if (c == EOF && len == 0)
-        return 0;
+        return (size_t) -1; /* EOF */
     return len;
 }
 
@@ -81,15 +81,19 @@ main(int argc, char **argv)
 
     char *line = NULL;
     size_t cap = 0;
+    const char fill = ' ';
 
     while (1) {
         size_t len = readline(stdin, &line, &cap);
-        if (len == 0)
+        if (len == (size_t) -1) /* EOF */
             break;
 
-        char *lj = ljust_u8(line, len, (size_t) width, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
-        char *rj = rjust_u8(line, len, (size_t) width, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
-        char *ct = center_u8(line, len, (size_t) width, ' ', WCWIDTH_PARSE, 1, NULL, NULL);
+        char *lj =
+            ljust_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+        char *rj =
+            rjust_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+        char *ct =
+            center_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
 
         printf("%s  %s  %s\n", lj ? lj : "", rj ? rj : "", ct ? ct : "");
 

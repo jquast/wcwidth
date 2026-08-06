@@ -1,7 +1,5 @@
 /*
  * Grapheme cluster segmentation for UTF-8 text.
- *
- * Port of wcwidth/_grapheme.py.
  */
 #ifndef WCWIDTH_GRAPHEME_H
 #define WCWIDTH_GRAPHEME_H

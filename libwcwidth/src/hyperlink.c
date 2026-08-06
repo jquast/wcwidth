@@ -1,7 +1,5 @@
 /*
  * OSC 8 Hyperlink protocol parsing and creation.
- *
- * Port of wcwidth/_hyperlink.py.
  */
 #include "wcwidth/hyperlink.h"
 

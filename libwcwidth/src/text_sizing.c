@@ -1,7 +1,5 @@
 /*
  * OSC 66 Text Sizing protocol parsing and measurement.
- *
- * Port of wcwidth/text_sizing.py.
  */
 #include "wcwidth/text_sizing.h"
 #include "wcwidth/wcwidth.h"
@@ -87,9 +85,11 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
                 continue;
             }
 
-            /* Parse integer value. */
+            /* Parse integer value.  The meta string is NUL-terminated by the
+             * caller, but interior parts end at ':'; the digits must be
+             * consumed up to a part boundary or the string end. */
             val = strtol(eq + 1, &endp, 10);
-            if (endp == eq + 1 || *endp != '\0') {
+            if (endp == eq + 1 || (*endp != ':' && *endp != '\0')) {
                 /* Not a valid integer -- use default. */
                 part_start = pos + 1;
                 continue;
@@ -130,6 +130,25 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
     }
 
     return true;
+}
+
+void
+wcwidth_ts_from_esc(const wcwidth_esc_result_t *esc, wcwidth_text_sizing_t *ts)
+{
+    char meta_buf[64];
+
+    ts->text = esc->ts_text;
+    ts->text_len = esc->ts_text_len;
+    ts->terminator = esc->ts_terminator;
+    if (esc->ts_meta_len > 0 && esc->ts_meta_len < sizeof(meta_buf)) {
+        /* NUL-terminate meta for strtol-based parsing. */
+        memcpy(meta_buf, esc->ts_meta, esc->ts_meta_len);
+        meta_buf[esc->ts_meta_len] = '\0';
+        wcwidth_ts_parse_params(meta_buf, esc->ts_meta_len, &ts->params);
+    }
+    else {
+        wcwidth_ts_parse_params("", 0, &ts->params);
+    }
 }
 
 int

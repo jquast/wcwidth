@@ -1,10 +1,10 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [ "hatchling" ]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=77", "wheel" ]
 
 [project]
 name = "wcwidth"
-version = "0.8.3"  # don't forget to also update wcwidth/__init__.py:__version__
+version = "0.9.0"  # stamped into __init__.py and wcwidth_config.h by bin/update-tables.py
 description = "Measures the displayed width of unicode strings in a terminal"
 readme = "README.rst"
 keywords = [
@@ -51,25 +51,69 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/jquast/wcwidth"
 
-[tool.hatch.build.targets.sdist]
-include = [
-  # hatch includes **everything**, even embarrassing TODO files or spreadsheets or whatever is in
-  # your root folder, a commonly dangerous thing even without hatch, like that we released an
-  # unimported table_vs15.py in version 0.2.14. A 'git clean -dfx' should work ..  but! *Global* git
-  # ignore is not honored by hatch, even files containing secrets may easily be leaked!
-  "/wcwidth/**",
-  "/bin/**",
-  "/code_templates/**",
-  "/docs/**",
-  "/tests/*.py",
-  "/README.rst",
-  "/LICENSE",
-  "/tox.ini",
-  "/requirements-*.in",
-  "/requirements-*.txt",
-  "/.gitignore",
-  "/.pylintrc",
+# The C extension 'wcwidth._wcwidth_c' is optional: setup.py skips it when the
+# build would fail (no compiler, PyPy, WCWIDTH_PURE_PYTHON=1) and the
+# pure-Python implementation is used instead.
+
+[tool.setuptools]
+include-package-data = false
+packages = [
+  "wcwidth",
+  "wcwidth.table_grapheme_overrides",
 ]
 
-[tool.hatch.build.targets.sdist.force-include]
-"ucs-detect/data" = "ucs-detect/data"
+[tool.setuptools.package-data]
+wcwidth = [ "py.typed", "*.pyi" ]
+
+# Optional C extension.  The declaration is static; the *graceful fallback*
+# (skip it when the build cannot compile) lives in setup.py's build_ext
+# override, because no declarative form exists for "optional extension".
+# Keep this source list in parity with libwcwidth/CMakeLists.txt's
+# LIBWCWIDTH_SOURCES; the Makefile globs src/*.c itself.
+[[tool.setuptools.ext-modules]]
+name = "wcwidth._wcwidth_c"
+sources = [
+  "wcwidth/_wcwidth_c.c",
+  "libwcwidth/src/bisearch.c",
+  "libwcwidth/src/wcwidth.c",
+  "libwcwidth/src/wcswidth.c",
+  "libwcwidth/src/wcstwidth.c",
+  "libwcwidth/src/width.c",
+  "libwcwidth/src/textwrap.c",
+  "libwcwidth/src/clip.c",
+  "libwcwidth/src/align.c",
+  "libwcwidth/src/grapheme.c",
+  "libwcwidth/src/escape.c",
+  "libwcwidth/src/sgr.c",
+  "libwcwidth/src/hyperlink.c",
+  "libwcwidth/src/text_sizing.c",
+  "libwcwidth/src/terminal_override.c",
+  "libwcwidth/src/utf8.c",
+  "libwcwidth/src/tables/table_wide.c",
+  "libwcwidth/src/tables/table_zero.c",
+  "libwcwidth/src/tables/table_ambiguous.c",
+  "libwcwidth/src/tables/table_grapheme.c",
+  "libwcwidth/src/tables/table_mc.c",
+  "libwcwidth/src/tables/table_vs15.c",
+  "libwcwidth/src/tables/table_vs16.c",
+  "libwcwidth/src/tables/table_terminal_overrides.c",
+  "libwcwidth/src/tables/table_term_programs.c",
+]
+include-dirs = [ "libwcwidth/include" ]
+
+[tool.cibuildwheel]
+# per-version wheels for every supported CPython, including free-threaded
+# 3.13t/3.14t builds; PyPy users get the pure-Python sdist fallback
+build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp315-* cp313t-* cp314t-*"
+# extend the arch lists below to add more (e.g. manylinux i686/ppc64le/s390x,
+# musllinux, windows arm64) -- one line each
+skip = "*-musllinux_*"
+
+[tool.cibuildwheel.linux]
+archs = [ "x86_64", "aarch64" ]
+
+[tool.cibuildwheel.macos]
+archs = [ "x86_64", "arm64" ]
+
+[tool.cibuildwheel.windows]
+archs = [ "x86_64" ]

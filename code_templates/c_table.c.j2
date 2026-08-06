@@ -4,7 +4,7 @@
  * Table: {{ variable_name }}
  * Unicode version: {{ table.keys()|sort|last }}
  */
-#include "wcwidth/tables.h"
+#include "wcwidth/generated_tables.h"
 
 {%- set latest = table[table.keys()|sort|last] %}
 
@@ -14,4 +14,5 @@ const wcwidth_interval_t {{ c_name }}[] = {
 {%- endfor %}
 };
 
-const size_t {{ c_name }}_LEN = sizeof({{ c_name }}) / sizeof({{ c_name }}[0]);
+_Static_assert(sizeof({{ c_name }}) / sizeof({{ c_name }}[0]) == {{ c_name }}_LEN,
+               "{{ c_name }}_LEN out of date");

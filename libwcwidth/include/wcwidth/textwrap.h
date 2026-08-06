@@ -1,7 +1,5 @@
 /*
  * Text wrapping with ANSI-aware display width measurement.
- *
- * Port of wcwidth/_textwrap.py.
  */
 #ifndef WCWIDTH_TEXTWRAP_H
 #define WCWIDTH_TEXTWRAP_H
@@ -15,6 +13,7 @@
 extern "C" {
 #endif
 
+/* Options for wrap_u8() and wrap_u8_text(). */
 typedef struct
 {
     int width; /* max line width in display cells */
@@ -28,12 +27,14 @@ typedef struct
     bool break_on_hyphens;
     bool drop_whitespace;
     bool propagate_sgr;
-    int max_lines; /* 0 = no limit */
+    bool fix_sentence_endings; /* widen single space after sentence end to two */
+    int max_lines;             /* 0 = no limit */
     const char *initial_indent;
     const char *subsequent_indent;
     const char *placeholder; /* for truncation, default " [...]" */
 } wcwidth_wrap_opts_t;
 
+/* Default options for wrap(). */
 extern const wcwidth_wrap_opts_t WCWIDTH_WRAP_OPTS_DEFAULT;
 
 /*
@@ -62,8 +63,25 @@ int wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, 
  * separated by '\n' (no trailing newline).  *out_len is the total byte length.
  * The caller does a single free(*out) to release memory.
  */
-int wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts,
-                 char **out, size_t *out_len);
+int wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
+                 size_t *out_len);
+
+/*
+ * Codepoint-array variant of wrap_u8(): encodes the codepoints to UTF-8,
+ * wraps, and decodes the result back to a codepoint array.  The output is a
+ * malloc'd array of *out_len* codepoints and the caller does a single free()
+ * of it, exactly as wrap_u8() returns UTF-8 bytes.
+ *
+ * Returns 0 on success, -1 on allocation error.
+ */
+int wrap_u32(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out,
+             size_t *out_len);
+
+/*
+ * Codepoint-array variant of wrap_u8_text().
+ */
+int wrap_u32_text(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts,
+                  uint32_t **out, size_t *out_len);
 
 #ifdef __cplusplus
 }

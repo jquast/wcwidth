@@ -7,12 +7,19 @@ Introduction
 
 This library is mainly for CLI/TUI programs that carefully produce output for Terminals.
 
-Installation
-------------
+Python Installation
+-------------------
 
 The stable version of this package is maintained on pypi, install or upgrade, using pip::
 
     pip install --upgrade wcwidth
+
+Portable C11 Library
+--------------------
+
+A portable C11 library, libwcwidth_, is also provided, matching specification and results of the
+Python library, and it is used as an *optional* C extension of the Python package. See the
+documentation of libwcwidth_ for further details.
 
 Problem
 -------
@@ -998,6 +1005,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
+.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

@@ -452,3 +452,77 @@ def test_clip_parse_indeterminate_preserved(seq, cap_name):
     assert 'hello' in result
     assert 'world' in result
     assert seq in result
+
+
+STRIP_OSC66_CASES = [
+    ('\x1b]66;bad\x07', ''),
+    ('\x1b]66;w=5;hello\x07', 'hello'),
+    ('before\x1b]66;bad\x07after', 'beforeafter'),
+    ('before\x1b]66;w=5;hello\x07after', 'beforehelloafter'),
+]
+
+
+@pytest.mark.parametrize('text,expected', STRIP_OSC66_CASES)
+def test_strip_sequences_osc66_stripped(text, expected):
+    """strip_sequences() preserves OSC 66 display text."""
+    assert strip_sequences(text) == expected
+
+
+STRIP_UNTERMINATED_CSI_CASES = [
+    ('a\x1b[', 'a'),
+    ('\x1b[\x1b[31mc', 'c'),
+    ('a\x1b[\x1b[31mb', 'ab'),
+]
+
+
+@pytest.mark.parametrize('text,expected', STRIP_UNTERMINATED_CSI_CASES)
+def test_strip_sequences_unterminated_csi(text, expected):
+    """strip_sequences() strips bare ESC[ (unterminated CSI)."""
+    assert strip_sequences(text) == expected
+
+
+CLIP_OSC66_CASES = [
+    ('\x1b]66;bad\x07text', 0, 4, '\x1b]66;bad\x07text'),
+    ('a\x1b]66;bad\x07b', 0, 5, 'a\x1b]66;bad\x07b'),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_OSC66_CASES)
+def test_clip_preserves_osc66_without_display_text(text, start, end, expected):
+    """clip() preserves OSC 66 with no display text as-is."""
+    assert clip(text, start, end) == expected
+
+
+CLIP_OSC66_VISIBLE_CASES = [
+    ('\x1b]66;s=1:w=1;\x1b\\abc', 0, 5, '\x1b]66;w=1;\x1b\\abc'),
+    ('\x1b]66;s=1:w=1;XY\x1b\\', 0, 10, '\x1b]66;w=1;XY\x1b\\'),
+    ('\x1b]66;s=1:w=1;\x1b\\X', 1, 2, 'X'),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_OSC66_VISIBLE_CASES)
+def test_clip_osc66_zero_text_unit(text, start, end, expected):
+    """clip() treats zero-text OSC 66 as a width unit with default params omitted."""
+    assert clip(text, start, end) == expected
+
+
+CLIP_OSC8_EMPTY_UNIT_CASES = [
+    ('\x1b]8;;\x1b\\\x1b]8;;\x07X', 0, 5, 'X'),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_OSC8_EMPTY_UNIT_CASES)
+def test_clip_osc8_empty_unit_skipped(text, start, end, expected):
+    """clip() drops empty OSC 8 units formed by dangling close sequences."""
+    assert clip(text, start, end) == expected
+
+
+CLIP_SGR_CAPTURE_CASES = [
+    ('\x1b[31m\x1b]66;w=5;hello\x07', 10, 20, ''),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_SGR_CAPTURE_CASES)
+def test_clip_sgr_captured_only_at_visible_content(text, start, end, expected):
+    """clip() captures SGR only at visible content emission, not passthrough."""
+    assert clip(text, start, end) == expected

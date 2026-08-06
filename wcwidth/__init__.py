@@ -4,10 +4,6 @@ Python 'wcwidth' module.
 https://github.com/jquast/wcwidth
 """
 
-# re-export common and outermost functions & definitions, even a few private
-# ones, some for convenience, others for legacy, only the items in __all__ are
-# documented as public API
-
 __lazy_modules__ = [
     "wcwidth._clip",
     "wcwidth._wcswidth",
@@ -28,24 +24,51 @@ __lazy_modules__ = [
     "wcwidth.unicode_versions",
 ]
 
-# local
-from ._clip import clip
-from .align import ljust, rjust, center
-from ._width import width
+# std imports
+import os
+
+# Import optional C extension 'wcwidth._wcwidth_c', a wrapper around the
+# portable C11 libwcwidth library.  When it is unavailable (compilation
+# failure, unsupported platform, or WCWIDTH_PURE_PYTHON=1), the pure-Python
+# implementation below is used as a drop-in replacement.
+HAS_C_EXTENSION = False
+if not os.environ.get('WCWIDTH_PURE_PYTHON', ''):
+    try:
+        import wcwidth._wcwidth_c  # noqa: F401  pylint:disable=unused-import
+    except ImportError:  # pragma: no cover - exercised by test_c_extension.py
+        pass
+    else:
+        HAS_C_EXTENSION = True
+
+# re-export common and outermost functions & definitions, even a few private
+# ones, some for convenience, others for legacy, only the items in __all__ are
+# documented as public API
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
-from .textwrap import SequenceTextWrapper, wrap
-from ._wcswidth import wcswidth, wcstwidth
+from .textwrap import SequenceTextWrapper
 from .hyperlink import Hyperlink, HyperlinkParams
-from .sgr_state import propagate_sgr
 from ._constants import list_term_programs
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .text_sizing import TextSizing, TextSizingParams
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .escape_sequences import iter_sequences, strip_sequences
+from .escape_sequences import iter_sequences
 from .unicode_versions import list_versions
+
+if HAS_C_EXTENSION:
+    from ._wcwidth_c import (clip, ljust, rjust, center, propagate_sgr,
+                             strip_sequences, wcswidth, wcstwidth, wcwidth,
+                             width, wrap)
+else:
+    from ._clip import clip
+    from .align import ljust, rjust, center
+    from ._width import width
+    from .textwrap import wrap
+    from ._wcswidth import wcswidth, wcstwidth
+    from ._wcwidth import wcwidth
+    from .escape_sequences import strip_sequences
+    from .sgr_state import propagate_sgr
 
 # NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
 #
@@ -64,7 +87,7 @@ if __import__('sys').version_info < (3, 15):
     # 'from wcwidth.wcwidth import wcswidth'
     # -- and we make a lot of effort to allow any such import statements to continue to function.
     from . import wcwidth as _wcwidth_module  # isort:skip
-from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
+from ._wcwidth import _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 
 
 # The __all__ attribute defines the items exported from statement,
@@ -75,7 +98,5 @@ __all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_
            'list_versions', 'list_term_programs', 'propagate_sgr',
            'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')
 
-# Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
-# like flit_core, maybe there is some better way but for now we have to duplicate it in both places
-# Prefer the installed distribution version when available (helps test environments)
-__version__ = '0.8.3'  # don't forget to also update pyproject.toml:version
+# Version is stamped by code generation (bin/update-tables.py) from pyproject.toml.
+__version__ = '0.9.0'

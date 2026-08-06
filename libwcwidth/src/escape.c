@@ -1,16 +1,26 @@
 /*
  * Terminal escape sequence classification.
- *
- * Port of wcwidth/escape_sequences.py.
  */
 #include "wcwidth/escape.h"
+#include "wcwidth/utf8.h"
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define ESC 0x1b
 #define BEL 0x07
+
+/* Zero the result fields, leaving only type/start/length to set. */
+static void
+esc_result_init(wcwidth_esc_result_t *r, wcwidth_esc_type_t type, const char *start, size_t length)
+{
+    memset(r, 0, sizeof *r);
+    r->type = type;
+    r->start = start;
+    r->length = length;
+}
 
 static int
 parse_cursor_n(const char *params, size_t params_len)
@@ -23,6 +33,35 @@ parse_cursor_n(const char *params, size_t params_len)
         i++;
     }
     return (i == 0) ? 1 : n;
+}
+
+/* True when CSI params match the pure scroll-region pattern '\d+;\d+'. */
+static bool
+is_scroll_region_params(const char *params, size_t params_len)
+{
+    size_t i = 0;
+
+    while (i < params_len && params[i] >= '0' && params[i] <= '9')
+        i++;
+    if (i == 0 || i >= params_len || params[i] != ';')
+        return false;
+    i++;
+    {
+        size_t digits = 0;
+        while (i < params_len && params[i] >= '0' && params[i] <= '9') {
+            digits++;
+            i++;
+        }
+        return digits > 0 && i == params_len;
+    }
+}
+
+/* True when CSI params select the alternate screen ('?1049' or '?47'). */
+static bool
+is_alt_screen_params(const char *params, size_t params_len)
+{
+    return (params_len == 5 && memcmp(params, "?1049", 5) == 0)
+           || (params_len == 3 && memcmp(params, "?47", 3) == 0);
 }
 
 /*
@@ -63,65 +102,24 @@ parse_csi(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
 
     /* final byte: 0x40-0x7E */
     if (pos >= text_len) {
-        /* truncated -- consume none */
-        result->type = WCWIDTH_ESC_UNRECOGNIZED;
-        result->start = text + offset;
-        result->length = 1; /* just the ESC */
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        /* truncated -- consume just ESC '[' as a zero-width Fe sequence
+         * ('[' is 0x5B, in the Fe range) */
+        esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 2);
         return true;
     }
 
     ch = (unsigned char) text[pos];
     if (ch < 0x40 || ch > 0x7E) {
-        /* malformed CSI -- consume just the ESC */
-        result->type = WCWIDTH_ESC_UNRECOGNIZED;
-        result->start = text + offset;
-        result->length = 1;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        /* malformed CSI -- consume ESC and '[' as a zero-width sequence */
+        esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 2);
         return true;
     }
 
     pos++; /* consume final byte */
-    result->start = text + offset;
-    result->length = pos - offset;
-    result->osc8_url = NULL;
-    result->osc8_url_len = 0;
-    result->osc8_params = NULL;
-    result->osc8_params_len = 0;
-    result->ts_meta = NULL;
-    result->ts_meta_len = 0;
-    result->ts_text = NULL;
-    result->ts_text_len = 0;
-    result->ts_terminator = 0;
+    esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, pos - offset);
 
     if (intermed) {
-        /* CSI with intermediate bytes is OTHER */
-        result->type = WCWIDTH_ESC_OTHER;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
+        /* CSI with intermediate bytes stays OTHER */
         return true;
     }
 
@@ -130,24 +128,17 @@ parse_csi(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
             result->type = WCWIDTH_ESC_SGR;
             result->sgr_params = text + params_start;
             result->sgr_params_len = params_end - params_start;
-            result->cursor_n = 0;
             break;
         case 'C':
             result->type = WCWIDTH_ESC_CUF;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
             result->cursor_n = parse_cursor_n(text + params_start, params_end - params_start);
             break;
         case 'D':
             result->type = WCWIDTH_ESC_CUB;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
             result->cursor_n = parse_cursor_n(text + params_start, params_end - params_start);
             break;
         case 'G':
             result->type = WCWIDTH_ESC_HPA;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
             result->cursor_n = parse_cursor_n(text + params_start, params_end - params_start);
             break;
         case 'A':
@@ -164,15 +155,21 @@ parse_csi(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
         case 'd':
         case '@':
             result->type = WCWIDTH_ESC_INDETERMINATE;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
-            result->cursor_n = 0;
+            break;
+        case 'r':
+            /* change_scroll_region: '\x1b[\d+;\d+r' is indeterminate */
+            result->type = is_scroll_region_params(text + params_start, params_end - params_start)
+                               ? WCWIDTH_ESC_INDETERMINATE
+                               : WCWIDTH_ESC_OTHER;
+            break;
+        case 'h':
+        case 'l':
+            /* alternate screen buffer: '\x1b[?1049[hl]' and '\x1b[?47[hl]' */
+            result->type = is_alt_screen_params(text + params_start, params_end - params_start)
+                               ? WCWIDTH_ESC_INDETERMINATE
+                               : WCWIDTH_ESC_OTHER;
             break;
         default:
-            result->type = WCWIDTH_ESC_OTHER;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
-            result->cursor_n = 0;
             break;
     }
 
@@ -187,35 +184,34 @@ static bool
 parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t *result)
 {
     size_t pos = offset + 2; /* skip ESC ] */
+    bool terminated = false;
 
-    result->start = text + offset;
-    result->sgr_params = NULL;
-    result->sgr_params_len = 0;
-    result->cursor_n = 0;
-    result->osc8_url = NULL;
-    result->osc8_url_len = 0;
-    result->osc8_params = NULL;
-    result->osc8_params_len = 0;
-    result->ts_meta = NULL;
-    result->ts_meta_len = 0;
-    result->ts_text = NULL;
-    result->ts_text_len = 0;
-    result->ts_terminator = 0;
+    esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 0);
 
     while (pos < text_len) {
         unsigned char ch = (unsigned char) text[pos];
         if (ch == BEL) {
             pos++; /* consume BEL */
+            terminated = true;
             break;
         }
         if (ch == ESC) {
             /* check for ST (ESC \) */
             if (pos + 1 < text_len && text[pos + 1] == '\\') {
                 pos += 2; /* consume ESC \ */
+                terminated = true;
                 break;
             }
         }
         pos++;
+    }
+
+    /* An unterminated OSC is not a recognized OSC; it still consumes the
+     * 2-byte ESC ] prefix, matching the pure reference (where \x1b] matches
+     * the zero-width Fe branch). */
+    if (!terminated) {
+        result->length = 2;
+        return true;
     }
 
     result->length = pos - offset;
@@ -279,26 +275,32 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
 
         /* split on first semicolon: meta;text */
         size_t semi = 0;
+        bool found_semi = false;
         size_t i = 0;
         while (i < data_len) {
             if (text[data_start + i] == ';') {
                 semi = i;
+                found_semi = true;
                 break;
             }
             i++;
         }
 
+        if (!found_semi) {
+            /* no semicolon: not valid OSC 66 (text is required per spec);
+             * leave as WCWIDTH_ESC_OTHER so callers treat it as a generic OSC. */
+            return true;
+        }
         result->type = WCWIDTH_ESC_OSC66;
+        result->ts_terminator = text[offset + result->length - 1];
         result->ts_meta = text + data_start;
         result->ts_meta_len = semi;
         result->ts_text = text + data_start + semi + 1;
         result->ts_text_len = data_len - semi - 1;
-        result->ts_terminator = text[offset + result->length - 1];
         return true;
     }
 
-    /* other OSC */
-    result->type = WCWIDTH_ESC_OTHER;
+    /* other OSC stays OTHER */
     return true;
 }
 
@@ -328,41 +330,15 @@ scan_until_terminator(const char *text, size_t text_len, size_t pos)
 static bool
 parse_charset(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t *result)
 {
-    if (offset + 2 > text_len) {
-        /* truncated */
-        result->type = WCWIDTH_ESC_UNRECOGNIZED;
-        result->start = text + offset;
-        result->length = 1;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+    if (offset + 3 > text_len) {
+        /* truncated: ESC + designator with no character to follow; only the
+         * ESC is zero-width */
+        esc_result_init(result, WCWIDTH_ESC_UNRECOGNIZED, text + offset, 1);
         return true;
     }
 
-    result->type = WCWIDTH_ESC_OTHER;
-    result->start = text + offset;
-    result->length = 2;
-    result->sgr_params = NULL;
-    result->sgr_params_len = 0;
-    result->cursor_n = 0;
-    result->osc8_url = NULL;
-    result->osc8_url_len = 0;
-    result->osc8_params = NULL;
-    result->osc8_params_len = 0;
-    result->ts_meta = NULL;
-    result->ts_meta_len = 0;
-    result->ts_text = NULL;
-    result->ts_text_len = 0;
-    result->ts_terminator = 0;
+    /* ESC + designator + one character (e.g. '\x1b(B') */
+    esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 3);
     return true;
 }
 
@@ -384,42 +360,14 @@ parse_nf(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t 
         }
         if (intermed_count > 0 && ch >= 0x30 && ch <= 0x7E) {
             pos++; /* final byte */
-            result->type = WCWIDTH_ESC_OTHER;
-            result->start = text + offset;
-            result->length = pos - offset;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
-            result->cursor_n = 0;
-            result->osc8_url = NULL;
-            result->osc8_url_len = 0;
-            result->osc8_params = NULL;
-            result->osc8_params_len = 0;
-            result->ts_meta = NULL;
-            result->ts_meta_len = 0;
-            result->ts_text = NULL;
-            result->ts_text_len = 0;
-            result->ts_terminator = 0;
+            esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, pos - offset);
             return true;
         }
         break;
     }
 
     /* truncated or unrecognized */
-    result->type = WCWIDTH_ESC_UNRECOGNIZED;
-    result->start = text + offset;
-    result->length = 1;
-    result->sgr_params = NULL;
-    result->sgr_params_len = 0;
-    result->cursor_n = 0;
-    result->osc8_url = NULL;
-    result->osc8_url_len = 0;
-    result->osc8_params = NULL;
-    result->osc8_params_len = 0;
-    result->ts_meta = NULL;
-    result->ts_meta_len = 0;
-    result->ts_text = NULL;
-    result->ts_text_len = 0;
-    result->ts_terminator = 0;
+    esc_result_init(result, WCWIDTH_ESC_UNRECOGNIZED, text + offset, 1);
     return true;
 }
 
@@ -435,21 +383,7 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
 
     if (offset + 1 >= text_len) {
         /* lone ESC at end */
-        result->type = WCWIDTH_ESC_UNRECOGNIZED;
-        result->start = text + offset;
-        result->length = 1;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        esc_result_init(result, WCWIDTH_ESC_UNRECOGNIZED, text + offset, 1);
         return true;
     }
 
@@ -467,21 +401,7 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
         case '^': /* PM */
         {
             size_t end = scan_until_terminator(text, text_len, offset + 2);
-            result->type = WCWIDTH_ESC_OTHER;
-            result->start = text + offset;
-            result->length = end - offset;
-            result->sgr_params = NULL;
-            result->sgr_params_len = 0;
-            result->cursor_n = 0;
-            result->osc8_url = NULL;
-            result->osc8_url_len = 0;
-            result->osc8_params = NULL;
-            result->osc8_params_len = 0;
-            result->ts_meta = NULL;
-            result->ts_meta_len = 0;
-            result->ts_text = NULL;
-            result->ts_text_len = 0;
-            result->ts_terminator = 0;
+            esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, end - offset);
             return true;
         }
 
@@ -510,82 +430,33 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
             break;
     }
 
-    /* Fe sequences: ESC + 0x40-0x5F (but '[' was handled above) */
+    /* Fe sequences: ESC + 0x40-0x5F (but '[' was handled above).
+     * '\x1bD' (index) and '\x1bM' (reverse index) are indeterminate. */
     if (next >= 0x40 && next <= 0x5F) {
-        result->type = WCWIDTH_ESC_OTHER;
-        result->start = text + offset;
-        result->length = 2;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        esc_result_init(
+            result, (next == 'D' || next == 'M') ? WCWIDTH_ESC_INDETERMINATE : WCWIDTH_ESC_OTHER,
+            text + offset, 2);
         return true;
     }
 
-    /* Fp sequences: ESC + 0x30-0x3F */
+    /* Fp sequences: ESC + 0x30-0x3F.
+     * '\x1b8' (restore cursor) is indeterminate. */
     if (next >= 0x30 && next <= 0x3F) {
-        result->type = WCWIDTH_ESC_OTHER;
-        result->start = text + offset;
-        result->length = 2;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        esc_result_init(result, (next == '8') ? WCWIDTH_ESC_INDETERMINATE : WCWIDTH_ESC_OTHER,
+                        text + offset, 2);
         return true;
     }
 
-    /* Fs sequences: ESC + 0x60-0x7E */
+    /* Fs sequences: ESC + 0x60-0x7E.
+     * '\x1bc' (RIS full reset) is indeterminate. */
     if (next >= 0x60 && next <= 0x7E) {
-        result->type = WCWIDTH_ESC_OTHER;
-        result->start = text + offset;
-        result->length = 2;
-        result->sgr_params = NULL;
-        result->sgr_params_len = 0;
-        result->cursor_n = 0;
-        result->osc8_url = NULL;
-        result->osc8_url_len = 0;
-        result->osc8_params = NULL;
-        result->osc8_params_len = 0;
-        result->ts_meta = NULL;
-        result->ts_meta_len = 0;
-        result->ts_text = NULL;
-        result->ts_text_len = 0;
-        result->ts_terminator = 0;
+        esc_result_init(result, (next == 'c') ? WCWIDTH_ESC_INDETERMINATE : WCWIDTH_ESC_OTHER,
+                        text + offset, 2);
         return true;
     }
 
     /* unrecognized byte after ESC */
-    result->type = WCWIDTH_ESC_UNRECOGNIZED;
-    result->start = text + offset;
-    result->length = 1;
-    result->sgr_params = NULL;
-    result->sgr_params_len = 0;
-    result->cursor_n = 0;
-    result->osc8_url = NULL;
-    result->osc8_url_len = 0;
-    result->osc8_params = NULL;
-    result->osc8_params_len = 0;
-    result->ts_meta = NULL;
-    result->ts_meta_len = 0;
-    result->ts_text = NULL;
-    result->ts_text_len = 0;
-    result->ts_terminator = 0;
+    esc_result_init(result, WCWIDTH_ESC_UNRECOGNIZED, text + offset, 1);
     return true;
 }
 
@@ -608,6 +479,14 @@ wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_ca
                         }
                         written++;
                     }
+                }
+                else if (result.type == WCWIDTH_ESC_UNRECOGNIZED) {
+                    /* preserve unknown/incomplete ESC sequences by copying
+                     * the ESC byte through */
+                    if (written < out_cap) {
+                        out[written] = text[src];
+                    }
+                    written++;
                 }
                 /* else: strip all other escape sequences */
                 src += result.length;
@@ -632,6 +511,51 @@ wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_ca
     }
 
     return written;
+}
+
+uint32_t *
+wcwidth_escape_strip_u32(const uint32_t *codepoints, size_t n, size_t *out_len)
+{
+    char enc_stack[512];
+    size_t enc_len;
+    char *utf8;
+    uint32_t *result;
+
+    if (out_len != NULL) {
+        *out_len = 0;
+    }
+
+    utf8 = wcwidth_encode_u32(codepoints, n, enc_stack, sizeof(enc_stack), &enc_len);
+    if (utf8 == NULL) {
+        return NULL;
+    }
+    {
+        /* The stripped output is never longer than the input. */
+        char strip_stack[256];
+        size_t byte_len = 0;
+        size_t needed =
+            wcwidth_escape_strip(utf8, enc_len, strip_stack, sizeof(strip_stack), &byte_len);
+        char *buf = strip_stack;
+
+        if (needed > sizeof(strip_stack)) {
+            buf = (char *) malloc(needed + 1);
+            if (buf == NULL) {
+                if (utf8 != enc_stack) {
+                    free(utf8);
+                }
+                return NULL;
+            }
+            wcwidth_escape_strip(utf8, enc_len, buf, needed + 1, &byte_len);
+        }
+        result = wcwidth_decode_u32_heap(buf, byte_len, out_len);
+        if (buf != strip_stack) {
+            free(buf);
+        }
+    }
+    if (utf8 != enc_stack) {
+        free(utf8);
+    }
+    return result;
 }
 
 void
