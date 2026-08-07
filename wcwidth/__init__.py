@@ -26,6 +26,26 @@ __lazy_modules__ = [
 
 # std imports
 import os
+from functools import lru_cache
+
+# local
+# re-export common and outermost functions & definitions, even a few private
+# ones, some for convenience, others for legacy, only the items in __all__ are
+# documented as public API
+from .bisearch import bisearch as _bisearch
+from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
+from .textwrap import SequenceTextWrapper
+from .hyperlink import Hyperlink, HyperlinkParams
+from ._constants import list_term_programs
+from .table_vs16 import VS16_NARROW_TO_WIDE
+from .table_wide import WIDE_EASTASIAN
+from .table_zero import ZERO_WIDTH
+from .text_sizing import TextSizing, TextSizingParams
+from .table_ambiguous import AMBIGUOUS_EASTASIAN
+from .escape_sequences import iter_sequences
+from .unicode_versions import list_versions
+from ._clip import clip
+from .textwrap import wrap
 
 # Import optional C extension 'wcwidth._wcwidth_c', a wrapper around the
 # portable C11 libwcwidth library.  When it is unavailable (compilation
@@ -46,34 +66,17 @@ if not os.environ.get('WCWIDTH_PURE_PYTHON', ''):
     else:
         HAS_C_EXTENSION = True
 
-# local
-# re-export common and outermost functions & definitions, even a few private
-# ones, some for convenience, others for legacy, only the items in __all__ are
-# documented as public API
-from .bisearch import bisearch as _bisearch
-from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
-from .textwrap import SequenceTextWrapper
-from .hyperlink import Hyperlink, HyperlinkParams
-from ._constants import list_term_programs
-from .table_vs16 import VS16_NARROW_TO_WIDE
-from .table_wide import WIDE_EASTASIAN
-from .table_zero import ZERO_WIDTH
-from .text_sizing import TextSizing, TextSizingParams
-from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .escape_sequences import iter_sequences
-from .unicode_versions import list_versions
-
 if HAS_C_EXTENSION:
-    # local
     from ._wcwidth_c import (ljust,
                              rjust,
                              width,
                              center,
-                             wcwidth,
+                             wcwidth as _c_wcwidth,
                              wcswidth,
                              wcstwidth,
                              propagate_sgr,
                              strip_sequences)
+    wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
 else:
     from .align import ljust, rjust, center
     from ._width import width
@@ -81,10 +84,6 @@ else:
     from ._wcwidth import wcwidth
     from .escape_sequences import strip_sequences
     from .sgr_state import propagate_sgr
-
-# local
-from ._clip import clip
-from .textwrap import wrap
 
 # NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
 #

@@ -108,6 +108,15 @@ jobs:
           mkdir source-dir
           tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
 
+      - name: Build C extension in-place
+        shell: bash
+        run: |
+          # The test suite imports wcwidth from the source tree (pytest
+          # rootdir sys.path insertion), not from the installed wheel, so the
+          # extension must be built in-place for the extension-mode runs to
+          # exercise the C implementation instead of the pure-Python fallback.
+          python -Im pip install -e .
+
       - name: Fetch test data files
         if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'
         continue-on-error: true
@@ -218,6 +227,9 @@ jobs:
 
       - name: Run tests under AddressSanitizer
         run: python -Im tox -e asan
+
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
 
       - name: Run C tests under valgrind
         run: make -C libwcwidth valgrind

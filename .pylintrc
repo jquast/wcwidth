@@ -9,7 +9,10 @@ load-plugins=
 persistent = no
 jobs = 0
 unsafe-load-any-extension = yes
-good-names = wc,fp
+good-names = wc,fp,HAS_C_EXTENSION
+# The optional C extension is not built in the lint environment; pylint must
+# not report import-error for it (see wcwidth/__init__.py).
+extension-pkg-allow-list = wcwidth._wcwidth_c
 
 [MESSAGES CONTROL]
 disable=

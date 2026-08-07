@@ -5,7 +5,7 @@ runtime behavior is identical.  When this module is not built, the package
 falls back to the pure-Python implementation.
 """
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,missing-function-docstring
 
 from typing import Union, Literal, Optional, Sequence
 
