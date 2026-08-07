@@ -1882,7 +1882,7 @@ class CTerminalOverrideRenderDef(RenderDefinition):
                 set_data[category] = _hex_range_descriptions(set_data[category])
 
         # Grapheme clusters, grouped and deduplicated by hash like the
-        # pure-Python _known_* files; entries sorted lexicographically by
+        # Python _known_* files; entries sorted lexicographically by
         # codepoint sequence for binary search, with a flat codepoint pool.
         grapheme_tables: dict[str, dict[str, object]] = {}
         for name, graphemes in sorted(collect_grapheme_overrides(kt).items()):

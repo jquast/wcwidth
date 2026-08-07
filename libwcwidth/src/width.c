@@ -136,7 +136,7 @@ _needs_cursor_tracking(const char *text, size_t n)
     return false;
 }
 
-/* Number of codepoints in *text*, mirroring the pure implementation's
+/* Number of codepoints in *text*, mirroring the Python implementation's
  * len() used for the parse-to-ignore fast-path threshold. */
 static size_t
 utf8_char_count(const char *text, size_t n)
@@ -430,7 +430,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             }
 
             /* Escape sequences break VS16/VS15 adjacency.  prev_was_virama
-             * survives (as in the pure reference): control characters and
+             * survives (as in the Python reference): control characters and
              * escapes do not end a pending virama conjunct. */
             last_measured_idx = -2;
             last_measured_ucs = 0;
@@ -817,7 +817,7 @@ width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_
 
     /* Fast-path downgrade: in PARSE mode, if text has no cursor movement,
      * downgrade to IGNORE for performance.  The threshold counts codepoints
-     * like the pure implementation's len(), not bytes. */
+     * like the Python implementation's len(), not bytes. */
     if (effective_mode == WCWIDTH_PARSE && utf8_char_count(utf8, n) > FAST_PATH_MIN_LEN) {
         if (!_needs_cursor_tracking(utf8, n)) {
             effective_mode = WCWIDTH_IGNORE;

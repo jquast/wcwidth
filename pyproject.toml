@@ -59,8 +59,8 @@ classifiers = [
 Homepage = "https://github.com/jquast/wcwidth"
 
 # The C extension 'wcwidth._wcwidth_c' is optional: setup.py skips it when the
-# build would fail (no compiler, PyPy, WCWIDTH_PURE_PYTHON=1) and the
-# pure-Python implementation is used instead.
+# build would fail (no compiler, PyPy, WCWIDTH_PYTHON=1) and the
+# Python implementation is used instead.
 
 [tool.setuptools]
 include-package-data = false
@@ -78,7 +78,7 @@ wcwidth = [ "py.typed", "*.pyi" ]
 
 [tool.cibuildwheel]
 # per-version wheels for every supported CPython, including free-threaded
-# 3.13t/3.14t builds; PyPy users get the pure-Python sdist fallback
+# 3.13t/3.14t builds; PyPy users get the Python sdist fallback
 build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp315-* cp313t-* cp314t-*"
 # extend the arch lists below to add more (e.g. manylinux i686/ppc64le/s390x,
 # musllinux, windows arm64) -- one line each

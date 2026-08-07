@@ -1,8 +1,8 @@
 """Type stub for the optional C extension ``wcwidth._wcwidth_c``.
 
-Mirrors the signatures of the pure-Python implementations in wcwidth/; the
+Mirrors the signatures of the Python implementations in wcwidth/; the
 runtime behavior is identical.  When this module is not built, the package
-falls back to the pure-Python implementation.
+falls back to the Python implementation.
 """
 
 # pylint: disable=unused-argument,missing-function-docstring

@@ -1,7 +1,7 @@
 """
 Grapheme cluster segmentation following Unicode Standard Annex #29.
 
-This module provides pure-Python implementation of the grapheme cluster boundary algorithm as
+This module provides the Python implementation of the grapheme cluster boundary algorithm as
 defined in UAX #29: Unicode Text Segmentation.
 
 https://www.unicode.org/reports/tr29/

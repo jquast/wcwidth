@@ -10,10 +10,10 @@ classic API works on every setuptools version that reads ``pyproject.toml``.
 This file also holds the parts that cannot be expressed declaratively at all:
 the C standard flag for the current compiler, and the graceful fallback when
 the extension cannot be built (no C compiler, unsupported platform, PyPy, or
-``WCWIDTH_PURE_PYTHON=1``) -- the build continues and the pure-Python
+``WCWIDTH_PYTHON=1``) -- the build continues and the Python
 implementation is used instead.
 
-The optional-extension-with-pure-fallback pattern is long-established:
+The optional-extension-with-Python-fallback pattern is long-established:
 
 - distutils' ``build_ext`` has built-in support: extensions marked
   ``optional=True`` have compile failures caught and reported as warnings
@@ -93,7 +93,7 @@ class optional_build_ext(_build_ext):
 
     When the extension cannot be compiled or linked, emit a warning and
     continue without it; ``wcwidth/__init__.py`` falls back to the
-    pure-Python implementation at import time.
+    Python implementation at import time.
     """
 
     def finalize_options(self) -> None:
@@ -104,10 +104,10 @@ class optional_build_ext(_build_ext):
     def run(self) -> None:
         if not self.extensions:
             return
-        if os.environ.get("WCWIDTH_PURE_PYTHON", "") or platform.python_implementation() != "CPython":
+        if os.environ.get("WCWIDTH_PYTHON", "") or platform.python_implementation() != "CPython":
             self.warn(
                 "Skipping optional C extension 'wcwidth._wcwidth_c'; "
-                "the pure-Python implementation will be used."
+                "the Python implementation will be used."
             )
             return
         try:
@@ -116,7 +116,7 @@ class optional_build_ext(_build_ext):
                 DistutilsExecError, DistutilsPlatformError, OSError) as exc:
             self.warn(
                 "The C extension 'wcwidth._wcwidth_c' could not be built: "
-                f"{exc}; the pure-Python implementation will be used instead."
+                f"{exc}; the Python implementation will be used instead."
             )
 
 

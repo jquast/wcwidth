@@ -2,7 +2,7 @@
  * CPython extension wrapping libwcwidth.
  *
  * Optional module: when this module cannot be imported, wcwidth/__init__.py
- * falls back to the pure-Python implementation.
+ * falls back to the Python implementation.
  *
  * Design notes:
  *   - Width measurement functions (wcwidth, wcswidth, width) operate on
@@ -11,7 +11,7 @@
  *   - Byte-oriented functions (wrap, clip, align, strip_sequences,
  *     propagate_sgr) encode via PyUnicode_AsUTF8AndSize.
  *   - Inputs the C library cannot represent faithfully are dispatched to the
- *     pure implementation at call time.  Exactly one remains:
+ *     Python implementation at call time.  Exactly one remains:
  *       * lone surrogates -- UTF-8 cannot encode them, and the byte-oriented
  *         C functions have no _u32 variants.
  *   - Terminal override tables (term_program) are applied by the C library
@@ -71,7 +71,7 @@ resolve_count(PyObject *n_obj, Py_ssize_t len)
 }
 
 static PyObject *
-call_pure_function(const char *module_name, const char *function_name,
+call_python_function(const char *module_name, const char *function_name,
                    PyObject *args, PyObject *kwargs)
 {
     PyObject *module = PyImport_ImportModule(module_name);
@@ -363,11 +363,11 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     if (mode < 0) {
         return NULL;
     }
-    /* 'strict' mode routes to the pure implementation: the C library cannot
+    /* 'strict' mode routes to the Python implementation: the C library cannot
      * reproduce the ValueError messages for invalid text-sizing parameters,
      * which embed the offending value. */
     if (mode == WCWIDTH_STRICT) {
-        return call_pure_function("wcwidth._width", "width", args, kwargs);
+        return call_python_function("wcwidth._width", "width", args, kwargs);
     }
 
     uint32_t *heap_buf = NULL;
@@ -432,7 +432,7 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
     const char *text;
     Py_ssize_t text_len;
     if (unicode_to_utf8(text_obj, &text, &text_len) < 0) {
-        return call_pure_function("wcwidth.align", name, args, kwargs);
+        return call_python_function("wcwidth.align", name, args, kwargs);
     }
     const char *fillchar;
     size_t fillchar_len;
@@ -440,7 +440,7 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
         if (PyErr_Occurred()) {
             return NULL;
         }
-        return call_pure_function("wcwidth.align", name, args, kwargs);
+        return call_python_function("wcwidth.align", name, args, kwargs);
     }
 
     int error = WCWIDTH_ERROR_NONE;
@@ -500,7 +500,7 @@ strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     const char *text;
     Py_ssize_t text_len;
     if (unicode_to_utf8(text_obj, &text, &text_len) < 0) {
-        return call_pure_function("wcwidth.escape_sequences", "strip_sequences", args, kwargs);
+        return call_python_function("wcwidth.escape_sequences", "strip_sequences", args, kwargs);
     }
 
     size_t out_len = 0;
@@ -563,7 +563,7 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
             if (PyErr_Occurred()) {
                 return NULL;
             }
-            return call_pure_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
+            return call_python_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
         }
         char *buf = PyMem_Malloc((size_t)utf8_len + WCWIDTH_SGR_PROPAGATE_SPARE + 1);
         if (buf == NULL) {
@@ -583,10 +583,10 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     }
 
     /* The C library can still fail for an SGR state beyond its reserved
-     * prefix space; fall back to the pure implementation in that case. */
+     * prefix space; fall back to the Python implementation in that case. */
     if (wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines) < 0) {
         PyErr_Clear();
-        result = call_pure_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
+        result = call_python_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
     } else {
         result = PyList_New(nlines);
         if (result != NULL) {

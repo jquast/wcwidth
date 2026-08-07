@@ -49,7 +49,7 @@ TEST(u8_ignore)
 
 TEST(u8_strict)
 {
-    /* strict mode routes to the pure implementation */
+    /* strict mode routes to the Python implementation */
     wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
     int error = 0;
     int result = width_u8("\x1b[2J", (size_t) -1, WCWIDTH_STRICT, &opts, &error);

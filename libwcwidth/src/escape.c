@@ -35,7 +35,7 @@ parse_cursor_n(const char *params, size_t params_len)
     return (i == 0) ? 1 : n;
 }
 
-/* True when CSI params match the pure scroll-region pattern '\d+;\d+'. */
+/* True when CSI params match the Python scroll-region pattern '\d+;\d+'. */
 static bool
 is_scroll_region_params(const char *params, size_t params_len)
 {
@@ -207,7 +207,7 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
     }
 
     /* An unterminated OSC is not a recognized OSC; it still consumes the
-     * 2-byte ESC ] prefix, matching the pure reference (where \x1b] matches
+     * 2-byte ESC ] prefix, matching the Python reference (where \x1b] matches
      * the zero-width Fe branch). */
     if (!terminated) {
         result->length = 2;

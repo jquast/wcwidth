@@ -48,10 +48,10 @@ from .unicode_versions import list_versions
 
 # Import optional C extension 'wcwidth._wcwidth_c', a wrapper around the
 # portable C11 libwcwidth library.  When it is unavailable (compilation
-# failure, unsupported platform, or WCWIDTH_PURE_PYTHON=1), the pure-Python
+# failure, unsupported platform, or WCWIDTH_PYTHON=1), the Python
 # implementation below is used as a drop-in replacement.
 HAS_C_EXTENSION = False
-if not os.environ.get('WCWIDTH_PURE_PYTHON', ''):
+if not os.environ.get('WCWIDTH_PYTHON', ''):
     try:
         # local
         # import ... as _wcwidth_c: binds only the submodule name, so mypy

@@ -602,22 +602,22 @@ def test_legacy_module():
         assert obj is not None, f"could not import {name} from wcwidth.wcwidth"
 
 
-def test_pure_functions_stay_pure():
-    """Functions without C support always bind the pure implementation."""
-    pure = {
+def test_python_functions_stay_python():
+    """Functions without C support always bind the Python implementation."""
+    python = {
         'iter_graphemes': 'wcwidth.grapheme',
         'iter_graphemes_reverse': 'wcwidth.grapheme',
         'grapheme_boundary_before': 'wcwidth.grapheme',
         'iter_sequences': 'wcwidth.escape_sequences',
     }
-    for name, module in pure.items():
+    for name, module in python.items():
         assert getattr(wcwidth, name).__module__ == module
 
 
-def test_pure_python_env_var():
-    """WCWIDTH_PURE_PYTHON=1 forces the pure implementation in a subprocess."""
+def test_python_env_var():
+    """WCWIDTH_PYTHON=1 forces the Python implementation in a subprocess."""
     env = dict(os.environ)
-    env['WCWIDTH_PURE_PYTHON'] = '1'
+    env['WCWIDTH_PYTHON'] = '1'
     code = (
         'import wcwidth; '
         "assert not wcwidth.HAS_C_EXTENSION; "
@@ -627,7 +627,7 @@ def test_pure_python_env_var():
 
 
 def test_import_error_fallback():
-    """A broken extension at import time falls back to the pure implementation."""
+    """A broken extension at import time falls back to the Python implementation."""
     sys.modules['wcwidth._wcwidth_c'] = None
     try:
         importlib.reload(wcwidth)
