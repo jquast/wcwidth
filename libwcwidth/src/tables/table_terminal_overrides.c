@@ -20,7 +20,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_EMPTY = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_NARROWER[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
 };
-static const size_t WCWIDTH_OVERRIDE_785978DC_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_785978DC_NARROWER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_785978DC_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_785978DC_NARROWER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -136,7 +136,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -230,12 +230,12 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_785978DC_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_785978DC_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_785978DC_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_785978DC_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_785978DC_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_785978DC_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER[] = {
     { 0x017a4, 0x017a4 },  /* Khmer Independent Vowel Qaa */
     { 0x017d8, 0x017d8 },  /* Khmer Sign Beyyal */
 };
-static const size_t WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER[0]);
+#define WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00605, 0x00605 },  /* Arabic Number Mark Above */
@@ -252,7 +252,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER[] = {
     { 0x11d46, 0x11d46 },  /* Masaram Gondi Repha */
     { 0x11f02, 0x11f02 },  /* Kawi Sign Repha */
 };
-static const size_t WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_785978DC_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_785978DC = {
     WCWIDTH_OVERRIDE_785978DC_NARROWER, WCWIDTH_OVERRIDE_785978DC_NARROWER_LEN,
     WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER, WCWIDTH_OVERRIDE_785978DC_VS16_NARROWER_LEN,
@@ -265,7 +265,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_785978DC = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_726B9428_NARROWER[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
 };
-static const size_t WCWIDTH_OVERRIDE_726B9428_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_726B9428_NARROWER) / sizeof(WCWIDTH_OVERRIDE_726B9428_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_726B9428_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_726B9428_NARROWER) / sizeof(WCWIDTH_OVERRIDE_726B9428_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -381,7 +381,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_726B9428_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -475,7 +475,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_726B9428_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_726B9428_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_726B9428_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_726B9428_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_726B9428_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_726B9428_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_726B9428_VS15_WIDER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_726B9428 = {
     WCWIDTH_OVERRIDE_726B9428_NARROWER, WCWIDTH_OVERRIDE_726B9428_NARROWER_LEN,
     WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER, WCWIDTH_OVERRIDE_726B9428_VS16_NARROWER_LEN,
@@ -493,7 +493,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C955198_NARROWER[] = {
     { 0x1f202, 0x1f202 },  /* Squared Katakana Sa */
     { 0x1f237, 0x1f237 },  /* Squared Cjk Unified Ideograph-6708 */
 };
-static const size_t WCWIDTH_OVERRIDE_5C955198_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_5C955198_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C955198_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_5C955198_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_5C955198_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C955198_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C955198_VS15_WIDER[] = {
     { 0x03030, 0x03030 },  /* Wavy Dash */
     { 0x0303d, 0x0303d },  /* Part Alternation Mark */
@@ -502,18 +502,18 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C955198_VS15_WIDER[] = {
     { 0x1f202, 0x1f202 },  /* Squared Katakana Sa */
     { 0x1f237, 0x1f237 },  /* Squared Cjk Unified Ideograph-6708 */
 };
-static const size_t WCWIDTH_OVERRIDE_5C955198_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_5C955198_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_5C955198_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_5C955198_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_5C955198_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_5C955198_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C955198_ZEROER[] = {
     { 0x1f3fb, 0x1f3ff },  /* Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri */
 };
-static const size_t WCWIDTH_OVERRIDE_5C955198_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_5C955198_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C955198_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_5C955198_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_5C955198_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C955198_ZEROER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER[] = {
     { 0x00890, 0x00891 },  /* Arabic Pound Mark Above ..Arabic Piastre Mark Abov */
     { 0x008e2, 0x008e2 },  /* Arabic Disputed End Of Ayah */
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C955198_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_5C955198 = {
     WCWIDTH_OVERRIDE_5C955198_NARROWER, WCWIDTH_OVERRIDE_5C955198_NARROWER_LEN,
     NULL, 0,
@@ -638,7 +638,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -732,11 +732,11 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_ZEROER[] = {
     { 0x1f3fb, 0x1f3ff },  /* Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri */
 };
-static const size_t WCWIDTH_OVERRIDE_C77E8BF4_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_C77E8BF4_ZEROER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_C77E8BF4_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_C77E8BF4_ZEROER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_ZEROER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
@@ -750,7 +750,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_C77E8BF4_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_C77E8BF4 = {
     NULL, 0,
     WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER, WCWIDTH_OVERRIDE_C77E8BF4_VS16_NARROWER_LEN,
@@ -786,7 +786,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_FC08EA79_NARROWER[] = {
     { 0x1faef, 0x1faef },  /* Fight Cloud */
     { 0x1faf7, 0x1faf8 },  /* Leftwards Pushing Hand  ..Rightwards Pushing Hand */
 };
-static const size_t WCWIDTH_OVERRIDE_FC08EA79_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_FC08EA79_NARROWER) / sizeof(WCWIDTH_OVERRIDE_FC08EA79_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_FC08EA79_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_FC08EA79_NARROWER) / sizeof(WCWIDTH_OVERRIDE_FC08EA79_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -880,7 +880,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_FC08EA79_VS15_WIDER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_FC08EA79 = {
     WCWIDTH_OVERRIDE_FC08EA79_NARROWER, WCWIDTH_OVERRIDE_FC08EA79_NARROWER_LEN,
     NULL, 0,
@@ -894,7 +894,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_48FB0FE1_NARROWER[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
     { 0x1f3fb, 0x1f3ff },  /* Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri */
 };
-static const size_t WCWIDTH_OVERRIDE_48FB0FE1_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROWER) / sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_48FB0FE1_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROWER) / sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER[] = {
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
     { 0x006dd, 0x006dd },  /* Arabic End Of Ayah */
@@ -904,7 +904,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_48FB0FE1_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_48FB0FE1 = {
     WCWIDTH_OVERRIDE_48FB0FE1_NARROWER, WCWIDTH_OVERRIDE_48FB0FE1_NARROWER_LEN,
     NULL, 0,
@@ -917,7 +917,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_48FB0FE1 = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_0C32D5A9_ZEROER[] = {
     { 0x0115f, 0x0115f },  /* Hangul Choseong Filler */
 };
-static const size_t WCWIDTH_OVERRIDE_0C32D5A9_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_0C32D5A9_ZEROER) / sizeof(WCWIDTH_OVERRIDE_0C32D5A9_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_0C32D5A9_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_0C32D5A9_ZEROER) / sizeof(WCWIDTH_OVERRIDE_0C32D5A9_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_0C32D5A9 = {
     NULL, 0,
     NULL, 0,
@@ -932,7 +932,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER[] = {
     { 0x0002a, 0x0002a },  /* Asterisk */
     { 0x00030, 0x00039 },  /* Digit Zero              ..Digit Nine */
 };
-static const size_t WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_488E232A_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -1026,15 +1026,15 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_488E232A_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_488E232A_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_488E232A_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_488E232A_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_488E232A_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_488E232A_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_488E232A_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_488E232A_ZEROER[] = {
     { 0x0115f, 0x0115f },  /* Hangul Choseong Filler */
 };
-static const size_t WCWIDTH_OVERRIDE_488E232A_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_488E232A_ZEROER) / sizeof(WCWIDTH_OVERRIDE_488E232A_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_488E232A_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_488E232A_ZEROER) / sizeof(WCWIDTH_OVERRIDE_488E232A_ZEROER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
 };
-static const size_t WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_488E232A_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_488E232A = {
     NULL, 0,
     WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER, WCWIDTH_OVERRIDE_488E232A_VS16_NARROWER_LEN,
@@ -1047,7 +1047,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_488E232A = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_05EB446A_ZEROER[] = {
     { 0x1f3fb, 0x1f3ff },  /* Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri */
 };
-static const size_t WCWIDTH_OVERRIDE_05EB446A_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_05EB446A_ZEROER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_05EB446A_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_05EB446A_ZEROER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_ZEROER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER[] = {
     { 0x0261d, 0x0261d },  /* White Up Pointing Index */
     { 0x026f9, 0x026f9 },  /* Person With Ball */
@@ -1056,7 +1056,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER[] = {
     { 0x1f574, 0x1f575 },  /* Man In Business Suit Lev..Sleuth Or Spy */
     { 0x1f590, 0x1f590 },  /* Raised Hand With Fingers Splayed */
 };
-static const size_t WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER[0]);
+#define WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
@@ -1068,7 +1068,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_05EB446A_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_05EB446A = {
     NULL, 0,
     NULL, 0,
@@ -1099,7 +1099,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1DF00CFE_NARROWER[] = {
     { 0x1fae9, 0x1faea },  /* Face With Bags Under Eye..Distorted Face */
     { 0x1faef, 0x1faef },  /* Fight Cloud */
 };
-static const size_t WCWIDTH_OVERRIDE_1DF00CFE_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_1DF00CFE_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -1193,7 +1193,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
@@ -1204,7 +1204,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_1DF00CFE_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_1DF00CFE = {
     WCWIDTH_OVERRIDE_1DF00CFE_NARROWER, WCWIDTH_OVERRIDE_1DF00CFE_NARROWER_LEN,
     NULL, 0,
@@ -1231,7 +1231,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1691A0E6_NARROWER[] = {
     { 0x1fadf, 0x1fadf },  /* Splatter */
     { 0x1fae9, 0x1fae9 },  /* Face With Bags Under Eyes */
 };
-static const size_t WCWIDTH_OVERRIDE_1691A0E6_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_1691A0E6_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1691A0E6_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_1691A0E6_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_1691A0E6_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1691A0E6_NARROWER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_1691A0E6 = {
     WCWIDTH_OVERRIDE_1691A0E6_NARROWER, WCWIDTH_OVERRIDE_1691A0E6_NARROWER_LEN,
     NULL, 0,
@@ -1261,7 +1261,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_B88EDBA7_NARROWER[] = {
     { 0x1fae9, 0x1faea },  /* Face With Bags Under Eye..Distorted Face */
     { 0x1faef, 0x1faef },  /* Fight Cloud */
 };
-static const size_t WCWIDTH_OVERRIDE_B88EDBA7_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_B88EDBA7_NARROWER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_B88EDBA7_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_B88EDBA7_NARROWER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -1377,7 +1377,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -1471,7 +1471,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_B88EDBA7_VS15_WIDER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_B88EDBA7 = {
     WCWIDTH_OVERRIDE_B88EDBA7_NARROWER, WCWIDTH_OVERRIDE_B88EDBA7_NARROWER_LEN,
     WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER, WCWIDTH_OVERRIDE_B88EDBA7_VS16_NARROWER_LEN,
@@ -1484,7 +1484,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_B88EDBA7 = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_NARROWER[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
 };
-static const size_t WCWIDTH_OVERRIDE_5C58B111_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_5C58B111_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -1600,7 +1600,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -1694,7 +1694,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER[] = {
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
     { 0x006dd, 0x006dd },  /* Arabic End Of Ayah */
@@ -1704,7 +1704,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_5C58B111_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_5C58B111 = {
     WCWIDTH_OVERRIDE_5C58B111_NARROWER, WCWIDTH_OVERRIDE_5C58B111_NARROWER_LEN,
     WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER, WCWIDTH_OVERRIDE_5C58B111_VS16_NARROWER_LEN,
@@ -1724,7 +1724,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER[] = {
     { 0x1faea, 0x1faea },  /* Distorted Face */
     { 0x1faef, 0x1faef },  /* Fight Cloud */
 };
-static const size_t WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER[] = {
     { 0x023eb, 0x023ec },  /* Black Up-pointing Double..Black Down-pointing Doub */
     { 0x023f0, 0x023f0 },  /* Alarm Clock */
@@ -1739,7 +1739,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER[] = {
     { 0x027b0, 0x027b0 },  /* Curly Loop */
     { 0x027bf, 0x027bf },  /* Double Curly Loop */
 };
-static const size_t WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER[] = {
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
     { 0x006dd, 0x006dd },  /* Arabic End Of Ayah */
@@ -1749,7 +1749,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_1F8D8BE8_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_1F8D8BE8 = {
     WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER, WCWIDTH_OVERRIDE_1F8D8BE8_NARROWER_LEN,
     NULL, 0,
@@ -1762,7 +1762,7 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_1F8D8BE8 = {
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
 };
-static const size_t WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -1878,7 +1878,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -1972,11 +1972,11 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER[] = {
     { 0x03248, 0x0324f },  /* Circled Number Ten On Bl..Circled Number Eighty On */
 };
-static const size_t WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER[0]);
+#define WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_3EAFA5A3_NARROW_WIDER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_3EAFA5A3 = {
     WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER, WCWIDTH_OVERRIDE_3EAFA5A3_NARROWER_LEN,
     WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER, WCWIDTH_OVERRIDE_3EAFA5A3_VS16_NARROWER_LEN,
@@ -2001,7 +2001,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_084A6EAF_NARROWER[] = {
     { 0x1fadf, 0x1faea },  /* Splatter                ..Distorted Face */
     { 0x1faef, 0x1faf8 },  /* Fight Cloud             ..Rightwards Pushing Hand */
 };
-static const size_t WCWIDTH_OVERRIDE_084A6EAF_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_084A6EAF_NARROWER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_084A6EAF_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_084A6EAF_NARROWER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -2117,7 +2117,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -2211,7 +2211,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_084A6EAF_VS15_WIDER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_084A6EAF = {
     WCWIDTH_OVERRIDE_084A6EAF_NARROWER, WCWIDTH_OVERRIDE_084A6EAF_NARROWER_LEN,
     WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER, WCWIDTH_OVERRIDE_084A6EAF_VS16_NARROWER_LEN,
@@ -2239,7 +2239,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_NARROWER[] = {
     { 0x1fadf, 0x1fadf },  /* Splatter */
     { 0x1fae9, 0x1fae9 },  /* Face With Bags Under Eyes */
 };
-static const size_t WCWIDTH_OVERRIDE_45857A01_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_45857A01_NARROWER) / sizeof(WCWIDTH_OVERRIDE_45857A01_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_45857A01_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_45857A01_NARROWER) / sizeof(WCWIDTH_OVERRIDE_45857A01_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -2355,7 +2355,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -2449,7 +2449,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_45857A01_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_45857A01_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_45857A01_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_45857A01_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_45857A01_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_45857A01_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER[] = {
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
     { 0x006dd, 0x006dd },  /* Arabic End Of Ayah */
@@ -2459,7 +2459,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_45857A01_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_45857A01 = {
     WCWIDTH_OVERRIDE_45857A01_NARROWER, WCWIDTH_OVERRIDE_45857A01_NARROWER_LEN,
     WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER, WCWIDTH_OVERRIDE_45857A01_VS16_NARROWER_LEN,
@@ -2489,7 +2489,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER[] = {
     { 0x1fae9, 0x1faea },  /* Face With Bags Under Eye..Distorted Face */
     { 0x1faef, 0x1faef },  /* Fight Cloud */
 };
-static const size_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -2575,12 +2575,12 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER[] = {
     { 0x017a4, 0x017a4 },  /* Khmer Independent Vowel Qaa */
     { 0x017d8, 0x017d8 },  /* Khmer Sign Beyyal */
 };
-static const size_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER[0]);
+#define WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00605, 0x00605 },  /* Arabic Number Mark Above */
@@ -2598,7 +2598,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER[] = {
     { 0x11d46, 0x11d46 },  /* Masaram Gondi Repha */
     { 0x11f02, 0x11f02 },  /* Kawi Sign Repha */
 };
-static const size_t WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_4D6FA5B5_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_4D6FA5B5 = {
     WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER, WCWIDTH_OVERRIDE_4D6FA5B5_NARROWER_LEN,
     NULL, 0,
@@ -2626,7 +2626,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_NARROWER[] = {
     { 0x1fadf, 0x1fadf },  /* Splatter */
     { 0x1fae9, 0x1fae9 },  /* Face With Bags Under Eyes */
 };
-static const size_t WCWIDTH_OVERRIDE_E2D5814F_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROWER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_E2D5814F_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROWER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -2742,7 +2742,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -2836,7 +2836,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
@@ -2847,7 +2847,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_E2D5814F_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_E2D5814F = {
     WCWIDTH_OVERRIDE_E2D5814F_NARROWER, WCWIDTH_OVERRIDE_E2D5814F_NARROWER_LEN,
     WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER, WCWIDTH_OVERRIDE_E2D5814F_VS16_NARROWER_LEN,
@@ -2891,7 +2891,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_NARROWER[] = {
     { 0x1fadf, 0x1faea },  /* Splatter                ..Distorted Face */
     { 0x1faef, 0x1faf8 },  /* Fight Cloud             ..Rightwards Pushing Hand */
 };
-static const size_t WCWIDTH_OVERRIDE_0A2A03B9_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROWER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_0A2A03B9_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROWER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
@@ -3007,7 +3007,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER[] = {
     { 0x1f6f0, 0x1f6f0 },  /* Satellite */
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
-static const size_t WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER_LEN = sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER[0]);
+#define WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER_LEN (sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
@@ -3101,12 +3101,12 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER[] = {
     { 0x1f6b9, 0x1f6ba },  /* Mens Symbol             ..Womens Symbol */
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
-static const size_t WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER[0]);
+#define WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_VS15_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER[] = {
     { 0x1f93b, 0x1f93b },  /* Modern Pentathlon */
     { 0x1f946, 0x1f946 },  /* Rifle */
 };
-static const size_t WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER_LEN = sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER[0]);
+#define WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER_LEN (sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_WIDER[0]))
 static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER[] = {
     { 0x000ad, 0x000ad },  /* Soft Hyphen */
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
@@ -3116,7 +3116,7 @@ static const wcwidth_interval_t WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER[] = {
     { 0x110bd, 0x110bd },  /* Kaithi Number Sign */
     { 0x110cd, 0x110cd },  /* Kaithi Number Sign Above */
 };
-static const size_t WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER_LEN = sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER[0]);
+#define WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER_LEN (sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER) / sizeof(WCWIDTH_OVERRIDE_0A2A03B9_NARROW_ZEROER[0]))
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_0A2A03B9 = {
     WCWIDTH_OVERRIDE_0A2A03B9_NARROWER, WCWIDTH_OVERRIDE_0A2A03B9_NARROWER_LEN,
     WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER, WCWIDTH_OVERRIDE_0A2A03B9_VS16_NARROWER_LEN,
@@ -4249,8 +4249,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_45D92E98[] = {
     0x1f9b8, 0x1f3fc, 0x0200d, 0x02642, 0x0fe0f, 0x1f9b8, 0x1f3fd, 0x0200d,
     0x02640, 0x0fe0f,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_45D92E98_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_45D92E98) / sizeof(WCWIDTH_GRAPHEME_POOL_45D92E98[0]);
+#define WCWIDTH_GRAPHEME_POOL_45D92E98_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_45D92E98) / sizeof(WCWIDTH_GRAPHEME_POOL_45D92E98[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_45D92E98[] = {
     { 0, 4, 3 }, { 4, 5, 3 }, { 9, 4, 3 }, { 13, 7, 4 }, { 20, 4, 3 }, { 24, 4, 3 },
     { 28, 4, 3 }, { 32, 5, 3 }, { 37, 5, 3 }, { 42, 7, 5 }, { 49, 4, 3 }, { 53, 4, 3 },
@@ -4645,8 +4645,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_45D92E98[] = {
     { 8933, 4, 3 }, { 8937, 5, 5 }, { 8942, 5, 5 }, { 8947, 5, 5 }, { 8952, 5, 5 },
     { 8957, 5, 5 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_45D92E98_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_45D92E98) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_45D92E98[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_45D92E98_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_45D92E98) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_45D92E98[0]))
 /* Grapheme cluster table e08bd75e (terminals: apple_terminal) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_E08BD75E[] = {
     0x0062a, 0x0200c, 0x00646, 0x0200c, 0x00647, 0x0200c, 0x006cc, 0x0200c,
@@ -6184,8 +6184,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_E08BD75E[] = {
     0x0200d, 0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd,
     0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_E08BD75E_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_E08BD75E) / sizeof(WCWIDTH_GRAPHEME_POOL_E08BD75E[0]);
+#define WCWIDTH_GRAPHEME_POOL_E08BD75E_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_E08BD75E) / sizeof(WCWIDTH_GRAPHEME_POOL_E08BD75E[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_E08BD75E[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 2, 2 }, { 6, 2, 2 }, { 8, 2, 2 }, { 10, 4, 3 },
     { 14, 5, 3 }, { 19, 4, 3 }, { 23, 7, 4 }, { 30, 4, 3 }, { 34, 4, 3 }, { 38, 4, 3 },
@@ -6714,8 +6714,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_E08BD75E[] = {
     { 12224, 5, 9 }, { 12229, 5, 9 }, { 12234, 5, 9 }, { 12239, 5, 9 }, { 12244, 5, 9 },
     { 12249, 5, 9 }, { 12254, 5, 9 }, { 12259, 5, 9 }, { 12264, 5, 9 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_E08BD75E_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_E08BD75E) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_E08BD75E[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_E08BD75E_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_E08BD75E) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_E08BD75E[0]))
 /* Grapheme cluster table 6eafd23a (terminals: bobcat) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_6EAFD23A[] = {
     0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d, 0x00915, 0x0093e,
@@ -8308,8 +8308,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_6EAFD23A[] = {
     0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1,
     0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_6EAFD23A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_6EAFD23A) / sizeof(WCWIDTH_GRAPHEME_POOL_6EAFD23A[0]);
+#define WCWIDTH_GRAPHEME_POOL_6EAFD23A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_6EAFD23A) / sizeof(WCWIDTH_GRAPHEME_POOL_6EAFD23A[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A[] = {
     { 0, 4, 3 }, { 4, 5, 3 }, { 9, 4, 3 }, { 13, 7, 4 }, { 20, 4, 3 }, { 24, 4, 3 },
     { 28, 4, 3 }, { 32, 5, 3 }, { 37, 5, 3 }, { 42, 7, 5 }, { 49, 4, 3 }, { 53, 4, 3 },
@@ -8886,8 +8886,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A[] = {
     { 12673, 5, 4 }, { 12678, 5, 4 }, { 12683, 5, 4 }, { 12688, 5, 4 }, { 12693, 5, 4 },
     { 12698, 5, 4 }, { 12703, 5, 4 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_6EAFD23A[0]))
 /* Grapheme cluster table 23bfc78c (terminals: contour) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_23BFC78C[] = {
     0x00601, 0x006f1, 0x00915, 0x0093e, 0x00915, 0x0093e, 0x00902, 0x00915,
@@ -10381,8 +10381,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_23BFC78C[] = {
     0x0fe0f, 0x0200d, 0x1f48b, 0x0200d, 0x1f9d1, 0x1f3fb, 0x1f9d1, 0x1f3ff,
     0x0200d, 0x02764, 0x0fe0f, 0x0200d, 0x1f48b, 0x0200d, 0x1f9d1, 0x1f3fd,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_23BFC78C_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_23BFC78C) / sizeof(WCWIDTH_GRAPHEME_POOL_23BFC78C[0]);
+#define WCWIDTH_GRAPHEME_POOL_23BFC78C_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_23BFC78C) / sizeof(WCWIDTH_GRAPHEME_POOL_23BFC78C[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_23BFC78C[] = {
     { 0, 2, 0 }, { 2, 2, 1 }, { 4, 3, 1 }, { 7, 2, 1 }, { 9, 3, 1 }, { 12, 2, 1 },
     { 14, 3, 1 }, { 17, 2, 1 }, { 19, 2, 1 }, { 21, 3, 1 }, { 24, 4, 1 }, { 28, 5, 1 },
@@ -11127,8 +11127,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_23BFC78C[] = {
     { 11860, 5, 1 }, { 11865, 5, 1 }, { 11870, 5, 1 }, { 11875, 5, 1 }, { 11880, 10, 4 },
     { 11890, 10, 4 }, { 11900, 10, 4 }, { 11910, 10, 4 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_23BFC78C_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_23BFC78C) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_23BFC78C[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_23BFC78C_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_23BFC78C) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_23BFC78C[0]))
 /* Grapheme cluster table fcc05a0f (terminals: extraterm) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_FCC05A0F[] = {
     0x00020, 0x00303, 0x00020, 0x00323, 0x00020, 0x00331, 0x00301, 0x00020,
@@ -13940,8 +13940,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_FCC05A0F[] = {
     0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1, 0x1f3ff,
     0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_FCC05A0F_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_FCC05A0F) / sizeof(WCWIDTH_GRAPHEME_POOL_FCC05A0F[0]);
+#define WCWIDTH_GRAPHEME_POOL_FCC05A0F_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_FCC05A0F) / sizeof(WCWIDTH_GRAPHEME_POOL_FCC05A0F[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 3, 3 }, { 7, 2, 2 }, { 9, 2, 2 }, { 11, 2, 2 },
     { 13, 2, 2 }, { 15, 2, 2 }, { 17, 2, 2 }, { 19, 2, 2 }, { 21, 2, 2 }, { 23, 2, 2 },
@@ -15274,8 +15274,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F[] = {
     { 22414, 5, 9 }, { 22419, 5, 9 }, { 22424, 5, 9 }, { 22429, 5, 9 }, { 22434, 5, 9 },
     { 22439, 5, 9 }, { 22444, 5, 9 }, { 22449, 5, 9 }, { 22454, 5, 9 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_FCC05A0F[0]))
 /* Grapheme cluster table 529fbb4a (terminals: foot) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_529FBB4A[] = {
     0x00601, 0x006f1, 0x00915, 0x0093e, 0x00915, 0x0093e, 0x00902, 0x00915,
@@ -15793,8 +15793,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_529FBB4A[] = {
     0x1134b, 0x11338, 0x1134c, 0x11339, 0x1133e, 0x11339, 0x1133e, 0x11303,
     0x11339, 0x1133f, 0x11339, 0x11347, 0x11339, 0x1134b,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_529FBB4A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_529FBB4A) / sizeof(WCWIDTH_GRAPHEME_POOL_529FBB4A[0]);
+#define WCWIDTH_GRAPHEME_POOL_529FBB4A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_529FBB4A) / sizeof(WCWIDTH_GRAPHEME_POOL_529FBB4A[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_529FBB4A[] = {
     { 0, 2, 1 }, { 2, 2, 1 }, { 4, 3, 1 }, { 7, 2, 1 }, { 9, 3, 1 }, { 12, 2, 1 },
     { 14, 3, 1 }, { 17, 2, 1 }, { 19, 2, 1 }, { 21, 2, 1 }, { 23, 2, 1 }, { 25, 2, 1 },
@@ -16154,8 +16154,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_529FBB4A[] = {
     { 4097, 2, 1 }, { 4099, 2, 1 }, { 4101, 3, 1 }, { 4104, 2, 1 }, { 4106, 2, 1 },
     { 4108, 2, 1 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_529FBB4A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_529FBB4A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_529FBB4A[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_529FBB4A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_529FBB4A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_529FBB4A[0]))
 /* Grapheme cluster table 4cdf59ce (terminals: ghostty) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_4CDF59CE[] = {
     0x0a98f, 0x0a9c0, 0x0a9a0, 0x0a9c0, 0x0a9a2, 0x0a9c0, 0x0a9a4, 0x0a9c0,
@@ -16168,8 +16168,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_4CDF59CE[] = {
     0x1134d, 0x11335, 0x1134d, 0x11336, 0x1134d, 0x11337, 0x1134d, 0x11338,
     0x1134d,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_4CDF59CE_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_4CDF59CE) / sizeof(WCWIDTH_GRAPHEME_POOL_4CDF59CE[0]);
+#define WCWIDTH_GRAPHEME_POOL_4CDF59CE_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_4CDF59CE) / sizeof(WCWIDTH_GRAPHEME_POOL_4CDF59CE[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 2, 2 }, { 6, 2, 2 }, { 8, 3, 2 }, { 11, 2, 2 },
     { 13, 2, 2 }, { 15, 2, 2 }, { 17, 2, 2 }, { 19, 2, 2 }, { 21, 2, 2 }, { 23, 2, 2 },
@@ -16178,8 +16178,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE[] = {
     { 49, 2, 2 }, { 51, 2, 2 }, { 53, 2, 2 }, { 55, 2, 2 }, { 57, 2, 2 }, { 59, 2, 2 },
     { 61, 2, 2 }, { 63, 2, 2 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_4CDF59CE[0]))
 /* Grapheme cluster table 8589765c (terminals: iterm2) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_8589765C[] = {
     0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d, 0x00915, 0x0093e,
@@ -16806,8 +16806,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_8589765C[] = {
     0x1134b, 0x11338, 0x1134c, 0x11339, 0x1133e, 0x11339, 0x1133e, 0x11303,
     0x11339, 0x1133f, 0x11339, 0x11347, 0x11339, 0x1134b,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_8589765C_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_8589765C) / sizeof(WCWIDTH_GRAPHEME_POOL_8589765C[0]);
+#define WCWIDTH_GRAPHEME_POOL_8589765C_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_8589765C) / sizeof(WCWIDTH_GRAPHEME_POOL_8589765C[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_8589765C[] = {
     { 0, 4, 3 }, { 4, 5, 3 }, { 9, 4, 3 }, { 13, 7, 4 }, { 20, 4, 3 }, { 24, 4, 3 },
     { 28, 4, 3 }, { 32, 5, 3 }, { 37, 5, 3 }, { 42, 7, 5 }, { 49, 4, 3 }, { 53, 4, 3 },
@@ -17070,8 +17070,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_8589765C[] = {
     { 4969, 2, 1 }, { 4971, 2, 1 }, { 4973, 3, 1 }, { 4976, 2, 1 }, { 4978, 2, 1 },
     { 4980, 2, 1 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_8589765C_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_8589765C) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_8589765C[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_8589765C_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_8589765C) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_8589765C[0]))
 /* Grapheme cluster table c0a2cdbf (terminals: kitty) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_C0A2CDBF[] = {
     0x00601, 0x006f1, 0x00915, 0x0093e, 0x00915, 0x0093e, 0x00902, 0x00915,
@@ -18478,8 +18478,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_C0A2CDBF[] = {
     0x11347, 0x11338, 0x1134b, 0x11338, 0x1134c, 0x11339, 0x1133e, 0x11339,
     0x1133e, 0x11303, 0x11339, 0x1133f, 0x11339, 0x11347, 0x11339, 0x1134b,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_C0A2CDBF_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_C0A2CDBF) / sizeof(WCWIDTH_GRAPHEME_POOL_C0A2CDBF[0]);
+#define WCWIDTH_GRAPHEME_POOL_C0A2CDBF_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_C0A2CDBF) / sizeof(WCWIDTH_GRAPHEME_POOL_C0A2CDBF[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF[] = {
     { 0, 2, 0 }, { 2, 2, 1 }, { 4, 3, 1 }, { 7, 2, 1 }, { 9, 3, 1 }, { 12, 2, 1 },
     { 14, 3, 1 }, { 17, 2, 1 }, { 19, 2, 1 }, { 21, 3, 1 }, { 24, 4, 1 }, { 28, 5, 1 },
@@ -19203,8 +19203,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF[] = {
     { 11209, 2, 1 }, { 11211, 2, 1 }, { 11213, 2, 1 }, { 11215, 3, 1 }, { 11218, 2, 1 },
     { 11220, 2, 1 }, { 11222, 2, 1 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C0A2CDBF[0]))
 /* Grapheme cluster table c2157f7e (terminals: konsole) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_C2157F7E[] = {
     0x00601, 0x006f1, 0x00915, 0x00947, 0x0093e, 0x00915, 0x0094d, 0x00915,
@@ -19814,8 +19814,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_C2157F7E[] = {
     0x1f9d1, 0x1f3fd, 0x1f9d1, 0x1f3ff, 0x0200d, 0x1faef, 0x0200d, 0x1f9d1,
     0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_C2157F7E_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_C2157F7E) / sizeof(WCWIDTH_GRAPHEME_POOL_C2157F7E[0]);
+#define WCWIDTH_GRAPHEME_POOL_C2157F7E_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_C2157F7E) / sizeof(WCWIDTH_GRAPHEME_POOL_C2157F7E[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C2157F7E[] = {
     { 0, 2, 1 }, { 2, 3, 1 }, { 5, 4, 3 }, { 9, 5, 3 }, { 14, 4, 3 }, { 18, 7, 4 },
     { 25, 4, 3 }, { 29, 4, 3 }, { 33, 4, 3 }, { 37, 5, 3 }, { 42, 7, 4 }, { 49, 4, 3 },
@@ -20046,8 +20046,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C2157F7E[] = {
     { 4778, 7, 3 }, { 4785, 7, 3 }, { 4792, 7, 3 }, { 4799, 7, 3 }, { 4806, 7, 3 },
     { 4813, 7, 3 }, { 4820, 7, 3 }, { 4827, 7, 3 }, { 4834, 7, 3 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_C2157F7E_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_C2157F7E) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C2157F7E[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_C2157F7E_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_C2157F7E) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C2157F7E[0]))
 /* Grapheme cluster table 3d4826b8 (terminals: mintty) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_3D4826B8[] = {
     0x00020, 0x00303, 0x00020, 0x00323, 0x00020, 0x00331, 0x00301, 0x00020,
@@ -22647,8 +22647,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_3D4826B8[] = {
     0x02640, 0x0fe0f, 0x1f93e, 0x1f3fd, 0x0200d, 0x02642, 0x0fe0f, 0x1f93e,
     0x1f3fe, 0x0200d, 0x02640, 0x0fe0f,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_3D4826B8_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_3D4826B8) / sizeof(WCWIDTH_GRAPHEME_POOL_3D4826B8[0]);
+#define WCWIDTH_GRAPHEME_POOL_3D4826B8_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_3D4826B8) / sizeof(WCWIDTH_GRAPHEME_POOL_3D4826B8[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_3D4826B8[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 3, 3 }, { 7, 2, 2 }, { 9, 2, 2 }, { 11, 2, 2 },
     { 13, 2, 2 }, { 15, 2, 2 }, { 17, 2, 2 }, { 19, 2, 2 }, { 21, 2, 2 }, { 23, 2, 2 },
@@ -23944,8 +23944,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_3D4826B8[] = {
     { 20721, 4, 5 }, { 20725, 4, 5 }, { 20729, 5, 7 }, { 20734, 5, 7 }, { 20739, 5, 7 },
     { 20744, 5, 7 }, { 20749, 5, 7 }, { 20754, 5, 7 }, { 20759, 5, 7 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_3D4826B8_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_3D4826B8) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_3D4826B8[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_3D4826B8_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_3D4826B8) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_3D4826B8[0]))
 /* Grapheme cluster table c3db41c0 (terminals: mlterm) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_C3DB41C0[] = {
     0x0062a, 0x0200c, 0x00646, 0x0200c, 0x00647, 0x0200c, 0x006cc, 0x0200c,
@@ -25503,8 +25503,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_C3DB41C0[] = {
     0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d,
     0x1faf2, 0x1f3fd, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_C3DB41C0_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_C3DB41C0) / sizeof(WCWIDTH_GRAPHEME_POOL_C3DB41C0[0]);
+#define WCWIDTH_GRAPHEME_POOL_C3DB41C0_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_C3DB41C0) / sizeof(WCWIDTH_GRAPHEME_POOL_C3DB41C0[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 2, 2 }, { 6, 2, 2 }, { 8, 2, 2 }, { 10, 2, 1 },
     { 12, 3, 1 }, { 15, 2, 1 }, { 17, 3, 1 }, { 20, 2, 1 }, { 22, 3, 1 }, { 25, 2, 1 },
@@ -26185,8 +26185,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0[] = {
     { 12391, 5, 9 }, { 12396, 5, 9 }, { 12401, 5, 9 }, { 12406, 5, 9 }, { 12411, 5, 9 },
     { 12416, 5, 9 }, { 12421, 5, 9 }, { 12426, 5, 9 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_C3DB41C0[0]))
 /* Grapheme cluster table 5bfac390 (terminals: pterm, vte) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_5BFAC390[] = {
     0x00601, 0x006f1, 0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d,
@@ -27693,8 +27693,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_5BFAC390[] = {
     0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1, 0x1f3ff, 0x0200d,
     0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_5BFAC390_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_5BFAC390) / sizeof(WCWIDTH_GRAPHEME_POOL_5BFAC390[0]);
+#define WCWIDTH_GRAPHEME_POOL_5BFAC390_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_5BFAC390) / sizeof(WCWIDTH_GRAPHEME_POOL_5BFAC390[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_5BFAC390[] = {
     { 0, 2, 1 }, { 2, 4, 3 }, { 6, 5, 3 }, { 11, 4, 3 }, { 15, 7, 4 }, { 22, 4, 3 },
     { 26, 4, 3 }, { 30, 4, 3 }, { 34, 5, 3 }, { 39, 5, 3 }, { 44, 7, 5 }, { 51, 4, 3 },
@@ -28209,8 +28209,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_5BFAC390[] = {
     { 11978, 5, 8 }, { 11983, 5, 8 }, { 11988, 5, 8 }, { 11993, 5, 8 }, { 11998, 5, 8 },
     { 12003, 5, 8 }, { 12008, 5, 8 }, { 12013, 5, 8 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_5BFAC390_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_5BFAC390) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_5BFAC390[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_5BFAC390_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_5BFAC390) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_5BFAC390[0]))
 /* Grapheme cluster table 8f94b404 (terminals: rio) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_8F94B404[] = {
     0x00601, 0x006f1, 0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d,
@@ -29723,8 +29723,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_8F94B404[] = {
     0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1,
     0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_8F94B404_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_8F94B404) / sizeof(WCWIDTH_GRAPHEME_POOL_8F94B404[0]);
+#define WCWIDTH_GRAPHEME_POOL_8F94B404_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_8F94B404) / sizeof(WCWIDTH_GRAPHEME_POOL_8F94B404[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_8F94B404[] = {
     { 0, 2, 1 }, { 2, 4, 3 }, { 6, 5, 3 }, { 11, 4, 3 }, { 15, 7, 4 }, { 22, 4, 3 },
     { 26, 4, 3 }, { 30, 4, 3 }, { 34, 5, 3 }, { 39, 5, 3 }, { 44, 7, 5 }, { 51, 4, 3 },
@@ -30241,8 +30241,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_8F94B404[] = {
     { 12023, 5, 8 }, { 12028, 5, 8 }, { 12033, 5, 8 }, { 12038, 5, 8 }, { 12043, 5, 8 },
     { 12048, 5, 8 }, { 12053, 5, 8 }, { 12058, 5, 8 }, { 12063, 5, 8 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_8F94B404_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_8F94B404) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_8F94B404[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_8F94B404_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_8F94B404) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_8F94B404[0]))
 /* Grapheme cluster table 813fee16 (terminals: st, urxvt, xterm) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_813FEE16[] = {
     0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d, 0x00915, 0x0093e,
@@ -31748,8 +31748,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_813FEE16[] = {
     0x1f3fb, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff,
     0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_813FEE16_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_813FEE16) / sizeof(WCWIDTH_GRAPHEME_POOL_813FEE16[0]);
+#define WCWIDTH_GRAPHEME_POOL_813FEE16_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_813FEE16) / sizeof(WCWIDTH_GRAPHEME_POOL_813FEE16[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_813FEE16[] = {
     { 0, 4, 3 }, { 4, 5, 3 }, { 9, 4, 3 }, { 13, 7, 4 }, { 20, 4, 3 }, { 24, 4, 3 },
     { 28, 4, 3 }, { 32, 5, 3 }, { 37, 5, 3 }, { 42, 7, 5 }, { 49, 4, 3 }, { 53, 4, 3 },
@@ -32264,8 +32264,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_813FEE16[] = {
     { 11976, 5, 8 }, { 11981, 5, 8 }, { 11986, 5, 8 }, { 11991, 5, 8 }, { 11996, 5, 8 },
     { 12001, 5, 8 }, { 12006, 5, 8 }, { 12011, 5, 8 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_813FEE16_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_813FEE16) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_813FEE16[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_813FEE16_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_813FEE16) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_813FEE16[0]))
 /* Grapheme cluster table e22030f3 (terminals: terminology) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_E22030F3[] = {
     0x00020, 0x00f7c, 0x005d0, 0x005b7, 0x005d0, 0x005b8, 0x005d1, 0x005bf,
@@ -35007,8 +35007,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_E22030F3[] = {
     0x0200d, 0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd,
     0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_E22030F3_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_E22030F3) / sizeof(WCWIDTH_GRAPHEME_POOL_E22030F3[0]);
+#define WCWIDTH_GRAPHEME_POOL_E22030F3_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_E22030F3) / sizeof(WCWIDTH_GRAPHEME_POOL_E22030F3[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_E22030F3[] = {
     { 0, 2, 2 }, { 2, 2, 2 }, { 4, 2, 2 }, { 6, 2, 2 }, { 8, 2, 2 }, { 10, 2, 2 },
     { 12, 2, 2 }, { 14, 2, 2 }, { 16, 2, 2 }, { 18, 2, 2 }, { 20, 2, 2 }, { 22, 2, 2 },
@@ -36288,8 +36288,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_E22030F3[] = {
     { 21856, 5, 6 }, { 21861, 5, 6 }, { 21866, 5, 6 }, { 21871, 5, 6 }, { 21876, 5, 6 },
     { 21881, 5, 6 }, { 21886, 5, 6 }, { 21891, 5, 6 }, { 21896, 5, 6 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_E22030F3_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_E22030F3) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_E22030F3[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_E22030F3_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_E22030F3) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_E22030F3[0]))
 /* Grapheme cluster table 27e0693f (terminals: warp) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_27E0693F[] = {
     0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d, 0x00915, 0x0093e,
@@ -37809,8 +37809,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_27E0693F[] = {
     0x1faf2, 0x1f3fc, 0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1,
     0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_27E0693F_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_27E0693F) / sizeof(WCWIDTH_GRAPHEME_POOL_27E0693F[0]);
+#define WCWIDTH_GRAPHEME_POOL_27E0693F_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_27E0693F) / sizeof(WCWIDTH_GRAPHEME_POOL_27E0693F[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_27E0693F[] = {
     { 0, 4, 3 }, { 4, 5, 3 }, { 9, 4, 3 }, { 13, 7, 4 }, { 20, 4, 3 }, { 24, 4, 3 },
     { 28, 4, 3 }, { 32, 5, 3 }, { 37, 5, 3 }, { 42, 7, 5 }, { 49, 4, 3 }, { 53, 4, 3 },
@@ -38346,8 +38346,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_27E0693F[] = {
     { 12079, 5, 9 }, { 12084, 5, 9 }, { 12089, 5, 9 }, { 12094, 5, 9 }, { 12099, 5, 9 },
     { 12104, 5, 9 }, { 12109, 5, 9 }, { 12114, 5, 9 }, { 12119, 5, 9 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_27E0693F_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_27E0693F) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_27E0693F[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_27E0693F_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_27E0693F) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_27E0693F[0]))
 /* Grapheme cluster table da9ceb0a (terminals: wezterm) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_DA9CEB0A[] = {
     0x00601, 0x006f1, 0x00915, 0x0093e, 0x00915, 0x0093e, 0x00902, 0x00915,
@@ -38949,8 +38949,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_DA9CEB0A[] = {
     0x1133e, 0x11339, 0x1133e, 0x11303, 0x11339, 0x1133f, 0x11339, 0x11347,
     0x11339, 0x1134b,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_DA9CEB0A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_DA9CEB0A) / sizeof(WCWIDTH_GRAPHEME_POOL_DA9CEB0A[0]);
+#define WCWIDTH_GRAPHEME_POOL_DA9CEB0A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_DA9CEB0A) / sizeof(WCWIDTH_GRAPHEME_POOL_DA9CEB0A[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A[] = {
     { 0, 2, 1 }, { 2, 2, 1 }, { 4, 3, 1 }, { 7, 2, 1 }, { 9, 3, 1 }, { 12, 2, 1 },
     { 14, 3, 1 }, { 17, 2, 1 }, { 19, 2, 1 }, { 21, 7, 3 }, { 28, 7, 3 }, { 35, 5, 3 },
@@ -39332,8 +39332,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A[] = {
     { 4759, 2, 1 }, { 4761, 2, 1 }, { 4763, 2, 1 }, { 4765, 2, 1 }, { 4767, 2, 1 },
     { 4769, 3, 1 }, { 4772, 2, 1 }, { 4774, 2, 1 }, { 4776, 2, 1 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_DA9CEB0A[0]))
 /* Grapheme cluster table 50bf0759 (terminals: xterm.js) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_50BF0759[] = {
     0x00601, 0x006f1, 0x00915, 0x0094d, 0x00915, 0x0093e, 0x00915, 0x0094d,
@@ -40840,8 +40840,8 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_50BF0759[] = {
     0x1faf1, 0x1f3ff, 0x0200d, 0x1faf2, 0x1f3fd, 0x1faf1, 0x1f3ff, 0x0200d,
     0x1faf2, 0x1f3fe,
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_50BF0759_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_50BF0759) / sizeof(WCWIDTH_GRAPHEME_POOL_50BF0759[0]);
+#define WCWIDTH_GRAPHEME_POOL_50BF0759_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_50BF0759) / sizeof(WCWIDTH_GRAPHEME_POOL_50BF0759[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_50BF0759[] = {
     { 0, 2, 1 }, { 2, 4, 3 }, { 6, 5, 3 }, { 11, 4, 3 }, { 15, 7, 4 }, { 22, 4, 3 },
     { 26, 4, 3 }, { 30, 4, 3 }, { 34, 5, 3 }, { 39, 5, 3 }, { 44, 7, 5 }, { 51, 4, 3 },
@@ -41356,8 +41356,8 @@ static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_50BF0759[] = {
     { 11978, 5, 6 }, { 11983, 5, 6 }, { 11988, 5, 6 }, { 11993, 5, 6 }, { 11998, 5, 6 },
     { 12003, 5, 6 }, { 12008, 5, 6 }, { 12013, 5, 6 },
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_50BF0759_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_50BF0759) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_50BF0759[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_50BF0759_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_50BF0759) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_50BF0759[0]))
 /* Terminal registry, sorted by canonical name for binary search. */
 const wcwidth_terminal_override_t WCWIDTH_TERMINAL_OVERRIDES[] = {
     { "absolutetelnet/ssh",

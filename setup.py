@@ -35,7 +35,17 @@ import sys
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
-from setuptools.errors import CCompilerError, CompileError, LinkError
+try:
+    from setuptools.errors import CCompilerError, CompileError, LinkError
+except ImportError:
+    # Older setuptools (e.g. 56.0.0 on the Python 3.8/3.9 toolchain builds)
+    # has no compiler error classes in setuptools.errors; distutils.errors
+    # provides them on those Pythons.
+    from distutils.errors import (  # pylint: disable=deprecated-module
+        CCompilerError,
+        CompileError,
+        LinkError,
+    )
 from distutils.errors import (  # pylint: disable=deprecated-module
     DistutilsExecError,
     DistutilsPlatformError,

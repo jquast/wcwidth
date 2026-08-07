@@ -15,8 +15,8 @@ def _verify_extension_mode():
     """
     Assert the loaded implementation matches the WCWIDTH_PYTHON env var.
 
-    In extension mode the C extension must be active; in Python mode it must not be, so a
-    silently-failed C build is caught in CI.
+    In extension mode the C extension must be active; in Python mode it must not be, so a silently-
+    failed C build is caught in CI.
     """
     # local
     import wcwidth

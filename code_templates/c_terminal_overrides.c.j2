@@ -19,7 +19,7 @@ static const wcwidth_interval_t {{ arr }}[] = {
     { {{ hex_start }}, {{ hex_end }} },  /* {{ txt_description }} */
 {%- endfor %}
 };
-static const size_t {{ arr }}_LEN = sizeof({{ arr }}) / sizeof({{ arr }}[0]);
+#define {{ arr }}_LEN (sizeof({{ arr }}) / sizeof({{ arr }}[0]))
 
 {%- endif %}
 {%- endfor %}
@@ -43,15 +43,15 @@ static const uint32_t WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}[] = {
     {{ line }}
 {%- endfor %}
 };
-static const size_t WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}_LEN =
-    sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}) / sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}[0]);
+#define WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}) / sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}[0]))
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}[] = {
 {%- for line in table.entry_lines %}
     {{ line }}
 {%- endfor %}
 };
-static const size_t WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}_LEN =
-    sizeof(WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}[0]);
+#define WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}_LEN \
+    (sizeof(WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}) / sizeof(WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}[0]))
 
 {%- endfor %}
 /* Terminal registry, sorted by canonical name for binary search. */
