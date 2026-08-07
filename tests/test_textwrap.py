@@ -10,7 +10,6 @@ import pytest
 
 # local
 import wcwidth
-from wcwidth import iter_sequences
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 
@@ -47,7 +46,7 @@ HANGUL_GA = '\u1100\u1161'
 
 
 def _strip(text):
-    return ''.join(seg for seg, is_seq in iter_sequences(text) if not is_seq)
+    return ''.join(seg for seg, is_seq in wcwidth.iter_sequences(text) if not is_seq)
 
 
 def _adjust_stdlib_result(expected, kwargs):
