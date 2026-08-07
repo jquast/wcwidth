@@ -98,6 +98,11 @@ def test_wrap_initial_indent():
     assert wrap('hello world', 10, initial_indent='> ') == ['> hello', 'world']
 
 
+def test_wrap_indent_consumes_full_width():
+    """When indent width equals self.width, line_width becomes 0."""
+    assert wrap('ab cd', width=3, subsequent_indent='   ') == ['ab', '   c', '   d']
+
+
 @pytest.mark.parametrize('text,w,break_long,expected', [
     ('abcdefghij', 3, True, ['abc', 'def', 'ghi', 'j']),
     ('abcdefghij', 3, False, ['abcdefghij']),
