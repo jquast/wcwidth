@@ -60,6 +60,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
         narrow_zeroer_len = term->set->narrow_zeroer_len;
         has_graphemes = term->grapheme_entries_len > 0;
     }
+    bool has_cp_overrides = narrower_len > 0 || zeroer_len > 0
+                            || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
     /* Empty input */
     if (n == 0 || cp == NULL) {
@@ -192,17 +194,19 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
                 return -1;
             }
             /* Apply single-codepoint terminal overrides (pre-merged sets). */
-            if (w == 2 && wcwidth_bisearch(ucs, narrower, narrower_len)) {
-                w = 1;
-            }
-            else if (w == 2 && wcwidth_bisearch(ucs, zeroer, zeroer_len)) {
-                w = 0;
-            }
-            if (w == 1 && wcwidth_bisearch(ucs, narrow_wider, narrow_wider_len)) {
-                w = 2;
-            }
-            else if (w == 1 && wcwidth_bisearch(ucs, narrow_zeroer, narrow_zeroer_len)) {
-                w = 0;
+            if (has_cp_overrides) {
+                if (w == 2 && wcwidth_bisearch(ucs, narrower, narrower_len)) {
+                    w = 1;
+                }
+                else if (w == 2 && wcwidth_bisearch(ucs, zeroer, zeroer_len)) {
+                    w = 0;
+                }
+                if (w == 1 && wcwidth_bisearch(ucs, narrow_wider, narrow_wider_len)) {
+                    w = 2;
+                }
+                else if (w == 1 && wcwidth_bisearch(ucs, narrow_zeroer, narrow_zeroer_len)) {
+                    w = 0;
+                }
             }
             if (w > 0) {
                 /* virama+consonant extends the current cluster; otherwise
