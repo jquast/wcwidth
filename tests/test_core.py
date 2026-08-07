@@ -29,7 +29,7 @@ def test_package_version():
 
 
 def test_cmake_and_setuptools_source_lists_parity():
-    """libwcwidth source lists stay in parity and cover the Makefile glob."""
+    """Libwcwidth source lists stay in parity and cover the Makefile glob."""
     root = Path(__file__).resolve().parent.parent
 
     # given,
@@ -652,7 +652,7 @@ WCSTWIDTH_POSITIONAL_CASES = [
 
 @pytest.mark.parametrize('pwcs,n', WCSTWIDTH_POSITIONAL_CASES)
 def test_wcstwidth_positional_args(pwcs, n):
-    """wcstwidth() accepts n as a positional argument."""
+    """Wcstwidth() accepts n as a positional argument."""
     result = wcwidth.wcstwidth(pwcs, n)
     assert isinstance(result, int)
     assert result >= 0

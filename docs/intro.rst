@@ -477,12 +477,12 @@ recognized names:
 .. code-block:: python
 
     >>> wcwidth.list_term_programs()
-    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'extraterm', 'foot',
-     'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty', 'konsole', 'mintty',
-     'mlterm', 'pterm', 'putty', 'rio', 'rxvt', 'rxvt-unicode-256color', 'st',
-     'st-256color', 'tabby', 'terminology', 'urxvt', 'vscode', 'vte', 'warp',
-     'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty', 'xterm-kitty',
-     'xterm.js')
+    ('absolutetelnet/ssh', 'alacritty', 'apple_terminal', 'bobcat', 'contour',
+     'extraterm', 'foot', 'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty',
+     'konsole', 'mintty', 'mlterm', 'pterm', 'putty', 'rio', 'rxvt',
+     'rxvt-unicode-256color', 'st', 'st-256color', 'tabby', 'terminology',
+     'urxvt', 'vscode', 'vte', 'warp', 'warpterminal', 'wezterm', 'xterm',
+     'xterm-ghostty', 'xterm-kitty', 'xterm.js')
 
 .. END_LIST_TERM_PROGRAMS
 

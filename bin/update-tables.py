@@ -104,6 +104,11 @@ GRAPHEME_BREAK_PROPERTIES = (
 )
 INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
+# Terminal multiplexers (subterminals) depend on a host terminal for rendering; their
+# cursor-position reports from ucs-detect are not reliable indicators of display width.  Excluded
+# from wcstwidth() or term_program= argument processing.
+EXCLUDED_MULTIPLEXERS = {'gnu screen', 'libvterm', 'tmux', 'zellij'}
+
 
 def _bisearch(ucs, table):
     """A copy of wcwwidth._bisearch."""
@@ -606,6 +611,32 @@ def fetch_table_category_mc_data() -> UnicodeTableRenderCtx:
     print('ok')
     table[version] = TableDef(file_version, date, values)
     return UnicodeTableRenderCtx('CATEGORY_MC', table)
+
+
+def _fetch_category_table_values(predicate) -> dict[UnicodeVersion, TableDef]:
+    """
+    Parse DerivedGeneralCategory.txt for categories matching *predicate*.
+
+    Only the latest Unicode version is produced; the C splitter needs the current character set, not
+    the version history.
+    """
+    table: dict[UnicodeVersion, TableDef] = {}
+    version = fetch_unicode_versions()[-1]
+
+    fname = UnicodeDataFile.DerivedGeneralCategory(version)
+    print(f'parsing {fname}: ', end='', flush=True)
+
+    with open(fname, encoding='utf-8') as f:
+        table_iter = parse_unicode_table(f)
+        file_version = next(table_iter).comment.strip()
+        date = next(table_iter).comment.split(':', 1)[1].strip()
+        values = {n
+                  for entry in table_iter
+                  if entry.code_range is not None and predicate(entry.properties[0])
+                  for n in range(entry.code_range[0], entry.code_range[1])}
+    print('ok')
+    table[version] = TableDef(file_version, date, values)
+    return table
 
 
 def fetch_table_ambiguous_data() -> UnicodeTableRenderCtx:
@@ -1448,12 +1479,14 @@ def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
     """Return (filename, canonical_name, yaml_document) for each ucs-detect data file."""
     items: list[tuple[str, str, Any]] = []
     for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
+        print(f"reading {yaml_path}: ", end='', flush=True)
         with open(yaml_path, encoding='utf-8') as f:
             doc = yaml.load(f, Loader=SafeLoader)
         name = doc.get('software_name', '')
         ver = doc.get('software_version', '')
         canonical = canonical_name(name, ver)
         items.append((os.path.basename(yaml_path), canonical, doc))
+        print("ok")
     return items
 
 
@@ -1625,7 +1658,7 @@ def collect_term_programs() -> TermPrograms:
     tprog_aliases: dict[str, str] = {}
     term_aliases: dict[str, str] = {}
 
-    for _, canonical, doc in load_ucs_detect_yaml():
+    for fname, canonical, doc in load_ucs_detect_yaml():
         tr = doc.get('terminal_results') or {}
         method = tr.get('software_method', '') or ''
         env = doc.get('environment') or {}
@@ -1664,13 +1697,9 @@ def collect_term_programs() -> TermPrograms:
         'putty': 'pterm',
     })
 
-    # Terminal multiplexers (subterminals) depend on a host terminal for
-    # rendering; their cursor-position reports from ucs-detect are not
-    # reliable indicators of display width.
-    _multiplexers = frozenset({'gnu screen', 'libvterm', 'tmux', 'zellij'})
-    known -= _multiplexers
-    term_aliases = {k: v for k, v in term_aliases.items() if v not in _multiplexers}
-    tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in _multiplexers}
+    known -= EXCLUDED_MULTIPLEXERS
+    term_aliases = {k: v for k, v in term_aliases.items() if v not in EXCLUDED_MULTIPLEXERS}
+    tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in EXCLUDED_MULTIPLEXERS}
 
     return TermPrograms(
         known_terminals=frozenset(known),
@@ -1805,6 +1834,30 @@ def _cluster_to_codepoints(cluster: str) -> list[int]:
     return [ord(ch) for ch in cluster]
 
 
+# How many 0xNNNNN pool values fit on one generated C source line.
+GRAPHEME_POOL_PER_LINE = 8
+
+
+def _wrap_grapheme_entries(entries: list[tuple[int, int, int]],
+                           max_columns: int = 88) -> list[str]:
+    """Format (offset, length, width) grapheme entries as wrapped source lines."""
+    lines: list[str] = []
+    line: list[str] = []
+    line_len = 0
+    for offset, length, width in entries:
+        token = f'{{ {offset}, {length}, {width} }},'
+        proposed = line_len + (1 if line else 0) + len(token)
+        if line and proposed > max_columns:
+            lines.append(' '.join(line))
+            line, line_len = [token], len(token)
+        else:
+            line.append(token)
+            line_len = proposed
+    if line:
+        lines.append(' '.join(line))
+    return lines
+
+
 @dataclass(frozen=True)
 class CTerminalOverrideRenderCtx(RenderContext):
     """Render context for the generated C terminal override tables."""
@@ -1849,8 +1902,11 @@ class CTerminalOverrideRenderDef(RenderDefinition):
                 grapheme_tables[hash_key] = {
                     'hash': hash_key,
                     'terminals': [name],
-                    'pool': pool,
-                    'entries': entries,
+                    'pool_lines': [
+                        ' '.join(f'0x{cp:05x},' for cp in pool[i:i + GRAPHEME_POOL_PER_LINE])
+                        for i in range(0, len(pool), GRAPHEME_POOL_PER_LINE)
+                    ],
+                    'entry_lines': _wrap_grapheme_entries(entries),
                 }
             else:
                 grapheme_tables[hash_key]['terminals'].append(name)

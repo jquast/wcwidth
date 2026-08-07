@@ -39,15 +39,15 @@ static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_{{ set.hash|upper }} = 
 {%- for table in grapheme_tables %}
 /* Grapheme cluster table {{ table.hash }} (terminals: {{ table.terminals | join(', ') }}) */
 static const uint32_t WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}[] = {
-{%- for cp in table.pool %}
-    {{ '0x%05x' % cp }},
+{%- for line in table.pool_lines %}
+    {{ line }}
 {%- endfor %}
 };
 static const size_t WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}_LEN =
     sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}) / sizeof(WCWIDTH_GRAPHEME_POOL_{{ table.hash|upper }}[0]);
 static const wcwidth_grapheme_entry_t WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}[] = {
-{%- for offset, length, width in table.entries %}
-    { {{ offset }}, {{ length }}, {{ width }} },
+{%- for line in table.entry_lines %}
+    {{ line }}
 {%- endfor %}
 };
 static const size_t WCWIDTH_GRAPHEME_ENTRIES_{{ table.hash|upper }}_LEN =

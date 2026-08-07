@@ -136,6 +136,21 @@ _needs_cursor_tracking(const char *text, size_t n)
     return false;
 }
 
+/* Number of codepoints in *text*, mirroring the pure implementation's
+ * len() used for the parse-to-ignore fast-path threshold. */
+static size_t
+utf8_char_count(const char *text, size_t n)
+{
+    size_t count = 0, i = 0;
+
+    while (i < n) {
+        uint32_t cp;
+        i += wcwidth_utf8_decode_single(text + i, n - i, &cp);
+        count++;
+    }
+    return count;
+}
+
 static size_t
 strip_controls(const char *text, size_t text_len, char *out, size_t out_cap, size_t *out_len)
 {
@@ -801,8 +816,9 @@ width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_
     effective_mode = mode;
 
     /* Fast-path downgrade: in PARSE mode, if text has no cursor movement,
-     * downgrade to IGNORE for performance. */
-    if (effective_mode == WCWIDTH_PARSE && n > FAST_PATH_MIN_LEN) {
+     * downgrade to IGNORE for performance.  The threshold counts codepoints
+     * like the pure implementation's len(), not bytes. */
+    if (effective_mode == WCWIDTH_PARSE && utf8_char_count(utf8, n) > FAST_PATH_MIN_LEN) {
         if (!_needs_cursor_tracking(utf8, n)) {
             effective_mode = WCWIDTH_IGNORE;
         }

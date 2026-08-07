@@ -1,13 +1,19 @@
 /*
  * Text wrapping for terminal text, with unicode, CJK, emoji, and terminal
  * sequence support.
+ *
+ * This is a simplified C11 implementation derived from Python's textwrap.
+ * Differences from the Python stdlib textwrap are documented in
+ * docs/libwcwidth.rst.  In particular:
+ *   - Word splitting is on ASCII space only (no wordsep_re rules).
+ *   - break_on_hyphens, fix_sentence_endings, and propagate_sgr are
+ *     accepted but ignored.
+ *   - OSC 8 hyperlinks are not tracked across wrapped lines.
  */
 #include "wcwidth/textwrap.h"
 #include "wcwidth/width.h"
 #include "wcwidth/escape.h"
 #include "wcwidth/grapheme.h"
-#include "wcwidth/hyperlink.h"
-#include "wcwidth/sgr.h"
 #include "wcwidth/utf8.h"
 
 #include <stdbool.h>
@@ -15,7 +21,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define ESC 0x1b
 
@@ -133,7 +138,6 @@ strip_seqs_to(const char *text, size_t len, sbuf_t *out)
     }
 }
 
-/* Split *text* into visible bytes and escape sequences in a single pass. */
 static void
 split_seqs(const char *text, size_t len, sbuf_t *visible, sbuf_t *escapes)
 {
@@ -154,13 +158,89 @@ split_seqs(const char *text, size_t len, sbuf_t *visible, sbuf_t *escapes)
     }
 }
 
+static uint32_t
+utf8_decode(const char *s, size_t len, size_t *seq_len)
+{
+    unsigned char c = (unsigned char) s[0];
+    uint32_t ucs;
+    size_t sl;
+
+    if (c < 0x80) {
+        *seq_len = 1;
+        return c;
+    }
+    if ((c & 0xE0) == 0xC0) {
+        sl = 2;
+        ucs = (uint32_t) (c & 0x1F);
+    }
+    else if ((c & 0xF0) == 0xE0) {
+        sl = 3;
+        ucs = (uint32_t) (c & 0x0F);
+    }
+    else {
+        sl = 4;
+        ucs = (uint32_t) (c & 0x07);
+    }
+    if (sl > len)
+        sl = len;
+    {
+        size_t k;
+        for (k = 1; k < sl; k++)
+            ucs = (ucs << 6) | ((unsigned char) s[k] & 0x3F);
+    }
+    *seq_len = sl;
+    return ucs;
+}
+
+static bool
+is_py_ws(uint32_t ucs)
+{
+    if (ucs == 0x20 || (ucs >= 0x09 && ucs <= 0x0D) || (ucs >= 0x1C && ucs <= 0x1F))
+        return true;
+    if (ucs == 0x85 || ucs == 0xA0 || ucs == 0x1680)
+        return true;
+    if (ucs >= 0x2000 && ucs <= 0x200A)
+        return true;
+    return ucs == 0x2028 || ucs == 0x2029 || ucs == 0x202F || ucs == 0x205F || ucs == 0x3000;
+}
+
+static size_t
+lstrip_len(const char *s, size_t len)
+{
+    size_t i = 0;
+    while (i < len) {
+        size_t sl;
+        if (!is_py_ws(utf8_decode(s + i, len - i, &sl)))
+            break;
+        i += sl;
+    }
+    return i;
+}
+
+static size_t
+rstrip_len(const char *s, size_t len)
+{
+    while (len > 0) {
+        size_t start = len;
+        while (start > 0 && ((unsigned char) s[start - 1] & 0xC0) == 0x80)
+            start--;
+        size_t sl;
+        if (!is_py_ws(utf8_decode(s + start - 1, len - (start - 1), &sl)))
+            break;
+        len = start - 1;
+    }
+    return len;
+}
+
 static bool
 is_all_ws(const char *data, size_t len)
 {
-    size_t i;
-    for (i = 0; i < len; i++) {
-        if (data[i] != ' ')
+    size_t i = 0;
+    while (i < len) {
+        size_t sl;
+        if (!is_py_ws(utf8_decode(data + i, len - i, &sl)))
             return false;
+        i += sl;
     }
     return true;
 }
@@ -189,9 +269,6 @@ expand_tabs_to(const char *text, size_t len, int ts, sbuf_t *out)
                 sbuf_free(out);
                 return false;
             }
-            /* Match str.expandtabs(): '\n' and '\r' reset the column; other
-             * codepoints advance it by one (UTF-8 continuation bytes do
-             * not, since the count is per codepoint). */
             if (b == '\n' || b == '\r') {
                 col = 0;
             }
@@ -327,7 +404,6 @@ cl_free(chunklist_t *cl)
     cl->cap = 0;
 }
 
-/* Pop from chunks and push to dest (moves ownership) */
 static void
 cl_move(chunklist_t *src, chunklist_t *dst)
 {
@@ -339,7 +415,6 @@ cl_move(chunklist_t *src, chunklist_t *dst)
     free(c->data);
 }
 
-/* Reverse the chunklist in place */
 static void
 cl_reverse(chunklist_t *cl)
 {
@@ -352,207 +427,22 @@ cl_reverse(chunklist_t *cl)
 }
 
 /*
- * Build char_end[]:
- *   char_end[i] = byte offset in processed text just after the i-th
- *   stripped character.  stripped accumulates visible chars only.
+ * Split processed text into word and whitespace chunks.
+ *
+ * The processed text has already been tab-expanded and whitespace-replaced
+ * (newlines etc. -> space).  Splitting is on ASCII space only; escape
+ * sequences are kept attached to adjacent words.  Consecutive spaces
+ * produce a single whitespace chunk.
  */
-struct split_map
-{
-    size_t *char_end;
-    size_t char_end_len;
-    size_t char_end_cap;
-    sbuf_t stripped;
-};
-
-static bool
-sm_init(struct split_map *sm, const char *text, size_t len)
-{
-    size_t idx = 0, orig_pos = 0;
-    bool prev_close = false;
-    wcwidth_esc_result_t r;
-
-    memset(sm, 0, sizeof(*sm));
-    sbuf_init(&sm->stripped);
-    sm->char_end_cap = 64;
-    sm->char_end = malloc(sm->char_end_cap * sizeof(size_t));
-    if (sm->char_end == NULL)
-        return false;
-
-    while (idx < len) {
-        if (text[idx] == ESC && wcwidth_escape_classify(text, len, idx, &r)) {
-            bool is_close = (r.type == WCWIDTH_ESC_OSC8_CLOSE && text[idx + 4] == ';');
-            bool is_osc = (text[idx + 1] == ']');
-
-            /* Insert space before OSC (not before close) */
-            if (is_osc && sm->stripped.len > 0 && sm->stripped.data[sm->stripped.len - 1] != ' ') {
-                if (!is_close) {
-                    if (!sbuf_append(&sm->stripped, " ", 1))
-                        goto fail;
-                    if (sm->char_end_len >= sm->char_end_cap) {
-                        sm->char_end_cap *= 2;
-                        size_t *nd = realloc(sm->char_end, sm->char_end_cap * sizeof(size_t));
-                        if (nd == NULL)
-                            goto fail;
-                        sm->char_end = nd;
-                    }
-                    sm->char_end[sm->char_end_len++] = orig_pos;
-                }
-            }
-
-            orig_pos += r.length;
-            idx += r.length;
-            prev_close = is_close;
-        }
-        else {
-            unsigned char ch = (unsigned char) text[idx];
-            size_t cp_len = 1;
-
-            /* Insert space after hyperlink close */
-            if (prev_close && ch != ' ') {
-                if (!sbuf_append(&sm->stripped, " ", 1))
-                    goto fail;
-                if (sm->char_end_len >= sm->char_end_cap) {
-                    sm->char_end_cap *= 2;
-                    size_t *nd = realloc(sm->char_end, sm->char_end_cap * sizeof(size_t));
-                    if (nd == NULL)
-                        goto fail;
-                    sm->char_end = nd;
-                }
-                sm->char_end[sm->char_end_len++] = orig_pos;
-            }
-            prev_close = false;
-
-            if (ch >= 0xC0) {
-                if (ch < 0xE0)
-                    cp_len = 2;
-                else if (ch < 0xF0)
-                    cp_len = 3;
-                else if (ch < 0xF8)
-                    cp_len = 4;
-                if (idx + cp_len > len)
-                    cp_len = 1;
-            }
-
-            /* Add one char_end entry per byte of visible text */
-            {
-                size_t k;
-                for (k = 0; k < cp_len && idx + k < len; k++) {
-                    orig_pos++;
-                    if (sm->char_end_len >= sm->char_end_cap) {
-                        sm->char_end_cap *= 2;
-                        size_t *nd = realloc(sm->char_end, sm->char_end_cap * sizeof(size_t));
-                        if (nd == NULL)
-                            goto fail;
-                        sm->char_end = nd;
-                    }
-                    sm->char_end[sm->char_end_len++] = orig_pos;
-                    sbuf_append(&sm->stripped, text + idx + k, 1);
-                }
-            }
-            idx += cp_len;
-        }
-    }
-
-    /* Sentinel */
-    if (sm->char_end_len >= sm->char_end_cap) {
-        sm->char_end_cap *= 2;
-        size_t *nd = realloc(sm->char_end, sm->char_end_cap * sizeof(size_t));
-        if (nd == NULL)
-            goto fail;
-        sm->char_end = nd;
-    }
-    sm->char_end[sm->char_end_len++] = orig_pos;
-    return true;
-
-fail:
-    free(sm->char_end);
-    sbuf_free(&sm->stripped);
-    memset(sm, 0, sizeof(*sm));
-    return false;
-}
-
-static void
-sm_free(struct split_map *sm)
-{
-    free(sm->char_end);
-    sbuf_free(&sm->stripped);
-}
-
-struct wrange
-{
-    size_t start, end;
-};
-
-static bool
-split_words_on_ws(const char *s, size_t slen, bool drop_ws, struct wrange **out, size_t *n_out)
-{
-    size_t i = 0, cnt = 0, cap = 16;
-    struct wrange *rng = malloc(cap * sizeof(*rng));
-    if (rng == NULL)
-        return false;
-
-    while (i < slen) {
-        if (drop_ws) {
-            while (i < slen && s[i] == ' ')
-                i++;
-            if (i >= slen)
-                break;
-        }
-        size_t start = i;
-        while (i < slen && s[i] != ' ')
-            i++;
-        size_t end = i;
-
-        if (cnt >= cap) {
-            cap *= 2;
-            struct wrange *nd = realloc(rng, cap * sizeof(*nd));
-            if (nd == NULL) {
-                free(rng);
-                return false;
-            }
-            rng = nd;
-        }
-        rng[cnt].start = start;
-        rng[cnt].end = end;
-        cnt++;
-
-        if (!drop_ws) {
-            start = i;
-            while (i < slen && s[i] == ' ')
-                i++;
-            if (i > start) {
-                if (cnt >= cap) {
-                    cap *= 2;
-                    struct wrange *nd = realloc(rng, cap * sizeof(*nd));
-                    if (nd == NULL) {
-                        free(rng);
-                        return false;
-                    }
-                    rng = nd;
-                }
-                rng[cnt].start = start;
-                rng[cnt].end = i;
-                cnt++;
-            }
-        }
-    }
-
-    *out = rng;
-    *n_out = cnt;
-    return true;
-}
-
 static bool
 _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunklist_t *out)
 {
     sbuf_t proc;
-    struct split_map sm;
-    struct wrange *rng = NULL;
-    size_t n_rng = 0, ri;
+    sbuf_t word;
+    size_t i;
 
     cl_init(out);
 
-    /* 1. Expand tabs */
     if (opts->expand_tabs) {
         if (!expand_tabs_to(text, text_len, opts->tabsize, &proc))
             return false;
@@ -563,7 +453,6 @@ _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunk
             return false;
     }
 
-    /* 2. Replace whitespace */
     if (opts->replace_whitespace) {
         sbuf_t tmp;
         if (!replace_ws_to(proc.data, proc.len, &tmp)) {
@@ -574,144 +463,44 @@ _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunk
         proc = tmp;
     }
 
-    /* 3. Build char_end mapping */
-    if (!sm_init(&sm, proc.data, proc.len)) {
-        sbuf_free(&proc);
-        return false;
-    }
-
-    /* Sequences-only text */
-    if (sm.stripped.len == 0 && proc.len > 0) {
-        cl_push(out, proc.data, proc.len);
-        sm_free(&sm);
-        sbuf_free(&proc);
-        return true;
-    }
-
-    /* 4. Split stripped text */
-    {
-        if (!split_words_on_ws(sm.stripped.data, sm.stripped.len, false, &rng, &n_rng)) {
-            sm_free(&sm);
-            sbuf_free(&proc);
-            return false;
-        }
-    }
-
-    /* 5. Map back */
-    {
-        for (ri = 0; ri < n_rng; ri++) {
-            size_t st = rng[ri].start;
-            size_t en = rng[ri].end;
-            size_t cs = en - st;
-            size_t start_orig, end_orig;
-            if (cs == 0)
-                continue;
-            start_orig = (st == 0) ? 0 : sm.char_end[st - 1];
-            /* The last chunk also absorbs trailing sequences. */
-            if (ri == n_rng - 1)
-                end_orig = sm.char_end[sm.char_end_len - 1];
-            else
-                end_orig = sm.char_end[en - 1];
-            if (start_orig < end_orig && end_orig <= proc.len)
-                cl_push(out, proc.data + start_orig, end_orig - start_orig);
-        }
-    }
-
-    free(rng);
-    sm_free(&sm);
-    sbuf_free(&proc);
-    return true;
-}
-
-typedef struct
-{
-    char *url;
-    size_t url_len;
-    char *params;
-    size_t params_len;
-    char term;
-} hl_t;
-
-static void
-hl_free(hl_t *s)
-{
-    if (s != NULL) {
-        free(s->url);
-        free(s->params);
-        free(s);
-    }
-}
-
-static hl_t *
-hl_new(const char *url, size_t url_len, const char *params, size_t params_len, char term)
-{
-    hl_t *s = malloc(sizeof(hl_t));
-    if (s == NULL)
-        return NULL;
-    s->url = malloc(url_len + 1);
-    s->params = malloc(params_len + 1);
-    if (s->url == NULL || s->params == NULL) {
-        free(s->url);
-        free(s->params);
-        free(s);
-        return NULL;
-    }
-    memcpy(s->url, url, url_len);
-    s->url[url_len] = '\0';
-    memcpy(s->params, params, params_len);
-    s->params[params_len] = '\0';
-    s->url_len = url_len;
-    s->params_len = params_len;
-    s->term = term;
-    return s;
-}
-
-static hl_t *
-hl_copy(const hl_t *src)
-{
-    if (src == NULL)
-        return NULL;
-    return hl_new(src->url, src->url_len, src->params, src->params_len, src->term);
-}
-
-static hl_t *
-hl_from_esc(const wcwidth_esc_result_t *r)
-{
-    wcwidth_hyperlink_params_t hp;
-    if (!wcwidth_hyperlink_parse_open(r->start, r->length, &hp))
-        return NULL;
-    if (hp.url_len == 0)
-        return NULL;
-    return hl_new(hp.url, hp.url_len, hp.params, hp.params_len, hp.terminator);
-}
-
-static hl_t *
-hl_track(const char *text, size_t len, hl_t *initial)
-{
-    hl_t *state = hl_copy(initial);
-    size_t idx = 0;
-    wcwidth_esc_result_t r;
-
-    while (idx < len) {
-        if (text[idx] == ESC && wcwidth_escape_classify(text, len, idx, &r)) {
-            if (r.type == WCWIDTH_ESC_OSC8_OPEN) {
-                hl_t *ns = hl_from_esc(&r);
-                if (ns != NULL) {
-                    hl_free(state);
-                    state = ns;
-                }
+    sbuf_init(&word);
+    i = 0;
+    while (i < proc.len) {
+        if (proc.data[i] == ' ') {
+            if (word.len > 0) {
+                cl_push(out, word.data, word.len);
+                word.len = 0;
             }
-            else if (r.type == WCWIDTH_ESC_OSC8_CLOSE) {
-                hl_free(state);
-                state = NULL;
+            /* group consecutive spaces */
+            {
+                size_t sp_start = i;
+                while (i < proc.len && proc.data[i] == ' ')
+                    i++;
+                cl_push(out, proc.data + sp_start, i - sp_start);
             }
-            idx += r.length;
+        }
+        else if (proc.data[i] == ESC) {
+            wcwidth_esc_result_t r;
+            if (wcwidth_escape_classify(proc.data, proc.len, i, &r)) {
+                sbuf_append(&word, r.start, r.length);
+                i += r.length;
+            }
+            else {
+                sbuf_append(&word, proc.data + i, 1);
+                i++;
+            }
         }
         else {
-            idx++;
+            sbuf_append(&word, proc.data + i, 1);
+            i++;
         }
     }
-    return state;
+    if (word.len > 0)
+        cl_push(out, word.data, word.len);
+
+    sbuf_free(&word);
+    sbuf_free(&proc);
+    return true;
 }
 
 static size_t
@@ -774,32 +563,6 @@ find_first_vis(const char *text, size_t len)
     return idx;
 }
 
-static size_t
-find_hyphen(const char *text, size_t len, int max_w)
-{
-    size_t idx = 0, last = 0;
-    int w = 0;
-    wcwidth_esc_result_t r;
-
-    while (idx < len && w < max_w) {
-        if (text[idx] == ESC && wcwidth_escape_classify(text, len, idx, &r)) {
-            idx += r.length;
-            continue;
-        }
-        if (text[idx] == '-')
-            last = idx + 1;
-        idx++;
-        w++;
-    }
-    if (last > 0) {
-        size_t j;
-        for (j = 0; j < last - 1; j++)
-            if (text[j] != '-')
-                return last;
-    }
-    return 0;
-}
-
 static void
 handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
             const wcwidth_wrap_opts_t *opts)
@@ -819,22 +582,11 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
         return;
     }
 
-    bp = 0;
-    if (opts->break_on_hyphens) {
-        int cw = chunk_width(c->data, c->len, opts);
-        if (cw > sp_left)
-            bp = find_hyphen(c->data, c->len, sp_left);
+    bp = find_break_pos(c->data, c->len, sp_left, opts);
+    if (cur_line->count == 0
+        && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
+        bp = find_first_vis(c->data, c->len);
     }
-
-    if (bp == 0) {
-        bp = find_break_pos(c->data, c->len, sp_left, opts);
-        if (cur_line->count == 0
-            && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
-            bp = find_first_vis(c->data, c->len);
-        }
-    }
-    /* Append an empty piece when nothing fits, deferring the whole chunk to
-     * the next line; never force a minimum of one character. */
     if (bp > c->len)
         bp = c->len;
 
@@ -894,8 +646,7 @@ lines_push(lines_t *ll, const char *s, size_t n)
         ll->lens = nl;
         ll->cap = nc;
     }
-    /* Allocate 128 extra bytes for potential SGR propagation expansion. */
-    ll->data[ll->count] = malloc(n + 129);
+    ll->data[ll->count] = malloc(n + 1);
     if (ll->data[ll->count] == NULL)
         return false;
     memcpy(ll->data[ll->count], s, n);
@@ -919,95 +670,20 @@ lines_free(lines_t *ll)
     ll->cap = 0;
 }
 
-/*
- * True when *data* (a word chunk) matches the stdlib sentence-end pattern
- * '[a-z][.!?]["']?$' (a lowercase letter followed by sentence-ending
- * punctuation, optionally followed by closing quotes).
- */
-static bool
-sentence_end_match(const char *data, size_t len)
-{
-    if (len < 2)
-        return false;
-    size_t i = len - 1;
-    if (data[i] == '"' || data[i] == '\'') {
-        if (i == 0)
-            return false;
-        i--;
-    }
-    if (data[i] != '.' && data[i] != '!' && data[i] != '?')
-        return false;
-    if (i == 0)
-        return false;
-    return data[i - 1] >= 'a' && data[i - 1] <= 'z';
-}
-
-/*
- * Correct for sentence endings buried in chunks: a single space following a
- * word that matches sentence_end_match is widened to two spaces.
- *
- * The chunk model here differs from the stdlib: with drop_whitespace the
- * whitespace is merged into the preceding word chunk (['foo. ', 'Bar']), while
- * without it whitespace remains a separate chunk (['foo.', ' ', 'Bar']).  Both
- * shapes are handled.
- */
-static void
-fix_sentence_endings(chunklist_t *cur)
-{
-    size_t i;
-
-    for (i = 0; i + 1 < cur->count; i++) {
-        chunk_t *c = &cur->chunks[i];
-        chunk_t *next = &cur->chunks[i + 1];
-
-        /* separate-space shape: [word][ " " ] */
-        if (next->len == 1 && next->data[0] == ' ') {
-            if (sentence_end_match(c->data, c->len)) {
-                char *nd = (char *) realloc(next->data, 3);
-                if (nd == NULL)
-                    return;
-                nd[0] = ' ';
-                nd[1] = ' ';
-                nd[2] = '\0';
-                next->data = nd;
-                next->len = 2;
-            }
-            i++; /* consume the space chunk */
-            continue;
-        }
-
-        /* merged shape: [word ' '] with exactly one trailing space */
-        if (c->len >= 2 && c->data[c->len - 1] == ' ' && sentence_end_match(c->data, c->len - 1)) {
-            char *nd = (char *) realloc(c->data, c->len + 2);
-            if (nd == NULL)
-                return;
-            nd[c->len] = ' ';
-            nd[c->len + 1] = '\0';
-            c->data = nd;
-            c->len++;
-        }
-    }
-}
-
-static bool
+static int
 _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *lines)
 {
     bool first = true;
-    hl_t *hl = NULL;
-    char hl_id[128] = "";
-    bool has_id = false;
 
     lines_init(lines);
     cl_reverse(chunks);
 
-    /* Check placeholder fits */
-    if (opts->max_lines > 1) {
-        const char *si = opts->subsequent_indent;
-        const char *ps = opts->placeholder;
-        while (*ps == ' ')
-            ps++;
-        if (str_width(si, opts) + str_width(ps, opts) > opts->width)
-            return false;
+    if (opts->max_lines > 0) {
+        const char *ind = (opts->max_lines > 1) ? opts->subsequent_indent : opts->initial_indent;
+        size_t pl = lstrip_len(opts->placeholder, strlen(opts->placeholder));
+        const char *ps = opts->placeholder + pl;
+        if (str_width(ind, opts) + chunk_width(ps, strlen(ps), opts) > opts->width)
+            return -2;
     }
 
     while (chunks->count > 0) {
@@ -1019,38 +695,20 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
 
         cl_init(&cur);
 
-        /* Prepend hyperlink open */
-        if (hl != NULL) {
-            char ob[256];
-            wcwidth_hyperlink_params_t hp;
-            hp.url = hl->url;
-            hp.url_len = hl->url_len;
-            hp.params = hl->params;
-            hp.params_len = hl->params_len;
-            hp.terminator = hl->term;
-            size_t ol = wcwidth_hyperlink_make_open(&hp, ob, sizeof(ob));
-            cl_prepend_last(chunks, ob, ol);
-        }
-
-        /* Drop leading whitespace */
-        while (opts->drop_whitespace && lines->count > 0 && chunks->count > 0) {
+        if (opts->drop_whitespace && lines->count > 0 && chunks->count > 0) {
             chunk_t *c = cl_last(chunks);
             sbuf_t st, sq;
             split_seqs(c->data, c->len, &st, &sq);
             bool ws = (st.len > 0 && is_all_ws(st.data, st.len));
-            if (!ws) {
-                sbuf_free(&st);
-                sbuf_free(&sq);
-                break;
+            if (ws) {
+                cl_pop(chunks);
+                if (sq.len > 0 && chunks->count > 0)
+                    cl_prepend_last(chunks, sq.data, sq.len);
             }
-            cl_pop(chunks);
-            if (sq.len > 0 && chunks->count > 0)
-                cl_prepend_last(chunks, sq.data, sq.len);
             sbuf_free(&st);
             sbuf_free(&sq);
         }
 
-        /* Greedy fill */
         while (chunks->count > 0) {
             chunk_t *c = cl_last(chunks);
             int cw = chunk_width(c->data, c->len, opts);
@@ -1063,7 +721,6 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             }
         }
 
-        /* Handle long word */
         if (chunks->count > 0) {
             chunk_t *c = cl_last(chunks);
             if (chunk_width(c->data, c->len, opts) > line_w) {
@@ -1077,21 +734,17 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             }
         }
 
-        /* Drop trailing whitespace */
-        while (opts->drop_whitespace && cur.count > 0) {
+        if (opts->drop_whitespace && cur.count > 0) {
             chunk_t *c = &cur.chunks[cur.count - 1];
             sbuf_t st, sq;
             split_seqs(c->data, c->len, &st, &sq);
             bool ws = (st.len > 0 && is_all_ws(st.data, st.len));
-            if (!ws) {
-                sbuf_free(&st);
-                sbuf_free(&sq);
-                break;
+            if (ws) {
+                cur_w -= chunk_width(c->data, c->len, opts);
+                cl_pop(&cur);
+                if (sq.len > 0 && cur.count > 0)
+                    cl_append_last(&cur, sq.data, sq.len);
             }
-            cur_w -= chunk_width(c->data, c->len, opts);
-            cl_pop(&cur);
-            if (sq.len > 0 && cur.count > 0)
-                cl_append_last(&cur, sq.data, sq.len);
             sbuf_free(&st);
             sbuf_free(&sq);
         }
@@ -1101,13 +754,6 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             continue;
         }
 
-        /* Correct single spaces after sentence endings (matches stdlib
-         * TextWrapper.fix_sentence_endings behavior). */
-        if (opts->fix_sentence_endings) {
-            fix_sentence_endings(&cur);
-        }
-
-        /* Build line content */
         sbuf_t lc;
         {
             size_t ci;
@@ -1116,94 +762,6 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                 sbuf_append(&lc, cur.chunks[ci].data, cur.chunks[ci].len);
         }
 
-        /* Track hyperlink state */
-        hl_t *new_hl = hl_track(lc.data, lc.len, hl);
-
-        if (new_hl != NULL) {
-            if (!has_id) {
-                if (new_hl->params_len > 0) {
-                    const char *p = strstr(new_hl->params, "id=");
-                    if (p != NULL) {
-                        const char *v = p + 3;
-                        size_t vl = 0;
-                        while (v[vl] && v[vl] != ':')
-                            vl++;
-                        if (3 + vl < sizeof(hl_id) - 1) {
-                            memcpy(hl_id, "id=", 3);
-                            memcpy(hl_id + 3, v, vl);
-                            hl_id[3 + vl] = '\0';
-                            has_id = true;
-                        }
-                    }
-                }
-                if (!has_id) {
-                    char hex[9];
-                    wcwidth_hyperlink_next_id(hex);
-                    hex[8] = '\0';
-                    snprintf(hl_id, sizeof(hl_id), "id=%.8s", hex);
-                    has_id = true;
-                }
-            }
-
-            /* Append close */
-            char cb[16];
-            size_t cl = wcwidth_hyperlink_make_close(new_hl->term, cb, sizeof(cb));
-            sbuf_append(&lc, cb, cl);
-
-            /* Inject id if missing */
-            if (!strstr(new_hl->params, "id=")) {
-                wcwidth_hyperlink_params_t ohp, nhp;
-                char oo[256], no[256];
-                size_t ool, nol;
-
-                ohp.url = new_hl->url;
-                ohp.url_len = new_hl->url_len;
-                ohp.params = new_hl->params;
-                ohp.params_len = new_hl->params_len;
-                ohp.terminator = new_hl->term;
-
-                nhp.url = new_hl->url;
-                nhp.url_len = new_hl->url_len;
-                nhp.params = hl_id;
-                nhp.params_len = strlen(hl_id);
-                nhp.terminator = new_hl->term;
-
-                ool = wcwidth_hyperlink_make_open(&ohp, oo, sizeof(oo));
-                nol = wcwidth_hyperlink_make_open(&nhp, no, sizeof(no));
-
-                if (ool > 0) {
-                    char *pos = strstr(lc.data, oo);
-                    if (pos != NULL) {
-                        size_t off = (size_t) (pos - lc.data);
-                        sbuf_t tmp;
-                        sbuf_init(&tmp);
-                        sbuf_append(&tmp, lc.data, off);
-                        sbuf_append(&tmp, no, nol);
-                        sbuf_append(&tmp, lc.data + off + ool, lc.len - off - ool);
-                        sbuf_free(&lc);
-                        lc = tmp;
-                    }
-                }
-            }
-
-            /* Next state with id */
-            {
-                hl_t *ns = hl_new(new_hl->url, new_hl->url_len, hl_id, strlen(hl_id), new_hl->term);
-                if (ns != NULL) {
-                    hl_free(hl);
-                    hl = ns;
-                }
-            }
-            hl_free(new_hl);
-        }
-        else {
-            hl_free(hl);
-            hl = NULL;
-            has_id = false;
-            hl_id[0] = '\0';
-        }
-
-        /* max_lines handling */
         {
             bool no_more = (chunks->count == 0);
             if (!no_more && opts->drop_whitespace && chunks->count == 1) {
@@ -1216,10 +774,8 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
 
             if (opts->max_lines <= 0 || lines->count + 1 < (size_t) opts->max_lines
                 || (no_more && cur_w <= line_w)) {
-                /* Normal append */
                 if (opts->drop_whitespace) {
-                    while (lc.len > 0 && lc.data[lc.len - 1] == ' ')
-                        lc.len--;
+                    lc.len = rstrip_len(lc.data, lc.len);
                     lc.data[lc.len] = '\0';
                 }
                 sbuf_t fl;
@@ -1231,7 +787,6 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                 first = false;
             }
             else {
-                /* Truncate */
                 int pw = str_width(opts->placeholder, opts);
                 bool ok = false;
 
@@ -1248,17 +803,6 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                             sbuf_init(&lc);
                             for (ci = 0; ci < cur.count; ci++)
                                 sbuf_append(&lc, cur.chunks[ci].data, cur.chunks[ci].len);
-                        }
-                        /* Close hyperlink */
-                        {
-                            hl_t *ns = hl_track(lc.data, lc.len, hl);
-                            if (ns != NULL) {
-                                char cb[16];
-                                size_t cl2_len =
-                                    wcwidth_hyperlink_make_close(ns->term, cb, sizeof(cb));
-                                sbuf_append(&lc, cb, cl2_len);
-                                hl_free(ns);
-                            }
                         }
                         sbuf_t fl;
                         sbuf_init(&fl);
@@ -1278,33 +822,61 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                     if (lines->count > 0) {
                         char *pr = lines->data[lines->count - 1];
                         size_t prl = lines->lens[lines->count - 1];
-                        size_t rp = prl;
-                        while (rp > 0 && pr[rp - 1] == ' ')
-                            rp--;
-                        if (chunk_width(pr, rp, opts) + pw <= opts->width) {
-                            char *np = malloc(rp + strlen(opts->placeholder) + 1);
+                        size_t cut = 0, i = 0;
+                        wcwidth_esc_result_t er;
+                        while (i < prl) {
+                            if (pr[i] == ESC && wcwidth_escape_classify(pr, prl, i, &er)) {
+                                i += er.length;
+                                continue;
+                            }
+                            size_t seg_end = i;
+                            while (seg_end < prl && pr[seg_end] != ESC)
+                                seg_end++;
+                            size_t vis_end = i + rstrip_len(pr + i, seg_end - i);
+                            if (vis_end > i)
+                                cut = vis_end;
+                            i = seg_end;
+                        }
+                        sbuf_t prev;
+                        sbuf_init(&prev);
+                        sbuf_append(&prev, pr, cut);
+                        i = cut;
+                        while (i < prl) {
+                            if (pr[i] == ESC && wcwidth_escape_classify(pr, prl, i, &er)) {
+                                sbuf_append(&prev, pr + i, er.length);
+                                i += er.length;
+                            }
+                            else {
+                                i++;
+                            }
+                        }
+                        if (chunk_width(prev.data, prev.len, opts) + pw <= opts->width) {
+                            char *np = malloc(prev.len + strlen(opts->placeholder) + 1);
                             if (np != NULL) {
-                                memcpy(np, pr, rp);
-                                strcpy(np + rp, opts->placeholder);
+                                memcpy(np, prev.data, prev.len);
+                                strcpy(np + prev.len, opts->placeholder);
                                 free(pr);
                                 lines->data[lines->count - 1] = np;
-                                lines->lens[lines->count - 1] = rp + strlen(opts->placeholder);
+                                lines->lens[lines->count - 1] =
+                                    prev.len + strlen(opts->placeholder);
                                 ok = true;
                             }
                         }
+                        sbuf_free(&prev);
                     }
                     if (!ok) {
-                        const char *ps = opts->placeholder;
-                        while (*ps == ' ')
-                            ps++;
-                        lines_push(lines, ps, strlen(ps));
+                        size_t pl = lstrip_len(opts->placeholder, strlen(opts->placeholder));
+                        sbuf_t fl;
+                        sbuf_init(&fl);
+                        sbuf_append_str(&fl, indent);
+                        sbuf_append(&fl, opts->placeholder + pl, strlen(opts->placeholder) - pl);
+                        lines_push(lines, fl.data, fl.len);
+                        sbuf_free(&fl);
                     }
                 }
 
                 sbuf_free(&lc);
                 cl_free(&cur);
-                hl_free(hl);
-                hl = NULL;
                 break;
             }
         }
@@ -1313,29 +885,43 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
         cl_free(&cur);
     }
 
-    hl_free(hl);
-    return true;
+    return 0;
 }
 
-int
-wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
-        size_t *out_len)
+static int
+_emit_empty(char **out, size_t *out_len, size_t **offsets, size_t *offset_count)
+{
+    *out = malloc(1);
+    if (*out == NULL)
+        return -1;
+    (*out)[0] = '\0';
+    *out_len = 0;
+    if (offsets != NULL) {
+        *offsets = NULL;
+        *offset_count = 0;
+    }
+    return 0;
+}
+
+static int
+_wrap_to_buffer(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
+                size_t *out_len, size_t **offsets, size_t *offset_count)
 {
     chunklist_t chunks;
     lines_t lines;
     size_t total = 0;
     size_t i;
+    int rc;
 
     *out = NULL;
     *out_len = 0;
-
-    if (text_len == 0) {
-        *out = malloc(1);
-        if (*out == NULL)
-            return -1;
-        (*out)[0] = '\0';
-        return 0;
+    if (offsets != NULL) {
+        *offsets = NULL;
+        *offset_count = 0;
     }
+
+    if (text_len == 0)
+        return _emit_empty(out, out_len, offsets, offset_count);
 
     cl_init(&chunks);
 
@@ -1344,39 +930,39 @@ wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char
 
     if (chunks.count == 0) {
         cl_free(&chunks);
-        *out = malloc(1);
-        if (*out == NULL)
-            return -1;
-        (*out)[0] = '\0';
-        return 0;
+        return _emit_empty(out, out_len, offsets, offset_count);
     }
 
-    if (!_wrap_chunks(&chunks, opts, &lines)) {
-        cl_free(&chunks);
-        return -1;
-    }
-
+    rc = _wrap_chunks(&chunks, opts, &lines);
     cl_free(&chunks);
+    if (rc != 0)
+        return rc;
 
-    if (opts->propagate_sgr && lines.count > 0) {
-        wcwidth_sgr_propagate(lines.data, lines.lens, lines.lens, lines.count);
-    }
-
-    /* Compute total output size: sum of line lengths + '\n' separators */
     for (i = 0; i < lines.count; i++)
         total += lines.lens[i];
     if (lines.count > 1)
-        total += lines.count - 1; /* '\n' separators */
+        total += lines.count - 1;
 
     *out = malloc(total + 1);
     if (*out == NULL) {
         lines_free(&lines);
         return -1;
     }
+    if (offsets != NULL) {
+        *offsets = malloc(lines.count * sizeof(size_t));
+        if (*offsets == NULL) {
+            free(*out);
+            lines_free(&lines);
+            return -1;
+        }
+        *offset_count = lines.count;
+    }
 
     {
         char *p = *out;
         for (i = 0; i < lines.count; i++) {
+            if (offsets != NULL)
+                (*offsets)[i] = (size_t) (p - *out);
             size_t n = lines.lens[i];
             memcpy(p, lines.data[i], n);
             p += n;
@@ -1391,6 +977,20 @@ wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char
     *out_len = total;
     lines_free(&lines);
     return 0;
+}
+
+int
+wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
+        size_t *out_len)
+{
+    return _wrap_to_buffer(text, text_len, opts, out, out_len, NULL, NULL);
+}
+
+int
+wcwidth_wrap_lines_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts,
+                      char **out, size_t *out_len, size_t **offsets, size_t *offset_count)
+{
+    return _wrap_to_buffer(text, text_len, opts, out, out_len, offsets, offset_count);
 }
 
 static bool
@@ -1465,7 +1065,6 @@ wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts,
             p++;
     }
 
-    /* Compute total output size */
     {
         size_t total = 0;
         for (i = 0; i < lines.count; i++)
@@ -1499,13 +1098,8 @@ wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts,
     return 0;
 }
 
-/* Signature shared by wrap_u8() and wrap_u8_text(). */
 typedef int (*wrap_fn)(const char *, size_t, const wcwidth_wrap_opts_t *, char **, size_t *);
 
-/*
- * Encode a codepoint array to UTF-8, run a wrapping function, and decode the
- * result back to a malloc'd codepoint array.  Returns 0 on success.
- */
 static int
 wrap_u32_common(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts,
                 uint32_t **out, size_t *out_len, wrap_fn wrap)
@@ -1532,7 +1126,7 @@ wrap_u32_common(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t 
             free(utf8);
         }
         if (result < 0) {
-            free(bytes); /* NULL unless wrap_u8_text left a partial buffer */
+            free(bytes);
             return -1;
         }
         decoded = wcwidth_decode_u32_heap(bytes, byte_len, out_len);

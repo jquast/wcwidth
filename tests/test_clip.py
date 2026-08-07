@@ -489,7 +489,7 @@ CLIP_OSC66_CASES = [
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_OSC66_CASES)
 def test_clip_preserves_osc66_without_display_text(text, start, end, expected):
-    """clip() preserves OSC 66 with no display text as-is."""
+    """Clip() preserves OSC 66 with no display text as-is."""
     assert clip(text, start, end) == expected
 
 
@@ -502,7 +502,7 @@ CLIP_OSC66_VISIBLE_CASES = [
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_OSC66_VISIBLE_CASES)
 def test_clip_osc66_zero_text_unit(text, start, end, expected):
-    """clip() treats zero-text OSC 66 as a width unit with default params omitted."""
+    """Clip() treats zero-text OSC 66 as a width unit with default params omitted."""
     assert clip(text, start, end) == expected
 
 
@@ -513,7 +513,7 @@ CLIP_OSC8_EMPTY_UNIT_CASES = [
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_OSC8_EMPTY_UNIT_CASES)
 def test_clip_osc8_empty_unit_skipped(text, start, end, expected):
-    """clip() drops empty OSC 8 units formed by dangling close sequences."""
+    """Clip() drops empty OSC 8 units formed by dangling close sequences."""
     assert clip(text, start, end) == expected
 
 
@@ -524,5 +524,5 @@ CLIP_SGR_CAPTURE_CASES = [
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_SGR_CAPTURE_CASES)
 def test_clip_sgr_captured_only_at_visible_content(text, start, end, expected):
-    """clip() captures SGR only at visible content emission, not passthrough."""
+    """Clip() captures SGR only at visible content emission, not passthrough."""
     assert clip(text, start, end) == expected

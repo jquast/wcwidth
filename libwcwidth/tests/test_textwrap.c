@@ -167,6 +167,37 @@ TEST(wrap_text_u32_parity)
     free(out32);
 }
 
+TEST(wrap_lines_u8)
+{
+    char *out;
+    size_t len;
+    size_t *offsets;
+    size_t count;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 7;
+    o.max_lines = 1;
+    o.placeholder = "\n[..]";
+    ASSERT_EQ(0, wcwidth_wrap_lines_u8("one two three four", 18, &o, &out, &len, &offsets, &count));
+    ASSERT_EQ((int64_t) 1, (int64_t) count);
+    /* a line may itself contain '\n' from the placeholder */
+    ASSERT_EQ((int64_t) 8, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "one\n[..]", 8));
+    ASSERT_EQ((size_t) 0, offsets[0]);
+    free(out);
+    free(offsets);
+
+    /* placeholder that cannot fit */
+    o.placeholder = "xxxxxxxx";
+    ASSERT_EQ(-2,
+              wcwidth_wrap_lines_u8("one two three four", 18, &o, &out, &len, &offsets, &count));
+
+    /* empty input yields no lines */
+    ASSERT_EQ(0, wcwidth_wrap_lines_u8("", 0, &o, &out, &len, &offsets, &count));
+    ASSERT_EQ((size_t) 0, count);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -175,5 +206,6 @@ main(void)
     RUN_TEST(wrap_embedded_nul);
     RUN_TEST(wrap_u32_parity);
     RUN_TEST(wrap_text_u32_parity);
+    RUN_TEST(wrap_lines_u8);
     return test_summary();
 }

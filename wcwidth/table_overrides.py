@@ -82,7 +82,7 @@ _SET_WIDE_OVERRIDES_6E5EF6CC: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: kitty
+# For terminals: contour, kitty
 _SET_WIDE_OVERRIDES_73E5B60D: dict[str, tuple[tuple[int, int], ...]] = {
     'zeroer': (
         (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
@@ -247,6 +247,7 @@ WIDE_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'alacritty': _SET_WIDE_OVERRIDES_6E5EF6CC,
     'apple_terminal': _SET_WIDE_OVERRIDES_6E5EF6CC,
     'bobcat': _SET_WIDE_OVERRIDES_8A2DF0C6,
+    'contour': _SET_WIDE_OVERRIDES_73E5B60D,
     'extraterm': _SET_WIDE_OVERRIDES_6C1578E8,
     'foot': _SET_WIDE_OVERRIDES_98684D9B,
     'ghostty': _SET_WIDE_OVERRIDES_CF30CE25,
@@ -292,7 +293,7 @@ SRI_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'xterm.js': _SET_SRI_OVERRIDES_6E5EF6CC,
 }
 
-# For terminals: bobcat, kitty
+# For terminals: bobcat, contour, kitty
 _SET_SFZ_OVERRIDES_73E5B60D: dict[str, tuple[tuple[int, int], ...]] = {
     'zeroer': (
         (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
@@ -308,6 +309,7 @@ _SET_SFZ_OVERRIDES_8DDFF0C4: dict[str, tuple[tuple[int, int], ...]] = {
 
 SFZ_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'bobcat': _SET_SFZ_OVERRIDES_73E5B60D,
+    'contour': _SET_SFZ_OVERRIDES_73E5B60D,
     'foot': _SET_SFZ_OVERRIDES_8DDFF0C4,
     'kitty': _SET_SFZ_OVERRIDES_73E5B60D,
 }
@@ -754,17 +756,18 @@ _SET_NARROW_OVERRIDES_4F7FBF42: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: xterm.js
-_SET_NARROW_OVERRIDES_763C1244: dict[str, tuple[tuple[int, int], ...]] = {
-    'wider': (
-        (0x1f93b, 0x1f93b,),  # Modern Pentathlon
-        (0x1f946, 0x1f946,),  # Rifle
-    ),
+# For terminals: contour
+_SET_NARROW_OVERRIDES_81310E7C: dict[str, tuple[tuple[int, int], ...]] = {
     'narrow_zeroer': (
+        (0x000ad, 0x000ad,),  # Soft Hyphen
         (0x00600, 0x00605,),  # Arabic Number Sign      ..Arabic Number Mark Above
         (0x006dd, 0x006dd,),  # Arabic End Of Ayah
         (0x0070f, 0x0070f,),  # Syriac Abbreviation Mark
+        (0x00890, 0x00891,),  # Arabic Pound Mark Above ..Arabic Piastre Mark Abov
         (0x008e2, 0x008e2,),  # Arabic Disputed End Of Ayah
+        (0x00e33, 0x00e33,),  # Thai Character Sara Am
+        (0x00eb3, 0x00eb3,),  # Lao Vowel Sign Am
+        (0x0ff9e, 0x0ff9f,),  # Halfwidth Katakana Voice..Halfwidth Katakana Semi-
         (0x110bd, 0x110bd,),  # Kaithi Number Sign
         (0x110cd, 0x110cd,),  # Kaithi Number Sign Above
     ),
@@ -807,6 +810,23 @@ _SET_NARROW_OVERRIDES_C5500A15: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
+# For terminals: xterm.js
+_SET_NARROW_OVERRIDES_DEEE7699: dict[str, tuple[tuple[int, int], ...]] = {
+    'wider': (
+        (0x1f93b, 0x1f93b,),  # Modern Pentathlon
+        (0x1f946, 0x1f946,),  # Rifle
+    ),
+    'narrow_zeroer': (
+        (0x000ad, 0x000ad,),  # Soft Hyphen
+        (0x00600, 0x00605,),  # Arabic Number Sign      ..Arabic Number Mark Above
+        (0x006dd, 0x006dd,),  # Arabic End Of Ayah
+        (0x0070f, 0x0070f,),  # Syriac Abbreviation Mark
+        (0x008e2, 0x008e2,),  # Arabic Disputed End Of Ayah
+        (0x110bd, 0x110bd,),  # Kaithi Number Sign
+        (0x110cd, 0x110cd,),  # Kaithi Number Sign Above
+    ),
+}
+
 # For terminals: warp
 _SET_NARROW_OVERRIDES_FDEEB1C7: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
@@ -835,6 +855,7 @@ _SET_NARROW_OVERRIDES_FDEEB1C7: dict[str, tuple[tuple[int, int], ...]] = {
 NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'alacritty': _SET_NARROW_OVERRIDES_19FF3EBB,
     'bobcat': _SET_NARROW_OVERRIDES_B19CC1BB,
+    'contour': _SET_NARROW_OVERRIDES_81310E7C,
     'foot': _SET_NARROW_OVERRIDES_8B501630,
     'iterm2': _SET_NARROW_OVERRIDES_C5500A15,
     'kitty': _SET_NARROW_OVERRIDES_4F7FBF42,
@@ -847,7 +868,7 @@ NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'warp': _SET_NARROW_OVERRIDES_FDEEB1C7,
     'wezterm': _SET_NARROW_OVERRIDES_3E5607A0,
     'xterm': _SET_NARROW_OVERRIDES_9BC01E8D,
-    'xterm.js': _SET_NARROW_OVERRIDES_763C1244,
+    'xterm.js': _SET_NARROW_OVERRIDES_DEEE7699,
 }
 
 __all__ = ['WIDE_OVERRIDES', 'SRI_OVERRIDES', 'SFZ_OVERRIDES', 'VS16_OVERRIDES', 'VS15_OVERRIDES', 'NARROW_OVERRIDES']

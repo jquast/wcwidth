@@ -212,10 +212,24 @@ Text wrapping with ANSI-aware display width measurement.
    Treats all whitespace (including '\n') as inter-word spaces and collapses
    it.  Use wrap_u8_text() to preserve input newlines as paragraph breaks.
 
-   Returns 0 on success, -1 on allocation error.
+   Returns 0 on success, -1 on allocation error, and -2 when the placeholder
+   does not fit within the given width (max_lines truncation).
    On success, \*out points to a single malloc'd buffer containing all lines,
    separated by '\n' (no trailing newline).  \*out_len is the total byte length.
    The caller does a single free(\*out) to release memory.
+
+
+.. c:function:: int wcwidth_wrap_lines_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len, size_t **offsets, size_t *offset_count)
+
+
+   Like wrap_u8(), but also reports the start offset of each line in the
+   output buffer.  Lines are joined by '\n', so a line's byte length is
+   \*offsets\*[i+1] - \*offsets\*[i] - 1 (or \*out_len\* - \*offsets\*[i] for the
+   last), and a line may itself contain '\n' when the placeholder does.
+
+   Returns the same codes as wrap_u8().  On success, \*offsets\* is a malloc'd
+   array of \*offset_count\* start offsets; the caller does free(\*offsets) in
+   addition to free(\*out).  Empty output yields \*offset_count\* == 0.
 
 
 .. c:function:: int wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)

@@ -279,6 +279,17 @@ Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
     opts.width = 4;
     wrap_u8("コンニチハ", 15, &opts, &out, &out_len);       /* "コン\nニチ\nハ" */
 
+When the placeholder does not fit within the given width (``max_lines`` truncation), ``wrap_u8()``
+returns ``-2`` rather than ``-1``, so callers can raise a tailored error.  ``wcwidth_wrap_lines_u8()``
+additionally reports each line's start offset in the output buffer, which matters when a line
+contains ``'\n'`` from the placeholder itself:
+
+.. code-block:: c
+
+    size_t *offsets, count;
+    wcwidth_wrap_lines_u8("one two", 7, &opts, &out, &out_len, &offsets, &count);
+    /* out is "one\ntwo", offsets = {0, 4} */
+
 wcwidth_escape_strip()
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -301,9 +312,9 @@ The following canonical names are recognized; common ``TERM``/``TERM_PROGRAM`` a
 .. BEGIN_LIST_TERM_PROGRAMS
 .. code-block:: text
 
-    alacritty apple_terminal bobcat contour extraterm foot ghostty iterm2 kitty
-    konsole mintty mlterm pterm rio st terminology urxvt vte warp wezterm xterm
-    xterm.js
+    absolutetelnet/ssh alacritty apple_terminal bobcat contour extraterm foot
+    ghostty iterm2 kitty konsole mintty mlterm pterm rio st terminology urxvt
+    vte warp wezterm xterm xterm.js
 
 .. END_LIST_TERM_PROGRAMS
 

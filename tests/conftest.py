@@ -12,11 +12,13 @@ from wcwidth._constants import resolve_terminal
 
 @pytest.fixture(autouse=True)
 def _verify_extension_mode():
-    """Assert the loaded implementation matches the WCWIDTH_PURE_PYTHON env var.
-
-    In extension mode the C extension must be active; in pure-Python mode it
-    must not be, so a silently-failed C build is caught in CI.
     """
+    Assert the loaded implementation matches the WCWIDTH_PURE_PYTHON env var.
+
+    In extension mode the C extension must be active; in pure-Python mode it must not be, so a
+    silently-failed C build is caught in CI.
+    """
+    # local
     import wcwidth
 
     if os.environ.get('WCWIDTH_PURE_PYTHON', ''):

@@ -34,12 +34,14 @@ import os
 HAS_C_EXTENSION = False
 if not os.environ.get('WCWIDTH_PURE_PYTHON', ''):
     try:
+        # local
         import wcwidth._wcwidth_c  # noqa: F401  pylint:disable=unused-import
     except ImportError:  # pragma: no cover - exercised by test_c_extension.py
         pass
     else:
         HAS_C_EXTENSION = True
 
+# local
 # re-export common and outermost functions & definitions, even a few private
 # ones, some for convenience, others for legacy, only the items in __all__ are
 # documented as public API
@@ -57,18 +59,27 @@ from .escape_sequences import iter_sequences
 from .unicode_versions import list_versions
 
 if HAS_C_EXTENSION:
-    from ._wcwidth_c import (clip, ljust, rjust, center, propagate_sgr,
-                             strip_sequences, wcswidth, wcstwidth, wcwidth,
-                             width, wrap)
+    # local
+    from ._wcwidth_c import (ljust,
+                             rjust,
+                             width,
+                             center,
+                             wcwidth,
+                             wcswidth,
+                             wcstwidth,
+                             propagate_sgr,
+                             strip_sequences)
 else:
-    from ._clip import clip
     from .align import ljust, rjust, center
     from ._width import width
-    from .textwrap import wrap
     from ._wcswidth import wcswidth, wcstwidth
     from ._wcwidth import wcwidth
     from .escape_sequences import strip_sequences
     from .sgr_state import propagate_sgr
+
+# local
+from ._clip import clip
+from .textwrap import wrap
 
 # NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
 #
@@ -87,6 +98,7 @@ if __import__('sys').version_info < (3, 15):
     # 'from wcwidth.wcwidth import wcswidth'
     # -- and we make a lot of effort to allow any such import statements to continue to function.
     from . import wcwidth as _wcwidth_module  # isort:skip
+
 from ._wcwidth import _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 
 
