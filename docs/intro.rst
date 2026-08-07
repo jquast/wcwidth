@@ -660,7 +660,7 @@ languages:
 History
 =======
 
-0.8.3 *2026-07-22*
+0.8.3 *Next Release*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
     wide characters. `PR #231`_
 
