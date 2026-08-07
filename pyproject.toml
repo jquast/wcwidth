@@ -1,6 +1,9 @@
 [build-system]
+# setuptools >= 61 is the first version reading [tool.setuptools] from
+# pyproject.toml; the upper bound is the last one supporting Python 3.8
+# (setuptools 77 dropped 3.8), which this package still supports.
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools>=77", "wheel" ]
+requires = [ "setuptools>=61,<78", "wheel" ]
 
 [project]
 name = "wcwidth"
@@ -20,8 +23,12 @@ keywords = [
   "wcwidth",
   "xterm",
 ]
-license = "MIT"
-license-files = [ "LICENSE" ]
+# No [project] license key: the pre-639 license *table* is deprecated as of
+# setuptools 77, the PEP 639 SPDX string and license-files need setuptools>=77
+# (which dropped Python 3.8, still supported here), and the table form is the
+# only one setuptools<77 accepts.  setuptools>=77 auto-includes LICENSE in the
+# wheel metadata; older versions rely on the license classifier below and on
+# LICENSE in the sdist via MANIFEST.in.
 authors = [
   { name = "Jeff Quast", email = "contact@jeffquast.com" },
 ]
@@ -65,41 +72,9 @@ packages = [
 [tool.setuptools.package-data]
 wcwidth = [ "py.typed", "*.pyi" ]
 
-# Optional C extension.  The declaration is static; the *graceful fallback*
-# (skip it when the build cannot compile) lives in setup.py's build_ext
-# override, because no declarative form exists for "optional extension".
-# Keep this source list in parity with libwcwidth/CMakeLists.txt's
-# LIBWCWIDTH_SOURCES; the Makefile globs src/*.c itself.
-[[tool.setuptools.ext-modules]]
-name = "wcwidth._wcwidth_c"
-sources = [
-  "wcwidth/_wcwidth_c.c",
-  "libwcwidth/src/bisearch.c",
-  "libwcwidth/src/wcwidth.c",
-  "libwcwidth/src/wcswidth.c",
-  "libwcwidth/src/wcstwidth.c",
-  "libwcwidth/src/width.c",
-  "libwcwidth/src/textwrap.c",
-  "libwcwidth/src/clip.c",
-  "libwcwidth/src/align.c",
-  "libwcwidth/src/grapheme.c",
-  "libwcwidth/src/escape.c",
-  "libwcwidth/src/sgr.c",
-  "libwcwidth/src/hyperlink.c",
-  "libwcwidth/src/text_sizing.c",
-  "libwcwidth/src/terminal_override.c",
-  "libwcwidth/src/utf8.c",
-  "libwcwidth/src/tables/table_wide.c",
-  "libwcwidth/src/tables/table_zero.c",
-  "libwcwidth/src/tables/table_ambiguous.c",
-  "libwcwidth/src/tables/table_grapheme.c",
-  "libwcwidth/src/tables/table_mc.c",
-  "libwcwidth/src/tables/table_vs15.c",
-  "libwcwidth/src/tables/table_vs16.c",
-  "libwcwidth/src/tables/table_terminal_overrides.c",
-  "libwcwidth/src/tables/table_term_programs.c",
-]
-include-dirs = [ "libwcwidth/include" ]
+# The optional C extension 'wcwidth._wcwidth_c' is declared in setup.py with
+# the classic ext_modules API (see there for why, and for the graceful
+# fallback when the build cannot compile).
 
 [tool.cibuildwheel]
 # per-version wheels for every supported CPython, including free-threaded

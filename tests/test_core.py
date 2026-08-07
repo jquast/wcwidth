@@ -33,11 +33,11 @@ def test_cmake_and_setuptools_source_lists_parity():
     root = Path(__file__).resolve().parent.parent
 
     # given,
-    pyproject = (root / 'pyproject.toml').read_text()
+    setup_py = (root / 'setup.py').read_text()
     cmake = (root / 'libwcwidth' / 'CMakeLists.txt').read_text()
 
     # exercise,
-    py_sources = set(re.findall(r'"libwcwidth/(src/(?:tables/)?[a-z0-9_]+\.c)"', pyproject))
+    py_sources = set(re.findall(r'"libwcwidth/(src/(?:tables/)?[a-z0-9_]+\.c)"', setup_py))
     cm_sources = set(re.findall(r'^    (src/(?:tables/)?[a-z0-9_]+\.c)$', cmake, re.M))
     on_disk = {
         path.relative_to(root / 'libwcwidth').as_posix()

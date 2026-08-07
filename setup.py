@@ -1,12 +1,17 @@
 """
 Optional CPython extension for wcwidth.
 
-The extension declaration lives declaratively in ``pyproject.toml`` under
-``[tool.setuptools.ext-modules]``.  This file exists only for the parts that
-cannot be expressed declaratively: the C standard flag for the current
-compiler, and the graceful fallback when the extension cannot be built (no C
-compiler, unsupported platform, PyPy, or ``WCWIDTH_PURE_PYTHON=1``) -- the
-build continues and the pure-Python implementation is used instead.
+The extension is declared here with the classic ``ext_modules`` API (rather
+than declaratively in ``pyproject.toml``) because the declarative form
+``[[tool.setuptools.ext-modules]]`` requires setuptools >= 77, and setuptools
+dropped Python 3.8 support in 77 -- this package supports 3.8 and newer.  The
+classic API works on every setuptools version that reads ``pyproject.toml``.
+
+This file also holds the parts that cannot be expressed declaratively at all:
+the C standard flag for the current compiler, and the graceful fallback when
+the extension cannot be built (no C compiler, unsupported platform, PyPy, or
+``WCWIDTH_PURE_PYTHON=1``) -- the build continues and the pure-Python
+implementation is used instead.
 
 The optional-extension-with-pure-fallback pattern is long-established:
 
@@ -21,9 +26,6 @@ The optional-extension-with-pure-fallback pattern is long-established:
 - ``PyYAML`` builds its optional ``_yaml`` (libyaml) extension the same way,
   warning "Error compiling module, falling back to pure Python"
   (https://github.com/yaml/pyyaml/blob/main/setup.py).
-
-There is no declarative form in any build backend for "optional extension
-that may fail to compile", which is why the imperative bits live here.
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ import os
 import platform
 import sys
 
-from setuptools import setup
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.errors import CCompilerError, CompileError, LinkError
 from distutils.errors import (  # pylint: disable=deprecated-module
@@ -45,6 +47,44 @@ if sys.platform == "win32":
     _C_STANDARD_FLAG = "/std:c11"
 else:
     _C_STANDARD_FLAG = "-std=c11"
+
+# Keep this source list in parity with libwcwidth/CMakeLists.txt's
+# LIBWCWIDTH_SOURCES; the Makefile globs src/*.c itself.
+_EXT_SOURCES = [
+    "wcwidth/_wcwidth_c.c",
+    "libwcwidth/src/bisearch.c",
+    "libwcwidth/src/wcwidth.c",
+    "libwcwidth/src/wcswidth.c",
+    "libwcwidth/src/wcstwidth.c",
+    "libwcwidth/src/width.c",
+    "libwcwidth/src/textwrap.c",
+    "libwcwidth/src/clip.c",
+    "libwcwidth/src/align.c",
+    "libwcwidth/src/grapheme.c",
+    "libwcwidth/src/escape.c",
+    "libwcwidth/src/sgr.c",
+    "libwcwidth/src/hyperlink.c",
+    "libwcwidth/src/text_sizing.c",
+    "libwcwidth/src/terminal_override.c",
+    "libwcwidth/src/utf8.c",
+    "libwcwidth/src/tables/table_wide.c",
+    "libwcwidth/src/tables/table_zero.c",
+    "libwcwidth/src/tables/table_ambiguous.c",
+    "libwcwidth/src/tables/table_grapheme.c",
+    "libwcwidth/src/tables/table_mc.c",
+    "libwcwidth/src/tables/table_vs15.c",
+    "libwcwidth/src/tables/table_vs16.c",
+    "libwcwidth/src/tables/table_terminal_overrides.c",
+    "libwcwidth/src/tables/table_term_programs.c",
+]
+
+_EXT_MODULES = [
+    Extension(
+        "wcwidth._wcwidth_c",
+        sources=_EXT_SOURCES,
+        include_dirs=["libwcwidth/include"],
+    ),
+]
 
 
 class optional_build_ext(_build_ext):
@@ -80,4 +120,7 @@ class optional_build_ext(_build_ext):
             )
 
 
-setup(cmdclass={"build_ext": optional_build_ext})
+setup(
+    cmdclass={"build_ext": optional_build_ext},
+    ext_modules=_EXT_MODULES,
+)
