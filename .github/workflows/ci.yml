@@ -111,11 +111,10 @@ jobs:
       - name: Build C extension in-place
         shell: bash
         run: |
-          # The test suite imports wcwidth from the source tree (pytest
-          # rootdir sys.path insertion), not from the installed wheel, so the
-          # extension must be built in-place for the extension-mode runs to
-          # exercise the C implementation instead of the pure-Python fallback.
-          python -Im pip install -e .
+          # The test suite imports wcwidth from the source tree, not from the installed wheel, so
+          # the extension must be built in-place for the extension-mode runs to
+          # exercise the C implementation.
+          python setup.py build_ext --inplace
 
       - name: Fetch test data files
         if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'

@@ -29,12 +29,13 @@ import os
 from functools import lru_cache
 
 # local
+from ._clip import clip
 # re-export common and outermost functions & definitions, even a few private
 # ones, some for convenience, others for legacy, only the items in __all__ are
 # documented as public API
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
-from .textwrap import SequenceTextWrapper
+from .textwrap import SequenceTextWrapper, wrap
 from .hyperlink import Hyperlink, HyperlinkParams
 from ._constants import list_term_programs
 from .table_vs16 import VS16_NARROW_TO_WIDE
@@ -44,8 +45,6 @@ from .text_sizing import TextSizing, TextSizingParams
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences
 from .unicode_versions import list_versions
-from ._clip import clip
-from .textwrap import wrap
 
 # Import optional C extension 'wcwidth._wcwidth_c', a wrapper around the
 # portable C11 libwcwidth library.  When it is unavailable (compilation
@@ -57,33 +56,30 @@ if not os.environ.get('WCWIDTH_PURE_PYTHON', ''):
         # local
         # import ... as _wcwidth_c: binds only the submodule name, so mypy
         # does not see 'wcwidth' redefined by the later function imports.
-        # The import statement (unlike 'from . import _wcwidth_c') always
-        # consults sys.modules, so a poisoned/broken submodule raises here
-        # even on reload -- see test_import_error_fallback.
-        import wcwidth._wcwidth_c as _wcwidth_c  # noqa: F401  pylint:disable=unused-import
+        # The import statement (unlike 'from . import _wcwidth_c', which
+        # pylint suggests via consider-using-from-import) always consults
+        # sys.modules, so a poisoned/broken submodule raises here even on
+        # reload -- see test_import_error_fallback.
+        import wcwidth._wcwidth_c as _wcwidth_c  # noqa: F401  pylint:disable=unused-import,consider-using-from-import
     except ImportError:  # pragma: no cover - exercised by test_c_extension.py
         pass
     else:
         HAS_C_EXTENSION = True
 
 if HAS_C_EXTENSION:
-    from ._wcwidth_c import (ljust,
-                             rjust,
-                             width,
-                             center,
-                             wcwidth as _c_wcwidth,
-                             wcswidth,
-                             wcstwidth,
-                             propagate_sgr,
-                             strip_sequences)
+    # local
+    from ._wcwidth_c import ljust, rjust, width, center
+    from ._wcwidth_c import wcwidth as _c_wcwidth
+    from ._wcwidth_c import wcswidth, wcstwidth, propagate_sgr, strip_sequences
     wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
 else:
+    # local
     from .align import ljust, rjust, center
     from ._width import width
-    from ._wcswidth import wcswidth, wcstwidth
     from ._wcwidth import wcwidth
-    from .escape_sequences import strip_sequences
+    from ._wcswidth import wcswidth, wcstwidth
     from .sgr_state import propagate_sgr
+    from .escape_sequences import strip_sequences
 
 # NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
 #
