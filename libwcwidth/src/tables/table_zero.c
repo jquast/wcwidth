@@ -4,7 +4,7 @@
  * Table: ZERO_WIDTH
  * Unicode version: 17.0.0
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 const wcwidth_interval_t WCWIDTH_TABLE_ZERO[] = {
     { 0x00000, 0x00000 },  /* (nil) */

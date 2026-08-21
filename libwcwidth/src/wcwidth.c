@@ -2,8 +2,8 @@
  * Display width of a single Unicode codepoint.
  */
 #include "wcwidth/wcwidth.h"
+#include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
-#include "wcwidth/generated_tables.h"
 
 int
 wcwidth_u32(uint32_t ucs, int ambiguous_width)

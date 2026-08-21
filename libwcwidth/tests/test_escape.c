@@ -47,10 +47,10 @@ TEST(classify_basic)
     ASSERT_EQ(WCWIDTH_ESC_CUF, classify("\x1b[10C", &r));
     ASSERT_EQ(10, r.cursor_n);
 
+    /* OSC 8 hyperlinks are not parsed; they are generic zero-width OSCs. */
     text = "\x1b]8;id=1;https://example.com\x07";
-    ASSERT_EQ(WCWIDTH_ESC_OSC8_OPEN, classify(text, &r));
-    ASSERT_EQ((size_t) 4, r.osc8_params_len);
-    ASSERT_EQ((size_t) 19, r.osc8_url_len);
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify(text, &r));
+    ASSERT_EQ((size_t) 29, r.length);
 
     text = "\x1b]66;s=2;hello\x07";
     ASSERT_EQ(WCWIDTH_ESC_OSC66, classify(text, &r));

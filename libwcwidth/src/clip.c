@@ -3,10 +3,10 @@
  *
  * This is a simplified C11 implementation.  Differences from the Python
  * clip are documented in docs/libwcwidth.rst.  In particular:
- *   - Painter's algorithm (overtyping) is not implemented; the parameter
- *     is accepted but ignored.
- *   - OSC 8 hyperlinks and OSC 66 text sizing are passed through as
- *     opaque sequences rather than being clipped as semantic units.
+ *   - OSC 66 text sizing is passed through as an opaque sequence rather
+ *     than being clipped as a semantic unit.  OSC 8 hyperlinks are not
+ *     implemented; they measure as zero-width but are never rewritten,
+ *     so a window starting or ending inside a link is left unbalanced.
  *   - Cursor-movement sequences (HPA, CUF, CUB) are passed through
  *     rather than resolved into the column model.
  */
@@ -133,7 +133,9 @@ grapheme_width(const char *g, size_t g_len, int ambiguous_width, const char *ter
 static void
 apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
 {
-    char prefix[64];
+    /* wcwidth_sgr_to_escape() documents out_cap >= WCWIDTH_SGR_PROPAGATE_SPARE
+     * (sgr.h); a full 24-bit fg+bg state does not fit in less. */
+    char prefix[WCWIDTH_SGR_PROPAGATE_SPARE];
     size_t prefix_len;
 
     if (!active)
@@ -170,8 +172,7 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
 static bool
 clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end,
          const char *fillchar, size_t fillchar_len, int tabsize,
-         int ambiguous_width, const char *term_program,
-         wcwidth_control_mode_t control_codes, bool strict, bool track_sgr,
+         int ambiguous_width, const char *term_program, bool strict, bool track_sgr,
          wcwidth_sgr_state_t *captured_style, bool *style_captured,
          strbuf_t *sb, int *error)
 {
@@ -313,7 +314,7 @@ fail:
 char *
 clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-        const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar,
+        const char *term_program, bool propagate_sgr, const char *fillchar,
         size_t fillchar_len, size_t *out_len, int *error)
 {
     strbuf_t sb;
@@ -322,8 +323,6 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     bool strict;
     bool has_esc;
     bool track_sgr;
-
-    (void) overtyping;
 
     if (out_len != NULL)
         *out_len = 0;
@@ -385,7 +384,7 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     style_captured = false;
 
     if (!clip_run(text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize,
-                  ambiguous_width, term_program, control_codes, strict, track_sgr,
+                  ambiguous_width, term_program, strict, track_sgr,
                   &captured_style, &style_captured, &sb, error)) {
         strbuf_free(&sb);
         return NULL;
@@ -401,7 +400,7 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
 uint32_t *
 clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
          wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-         const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar,
+         const char *term_program, bool propagate_sgr, const char *fillchar,
          size_t fillchar_len, size_t *out_len, int *error)
 {
     char enc_stack[512];
@@ -423,8 +422,8 @@ clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
     {
         size_t byte_len = 0;
         char *bytes = clip_u8(utf8, enc_len, v_start, v_end, control_codes, tabsize,
-                              ambiguous_width, term_program, propagate_sgr, overtyping,
-                              fillchar, fillchar_len, &byte_len, error);
+                              ambiguous_width, term_program, propagate_sgr, fillchar,
+                              fillchar_len, &byte_len, error);
 
         if (utf8 != enc_stack) {
             free(utf8);

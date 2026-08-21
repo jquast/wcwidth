@@ -92,7 +92,7 @@ wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
     return expected;
 }
 
-const uint32_t *
+uint32_t *
 wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap, size_t *count)
 {
     uint32_t *heap = NULL;
@@ -147,7 +147,7 @@ uint32_t *
 wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
 {
     uint32_t stack[128];
-    const uint32_t *decoded = wcwidth_decode_u32(utf8, n, stack, 128, count);
+    uint32_t *decoded = wcwidth_decode_u32(utf8, n, stack, 128, count);
     uint32_t *heap;
 
     if (decoded == NULL) {
@@ -161,7 +161,7 @@ wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
         memcpy(heap, decoded, *count * sizeof(uint32_t));
     }
     else {
-        heap = (uint32_t *) decoded; /* already heap-allocated; transfer ownership */
+        heap = decoded; /* already heap-allocated; transfer ownership */
     }
     return heap;
 }

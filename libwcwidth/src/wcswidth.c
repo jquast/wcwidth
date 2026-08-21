@@ -2,8 +2,8 @@
  * String display width with inline grapheme cluster tracking.
  */
 #include "wcwidth/wcwidth.h"
+#include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
-#include "wcwidth/generated_tables.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 
@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
 
 int
 wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
@@ -166,16 +165,12 @@ int
 wcswidth_u8(const char *utf8, size_t n, int ambiguous_width)
 {
     uint32_t stack[512];
-    const uint32_t *cps;
+    uint32_t *cps;
     size_t count;
     int result;
 
     if (utf8 == NULL) {
         return 0;
-    }
-
-    if (n == (size_t) -1) {
-        n = strlen(utf8);
     }
 
     if (n == 0) {
@@ -191,7 +186,7 @@ wcswidth_u8(const char *utf8, size_t n, int ambiguous_width)
     }
     result = wcswidth_u32(cps, count, ambiguous_width);
     if (cps != stack) {
-        free((void *) cps);
+        free(cps);
     }
     return result;
 }

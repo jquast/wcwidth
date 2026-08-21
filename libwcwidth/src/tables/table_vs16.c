@@ -4,7 +4,7 @@
  * Table: VS16_NARROW_TO_WIDE
  * Unicode version: 9.0.0
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 const wcwidth_interval_t WCWIDTH_TABLE_VS16[] = {
     { 0x00023, 0x00023 },  /* Number Sign */

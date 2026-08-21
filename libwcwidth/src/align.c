@@ -46,6 +46,33 @@ measure_width(const char *text, size_t text_len, wcwidth_control_mode_t control_
     }
 }
 
+/*
+ * Add *pad_cells* * *fillchar_len* bytes to *total*, refusing to overflow.
+ *
+ * dest_width is caller-supplied and may be enormous (it often comes from
+ * terminal geometry or untrusted layout arithmetic), while fillchar_len is
+ * up to 4 for a non-ASCII fill character.  Computing the product with
+ * wrapping size_t arithmetic would size the allocation from a truncated
+ * value and let fill_repeat() run past the end of it, so every caller
+ * accumulates through here and treats false as an allocation failure.
+ */
+static bool
+add_fill_bytes(size_t *total, size_t pad_cells, size_t fillchar_len)
+{
+    size_t bytes;
+
+    if (fillchar_len != 0 && pad_cells > SIZE_MAX / fillchar_len) {
+        return false;
+    }
+    bytes = pad_cells * fillchar_len;
+    /* Leave room for the NUL terminator the callers append. */
+    if (bytes > SIZE_MAX - 1 - *total) {
+        return false;
+    }
+    *total += bytes;
+    return true;
+}
+
 /* Append *fillchar* *count* times to *dst*; returns the advanced pointer. */
 static char *
 fill_repeat(char *dst, const char *fillchar, size_t fillchar_len, size_t count)
@@ -82,7 +109,13 @@ ljust_u8(const char *text, size_t text_len, size_t dest_width, const char *fillc
     }
 
     padding = ((size_t) text_width < dest_width) ? (dest_width - (size_t) text_width) : 0;
-    total = text_len + padding * fillchar_len;
+    total = text_len;
+    if (!add_fill_bytes(&total, padding, fillchar_len)) {
+        if (out_len != NULL) {
+            *out_len = 0;
+        }
+        return NULL;
+    }
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {
@@ -125,7 +158,13 @@ rjust_u8(const char *text, size_t text_len, size_t dest_width, const char *fillc
     }
 
     padding = ((size_t) text_width < dest_width) ? (dest_width - (size_t) text_width) : 0;
-    total = padding * fillchar_len + text_len;
+    total = text_len;
+    if (!add_fill_bytes(&total, padding, fillchar_len)) {
+        if (out_len != NULL) {
+            *out_len = 0;
+        }
+        return NULL;
+    }
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {
@@ -136,6 +175,7 @@ rjust_u8(const char *text, size_t text_len, size_t dest_width, const char *fillc
     }
 
     fill_repeat(result, fillchar, fillchar_len, padding);
+    /* add_fill_bytes() above already proved this product cannot wrap. */
     memcpy(result + padding * fillchar_len, text, text_len);
     result[total] = '\0';
 
@@ -179,7 +219,14 @@ center_u8(const char *text, size_t text_len, size_t dest_width, const char *fill
     left_pad = (total_padding / 2) + (total_padding & dest_width & 1);
     right_pad = total_padding - left_pad;
 
-    total = left_pad * fillchar_len + text_len + right_pad * fillchar_len;
+    total = text_len;
+    if (!add_fill_bytes(&total, left_pad, fillchar_len)
+        || !add_fill_bytes(&total, right_pad, fillchar_len)) {
+        if (out_len != NULL) {
+            *out_len = 0;
+        }
+        return NULL;
+    }
 
     result = (char *) malloc(total + 1);
     if (result == NULL) {

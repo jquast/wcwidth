@@ -4,7 +4,7 @@
  * Table: VS15_WIDE_TO_NARROW
  * Unicode version: 9.0.0
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 const wcwidth_interval_t WCWIDTH_TABLE_VS15[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */

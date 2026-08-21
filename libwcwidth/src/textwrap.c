@@ -5,10 +5,12 @@
  * This is a simplified C11 implementation derived from Python's textwrap.
  * Differences from the Python stdlib textwrap are documented in
  * docs/libwcwidth.rst.  In particular:
- *   - Word splitting is on ASCII space only (no wordsep_re rules).
- *   - break_on_hyphens, fix_sentence_endings, and propagate_sgr are
- *     accepted but ignored.
- *   - OSC 8 hyperlinks are not tracked across wrapped lines.
+ *   - Word splitting is on ASCII space only (no wordsep_re rules), and there
+ *     is no break_on_hyphens, fix_sentence_endings, or propagate_sgr: those
+ *     Python options have no counterpart here, so wcwidth_wrap_opts_t does
+ *     not offer them rather than accepting and ignoring them.
+ *   - OSC 8 hyperlinks are not implemented; they are measured as generic
+ *     zero-width OSCs and are not continued across wrapped lines.
  */
 #include "wcwidth/textwrap.h"
 #include "wcwidth/width.h"
@@ -33,10 +35,7 @@ const wcwidth_wrap_opts_t WCWIDTH_WRAP_OPTS_DEFAULT = {
     .expand_tabs = true,
     .replace_whitespace = true,
     .break_long_words = true,
-    .break_on_hyphens = true,
     .drop_whitespace = true,
-    .propagate_sgr = true,
-    .fix_sentence_endings = false,
     .max_lines = 0,
     .initial_indent = "",
     .subsequent_indent = "",
@@ -48,6 +47,14 @@ typedef struct
     char *data;
     size_t len;
     size_t cap;
+    /*
+     * Sticky allocation-failure flag.  Most sbuf_append() call sites in this
+     * file drop the return value; without this, a failed grow leaves data
+     * NULL and the next terminator write dereferences it.  Once set, appends
+     * become no-ops and the buffer stays consistent, so callers can check
+     * once at the point they consume the result.
+     */
+    bool oom;
 } sbuf_t;
 
 static void
@@ -56,6 +63,7 @@ sbuf_init(sbuf_t *b)
     b->data = NULL;
     b->len = 0;
     b->cap = 0;
+    b->oom = false;
 }
 
 static bool
@@ -76,10 +84,14 @@ sbuf_grow(sbuf_t *b, size_t need)
 static bool
 sbuf_append(sbuf_t *b, const char *s, size_t n)
 {
+    if (b->oom)
+        return false;
     if (n == 0)
         return true;
-    if (b->len + n > b->cap && !sbuf_grow(b, n))
+    if (b->len + n > b->cap && !sbuf_grow(b, n)) {
+        b->oom = true;
         return false;
+    }
     memcpy(b->data + b->len, s, n);
     b->len += n;
     b->data[b->len] = '\0';
@@ -99,6 +111,7 @@ sbuf_free(sbuf_t *b)
     b->data = NULL;
     b->len = 0;
     b->cap = 0;
+    b->oom = false;
 }
 
 static int
@@ -161,9 +174,15 @@ split_seqs(const char *text, size_t len, sbuf_t *visible, sbuf_t *escapes)
 static uint32_t
 utf8_decode(const char *s, size_t len, size_t *seq_len)
 {
-    unsigned char c = (unsigned char) s[0];
+    unsigned char c;
     uint32_t ucs;
     size_t sl;
+
+    if (len == 0) {
+        *seq_len = 1;
+        return 0;
+    }
+    c = (unsigned char) s[0];
 
     if (c < 0x80) {
         *seq_len = 1;
@@ -225,6 +244,16 @@ rstrip_len(const char *s, size_t len)
         while (start > 0 && ((unsigned char) s[start - 1] & 0xC0) == 0x80)
             start--;
         size_t sl;
+        if (start == 0) {
+            /*
+             * The run of continuation bytes reaches the start of the buffer,
+             * so there is no lead byte to decode.  Reading s[start - 1] here
+             * would be s[-1]; a bare continuation byte is not whitespace, so
+             * there is nothing left to strip.  Malformed UTF-8 reaches this
+             * from any wrap_*() call on bytes read from a terminal or pipe.
+             */
+            break;
+        }
         if (!is_py_ws(utf8_decode(s + start - 1, len - (start - 1), &sl)))
             break;
         len = start - 1;
@@ -253,7 +282,7 @@ expand_tabs_to(const char *text, size_t len, int ts, sbuf_t *out)
     sbuf_init(out);
     for (i = 0; i < len; i++) {
         unsigned char b = (unsigned char) text[i];
-        if (b == '\t') {
+        if (b == '\t' && ts > 0) {
             int n = ts - (int) (col % (size_t) ts);
             int j;
             for (j = 0; j < n; j++) {
@@ -517,7 +546,7 @@ find_break_pos(const char *text, size_t len, int max_w, const wcwidth_wrap_opts_
         }
         wcwidth_grapheme_iter_t *gi;
         const char *gc;
-        size_t glen;
+        size_t glen = 1;
 
         gi = wcwidth_grapheme_iter_new(text + idx, len - idx);
         if (gi == NULL)
@@ -549,7 +578,7 @@ find_first_vis(const char *text, size_t len)
     }
     if (idx < len) {
         wcwidth_grapheme_iter_t *gi;
-        size_t glen;
+        size_t glen = 1;
         gi = wcwidth_grapheme_iter_new(text + idx, len - idx);
         if (gi != NULL) {
             wcwidth_grapheme_next(gi, &glen);
@@ -776,7 +805,8 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                 || (no_more && cur_w <= line_w)) {
                 if (opts->drop_whitespace) {
                     lc.len = rstrip_len(lc.data, lc.len);
-                    lc.data[lc.len] = '\0';
+                    if (lc.data != NULL)
+                        lc.data[lc.len] = '\0';
                 }
                 sbuf_t fl;
                 sbuf_init(&fl);

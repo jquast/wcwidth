@@ -70,6 +70,7 @@ __lazy_modules__ = [
 ]
 # local
 from .bisearch import bisearch
+from ._constants import _clamp_ambiguous_width
 from ._constants import _LATEST_VERSION, _AMBIGUOUS_TABLE, _ZERO_WIDTH_TABLE, _WIDE_EASTASIAN_TABLE
 
 
@@ -113,6 +114,7 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
 
 @lru_cache(maxsize=1024)
 def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:  # pylint: disable=unused-argument
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     r"""
     Given one Unicode codepoint, return its printable length on a terminal.
 

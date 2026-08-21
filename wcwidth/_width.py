@@ -20,7 +20,8 @@ from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
 from ._wcswidth import wcswidth, wcstwidth, _scan_zwj_cluster_end
-from ._constants import (_EMOJI_ZWJ_SET,
+from ._constants import (_clamp_ambiguous_width,
+                         _EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,
                          _FITZPATRICK_RANGE,
@@ -78,6 +79,7 @@ def width(
     ambiguous_width: int = 1,
     term_program: bool | str = False,
 ) -> int:
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -271,9 +273,9 @@ def width(
                         current_col = 0
                 # 2d. OSC 66 Text Sizing — has positive display width
                 elif (ts_meta := m.group('ts_meta')) is not None:
-                    ts_text = m.group('ts_text')
+                    ts_text = m.group('ts_text') or ''
                     ts_term = m.group('ts_term')
-                    assert ts_text is not None and ts_term is not None
+                    assert ts_term is not None
                     text_size = TextSizing(
                         TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                         ts_text, ts_term)

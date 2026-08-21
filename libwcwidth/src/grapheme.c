@@ -5,8 +5,8 @@
  * Unicode interval tables.
  */
 #include "wcwidth/grapheme.h"
+#include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
-#include "wcwidth/generated_tables.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 

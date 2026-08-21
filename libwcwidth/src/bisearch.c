@@ -1,7 +1,7 @@
 /*
  * Binary search in Unicode interval tables.
  */
-#include "wcwidth/tables.h"
+#include "wcwidth/table_types.h"
 
 int
 wcwidth_bisearch(uint32_t ucs, const wcwidth_interval_t *table, size_t table_len)

@@ -18,16 +18,13 @@ typedef struct
 {
     int width; /* max line width in display cells */
     wcwidth_control_mode_t control_codes;
-    int tabsize;
+    int tabsize; /* tab stop width; <= 0 passes tabs through as-is */
     int ambiguous_width;
     const char *term_program;
     bool expand_tabs;
     bool replace_whitespace;
     bool break_long_words;
-    bool break_on_hyphens;
     bool drop_whitespace;
-    bool propagate_sgr;
-    bool fix_sentence_endings; /* widen single space after sentence end to two */
     int max_lines;             /* 0 = no limit */
     const char *initial_indent;
     const char *subsequent_indent;

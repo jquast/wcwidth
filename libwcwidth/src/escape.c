@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #define ESC 0x1b
 #define BEL 0x07
@@ -29,7 +30,24 @@ parse_cursor_n(const char *params, size_t params_len)
     size_t i = 0;
 
     while (i < params_len && (unsigned char) params[i] >= '0' && (unsigned char) params[i] <= '9') {
-        n = n * 10 + (params[i] - '0');
+        int digit = params[i] - '0';
+
+        /*
+         * Saturate instead of overflowing.  These digits arrive in any
+         * terminal byte stream, so they are fully attacker-controlled, and
+         * signed overflow is undefined behaviour.  A movement of INT_MAX
+         * columns is already past any reachable column, so clamping loses
+         * nothing a caller could observe.
+         */
+        if (n > (INT_MAX - digit) / 10) {
+            n = INT_MAX;
+            while (i < params_len && (unsigned char) params[i] >= '0'
+                   && (unsigned char) params[i] <= '9') {
+                i++;
+            }
+            break;
+        }
+        n = n * 10 + digit;
         i++;
     }
     return (i == 0) ? 1 : n;
@@ -200,8 +218,14 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
             if (pos + 1 < text_len && text[pos + 1] == '\\') {
                 pos += 2; /* consume ESC \ */
                 terminated = true;
-                break;
             }
+            /*
+             * Any other ESC ends the body without terminating the sequence.
+             * The Python parser's OSC body is [^\x07\x1b]*, so an embedded
+             * ESC means this is not an OSC at all; scanning past it to a
+             * later BEL would swallow visible text that Python keeps.
+             */
+            break;
         }
         pos++;
     }
@@ -217,52 +241,6 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
     result->length = pos - offset;
 
     /* classify OSC by prefix */
-    if (result->length >= 4 && text[offset + 2] == '8' && text[offset + 3] == ';') {
-        /* OSC 8:
-         * format: ESC ] 8 ; <params> ; <url> ST
-         * params and url may be empty.
-         * OSC 8;;  (params="" url="") is CLOSE.
-         */
-        /* content between "8;" prefix and the ST terminator.
-         * Prefix is 4 bytes: ESC, ], 8, ; */
-        size_t content_start = offset + 4;
-        size_t content_len;
-
-        if (result->length >= 2 && text[offset + result->length - 2] == ESC
-            && text[offset + result->length - 1] == '\\') {
-            /* ST terminator (ESC \) -- 2 bytes */
-            content_len = result->length - 4 - 2; /* minus prefix ESC ] 8 ; and ST */
-        }
-        else {
-            /* BEL terminator -- 1 byte */
-            content_len = result->length - 4 - 1; /* minus prefix ESC ] 8 ; and BEL */
-        }
-
-        if (content_len == 0 || (content_len == 1 && text[content_start] == ';')) {
-            /* no params or URL -- OSC 8 close */
-            result->type = WCWIDTH_ESC_OSC8_CLOSE;
-        }
-        else {
-            /* split params and url on first semicolon */
-            const char *data = text + content_start;
-            size_t semi = 0;
-            size_t i = 0;
-            while (i < content_len) {
-                if (data[i] == ';') {
-                    semi = i;
-                    break;
-                }
-                i++;
-            }
-            result->type = WCWIDTH_ESC_OSC8_OPEN;
-            result->osc8_params = data;
-            result->osc8_params_len = semi;
-            result->osc8_url = data + semi + 1;
-            result->osc8_url_len = content_len - semi - 1;
-        }
-        return true;
-    }
-
     if (result->length >= 5 && text[offset + 2] == '6' && text[offset + 3] == '6'
         && text[offset + 4] == ';') {
         /* OSC 66 -- Text Sizing Protocol */
@@ -273,7 +251,7 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
         }
         size_t data_len = result->length - 5 - term_len;
 
-        /* split on first semicolon: meta;text */
+        /* split on first semicolon: meta;text (text is optional) */
         size_t semi = 0;
         bool found_semi = false;
         size_t i = 0;
@@ -286,17 +264,19 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
             i++;
         }
 
-        if (!found_semi) {
-            /* no semicolon: not valid OSC 66 (text is required per spec);
-             * leave as WCWIDTH_ESC_OTHER so callers treat it as a generic OSC. */
-            return true;
-        }
         result->type = WCWIDTH_ESC_OSC66;
         result->ts_terminator = text[offset + result->length - 1];
         result->ts_meta = text + data_start;
-        result->ts_meta_len = semi;
-        result->ts_text = text + data_start + semi + 1;
-        result->ts_text_len = data_len - semi - 1;
+        if (found_semi) {
+            result->ts_meta_len = semi;
+            result->ts_text = text + data_start + semi + 1;
+            result->ts_text_len = data_len - semi - 1;
+        }
+        else {
+            result->ts_meta_len = data_len;
+            result->ts_text = text + data_start + data_len;
+            result->ts_text_len = 0;
+        }
         return true;
     }
 
@@ -315,30 +295,39 @@ scan_until_terminator(const char *text, size_t text_len, size_t pos)
         if (ch == BEL) {
             return pos + 1;
         }
-        if (ch == ESC && pos + 1 < text_len && text[pos + 1] == '\\') {
-            return pos + 2;
+        if (ch == ESC) {
+            if (pos + 1 < text_len && text[pos + 1] == '\\') {
+                return pos + 2;
+            }
+            /* Bare ESC: the body is unterminated. */
+            return 0;
         }
         pos++;
     }
-    /* unterminated -- consume to end */
-    return pos;
+    /* unterminated -- ran out of input */
+    return 0;
 }
 
 /*
- * Parse a character set designation: ESC ( or ESC ) + 1 byte.
+ * Parse a character set designation: ESC ( or ESC ) + one character.
+ * The character may be multi-byte UTF-8, so its byte length is decoded
+ * rather than assumed to be 1.
  */
 static bool
 parse_charset(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t *result)
 {
-    if (offset + 3 > text_len) {
+    uint32_t cp;
+    size_t char_len;
+
+    if (offset + 2 >= text_len) {
         /* truncated: ESC + designator with no character to follow; only the
          * ESC is zero-width */
         esc_result_init(result, WCWIDTH_ESC_UNRECOGNIZED, text + offset, 1);
         return true;
     }
 
-    /* ESC + designator + one character (e.g. '\x1b(B') */
-    esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 3);
+    char_len = wcwidth_utf8_decode_single(text + offset + 2, text_len - (offset + 2), &cp);
+    esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 2 + char_len);
     return true;
 }
 
@@ -400,8 +389,16 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
         case 'P': /* DCS */
         case '^': /* PM */
         {
+            /*
+             * Python's APC/DCS/PM bodies are [^\x1b\x07]*, so a body holding a
+             * bare ESC -- or one that never terminates -- is not one of these
+             * sequences at all.  Consume just the two-byte introducer and let
+             * the rest be measured as ordinary text, matching the Fe branch
+             * the Python parser falls through to.
+             */
             size_t end = scan_until_terminator(text, text_len, offset + 2);
-            esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, end - offset);
+            esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset,
+                            (end == 0) ? 2 : end - offset);
             return true;
         }
 
@@ -507,7 +504,9 @@ wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_ca
     }
 
     if (out_len != NULL) {
-        *out_len = (written < out_cap) ? written : out_cap;
+        /* On truncation the last byte of *out* holds the NUL, so only
+         * out_cap - 1 bytes of text are usable. */
+        *out_len = (written < out_cap) ? written : (out_cap > 0 ? out_cap - 1 : 0);
     }
 
     return written;
@@ -573,7 +572,7 @@ wcwidth_escape_iter(const char *text, size_t text_len, wcwidth_escape_iter_fn fn
 
             if (wcwidth_escape_classify(text, text_len, idx, &result)) {
                 fn(result.start, result.length, true, userdata);
-                idx = result.start - text + result.length;
+                idx = (size_t) (result.start - text) + result.length;
             }
             else {
                 /* shouldn't happen since text[idx] == ESC */

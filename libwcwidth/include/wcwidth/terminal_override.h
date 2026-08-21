@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "wcwidth/tables.h"
+#include "wcwidth/table_types.h"
 
 #ifdef __cplusplus
 extern "C" {

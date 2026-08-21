@@ -30,12 +30,12 @@ extern "C" {
  *   v_start:        starting column (inclusive, 0-indexed).
  *   v_end:          ending column (exclusive).
  *   control_codes:  how to handle control characters and sequences.
+ *                   WCWIDTH_STRICT raises on indeterminate sequences;
+ *                   cursor movement and OSC text sizing are not parsed.
  *   tabsize:        tab stop width (0 = pass tabs through as-is).
  *   ambiguous_width:width for East Asian Ambiguous (A) characters (1 or 2).
  *   term_program:   terminal name for override tables (NULL = none).
  *   propagate_sgr:  if true, wrap result with SGR state at first visible char.
- *   overtyping:     painter's algorithm: -1 auto-detect, 0 disabled,
- *                   1 forced.  Ignored when control_codes=WCWIDTH_IGNORE.
  *   fillchar:       fill UTF-8 bytes for partially visible graphemes
  *                   (display width 1).
  *   fillchar_len:   byte length of fillchar.
@@ -44,7 +44,7 @@ extern "C" {
  */
 char *clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
               wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-              const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar,
+              const char *term_program, bool propagate_sgr, const char *fillchar,
               size_t fillchar_len, size_t *out_len, int *error);
 
 /*
@@ -58,8 +58,8 @@ char *clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
  */
 uint32_t *clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
                    wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-                   const char *term_program, bool propagate_sgr, int overtyping,
-                   const char *fillchar, size_t fillchar_len, size_t *out_len, int *error);
+                   const char *term_program, bool propagate_sgr, const char *fillchar,
+                   size_t fillchar_len, size_t *out_len, int *error);
 
 #ifdef __cplusplus
 }

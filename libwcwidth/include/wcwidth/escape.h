@@ -21,8 +21,6 @@ typedef enum
     WCWIDTH_ESC_CUF,           /* CSI n C (Cursor Forward) */
     WCWIDTH_ESC_CUB,           /* CSI n D (Cursor Backward) */
     WCWIDTH_ESC_HPA,           /* CSI n G (Horizontal Position Absolute) */
-    WCWIDTH_ESC_OSC8_OPEN,     /* OSC 8;params;url (Hyperlink open) */
-    WCWIDTH_ESC_OSC8_CLOSE,    /* OSC 8;; (Hyperlink close) */
     WCWIDTH_ESC_OSC66,         /* OSC 66;... (Text Sizing) */
     WCWIDTH_ESC_INDETERMINATE, /* clear, scroll, cursor up/down, etc. */
     WCWIDTH_ESC_OTHER,         /* any other recognized zero-width sequence */
@@ -41,12 +39,6 @@ typedef struct
 
     /* For CUF/CUB/HPA: parsed numeric parameter (defaults to 1 if absent) */
     int cursor_n;
-
-    /* For OSC 8 open: pointer to URL (may be empty), params */
-    const char *osc8_url;
-    size_t osc8_url_len;
-    const char *osc8_params;
-    size_t osc8_params_len;
 
     /* For OSC 66: pointers to meta, text, and terminator parts */
     const char *ts_meta;
@@ -74,8 +66,10 @@ bool wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
  * *out_cap*: capacity of out buffer.
  * *out_len*: filled with actual bytes written (excluding NUL terminator if any).
  *
- * Returns the number of bytes that would be written if out_cap were large enough
- * (use this to detect truncation: if return > out_cap, output was truncated).
+ * Returns the byte length of the stripped text, excluding the NUL terminator,
+ * so *out* must have capacity for the return value plus one.  Output was
+ * truncated when the return value is >= out_cap; pass an out_cap of 0 to
+ * measure without writing.
  */
 size_t wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_cap,
                             size_t *out_len);

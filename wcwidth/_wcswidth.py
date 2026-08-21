@@ -15,7 +15,8 @@ __lazy_modules__ = [
 from . import table_grapheme_overrides
 from ._wcwidth import wcwidth
 from .bisearch import bisearch
-from ._constants import (_EMOJI_ZWJ_SET,
+from ._constants import (_clamp_ambiguous_width,
+                         _EMOJI_ZWJ_SET,
                          _ISC_VIRAMA_SET,
                          _CATEGORY_MC_TABLE,
                          _FITZPATRICK_RANGE,
@@ -89,6 +90,7 @@ def wcswidth(
 
     .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
     """
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
 
@@ -228,6 +230,7 @@ def wcstwidth(
         of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control
         characters!
     """
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
     # This function intentionally keeps all logic inline for performance.

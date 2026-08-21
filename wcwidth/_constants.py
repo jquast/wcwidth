@@ -24,6 +24,7 @@ from .table_overrides import (SFZ_OVERRIDES,
                               NARROW_OVERRIDES)
 from .unicode_versions import list_versions
 from .table_term_programs import ALIASES, KNOWN_TERMINALS
+from operator import index as _index
 
 _RangeTuple = Tuple[Tuple[int, int], ...]
 
@@ -162,3 +163,26 @@ def resolve_terminal(term_program: bool | str = False) -> str | None:
     if canonical not in KNOWN_TERMINALS:
         return None
     return canonical
+
+
+def _clamp_ambiguous_width(ambiguous_width: int) -> int:
+    """
+    Clamp *ambiguous_width* into the only range UAX #11 defines: 1 or 2.
+
+    East Asian Ambiguous is narrow or wide and nothing else.  Out-of-range
+    values are clamped rather than rejected: width measurement is called from
+    rendering hot loops, and a new exception path there would break callers
+    passing a computed value.
+
+    Note this is a behaviour change from silently treating every value other
+    than 2 as 1 -- an ``ambiguous_width`` of 99 now measures wide, not narrow.
+    """
+    # operator.index() mirrors the C extension's PyLong_AsLongAndOverflow():
+    # a non-integer is a type error in both, a bool is an int in both, and an
+    # arbitrarily large int clamps rather than overflowing.
+    value = _index(ambiguous_width)
+    if value < 1:
+        return 1
+    if value > 2:
+        return 2
+    return value

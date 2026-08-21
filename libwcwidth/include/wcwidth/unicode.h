@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 #ifdef __cplusplus
 extern "C" {

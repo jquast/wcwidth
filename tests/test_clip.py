@@ -482,14 +482,14 @@ def test_strip_sequences_unterminated_csi(text, expected):
 
 
 CLIP_OSC66_CASES = [
-    ('\x1b]66;bad\x07text', 0, 4, '\x1b]66;bad\x07text'),
-    ('a\x1b]66;bad\x07b', 0, 5, 'a\x1b]66;bad\x07b'),
+    ('\x1b]66;bad\x07text', 0, 4, '\x1b]66;;\x07text'),
+    ('a\x1b]66;bad\x07b', 0, 5, 'a\x1b]66;;\x07b'),
 ]
 
 
 @pytest.mark.parametrize('text,start,end,expected', CLIP_OSC66_CASES)
-def test_clip_preserves_osc66_without_display_text(text, start, end, expected):
-    """Clip() preserves OSC 66 with no display text as-is."""
+def test_clip_canonicalizes_osc66_without_display_text(text, start, end, expected):
+    """Clip() canonicalizes OSC 66 with no display text (invalid meta dropped)."""
     assert clip(text, start, end) == expected
 
 

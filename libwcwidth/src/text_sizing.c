@@ -4,6 +4,7 @@
 #include "wcwidth/text_sizing.h"
 #include "wcwidth/wcwidth.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,12 +40,49 @@ ts_field_lookup(char key)
     return NULL;
 }
 
+/*
+ * Parse a decimal integer from [s, end), returning bytes consumed (0 if
+ * there is no integer there).
+ *
+ * strtol(3) cannot be used: it scans until a non-digit, so it reads past
+ * meta + meta_len whenever the caller's buffer is exactly meta_len bytes --
+ * a NUL terminator this function's contract never asked for.
+ */
+static size_t
+ts_parse_int(const char *s, const char *end, long *out)
+{
+    const char *p = s;
+    long value = 0;
+    bool negative = false;
+
+    if (p < end && (*p == '+' || *p == '-')) {
+        negative = (*p == '-');
+        p++;
+    }
+    if (p == end || *p < '0' || *p > '9') {
+        return 0;
+    }
+    while (p < end && *p >= '0' && *p <= '9') {
+        int digit = *p - '0';
+        if (value > (LONG_MAX - digit) / 10) {
+            value = LONG_MAX; /* saturate; callers clamp to a field range */
+            while (p < end && *p >= '0' && *p <= '9') {
+                p++;
+            }
+            break;
+        }
+        value = value * 10 + digit;
+        p++;
+    }
+    *out = negative ? -value : value;
+    return (size_t) (p - s);
+}
+
 bool
 wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *params)
 {
     size_t pos, part_start;
     const ts_field_t *field;
-    char *endp;
     long val;
 
     /* Set defaults. */
@@ -85,14 +123,16 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
                 continue;
             }
 
-            /* Parse integer value.  The meta string is NUL-terminated by the
-             * caller, but interior parts end at ':'; the digits must be
-             * consumed up to a part boundary or the string end. */
-            val = strtol(eq + 1, &endp, 10);
-            if (endp == eq + 1 || (*endp != ':' && *endp != '\0')) {
-                /* Not a valid integer -- use default. */
-                part_start = pos + 1;
-                continue;
+            /* Parse the integer value within this part only, so *meta* need
+             * not be NUL-terminated. */
+            {
+                const char *part_end = meta + pos;
+                size_t consumed = ts_parse_int(eq + 1, part_end, &val);
+                if (consumed == 0 || eq + 1 + consumed != part_end) {
+                    /* Not a valid integer, or trailing junk -- use default. */
+                    part_start = pos + 1;
+                    continue;
+                }
             }
 
             /* Clamp to valid range. */

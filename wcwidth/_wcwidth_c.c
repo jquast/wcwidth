@@ -98,14 +98,18 @@ control_codes_mode(PyObject *obj)
         PyErr_SetString(PyExc_TypeError, "control_codes must be a string");
         return -1;
     }
-    const char *value = PyUnicode_AsUTF8(obj);
+    /* Compare with an explicit length: a Python str may contain NUL, and
+     * PyUnicode_AsUTF8() would silently cut the value there -- selecting a
+     * different mode than the caller passed. */
+    Py_ssize_t value_len = 0;
+    const char *value = PyUnicode_AsUTF8AndSize(obj, &value_len);
     if (value == NULL) {
         return -1;
     }
-    if (strcmp(value, "ignore") == 0) {
+    if (value_len == 6 && memcmp(value, "ignore", 6) == 0) {
         return WCWIDTH_IGNORE;
     }
-    if (strcmp(value, "strict") == 0) {
+    if (value_len == 6 && memcmp(value, "strict", 6) == 0) {
         return WCWIDTH_STRICT;
     }
     return WCWIDTH_PARSE;
@@ -149,7 +153,7 @@ unicode_to_utf8(PyObject *text_obj, const char **text, Py_ssize_t *text_len)
 static int
 fillchar_utf8(PyObject *fillchar_obj, const char **fillchar, size_t *fillchar_len)
 {
-    if (fillchar_obj == NULL || fillchar_obj == Py_None) {
+    if (fillchar_obj == NULL) {
         *fillchar = " ";
         *fillchar_len = 1;
         return 0;
@@ -168,19 +172,6 @@ fillchar_utf8(PyObject *fillchar_obj, const char **fillchar, size_t *fillchar_le
     }
     *fillchar_len = (size_t)len;
     return 0;
-}
-
-static const char *
-option_utf8(PyObject *obj, const char *name, const char *default_value)
-{
-    if (obj == NULL) {
-        return default_value;
-    }
-    if (!PyUnicode_Check(obj)) {
-        PyErr_Format(PyExc_TypeError, "%s must be a string", name);
-        return NULL;
-    }
-    return PyUnicode_AsUTF8(obj);
 }
 
 /* Mirror _constants.py resolve_terminal(): True/auto resolves via the
@@ -209,14 +200,63 @@ term_program_cstr(PyObject *obj, int default_auto_detect)
         return getenv("TERM");
     }
     if (PyUnicode_Check(obj)) {
+        Py_ssize_t name_len = 0;
+        const char *name;
+
         if (PyUnicode_GET_LENGTH(obj) == 0) {
             return NULL;
         }
-        return PyUnicode_AsUTF8(obj);
+        name = PyUnicode_AsUTF8AndSize(obj, &name_len);
+        if (name == NULL) {
+            return NULL;
+        }
+        /* An embedded NUL would truncate the name and silently select a
+         * different terminal's override table, so treat it as no match. */
+        if (memchr(name, '\0', (size_t) name_len) != NULL) {
+            return NULL;
+        }
+        return name;
     }
     PyErr_Format(PyExc_AttributeError,
                  "'%s' object has no attribute 'strip'", Py_TYPE(obj)->tp_name);
     return NULL;
+}
+
+/*
+ * PyArg_Parse converter for ambiguous_width.
+ *
+ * East Asian Ambiguous is narrow or wide and nothing else (UAX #11), so any
+ * other value is clamped into range rather than raising: width measurement is
+ * called from rendering hot loops, and a new exception path there would break
+ * callers passing a computed value.
+ *
+ * Parsing through a converter rather than the "i" format also keeps a value
+ * beyond INT_MAX from raising OverflowError before the clamp can run.
+ */
+static int
+convert_ambiguous_width(PyObject *obj, void *addr)
+{
+    int *out = (int *) addr;
+    int overflow = 0;
+    long value;
+
+    if (obj == NULL) {
+        return 1;
+    }
+    value = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (value == -1 && PyErr_Occurred()) {
+        return 0; /* not an integer: let the TypeError stand */
+    }
+    if (overflow > 0) {
+        *out = 2;
+    }
+    else if (overflow < 0) {
+        *out = 1;
+    }
+    else {
+        *out = (value < 1) ? 1 : ((value > 2) ? 2 : (int) value);
+    }
+    return 1;
 }
 
 static PyObject *
@@ -227,8 +267,8 @@ wcwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int ambiguous_width = 1;
     static char *kwlist[] = {"wc", "unicode_version", "ambiguous_width", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oi", kwlist,
-                                     &wc_obj, &dummy_unicode_version, &ambiguous_width)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO&", kwlist,
+                                     &wc_obj, &dummy_unicode_version, convert_ambiguous_width, &ambiguous_width)) {
         return NULL;
     }
 
@@ -267,9 +307,9 @@ wcswidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int ambiguous_width = 1;
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOi", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&", kwlist,
                                      &pwcs_obj, &n_obj, &dummy_unicode_version,
-                                     &ambiguous_width)) {
+                                     convert_ambiguous_width, &ambiguous_width)) {
         return NULL;
     }
 
@@ -302,9 +342,9 @@ wcstwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width",
                              "term_program", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOiO", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&O", kwlist,
                                      &pwcs_obj, &n_obj, &dummy_unicode_version,
-                                     &ambiguous_width, &term_program_obj)) {
+                                     convert_ambiguous_width, &ambiguous_width, &term_program_obj)) {
         return NULL;
     }
 
@@ -342,9 +382,9 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     static char *kwlist[] = {"text", "control_codes", "tabsize", "ambiguous_width",
                              "term_program", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OiiO", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OiO&O", kwlist,
                                      &text_obj, &control_codes_obj, &tabsize,
-                                     &ambiguous_width, &term_program_obj)) {
+                                     convert_ambiguous_width, &ambiguous_width, &term_program_obj)) {
         return NULL;
     }
     if (PyTuple_GET_SIZE(args) > 1) {
@@ -405,9 +445,9 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
     static char *kwlist[] = {"text", "dest_width", "fillchar", "control_codes",
                              "ambiguous_width", "term_program", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Un|OOiO", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Un|OOO&O", kwlist,
                                      &text_obj, &dest_width, &fillchar_obj,
-                                     &control_codes_obj, &ambiguous_width,
+                                     &control_codes_obj, convert_ambiguous_width, &ambiguous_width,
                                      &term_program_obj)) {
         return NULL;
     }
@@ -426,12 +466,26 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
     if (mode < 0) {
         return NULL;
     }
+    /* 'strict' mode routes to the Python implementation, for the same reason
+     * width_impl() does: the C library reports a wcwidth_error_t code, not the
+     * ValueError messages that name the offending character, position, and
+     * text-sizing value.  Without this, a strict violation inside ljust() /
+     * rjust() / center() is padded and returned instead of raised. */
+    if (mode == WCWIDTH_STRICT) {
+        return call_python_function("wcwidth.align", name, args, kwargs);
+    }
 
     size_t padded_width = dest_width > 0 ? (size_t)dest_width : 0;
 
     const char *text;
     Py_ssize_t text_len;
     if (unicode_to_utf8(text_obj, &text, &text_len) < 0) {
+        /* unicode_to_utf8() clears only UnicodeEncodeError; anything else
+         * (MemoryError, for instance) is still live, and calling into Python
+         * with it set raises SystemError from the interpreter. */
+        if (PyErr_Occurred()) {
+            return NULL;
+        }
         return call_python_function("wcwidth.align", name, args, kwargs);
     }
     const char *fillchar;
@@ -500,6 +554,9 @@ strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     const char *text;
     Py_ssize_t text_len;
     if (unicode_to_utf8(text_obj, &text, &text_len) < 0) {
+        if (PyErr_Occurred()) {
+            return NULL;
+        }
         return call_python_function("wcwidth.escape_sequences", "strip_sequences", args, kwargs);
     }
 
@@ -641,16 +698,47 @@ static PyMethodDef module_methods[] = {
     {NULL, NULL, 0, NULL},
 };
 
+/*
+ * Multi-phase initialisation (PEP 489), so the module can declare that it
+ * does not need the GIL (PEP 703).
+ *
+ * On a free-threaded build, importing a module that has not declared
+ * Py_MOD_GIL_NOT_USED re-enables the GIL for the whole process -- so a
+ * single-phase module here would serialise every thread in an application
+ * that merely measures string widths.  Declaring it is safe because
+ * libwcwidth has no mutable global state: every table is `const`, the
+ * functions take all their inputs as arguments, and this wrapper never
+ * caches anything between calls.  The GIL is also never released, so the
+ * borrowed CPython buffers used below stay valid.
+ *
+ * m_size = 0 (rather than -1) is required for multi-phase init and states
+ * that the module keeps no per-interpreter state, which also makes it safe
+ * under subinterpreters.
+ */
+static PyModuleDef_Slot module_slots[] = {
+#if PY_VERSION_HEX >= 0x030C0000
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+#ifdef Py_mod_gil
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+    {0, NULL},
+};
+
 static struct PyModuleDef module_def = {
     PyModuleDef_HEAD_INIT,
     "_wcwidth_c",
     "Optional CPython wrapper around the portable C11 libwcwidth library.",
-    -1,
+    0,
     module_methods,
+    module_slots,
+    NULL,
+    NULL,
+    NULL,
 };
 
 PyMODINIT_FUNC
 PyInit__wcwidth_c(void)
 {
-    return PyModule_Create(&module_def);
+    return PyModuleDef_Init(&module_def);
 }

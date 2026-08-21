@@ -35,7 +35,8 @@ typedef struct
 
 /* Parse OSC 66 parameters from the colon-separated meta string.
  * meta: parameter string, e.g. "s=2:w=3:n=1:d=2:v=1:h=1"
- * meta_len: length of meta string
+ * meta_len: length of meta string.  Exactly meta_len bytes are read; *meta*
+ *           need not be NUL-terminated.
  * Returns true on success.
  */
 bool wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *params);

@@ -46,8 +46,7 @@ extern const wcwidth_width_opts_t WCWIDTH_WIDTH_OPTS_DEFAULT;
 
 /*
  * Measure the visible width of text, including terminal control sequences
- * such as colors, bold, tabstops, cursor movement, OSC 8 hyperlinks, and
- * OSC 66 Text Sizing.  width_u32() encodes its codepoints to UTF-8 and
+ * such as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.  width_u32() encodes its codepoints to UTF-8 and
  * measures as width_u8().
  *
  * mode:  how control characters and sequences are treated (WCWIDTH_PARSE,

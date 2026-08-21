@@ -5,10 +5,49 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
+/* Stack capacity for collected SGR parameters; longer runs grow onto the
+ * heap rather than being dropped. */
 #define WCWIDTH_SGR_MAX_PARAMS 64
+
+/*
+ * Ensure *params* has room for one more entry, growing from the caller's
+ * stack array onto the heap on first overflow.  Returns false on allocation
+ * failure, in which case the caller applies what it has already collected.
+ */
+static bool
+sgr_params_reserve(int **params, int *stack_params, size_t *cap, int count)
+{
+    size_t new_cap;
+    int *grown;
+
+    if ((size_t) count < *cap) {
+        return true;
+    }
+    if (*cap > SIZE_MAX / (2 * sizeof(int))) {
+        return false;
+    }
+    new_cap = *cap * 2;
+    if (*params == stack_params) {
+        grown = (int *) malloc(new_cap * sizeof(int));
+        if (grown != NULL) {
+            memcpy(grown, stack_params, *cap * sizeof(int));
+        }
+    }
+    else {
+        grown = (int *) realloc(*params, new_cap * sizeof(int));
+    }
+    if (grown == NULL) {
+        return false;
+    }
+    *params = grown;
+    *cap = new_cap;
+    return true;
+}
 
 const wcwidth_sgr_state_t WCWIDTH_SGR_STATE_DEFAULT = {0};
 
@@ -19,7 +58,20 @@ parse_int(const char *s, size_t len)
     size_t i = 0;
 
     while (i < len && (unsigned char) s[i] >= '0' && (unsigned char) s[i] <= '9') {
-        val = val * 10 + (int) (s[i] - '0');
+        int digit = (int) (s[i] - '0');
+
+        /* Saturate: SGR parameters are attacker-controlled and signed
+         * overflow is undefined behaviour.  No real SGR code approaches
+         * INT_MAX, so a clamped value is rejected downstream just as the
+         * true one would be. */
+        if (val > (INT_MAX - digit) / 10) {
+            val = INT_MAX;
+            while (i < len && (unsigned char) s[i] >= '0' && (unsigned char) s[i] <= '9') {
+                i++;
+            }
+            break;
+        }
+        val = val * 10 + digit;
         i++;
     }
     return val;
@@ -59,7 +111,9 @@ set_color(int *dst, int *dst_len, const int *src, int src_len)
 void
 wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sgr_params_len)
 {
-    int params[WCWIDTH_SGR_MAX_PARAMS];
+    int stack_params[WCWIDTH_SGR_MAX_PARAMS];
+    int *params = stack_params;
+    size_t params_cap = WCWIDTH_SGR_MAX_PARAMS;
     int nparams = 0;
     const char *p = sgr_params;
     const char *end = sgr_params + sgr_params_len;
@@ -74,7 +128,7 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
     /* Phase 1: parse all semicolon-separated segments.
      * Colon-separated tuples (ITU T.416 extended colors) are applied
      * immediately.  Plain integers are collected for phase 2. */
-    while (p < end && nparams < WCWIDTH_SGR_MAX_PARAMS) {
+    while (p < end) {
         const char *seg_end = p;
 
         while (seg_end < end && *seg_end != ';') {
@@ -84,6 +138,9 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
             size_t seg_len = (size_t) (seg_end - p);
 
             if (seg_len == 0) {
+                if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
+                    break;
+                }
                 params[nparams++] = 0;
             }
             else {
@@ -108,6 +165,9 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
                     }
                 }
                 else {
+                    if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
+                        break;
+                    }
                     params[nparams++] = parse_int(p, seg_len);
                 }
             }
@@ -245,6 +305,10 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
             }
         }
     }
+
+    if (params != stack_params) {
+        free(params);
+    }
 }
 
 bool
@@ -253,6 +317,37 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
     return (state->bold || state->dim || state->italic || state->underline || state->blink
             || state->rapid_blink || state->inverse || state->hidden || state->strikethrough
             || state->double_underline || state->fg_len > 0 || state->bg_len > 0);
+}
+
+/*
+ * Append a decimal integer at *offset*, never writing past *out_cap*.
+ *
+ * snprintf() returns the length it *would* have produced, so accumulating
+ * that return value unclamped lets *offset* run past *out_cap*; the next
+ * call then computes out_cap - offset, which wraps to a huge size_t, and
+ * writes through out + offset -- outside the buffer.  Clamping to
+ * out_cap - 1 on truncation keeps every later `offset < out_cap` guard
+ * meaningful and leaves room for the terminator.
+ */
+static size_t
+sgr_write_int(char *out, size_t out_cap, size_t offset, int value)
+{
+    int written;
+
+    if (out_cap == 0) {
+        return 0;
+    }
+    if (offset >= out_cap) {
+        return out_cap - 1;
+    }
+    written = snprintf(out + offset, out_cap - offset, "%d", value);
+    if (written < 0) {
+        return offset;
+    }
+    if ((size_t) written >= out_cap - offset) {
+        return out_cap - 1;
+    }
+    return offset + (size_t) written;
 }
 
 size_t
@@ -280,61 +375,61 @@ wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t out_ca
     if (state->bold) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "1");
+        offset = sgr_write_int(out, out_cap, offset, 1);
         need_sep = 1;
     }
     if (state->dim) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "2");
+        offset = sgr_write_int(out, out_cap, offset, 2);
         need_sep = 1;
     }
     if (state->italic) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "3");
+        offset = sgr_write_int(out, out_cap, offset, 3);
         need_sep = 1;
     }
     if (state->underline) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "4");
+        offset = sgr_write_int(out, out_cap, offset, 4);
         need_sep = 1;
     }
     if (state->blink) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "5");
+        offset = sgr_write_int(out, out_cap, offset, 5);
         need_sep = 1;
     }
     if (state->rapid_blink) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "6");
+        offset = sgr_write_int(out, out_cap, offset, 6);
         need_sep = 1;
     }
     if (state->inverse) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "7");
+        offset = sgr_write_int(out, out_cap, offset, 7);
         need_sep = 1;
     }
     if (state->hidden) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "8");
+        offset = sgr_write_int(out, out_cap, offset, 8);
         need_sep = 1;
     }
     if (state->strikethrough) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "9");
+        offset = sgr_write_int(out, out_cap, offset, 9);
         need_sep = 1;
     }
     if (state->double_underline) {
         if (need_sep && offset < out_cap)
             out[offset++] = ';';
-        offset += (size_t) snprintf(out + offset, out_cap - offset, "21");
+        offset = sgr_write_int(out, out_cap, offset, 21);
         need_sep = 1;
     }
 
@@ -344,7 +439,7 @@ wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t out_ca
                 out[offset++] = ';';
             if (i > 0 && offset < out_cap)
                 out[offset++] = ';';
-            offset += (size_t) snprintf(out + offset, out_cap - offset, "%d", state->fg[i]);
+            offset = sgr_write_int(out, out_cap, offset, state->fg[i]);
         }
         need_sep = 1;
     }
@@ -355,18 +450,21 @@ wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t out_ca
                 out[offset++] = ';';
             if (i > 0 && offset < out_cap)
                 out[offset++] = ';';
-            offset += (size_t) snprintf(out + offset, out_cap - offset, "%d", state->bg[i]);
+            offset = sgr_write_int(out, out_cap, offset, state->bg[i]);
         }
         need_sep = 1;
         (void) need_sep;
     }
 
-    if (offset < out_cap) {
+    /* Both the 'm' and the terminator must land inside the buffer: writing
+     * 'm' at out_cap - 1 would put the NUL at out_cap, one past the end. */
+    if (offset + 1 < out_cap) {
         out[offset++] = 'm';
         out[offset] = '\0';
     }
     else if (out_cap > 0) {
-        out[out_cap - 1] = '\0';
+        offset = out_cap - 1;
+        out[offset] = '\0';
     }
 
     return offset;

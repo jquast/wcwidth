@@ -6,7 +6,7 @@
  * get_term_overrides() merge; grapheme clusters are stored as flat codepoint
  * pools with sorted lookup entries (see wcwidth_grapheme_entry_t).
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 /* Override set EMPTY (terminals: absolutetelnet/ssh) */
 static const wcwidth_override_set_t WCWIDTH_OVERRIDE_SET_EMPTY = {
     NULL, 0,

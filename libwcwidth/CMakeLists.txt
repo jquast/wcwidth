@@ -21,7 +21,6 @@ set(LIBWCWIDTH_SOURCES
     src/grapheme.c
     src/escape.c
     src/sgr.c
-    src/hyperlink.c
     src/text_sizing.c
     src/terminal_override.c
     src/utf8.c
@@ -63,7 +62,6 @@ if(BUILD_TESTING)
         tests/test_grapheme.c
         tests/test_escape.c
         tests/test_sgr.c
-        tests/test_hyperlink.c
         tests/test_text_sizing.c
     )
 

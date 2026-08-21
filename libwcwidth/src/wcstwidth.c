@@ -6,8 +6,8 @@
  * shared with wcswidth_u32().
  */
 #include "wcwidth/wcwidth.h"
+#include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
-#include "wcwidth/generated_tables.h"
 #include "wcwidth/terminal_override.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
 
 int
 wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *term_program)
@@ -298,16 +297,12 @@ int
 wcstwidth_u8(const char *utf8, size_t n, int ambiguous_width, const char *term_program)
 {
     uint32_t stack[512];
-    const uint32_t *cps;
+    uint32_t *cps;
     size_t count;
     int result;
 
     if (utf8 == NULL) {
         return 0;
-    }
-
-    if (n == (size_t) -1) {
-        n = strlen(utf8);
     }
 
     if (n == 0) {
@@ -323,7 +318,7 @@ wcstwidth_u8(const char *utf8, size_t n, int ambiguous_width, const char *term_p
     }
     result = wcstwidth_u32(cps, count, ambiguous_width, term_program);
     if (cps != stack) {
-        free((void *) cps);
+        free(cps);
     }
     return result;
 }

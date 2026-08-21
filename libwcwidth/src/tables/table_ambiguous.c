@@ -4,7 +4,7 @@
  * Table: AMBIGUOUS_EASTASIAN
  * Unicode version: 17.0.0
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 const wcwidth_interval_t WCWIDTH_TABLE_AMBIGUOUS[] = {
     { 0x000a1, 0x000a1 },  /* Inverted Exclamation Mark */

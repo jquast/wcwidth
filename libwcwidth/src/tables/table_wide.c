@@ -4,7 +4,7 @@
  * Table: WIDE_EASTASIAN
  * Unicode version: 17.0.0
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 const wcwidth_interval_t WCWIDTH_TABLE_WIDE[] = {
     { 0x01100, 0x0115f },  /* Hangul Choseong Kiyeok  ..Hangul Choseong Filler */

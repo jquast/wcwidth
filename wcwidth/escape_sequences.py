@@ -16,7 +16,7 @@ from .sgr_state import _SGR_PATTERN
 
 # Text Sizing Protocol (OSC 66), https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 TEXT_SIZING_PATTERN = re.compile(
-    r'\x1b\]66;([^;\x07\x1b]*);([^\x07\x1b]*)(\x07|\x1b\\)'
+    r'\x1b\]66;([^;\x07\x1b]*)(?:;([^\x07\x1b]*))?(\x07|\x1b\\)'
 )
 
 # Zero-width escape sequences (SGR, OSC, CSI, etc.). This table, like INDETERMINATE_EFFECT_SEQUENCE,
@@ -72,7 +72,7 @@ _SEQUENCE_CLASSIFY = re.compile(
     + '|' + CURSOR_HPA_SEQUENCE.pattern.replace('(', '(?P<hpa_n>', 1)
     + '|' + CURSOR_RIGHT_SEQUENCE.pattern.replace('(', '(?P<cforward_n>', 1)
     + '|' + CURSOR_LEFT_SEQUENCE.pattern.replace('(', '(?P<cbackward_n>', 1)
-    + '|' + r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*);(?P<ts_text>[^\x07\x1b]*)(?P<ts_term>\x07|\x1b\\)'
+    + '|' + r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*)(?:;(?P<ts_text>[^\x07\x1b]*))?(?P<ts_term>\x07|\x1b\\)'
     + '|' + r'(?P<other_seq>(?:' + ZERO_WIDTH_PATTERN.pattern + '))'
 )
 

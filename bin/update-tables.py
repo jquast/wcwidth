@@ -1732,7 +1732,7 @@ class TermProgramTableRenderDef(RenderDefinition):
 
 
 # The six merged single-codepoint override categories, in C struct field order
-# (wcwidth_override_set_t in libwcwidth/include/wcwidth/tables.h).
+# (wcwidth_override_set_t in libwcwidth/include/wcwidth/table_types.h).
 OVERRIDE_CATEGORIES = (
     'narrower',
     'vs16_narrower',
@@ -2114,7 +2114,7 @@ def cleanup_stale_grapheme_files() -> None:
 
 def _generate_c_table_header(c_lens: Mapping[str, int]) -> None:
     """
-    Write include/wcwidth/generated_tables.h with all C table extern declarations and compile-time
+    Write include/wcwidth/tables.h with all C table extern declarations and compile-time
     length macros.
 
     The entry counts are known to code generation, so each length is emitted as a literal macro
@@ -2125,8 +2125,8 @@ def _generate_c_table_header(c_lens: Mapping[str, int]) -> None:
     if missing:
         raise ValueError(f'missing table lengths from code generation: {missing}')
     header_path = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth',
-                               'generated_tables.h')
-    output = JINJA_ENV.get_template('generated_tables.h.j2').render(
+                               'tables.h')
+    output = JINJA_ENV.get_template('tables.h.j2').render(
         c_lens=c_lens, c_names=C_SYMBOLS.values())
     new_path = header_path + '.new'
     with open(new_path, 'w', encoding='utf-8', newline='\n') as fout:

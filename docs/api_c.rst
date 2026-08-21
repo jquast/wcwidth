@@ -41,7 +41,8 @@ Unicode character display width: wcwidth, wcswidth, wcstwidth.
 
    UTF-8 variant of wcswidth_u32().
 
-   :param n: maximum number of UTF-8 bytes to process (use (size_t)-1 for NUL-terminated). If \*n\* is not (size_t)-1, exactly \*n\* bytes are read; embedded NULs are allowed. If \*n\* is (size_t)-1, the string must be NUL-terminated.
+   measure as zero-width.  There is no "compute the length for me" sentinel:
+   :param n: number of UTF-8 bytes to process.  Exactly \*n\* bytes are read; the text is never treated as NUL-terminated, so embedded NULs are permitted and pass strlen(utf8) explicitly if that is what you mean.
 
 .. c:function:: int wcstwidth_u32(const uint32_t *codepoints, size_t n, int ambiguous_width, const char *term_program)
 
@@ -136,8 +137,7 @@ Main entry-points for string display width: width_u32 / width_u8.
 
 
    Measure the visible width of text, including terminal control sequences
-   such as colors, bold, tabstops, cursor movement, OSC 8 hyperlinks, and
-   OSC 66 Text Sizing.  width_u32() encodes its codepoints to UTF-8 and
+   such as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.  width_u32() encodes its codepoints to UTF-8 and
    measures as width_u8().
 
    Returns the width in display cells, or -1 on error.
@@ -168,6 +168,8 @@ Text wrapping with ANSI-aware display width measurement.
 
    .. c:member:: int tabsize
 
+      tab stop width; <= 0 passes tabs through as-is
+
    .. c:member:: int ambiguous_width
 
    .. c:member:: const char *term_program
@@ -178,15 +180,7 @@ Text wrapping with ANSI-aware display width measurement.
 
    .. c:member:: bool break_long_words
 
-   .. c:member:: bool break_on_hyphens
-
    .. c:member:: bool drop_whitespace
-
-   .. c:member:: bool propagate_sgr
-
-   .. c:member:: bool fix_sentence_endings
-
-      widen single space after sentence end to two
 
    .. c:member:: int max_lines
 
@@ -320,7 +314,7 @@ clip.h
 
 Clip text to a visible column range [v_start, v_end).
 
-.. c:function:: char *clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end, wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width, const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar, size_t fillchar_len, size_t *out_len, int *error)
+.. c:function:: char *clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end, wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width, const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len, size_t *out_len, int *error)
 
 
    Clip text to the visible column range [v_start, v_end).
@@ -337,18 +331,17 @@ Clip text to a visible column range [v_start, v_end).
    :param text_len: length of text in bytes (NOT NUL-terminated).
    :param v_start: starting column (inclusive, 0-indexed).
    :param v_end: ending column (exclusive).
-   :param control_codes: how to handle control characters and sequences.
+   :param control_codes: how to handle control characters and sequences. WCWIDTH_STRICT raises on indeterminate sequences; cursor movement and OSC text sizing are not parsed.
    :param tabsize: tab stop width (0 = pass tabs through as-is).
    :param ambiguous_width: width for East Asian Ambiguous (A) characters (1 or 2).
    :param term_program: terminal name for override tables (NULL = none).
    :param propagate_sgr: if true, wrap result with SGR state at first visible char.
-   :param overtyping: painter's algorithm: -1 auto-detect, 0 disabled, 1 forced.  Ignored when control_codes=WCWIDTH_IGNORE.
    :param fillchar: fill UTF-8 bytes for partially visible graphemes (display width 1).
    :param fillchar_len: byte length of fillchar.
    :param out_len: output: byte length of result (excluding NUL).
    :param error: output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
 
-.. c:function:: uint32_t *clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end, wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width, const char *term_program, bool propagate_sgr, int overtyping, const char *fillchar, size_t fillchar_len, size_t *out_len, int *error)
+.. c:function:: uint32_t *clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end, wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width, const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len, size_t *out_len, int *error)
 
 
    Codepoint-array variant of clip_u8(): encodes the codepoints to UTF-8,
@@ -394,14 +387,6 @@ Terminal escape sequence classification.
 
       CSI n G (Horizontal Position Absolute)
 
-   .. c:enumerator:: WCWIDTH_ESC_OSC8_OPEN
-
-      OSC 8;params;url (Hyperlink open)
-
-   .. c:enumerator:: WCWIDTH_ESC_OSC8_CLOSE
-
-      OSC 8;; (Hyperlink close)
-
    .. c:enumerator:: WCWIDTH_ESC_OSC66
 
       OSC 66;... (Text Sizing)
@@ -438,16 +423,6 @@ Terminal escape sequence classification.
 
       For CUF/CUB/HPA: parsed numeric parameter (defaults to 1 if absent)
 
-   .. c:member:: const char *osc8_url
-
-      For OSC 8 open: pointer to URL (may be empty), params
-
-   .. c:member:: size_t osc8_url_len
-
-   .. c:member:: const char *osc8_params
-
-   .. c:member:: size_t osc8_params_len
-
    .. c:member:: const char *ts_meta
 
       For OSC 66: pointers to meta, text, and terminator parts
@@ -478,8 +453,10 @@ Terminal escape sequence classification.
    Strip all terminal escape sequences from text.
    OSC 66 inner display text is preserved as visible output.
    Writes result to \*out\* (caller-provided buffer).
-   Returns the number of bytes that would be written if out_cap were large enough
-   (use this to detect truncation: if return > out_cap, output was truncated).
+   Returns the byte length of the stripped text, excluding the NUL terminator,
+   so \*out\* must have capacity for the return value plus one.  Output was
+   truncated when the return value is >= out_cap; pass an out_cap of 0 to
+   measure without writing.
 
    :param out_cap: capacity of out buffer.
    :param out_len: filled with actual bytes written (excluding NUL terminator if any).
@@ -529,7 +506,7 @@ UTF-8 decoding and encoding.
    \*len\* is 0).
 
 
-.. c:function:: const uint32_t *wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap, size_t *count)
+.. c:function:: uint32_t *wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap, size_t *count)
 
 
    Decode \*utf8\* into a codepoint array.  The caller provides \*stack\* (up to
@@ -538,6 +515,10 @@ UTF-8 decoding and encoding.
    caller must free() the result only when it is not \*stack\*; freeing \*stack\*
    is undefined behavior.  Sets \*count\* and returns NULL on allocation
    failure.
+
+   The result is not const, so the `if (p != stack) free(p);` release is a
+   plain free() -- matching wcwidth_encode_u32() below.  Treat the contents as
+   read-only; the pointer is non-const only so ownership can be released.
 
 
 .. c:function:: uint32_t *wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
@@ -592,58 +573,6 @@ Grapheme cluster segmentation for UTF-8 text.
 
    Find the grapheme cluster boundary immediately before \*pos\*.
    Returns the byte offset of the cluster start.
-
-
-
-hyperlink.h
------------
-
-OSC 8 Hyperlink protocol parsing and creation.
-
-.. c:struct:: wcwidth_hyperlink_params_t
-
-   Parsed OSC 8 hyperlink parameters.
-
-   .. c:member:: const char *url
-
-   .. c:member:: size_t url_len
-
-   .. c:member:: const char *params
-
-   .. c:member:: size_t params_len
-
-   .. c:member:: char terminator
-
-      '\x07' or '\x1b' (ST)
-
-.. c:function:: bool wcwidth_hyperlink_parse_open(const char *seq, size_t seq_len, wcwidth_hyperlink_params_t *params)
-
-   Try to parse an OSC 8 open sequence.
-   :param seq: pointer to the escape sequence text
-   :param seq_len: length of sequence Returns true if this is a valid OSC 8 open sequence, filling \*params. Pointers in params point into seq.
-
-.. c:function:: size_t wcwidth_hyperlink_make_open(const wcwidth_hyperlink_params_t *params, char *out, size_t out_cap)
-
-   Generate an OSC 8 open sequence into \*out\*.
-   Returns bytes written (excluding NUL terminator if any).
-   out_cap must be large enough: 6 + params_len + url_len + terminator.
-
-
-.. c:function:: size_t wcwidth_hyperlink_make_close(char terminator, char *out, size_t out_cap)
-
-   Generate an OSC 8 close sequence into \*out\*.
-   :param terminator: '\x07' or '\x1b' (ST) Returns bytes written (excluding NUL).
-
-.. c:function:: void wcwidth_hyperlink_find_close(const char *text, size_t text_len, size_t search_start, size_t *close_start, size_t *close_end)
-
-   Find the matching OSC 8 close sequence in \*text\* starting at \*search_start\*.
-   Fills \*close_start and \*close_end with byte offsets, or sets both to (size_t)-1.
-
-
-.. c:function:: void wcwidth_hyperlink_next_id(char *out)
-
-   Generate a unique hyperlink id as 8 hex chars.
-   Writes exactly 8 bytes to \*out\* (no NUL).
 
 
 
@@ -789,7 +718,7 @@ OSC 66 Text Sizing protocol parsing and measurement.
 
    Parse OSC 66 parameters from the colon-separated meta string.
    :param meta: parameter string, e.g. "s=2:w=3:n=1:d=2:v=1:h=1"
-   :param meta_len: length of meta string Returns true on success.
+   :param meta_len: length of meta string.  Exactly meta_len bytes are read; \*meta\* need not be NUL-terminated. Returns true on success.
 
 .. c:function:: void wcwidth_ts_from_esc(const wcwidth_esc_result_t *esc, wcwidth_text_sizing_t *ts)
 
@@ -851,10 +780,58 @@ generated override table and looks up grapheme cluster overrides.
 
 
 
-tables.h
---------
+wcwidth_config.h
+----------------
 
-Binary search in Unicode interval tables.
+Library version, Unicode version, and UTF-8 configuration macros.
+
+The version macros track the Python `wcwidth` package release: C11 and
+Python ship together, so the same version number applies to both.
+
+.. c:macro:: WCWIDTH_VERSION_MAJOR
+
+   Defined as ``0``.
+
+.. c:macro:: WCWIDTH_VERSION_MINOR
+
+   Defined as ``9``.
+
+.. c:macro:: WCWIDTH_VERSION_PATCH
+
+   Defined as ``0``.
+
+.. c:macro:: WCWIDTH_VERSION
+
+   Defined as ``"0.9.0"``.
+
+.. c:macro:: WCWIDTH_UNICODE_VERSION
+
+   Unicode version the library tables were generated from.
+
+   Defined as ``"17.0.0"``.
+
+.. c:macro:: WCWIDTH_UTF8_MAX_BYTES
+
+   Maximum number of bytes needed to decode a single UTF-8 codepoint.
+
+   Defined as ``4``.
+
+.. c:macro:: WCWIDTH_CTRL_WIDTH
+
+   Return value indicating a non-printable control character.
+
+   Defined as ``(-1)``.
+
+
+table_types.h
+-------------
+
+Table data model: the interval type, the terminal-override record layouts,
+and the binary search over them.
+
+Hand-written.  The tables themselves -- every WCWIDTH_TABLE_* array, the
+terminal override and alias arrays, and their entry counts -- are declared
+in tables.h, which update-tables.py generates.
 
 .. c:struct:: wcwidth_interval_t
 
@@ -879,7 +856,7 @@ Binary search in Unicode interval tables.
 .. c:struct:: wcwidth_override_set_t
 
 
-   Terminal override tables (generated by update-tables.py).
+   Terminal override record layouts.
 
    The six single-codepoint categories are the merged override intervals;
    grapheme clusters are stored as a flat codepoint pool with sorted lookup
@@ -949,53 +926,6 @@ Binary search in Unicode interval tables.
    .. c:member:: const char *canonical
 
       canonical terminal name
-
-.. c:var:: const wcwidth_terminal_override_t WCWIDTH_TERMINAL_OVERRIDES
-
-.. c:var:: const wcwidth_terminal_alias_t WCWIDTH_TERMINAL_ALIASES
-
-
-wcwidth_config.h
-----------------
-
-Library version, Unicode version, and UTF-8 configuration macros.
-
-The version macros track the Python `wcwidth` package release: C11 and
-Python ship together, so the same version number applies to both.
-
-.. c:macro:: WCWIDTH_VERSION_MAJOR
-
-   Defined as ``0``.
-
-.. c:macro:: WCWIDTH_VERSION_MINOR
-
-   Defined as ``9``.
-
-.. c:macro:: WCWIDTH_VERSION_PATCH
-
-   Defined as ``0``.
-
-.. c:macro:: WCWIDTH_VERSION
-
-   Defined as ``"0.9.0"``.
-
-.. c:macro:: WCWIDTH_UNICODE_VERSION
-
-   Unicode version the library tables were generated from.
-
-   Defined as ``"17.0.0"``.
-
-.. c:macro:: WCWIDTH_UTF8_MAX_BYTES
-
-   Maximum number of bytes needed to decode a single UTF-8 codepoint.
-
-   Defined as ``4``.
-
-.. c:macro:: WCWIDTH_CTRL_WIDTH
-
-   Return value indicating a non-printable control character.
-
-   Defined as ``(-1)``.
 
 
 .. _SEMVER: https://semver.org

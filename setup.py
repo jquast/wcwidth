@@ -73,7 +73,6 @@ _EXT_SOURCES = [
     "libwcwidth/src/grapheme.c",
     "libwcwidth/src/escape.c",
     "libwcwidth/src/sgr.c",
-    "libwcwidth/src/hyperlink.c",
     "libwcwidth/src/text_sizing.c",
     "libwcwidth/src/terminal_override.c",
     "libwcwidth/src/utf8.c",

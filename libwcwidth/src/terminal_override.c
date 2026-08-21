@@ -5,7 +5,7 @@
  * grapheme cluster overrides (src/tables/table_terminal_overrides.c).
  */
 #include "wcwidth/terminal_override.h"
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 
