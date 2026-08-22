@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_MC[] = {
+const wcwidth_interval_t WCWIDTH_CATEGORY_MC[] = {
     { 0x00903, 0x00903 },  /* Devanagari Sign Visarga */
     { 0x0093b, 0x0093b },  /* Devanagari Vowel Sign Ooe */
     { 0x0093e, 0x00940 },  /* Devanagari Vowel Sign Aa..Devanagari Vowel Sign Ii */
@@ -202,5 +202,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_MC[] = {
     { 0x1d16d, 0x1d172 },  /* Musical Symbol Combining..Musical Symbol Combining */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_MC) / sizeof(WCWIDTH_TABLE_MC[0]) == WCWIDTH_TABLE_MC_LEN,
-               "WCWIDTH_TABLE_MC_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_CATEGORY_MC) / sizeof(WCWIDTH_CATEGORY_MC[0]) == WCWIDTH_CATEGORY_MC_LEN,
+               "WCWIDTH_CATEGORY_MC_LEN out of date");

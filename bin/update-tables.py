@@ -64,9 +64,6 @@ THIS_FILEPATH = ('wcwidth/' +
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True,
-    # Any undefined variable or failed lookup raises instead of rendering
-    # as an empty string; a missing template key silently producing broken
-    # output is worse than a loud generation failure.
     undefined=jinja2.StrictUndefined)
 UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -107,6 +104,7 @@ INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 # Terminal multiplexers (subterminals) depend on a host terminal for rendering; their
 # cursor-position reports from ucs-detect are not reliable indicators of display width.  Excluded
 # from wcstwidth() or term_program= argument processing.
+# See: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
 EXCLUDED_MULTIPLEXERS = {'gnu screen', 'libvterm', 'tmux', 'zellij'}
 
 
@@ -305,39 +303,8 @@ class UnicodeVersionPyRenderDef(RenderDefinition):
         )
 
 
-# Python table variable name -> C symbol, for both the interval and grapheme
-# tables: libwcwidth names every generated table this way.
-C_SYMBOLS = {
-    'WIDE_EASTASIAN': 'WCWIDTH_TABLE_WIDE',
-    'ZERO_WIDTH': 'WCWIDTH_TABLE_ZERO',
-    'AMBIGUOUS_EASTASIAN': 'WCWIDTH_TABLE_AMBIGUOUS',
-    'CATEGORY_MC': 'WCWIDTH_TABLE_MC',
-    'VS15_WIDE_TO_NARROW': 'WCWIDTH_TABLE_VS15',
-    'VS16_NARROW_TO_WIDE': 'WCWIDTH_TABLE_VS16',
-    'GRAPHEME_CR': 'WCWIDTH_TABLE_GRAPHEME_CR',
-    'GRAPHEME_LF': 'WCWIDTH_TABLE_GRAPHEME_LF',
-    'GRAPHEME_EXTEND': 'WCWIDTH_TABLE_GRAPHEME_EXTEND',
-    'GRAPHEME_ZWJ': 'WCWIDTH_TABLE_GRAPHEME_ZWJ',
-    'GRAPHEME_L': 'WCWIDTH_TABLE_GRAPHEME_L',
-    'GRAPHEME_V': 'WCWIDTH_TABLE_GRAPHEME_V',
-    'GRAPHEME_T': 'WCWIDTH_TABLE_GRAPHEME_T',
-    'GRAPHEME_LV': 'WCWIDTH_TABLE_GRAPHEME_LV',
-    'GRAPHEME_LVT': 'WCWIDTH_TABLE_GRAPHEME_LVT',
-    'GRAPHEME_PREPEND': 'WCWIDTH_TABLE_GRAPHEME_PREPEND',
-    'GRAPHEME_SPACINGMARK': 'WCWIDTH_TABLE_GRAPHEME_SPACINGMARK',
-    'GRAPHEME_CONTROL': 'WCWIDTH_TABLE_GRAPHEME_CONTROL',
-    'GRAPHEME_REGIONAL_INDICATOR': 'WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR',
-    'EXTENDED_PICTOGRAPHIC': 'WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC',
-    'INCB_LINKER': 'WCWIDTH_TABLE_INCB_LINKER',
-    'INCB_CONSONANT': 'WCWIDTH_TABLE_INCB_CONSONANT',
-    'INCB_EXTEND': 'WCWIDTH_TABLE_INCB_EXTEND',
-    'ISC_CONSONANT': 'WCWIDTH_TABLE_ISC_CONSONANT',
-    'ISC_VIRAMA': 'WCWIDTH_TABLE_ISC_VIRAMA',
-    'ISC_INVISIBLE_STACKER': 'WCWIDTH_TABLE_ISC_INVISIBLE_STACKER',
-}
-
-# Per-generated-language configuration: output directory, table templates, and
-# the symbol-name translation (Python table variable -> language symbol).
+# Per-generated-language configuration: output directory and table templates.
+# The C symbol for a table is its Python variable name prefixed with 'prefix'.
 # Adding a language is one entry here plus its templates in code_templates/.
 LANGUAGES = {
     '.py': {
@@ -349,7 +316,7 @@ LANGUAGES = {
         'dir': os.path.join('libwcwidth', 'src', 'tables'),
         'table': 'c_table.c.j2',
         'grapheme': 'grapheme_table.c.j2',
-        'symbols': C_SYMBOLS,
+        'prefix': 'WCWIDTH_',
     },
 }
 
@@ -365,8 +332,8 @@ class UnicodeTableRenderDef(RenderDefinition):
             raise ValueError(f'no code generation language for {filename!r}')
         lang = LANGUAGES[ext]
         extra_context = {}
-        if 'symbols' in lang:
-            extra_context['c_name'] = lang['symbols'][context.variable_name]
+        if 'prefix' in lang:
+            extra_context['c_name'] = lang['prefix'] + context.variable_name
         return cls(
             jinja_filename=lang['table'],
             output_filename=os.path.join(PATH_UP, lang['dir'], filename),
@@ -403,8 +370,8 @@ class GraphemeTableRenderDef(RenderDefinition):
             raise ValueError(f'no code generation language for {filename!r}')
         lang = LANGUAGES[ext]
         extra_context = {}
-        if 'symbols' in lang:
-            extra_context['symbols'] = lang['symbols']
+        if 'prefix' in lang:
+            extra_context['prefix'] = lang['prefix']
         return cls(
             jinja_filename=lang['grapheme'],
             output_filename=os.path.join(PATH_UP, lang['dir'], filename),
@@ -415,10 +382,10 @@ class GraphemeTableRenderDef(RenderDefinition):
     @property
     def table_lengths(self) -> Mapping[str, int]:
         """Symbol -> entry count, for the generated C header's length macros."""
-        symbols = self._extra_context.get('symbols')
-        if symbols is None:
+        prefix = self._extra_context.get('prefix')
+        if prefix is None:
             return {}
-        return {symbols[var_name]: len(table_def.as_value_ranges())
+        return {prefix + var_name: len(table_def.as_value_ranges())
                 for var_name, table_def in self.render_context.tables.items()}
 
 
@@ -2121,13 +2088,12 @@ def _generate_c_table_header(c_lens: Mapping[str, int]) -> None:
     rather than an extern const size_t symbol.  The generated table .c files verify the count with a
     _Static_assert.
     """
-    missing = [name for name in C_SYMBOLS.values() if name not in c_lens]
-    if missing:
-        raise ValueError(f'missing table lengths from code generation: {missing}')
+    overrides_names = {'WCWIDTH_TERMINAL_OVERRIDES', 'WCWIDTH_TERMINAL_ALIASES'}
+    c_names = [name for name in c_lens if name not in overrides_names]
     header_path = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth',
                                'tables.h')
     output = JINJA_ENV.get_template('tables.h.j2').render(
-        c_lens=c_lens, c_names=C_SYMBOLS.values())
+        c_lens=c_lens, c_names=c_names)
     new_path = header_path + '.new'
     with open(new_path, 'w', encoding='utf-8', newline='\n') as fout:
         fout.write(output)

@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_VS15[] = {
+const wcwidth_interval_t WCWIDTH_VS15_WIDE_TO_NARROW[] = {
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x023e9, 0x023ec },  /* Black Right-pointing Dou..Black Down-pointing Doub */
     { 0x023f0, 0x023f0 },  /* Alarm Clock */
@@ -100,5 +100,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_VS15[] = {
     { 0x1f6bc, 0x1f6bc },  /* Baby Symbol */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_VS15) / sizeof(WCWIDTH_TABLE_VS15[0]) == WCWIDTH_TABLE_VS15_LEN,
-               "WCWIDTH_TABLE_VS15_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_VS15_WIDE_TO_NARROW) / sizeof(WCWIDTH_VS15_WIDE_TO_NARROW[0]) == WCWIDTH_VS15_WIDE_TO_NARROW_LEN,
+               "WCWIDTH_VS15_WIDE_TO_NARROW_LEN out of date");

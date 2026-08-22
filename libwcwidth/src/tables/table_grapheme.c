@@ -5,25 +5,25 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_CR[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_CR[] = {
     { 0x0000d, 0x0000d },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_CR) / sizeof(WCWIDTH_TABLE_GRAPHEME_CR[0]) == WCWIDTH_TABLE_GRAPHEME_CR_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_CR_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_CR) / sizeof(WCWIDTH_GRAPHEME_CR[0]) == WCWIDTH_GRAPHEME_CR_LEN,
+               "WCWIDTH_GRAPHEME_CR_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_LF[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_LF[] = {
     { 0x0000a, 0x0000a },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_LF) / sizeof(WCWIDTH_TABLE_GRAPHEME_LF[0]) == WCWIDTH_TABLE_GRAPHEME_LF_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_LF_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_LF) / sizeof(WCWIDTH_GRAPHEME_LF[0]) == WCWIDTH_GRAPHEME_LF_LEN,
+               "WCWIDTH_GRAPHEME_LF_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_CONTROL[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_CONTROL[] = {
     { 0x00000, 0x00009 },  /* (nil) */
     { 0x0000b, 0x0000c },  /* (nil) */
     { 0x0000e, 0x0001f },  /* (nil) */
@@ -45,12 +45,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_CONTROL[] = {
     { 0xe01f0, 0xe0fff },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_CONTROL) / sizeof(WCWIDTH_TABLE_GRAPHEME_CONTROL[0]) == WCWIDTH_TABLE_GRAPHEME_CONTROL_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_CONTROL_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_CONTROL) / sizeof(WCWIDTH_GRAPHEME_CONTROL[0]) == WCWIDTH_GRAPHEME_CONTROL_LEN,
+               "WCWIDTH_GRAPHEME_CONTROL_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_EXTEND[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_EXTEND[] = {
     { 0x00300, 0x0036f },  /* Combining Grave Accent  ..Combining Latin Small Le */
     { 0x00483, 0x00489 },  /* Combining Cyrillic Titlo..Combining Cyrillic Milli */
     { 0x00591, 0x005bd },  /* Hebrew Accent Etnahta   ..Hebrew Point Meteg */
@@ -437,30 +437,30 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_EXTEND[] = {
     { 0xe0100, 0xe01ef },  /* Variation Selector-17   ..Variation Selector-256 */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_EXTEND) / sizeof(WCWIDTH_TABLE_GRAPHEME_EXTEND[0]) == WCWIDTH_TABLE_GRAPHEME_EXTEND_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_EXTEND_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_EXTEND) / sizeof(WCWIDTH_GRAPHEME_EXTEND[0]) == WCWIDTH_GRAPHEME_EXTEND_LEN,
+               "WCWIDTH_GRAPHEME_EXTEND_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_ZWJ[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_ZWJ[] = {
     { 0x0200d, 0x0200d },  /* Zero Width Joiner */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_ZWJ) / sizeof(WCWIDTH_TABLE_GRAPHEME_ZWJ[0]) == WCWIDTH_TABLE_GRAPHEME_ZWJ_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_ZWJ_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_ZWJ) / sizeof(WCWIDTH_GRAPHEME_ZWJ[0]) == WCWIDTH_GRAPHEME_ZWJ_LEN,
+               "WCWIDTH_GRAPHEME_ZWJ_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_REGIONAL_INDICATOR[] = {
     { 0x1f1e6, 0x1f1ff },  /* Regional Indicator Symbo..Regional Indicator Symbo */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR) / sizeof(WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR[0]) == WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_REGIONAL_INDICATOR) / sizeof(WCWIDTH_GRAPHEME_REGIONAL_INDICATOR[0]) == WCWIDTH_GRAPHEME_REGIONAL_INDICATOR_LEN,
+               "WCWIDTH_GRAPHEME_REGIONAL_INDICATOR_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_PREPEND[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_PREPEND[] = {
     { 0x00600, 0x00605 },  /* Arabic Number Sign      ..Arabic Number Mark Above */
     { 0x006dd, 0x006dd },  /* Arabic End Of Ayah */
     { 0x0070f, 0x0070f },  /* Syriac Abbreviation Mark */
@@ -478,12 +478,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_PREPEND[] = {
     { 0x11f02, 0x11f02 },  /* Kawi Sign Repha */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_PREPEND) / sizeof(WCWIDTH_TABLE_GRAPHEME_PREPEND[0]) == WCWIDTH_TABLE_GRAPHEME_PREPEND_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_PREPEND_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_PREPEND) / sizeof(WCWIDTH_GRAPHEME_PREPEND[0]) == WCWIDTH_GRAPHEME_PREPEND_LEN,
+               "WCWIDTH_GRAPHEME_PREPEND_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_SPACINGMARK[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_SPACINGMARK[] = {
     { 0x00903, 0x00903 },  /* Devanagari Sign Visarga */
     { 0x0093b, 0x0093b },  /* Devanagari Vowel Sign Ooe */
     { 0x0093e, 0x00940 },  /* Devanagari Vowel Sign Aa..Devanagari Vowel Sign Ii */
@@ -644,44 +644,44 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_SPACINGMARK[] = {
     { 0x16f51, 0x16f87 },  /* Miao Sign Aspiration    ..Miao Vowel Sign Ui */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_SPACINGMARK) / sizeof(WCWIDTH_TABLE_GRAPHEME_SPACINGMARK[0]) == WCWIDTH_TABLE_GRAPHEME_SPACINGMARK_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_SPACINGMARK_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_SPACINGMARK) / sizeof(WCWIDTH_GRAPHEME_SPACINGMARK[0]) == WCWIDTH_GRAPHEME_SPACINGMARK_LEN,
+               "WCWIDTH_GRAPHEME_SPACINGMARK_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_L[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_L[] = {
     { 0x01100, 0x0115f },  /* Hangul Choseong Kiyeok  ..Hangul Choseong Filler */
     { 0x0a960, 0x0a97c },  /* Hangul Choseong Tikeut-m..Hangul Choseong Ssangyeo */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_L) / sizeof(WCWIDTH_TABLE_GRAPHEME_L[0]) == WCWIDTH_TABLE_GRAPHEME_L_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_L_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_L) / sizeof(WCWIDTH_GRAPHEME_L[0]) == WCWIDTH_GRAPHEME_L_LEN,
+               "WCWIDTH_GRAPHEME_L_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_V[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_V[] = {
     { 0x01160, 0x011a7 },  /* Hangul Jungseong Filler ..Hangul Jungseong O-yae */
     { 0x0d7b0, 0x0d7c6 },  /* Hangul Jungseong O-yeo  ..Hangul Jungseong Araea-e */
     { 0x16d63, 0x16d63 },  /* Kirat Rai Vowel Sign Aa */
     { 0x16d67, 0x16d6a },  /* Kirat Rai Vowel Sign E  ..Kirat Rai Vowel Sign Au */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_V) / sizeof(WCWIDTH_TABLE_GRAPHEME_V[0]) == WCWIDTH_TABLE_GRAPHEME_V_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_V_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_V) / sizeof(WCWIDTH_GRAPHEME_V[0]) == WCWIDTH_GRAPHEME_V_LEN,
+               "WCWIDTH_GRAPHEME_V_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_T[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_T[] = {
     { 0x011a8, 0x011ff },  /* Hangul Jongseong Kiyeok ..Hangul Jongseong Ssangni */
     { 0x0d7cb, 0x0d7fb },  /* Hangul Jongseong Nieun-r..Hangul Jongseong Phieuph */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_T) / sizeof(WCWIDTH_TABLE_GRAPHEME_T[0]) == WCWIDTH_TABLE_GRAPHEME_T_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_T_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_T) / sizeof(WCWIDTH_GRAPHEME_T[0]) == WCWIDTH_GRAPHEME_T_LEN,
+               "WCWIDTH_GRAPHEME_T_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_LV[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_LV[] = {
     { 0x0ac00, 0x0ac00 },  /* Hangul Syllable Ga */
     { 0x0ac1c, 0x0ac1c },  /* Hangul Syllable Gae */
     { 0x0ac38, 0x0ac38 },  /* Hangul Syllable Gya */
@@ -1083,12 +1083,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_LV[] = {
     { 0x0d788, 0x0d788 },  /* Hangul Syllable Hi */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_LV) / sizeof(WCWIDTH_TABLE_GRAPHEME_LV[0]) == WCWIDTH_TABLE_GRAPHEME_LV_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_LV_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_LV) / sizeof(WCWIDTH_GRAPHEME_LV[0]) == WCWIDTH_GRAPHEME_LV_LEN,
+               "WCWIDTH_GRAPHEME_LV_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_LVT[] = {
+const wcwidth_interval_t WCWIDTH_GRAPHEME_LVT[] = {
     { 0x0ac01, 0x0ac1b },  /* Hangul Syllable Gag     ..Hangul Syllable Gah */
     { 0x0ac1d, 0x0ac37 },  /* Hangul Syllable Gaeg    ..Hangul Syllable Gaeh */
     { 0x0ac39, 0x0ac53 },  /* Hangul Syllable Gyag    ..Hangul Syllable Gyah */
@@ -1490,12 +1490,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_GRAPHEME_LVT[] = {
     { 0x0d789, 0x0d7a3 },  /* Hangul Syllable Hig     ..Hangul Syllable Hih */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_GRAPHEME_LVT) / sizeof(WCWIDTH_TABLE_GRAPHEME_LVT[0]) == WCWIDTH_TABLE_GRAPHEME_LVT_LEN,
-               "WCWIDTH_TABLE_GRAPHEME_LVT_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_GRAPHEME_LVT) / sizeof(WCWIDTH_GRAPHEME_LVT[0]) == WCWIDTH_GRAPHEME_LVT_LEN,
+               "WCWIDTH_GRAPHEME_LVT_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC[] = {
+const wcwidth_interval_t WCWIDTH_EXTENDED_PICTOGRAPHIC[] = {
     { 0x000a9, 0x000a9 },  /* Copyright Sign */
     { 0x000ae, 0x000ae },  /* Registered Sign */
     { 0x0203c, 0x0203c },  /* Double Exclamation Mark */
@@ -1654,12 +1654,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC[] = {
     { 0x1fc00, 0x1fffd },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC) / sizeof(WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC[0]) == WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC_LEN,
-               "WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_EXTENDED_PICTOGRAPHIC) / sizeof(WCWIDTH_EXTENDED_PICTOGRAPHIC[0]) == WCWIDTH_EXTENDED_PICTOGRAPHIC_LEN,
+               "WCWIDTH_EXTENDED_PICTOGRAPHIC_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_INCB_LINKER[] = {
+const wcwidth_interval_t WCWIDTH_INCB_LINKER[] = {
     { 0x0094d, 0x0094d },  /* Devanagari Sign Virama */
     { 0x009cd, 0x009cd },  /* Bengali Sign Virama */
     { 0x00acd, 0x00acd },  /* Gujarati Sign Virama */
@@ -1682,12 +1682,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_INCB_LINKER[] = {
     { 0x11f42, 0x11f42 },  /* Kawi Conjoiner */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_INCB_LINKER) / sizeof(WCWIDTH_TABLE_INCB_LINKER[0]) == WCWIDTH_TABLE_INCB_LINKER_LEN,
-               "WCWIDTH_TABLE_INCB_LINKER_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_INCB_LINKER) / sizeof(WCWIDTH_INCB_LINKER[0]) == WCWIDTH_INCB_LINKER_LEN,
+               "WCWIDTH_INCB_LINKER_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_INCB_CONSONANT[] = {
+const wcwidth_interval_t WCWIDTH_INCB_CONSONANT[] = {
     { 0x00915, 0x00939 },  /* Devanagari Letter Ka    ..Devanagari Letter Ha */
     { 0x00958, 0x0095f },  /* Devanagari Letter Qa    ..Devanagari Letter Yya */
     { 0x00978, 0x0097f },  /* Devanagari Letter Marwar..Devanagari Letter Bba */
@@ -1766,12 +1766,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_INCB_CONSONANT[] = {
     { 0x11f12, 0x11f33 },  /* Kawi Letter Ka          ..Kawi Letter Jnya */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_INCB_CONSONANT) / sizeof(WCWIDTH_TABLE_INCB_CONSONANT[0]) == WCWIDTH_TABLE_INCB_CONSONANT_LEN,
-               "WCWIDTH_TABLE_INCB_CONSONANT_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_INCB_CONSONANT) / sizeof(WCWIDTH_INCB_CONSONANT[0]) == WCWIDTH_INCB_CONSONANT_LEN,
+               "WCWIDTH_INCB_CONSONANT_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_INCB_EXTEND[] = {
+const wcwidth_interval_t WCWIDTH_INCB_EXTEND[] = {
     { 0x00300, 0x0036f },  /* Combining Grave Accent  ..Combining Latin Small Le */
     { 0x00483, 0x00489 },  /* Combining Cyrillic Titlo..Combining Cyrillic Milli */
     { 0x00591, 0x005bd },  /* Hebrew Accent Etnahta   ..Hebrew Point Meteg */
@@ -2151,12 +2151,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_INCB_EXTEND[] = {
     { 0xe0100, 0xe01ef },  /* Variation Selector-17   ..Variation Selector-256 */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_INCB_EXTEND) / sizeof(WCWIDTH_TABLE_INCB_EXTEND[0]) == WCWIDTH_TABLE_INCB_EXTEND_LEN,
-               "WCWIDTH_TABLE_INCB_EXTEND_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_INCB_EXTEND) / sizeof(WCWIDTH_INCB_EXTEND[0]) == WCWIDTH_INCB_EXTEND_LEN,
+               "WCWIDTH_INCB_EXTEND_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_ISC_CONSONANT[] = {
+const wcwidth_interval_t WCWIDTH_ISC_CONSONANT[] = {
     { 0x00915, 0x00939 },  /* Devanagari Letter Ka    ..Devanagari Letter Ha */
     { 0x00958, 0x0095f },  /* Devanagari Letter Qa    ..Devanagari Letter Yya */
     { 0x00978, 0x0097f },  /* Devanagari Letter Marwar..Devanagari Letter Bba */
@@ -2321,12 +2321,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_ISC_CONSONANT[] = {
     { 0x16d43, 0x16d62 },  /* Kirat Rai Letter A      ..Kirat Rai Letter Ha */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_ISC_CONSONANT) / sizeof(WCWIDTH_TABLE_ISC_CONSONANT[0]) == WCWIDTH_TABLE_ISC_CONSONANT_LEN,
-               "WCWIDTH_TABLE_ISC_CONSONANT_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_ISC_CONSONANT) / sizeof(WCWIDTH_ISC_CONSONANT[0]) == WCWIDTH_ISC_CONSONANT_LEN,
+               "WCWIDTH_ISC_CONSONANT_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_ISC_VIRAMA[] = {
+const wcwidth_interval_t WCWIDTH_ISC_VIRAMA[] = {
     { 0x0094d, 0x0094d },  /* Devanagari Sign Virama */
     { 0x009cd, 0x009cd },  /* Bengali Sign Virama */
     { 0x00a4d, 0x00a4d },  /* Gurmukhi Sign Virama */
@@ -2356,12 +2356,12 @@ const wcwidth_interval_t WCWIDTH_TABLE_ISC_VIRAMA[] = {
     { 0x11c3f, 0x11c3f },  /* Bhaiksuki Sign Virama */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_ISC_VIRAMA) / sizeof(WCWIDTH_TABLE_ISC_VIRAMA[0]) == WCWIDTH_TABLE_ISC_VIRAMA_LEN,
-               "WCWIDTH_TABLE_ISC_VIRAMA_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_ISC_VIRAMA) / sizeof(WCWIDTH_ISC_VIRAMA[0]) == WCWIDTH_ISC_VIRAMA_LEN,
+               "WCWIDTH_ISC_VIRAMA_LEN out of date");
 
 
 
-const wcwidth_interval_t WCWIDTH_TABLE_ISC_INVISIBLE_STACKER[] = {
+const wcwidth_interval_t WCWIDTH_ISC_INVISIBLE_STACKER[] = {
     { 0x01039, 0x01039 },  /* Myanmar Sign Virama */
     { 0x017d2, 0x017d2 },  /* Khmer Sign Coeng */
     { 0x01a60, 0x01a60 },  /* Tai Tham Sign Sakot */
@@ -2378,6 +2378,6 @@ const wcwidth_interval_t WCWIDTH_TABLE_ISC_INVISIBLE_STACKER[] = {
     { 0x11f42, 0x11f42 },  /* Kawi Conjoiner */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_ISC_INVISIBLE_STACKER) / sizeof(WCWIDTH_TABLE_ISC_INVISIBLE_STACKER[0]) == WCWIDTH_TABLE_ISC_INVISIBLE_STACKER_LEN,
-               "WCWIDTH_TABLE_ISC_INVISIBLE_STACKER_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_ISC_INVISIBLE_STACKER) / sizeof(WCWIDTH_ISC_INVISIBLE_STACKER[0]) == WCWIDTH_ISC_INVISIBLE_STACKER_LEN,
+               "WCWIDTH_ISC_INVISIBLE_STACKER_LEN out of date");
 

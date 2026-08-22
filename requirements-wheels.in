@@ -1,0 +1,6 @@
+# Frozen below v3.0: manylinux base image moved from manylinux2014 (glibc
+# 2.17) to manylinux_2_28 (glibc 2.28), dropping support for older distros
+# (e.g. RHEL/CentOS 7); v3.0 also disabled PyPy wheels and 32-bit Linux by
+# default. Bump deliberately (tox -e update_requirements_wheels), not as a
+# side effect of wanting a newer feature -- see .github/workflows/wheels.yml.
+cibuildwheel==2.23.*

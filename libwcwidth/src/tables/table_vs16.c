@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_VS16[] = {
+const wcwidth_interval_t WCWIDTH_VS16_NARROW_TO_WIDE[] = {
     { 0x00023, 0x00023 },  /* Number Sign */
     { 0x0002a, 0x0002a },  /* Asterisk */
     { 0x00030, 0x00039 },  /* Digit Zero              ..Digit Nine */
@@ -122,5 +122,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_VS16[] = {
     { 0x1f6f3, 0x1f6f3 },  /* Passenger Ship */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_VS16) / sizeof(WCWIDTH_TABLE_VS16[0]) == WCWIDTH_TABLE_VS16_LEN,
-               "WCWIDTH_TABLE_VS16_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_VS16_NARROW_TO_WIDE) / sizeof(WCWIDTH_VS16_NARROW_TO_WIDE[0]) == WCWIDTH_VS16_NARROW_TO_WIDE_LEN,
+               "WCWIDTH_VS16_NARROW_TO_WIDE_LEN out of date");

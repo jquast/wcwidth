@@ -2,7 +2,7 @@
  * Table data model: the interval type, the terminal-override record layouts,
  * and the binary search over them.
  *
- * Hand-written.  The tables themselves -- every WCWIDTH_TABLE_* array, the
+ * Hand-written.  The tables themselves -- every WCWIDTH_* interval array, the
  * terminal override and alias arrays, and their entry counts -- are declared
  * in tables.h, which update-tables.py generates.
  */

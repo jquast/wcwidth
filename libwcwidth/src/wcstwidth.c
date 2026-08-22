@@ -135,8 +135,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
         /* 6. VS16 (U+FE0F): converts preceding narrow character to wide. */
         if (ucs == 0xFE0F && last_measured_idx >= 0) {
             if (!wcwidth_bisearch(last_measured_ucs, vs16_narrower, vs16_narrower_len)
-                && wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS16,
-                                    WCWIDTH_TABLE_VS16_LEN)) {
+                && wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE,
+                                    WCWIDTH_VS16_NARROW_TO_WIDE_LEN)) {
                 cluster_width = 2;
             }
             last_measured_idx = -2; /* prevent double application */
@@ -147,7 +147,7 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
         /* VS15 (U+FE0E): text variation selector, requests narrow presentation. */
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
             bool vs15_narrow =
-                wcwidth_bisearch(last_measured_ucs, WCWIDTH_TABLE_VS15, WCWIDTH_TABLE_VS15_LEN)
+                wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW, WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
                 != 0;
             if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                 vs15_narrow = false;
@@ -262,7 +262,7 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
                 prev_was_virama = true;
             }
             else if (last_measured_idx >= 0
-                     && wcwidth_bisearch(ucs, WCWIDTH_TABLE_MC, WCWIDTH_TABLE_MC_LEN)) {
+                     && wcwidth_bisearch(ucs, WCWIDTH_CATEGORY_MC, WCWIDTH_CATEGORY_MC_LEN)) {
                 /* Spacing Combining Mark (Mc) following a base character. */
                 cluster_width = 2;
                 last_measured_idx = -2;

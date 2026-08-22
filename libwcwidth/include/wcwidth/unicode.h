@@ -22,25 +22,25 @@ extern "C" {
 static inline bool
 wcwidth_is_virama(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_ISC_VIRAMA, WCWIDTH_TABLE_ISC_VIRAMA_LEN) != 0
-           || wcwidth_bisearch(ucs, WCWIDTH_TABLE_ISC_INVISIBLE_STACKER,
-                               WCWIDTH_TABLE_ISC_INVISIBLE_STACKER_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_ISC_VIRAMA, WCWIDTH_ISC_VIRAMA_LEN) != 0
+           || wcwidth_bisearch(ucs, WCWIDTH_ISC_INVISIBLE_STACKER,
+                               WCWIDTH_ISC_INVISIBLE_STACKER_LEN)
                   != 0;
 }
 
 static inline bool
 wcwidth_is_regional_indicator(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR,
-                            WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_REGIONAL_INDICATOR,
+                            WCWIDTH_GRAPHEME_REGIONAL_INDICATOR_LEN)
            != 0;
 }
 
 static inline bool
 wcwidth_is_extended_pictographic(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC,
-                            WCWIDTH_TABLE_EXTENDED_PICTOGRAPHIC_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_EXTENDED_PICTOGRAPHIC,
+                            WCWIDTH_EXTENDED_PICTOGRAPHIC_LEN)
            != 0;
 }
 

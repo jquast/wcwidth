@@ -656,3 +656,42 @@ def test_wcstwidth_positional_args(pwcs, n):
     result = wcwidth.wcstwidth(pwcs, n)
     assert isinstance(result, int)
     assert result >= 0
+
+
+ALIGN_FUNCS = [wcwidth.ljust, wcwidth.rjust, wcwidth.center]
+
+
+@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
+@pytest.mark.parametrize('dest_width,fillchar', [
+    (2**62 + 2, '\U0001F600'),
+    ((2**64 + 2) // 3 + 2, '你'),
+])
+def test_align_huge_dest_width_raises_memory_error(func, dest_width, fillchar):
+    """Ljust()/rjust()/center() raise MemoryError for an unrepresentable dest_width."""
+    with pytest.raises(MemoryError):
+        func('hi', dest_width, fillchar)
+
+
+@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
+def test_align_control_codes_strict_rejects_illegal_control(func):
+    """Ljust()/rjust()/center() honor control_codes='strict'."""
+    with pytest.raises(ValueError):
+        func('\x01x', 10, ' ', control_codes='strict')
+
+
+def test_width_large_cursor_movement_saturates():
+    """Width() handles a CSI cursor-movement parameter far beyond any real column."""
+    assert wcwidth.width('\x1b[100000000000000000000C', control_codes='parse') >= 0
+
+
+def test_wrap_tabsize_zero_passes_through():
+    """Wrap() accepts tabsize=0 without raising."""
+    result = wcwidth.wrap('a\tb', 3, tabsize=0, replace_whitespace=False)
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize('text', ['\udcbf', '\udc80', '\udcbf\udcbf\udcbf'])
+def test_wrap_lone_surrogate_escaped_bytes(text):
+    """Wrap() handles a lone/incomplete surrogate-escaped byte without raising."""
+    result = wcwidth.wrap(text, 3)
+    assert isinstance(result, list)

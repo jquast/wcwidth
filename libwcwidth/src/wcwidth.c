@@ -19,18 +19,18 @@ wcwidth_u32(uint32_t ucs, int ambiguous_width)
     }
 
     /* Zero-width codepoints (combining marks, ZWJ, format chars, etc.) */
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_ZERO, WCWIDTH_TABLE_ZERO_LEN)) {
+    if (wcwidth_bisearch(ucs, WCWIDTH_ZERO_WIDTH, WCWIDTH_ZERO_WIDTH_LEN)) {
         return 0;
     }
 
     /* Wide East Asian characters (F and W categories) */
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_WIDE, WCWIDTH_TABLE_WIDE_LEN)) {
+    if (wcwidth_bisearch(ucs, WCWIDTH_WIDE_EASTASIAN, WCWIDTH_WIDE_EASTASIAN_LEN)) {
         return 2;
     }
 
     /* Ambiguous East Asian (A category) -- only wide in CJK context */
     if (ambiguous_width == 2
-        && wcwidth_bisearch(ucs, WCWIDTH_TABLE_AMBIGUOUS, WCWIDTH_TABLE_AMBIGUOUS_LEN)) {
+        && wcwidth_bisearch(ucs, WCWIDTH_AMBIGUOUS_EASTASIAN, WCWIDTH_AMBIGUOUS_EASTASIAN_LEN)) {
         return 2;
     }
 

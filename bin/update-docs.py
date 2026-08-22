@@ -12,21 +12,11 @@ import importlib.util
 
 from typing import Sequence
 
-# Executed by tox,  $ tox -e update
+# Executed by tox, $ tox -e update
 #
-# This script owns every generated documentation file:
-#
-#   docs/api_c.rst          C11 API reference, parsed from the headers.
-#   docs/unicode_version.rst  Unicode release files page, from data file headers.
-#   docs/libwcwidth.rst     canonical terminal names and Unicode version markers.
-#   README.rst              list_term_programs() example (via docs/intro.rst).
-#
-# Headers are discovered by glob, so adding, renaming, or removing a header is
-# reflected in docs/api_c.rst automatically.  Each header is parsed for comment
-# blocks and declarations, and emitted as Sphinx C-domain directives, whose
-# signatures are validated by Sphinx's own C parser at documentation build
-# time.  The terminal name and Unicode version sections are refreshed from the
-# generated Python tables.
+# Regenerates docs/api_c.rst (C11 API reference, parsed from the headers),
+# docs/unicode_version.rst, docs/libwcwidth.rst, and the list_term_programs()
+# example in README.rst.
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PATH_HEADERS = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth')
@@ -42,19 +32,16 @@ GUARD_IFNDEF_RE = re.compile(r'^\s*#\s*ifndef\s+(\w+)')
 SKIP_LINE_RE = re.compile(r'^\s*#\s*(?:ifdef|endif|include)\b|^\s*extern\s+"C"\s*\{|^\s*\}\s*$')
 ENUM_RE = re.compile(r'typedef\s+enum\s*\{(.*)\}\s*(\w+)\s*;', re.DOTALL)
 STRUCT_RE = re.compile(r'typedef\s+struct\s*\{(.*)\}\s*(\w+)\s*;', re.DOTALL)
-OPAQUE_RE = re.compile(r'typedef\s+struct\s+(\w+)\s+(\w+)\s*;')
 FUNC_PTR_RE = re.compile(r'typedef\s+(.+?)\(\s*\*\s*(\w+)\s*\)\s*\(([^()]*)\)\s*;', re.DOTALL)
 TYPEDEF_RE = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
 FUNC_RE = re.compile(r'^(.*?)\b(\w+)\s*\(([^()]*)\)\s*;?$', re.DOTALL)
 EXTERN_RE = re.compile(r'extern\s+(const\s+.+?)\s+(\w+)\s*(?:\[\s*\])?\s*;', re.DOTALL)
 PARAM_RE = re.compile(r'^\*?(\w+)\*?:\s*(.*)$')
 
-# Object names already emitted, across all headers: wcstwidth.h declares the
-# same functions as wcwidth.h, and the tables.h interval arrays are data.
+# Names already emitted across all headers (wcstwidth.h redeclares wcwidth.h's functions).
 EMITTED: set[str] = set()
 
-# Headers in documentation order, most important first; glob still discovers
-# all headers, and any not listed here are appended alphabetically at the end.
+# Headers in documentation order; any not listed here are appended alphabetically.
 HEADER_ORDER = [
     'wcwidth.h',
     'wcstwidth.h',
@@ -184,8 +171,6 @@ def description(comment: str | None,
     fields: list[tuple[str, str]] = []
     current = None
     if comment:
-        # A :param: field continues across following lines until a blank line
-        # or the next parameter, so multi-line descriptions are not lost as prose.
         for raw in comment.splitlines():
             line = raw.strip()
             if not line or line == '*':
@@ -225,8 +210,6 @@ def render(kind: str, signature: str, comment: str | None,
            *, members: Sequence[tuple[str, str, str]] = (),
            note: str | None = None) -> list[str]:
     """Render a c-domain directive with its description, nested items, and note."""
-    # The C domain does not join continuation lines, so signatures are kept on
-    # one line; the generated file is exempt from doc8 line-length checks.
     body, fields = description(comment, param_names)
     lines = [f'.. {kind}:: {" ".join(signature.split())}']
     if body or fields:
@@ -247,8 +230,6 @@ def render(kind: str, signature: str, comment: str | None,
 
 def enum_members(body: str) -> list[tuple[str, str]]:
     """Return (name, doc) pairs from an enum body."""
-    # Comments sit after the ',' of the member they describe, so each comment is
-    # paired with the member seen most recently before it.
     members: list[tuple[str, str]] = []
     name = ''
     for m in re.finditer(r'/\*(.*?)\*/|([A-Za-z_]\w*)', body, re.DOTALL):
@@ -263,10 +244,6 @@ def enum_members(body: str) -> list[tuple[str, str]]:
 
 def struct_members(body: str) -> list[tuple[str, str, str]]:
     """Return (type, name, doc) triples from a struct body."""
-    # A comment on the same line as the previous ';' documents that member
-    # (trailing); a comment on its own line documents the following declaration
-    # (leading).  Members declared in a comma-separated list share the first
-    # member's type.
     members: list[tuple[str, str, str]] = []
     comments, masked = extract_comments(body)
     ci = 0
@@ -314,8 +291,6 @@ def classify(stmt: str) -> tuple[str, str, re.Match] | None:
         return ('enum', m.group(2), m)
     if m := STRUCT_RE.match(stmt):
         return ('struct', m.group(2), m)
-    if m := OPAQUE_RE.match(stmt):
-        return ('type', m.group(2), m)
     if m := FUNC_PTR_RE.match(stmt):
         return ('type', m.group(2), m)
     if m := TYPEDEF_RE.match(stmt):
@@ -395,8 +370,6 @@ def render_header_section(header: str, text: str) -> list[str]:
     lead = None
     prev_end = None
     for start, end, kind, name, payload, m in events:
-        # A comment block documents the declaration that follows it; a blank
-        # line between a comment and the declaration ends the association.
         if prev_end is not None and '\n\n' in body[prev_end:start]:
             lead = None
         while comment_idx < len(comments) and comments[comment_idx].end() <= start:
@@ -414,9 +387,6 @@ def render_header_section(header: str, text: str) -> list[str]:
 
 def header_files() -> list[str]:
     """Return the public header paths in documentation order."""
-    # All headers are discovered by glob, so adding, renaming, or removing a
-    # header is reflected automatically; known headers follow HEADER_ORDER and
-    # any others are appended alphabetically at the end.
     found = set(glob.glob(os.path.join(PATH_HEADERS, '*.h')))
     ordered = []
     for name in HEADER_ORDER:

@@ -80,9 +80,26 @@ wcwidth = [ "py.typed", "*.pyi" ]
 # per-version wheels for every supported CPython, including free-threaded
 # 3.13t/3.14t builds; PyPy users get the Python sdist fallback
 build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp315-* cp313t-* cp314t-*"
-# extend the arch lists below to add more (e.g. manylinux i686/ppc64le/s390x,
-# musllinux, windows arm64) -- one line each
-skip = "*-musllinux_*"
+# musllinux (Alpine) wheels are built for every regular CPython version.
+# Free-threaded x musllinux is skipped: upstream musl free-threaded build
+# support is newer and less established than manylinux/macOS/Windows, so it
+# is left off until it can be verified rather than shipped speculatively.
+# extend the arch lists below to add more (e.g. manylinux/musllinux
+# i686/ppc64le/s390x, windows arm64) -- one line each
+skip = "cp313t-musllinux_* cp314t-musllinux_*"
+# Run the test suite against every built wheel, including musllinux (under
+# QEMU emulation for aarch64 -- see .github/workflows/wheels.yml) and the
+# free-threaded builds, so a broken wheel is caught here rather than after
+# publishing. {project} is the checked-out repo (tests/ lives there, not in
+# the wheel). --import-mode=importlib is required: pytest's default
+# "prepend" import mode walks up from tests/ (which has __init__.py) to the
+# first ancestor without one -- {project} itself -- and inserts *that* onto
+# sys.path ahead of site-packages, so "import wcwidth" would silently
+# resolve to the uncompiled source tree instead of the wheel this is meant
+# to verify. pytest-cov is required only because tox.ini's [pytest] section
+# bakes in --cov flags that pytest reads from rootdir regardless of tox.
+test-requires = "pytest pytest-cov"
+test-command = "python -m pytest {project}/tests --verbose --durations=10 --import-mode=importlib"
 
 [tool.cibuildwheel.linux]
 archs = [ "x86_64", "aarch64" ]

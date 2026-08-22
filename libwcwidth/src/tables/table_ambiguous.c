@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_AMBIGUOUS[] = {
+const wcwidth_interval_t WCWIDTH_AMBIGUOUS_EASTASIAN[] = {
     { 0x000a1, 0x000a1 },  /* Inverted Exclamation Mark */
     { 0x000a4, 0x000a4 },  /* Currency Sign */
     { 0x000a7, 0x000a8 },  /* Section Sign            ..Diaeresis */
@@ -185,5 +185,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_AMBIGUOUS[] = {
     { 0x100000, 0x10fffd },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_AMBIGUOUS) / sizeof(WCWIDTH_TABLE_AMBIGUOUS[0]) == WCWIDTH_TABLE_AMBIGUOUS_LEN,
-               "WCWIDTH_TABLE_AMBIGUOUS_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_AMBIGUOUS_EASTASIAN) / sizeof(WCWIDTH_AMBIGUOUS_EASTASIAN[0]) == WCWIDTH_AMBIGUOUS_EASTASIAN_LEN,
+               "WCWIDTH_AMBIGUOUS_EASTASIAN_LEN out of date");

@@ -198,6 +198,47 @@ TEST(wrap_lines_u8)
     free(out);
 }
 
+/*
+ * tabsize <= 0 is documented to pass tabs through unchanged; disabling
+ * replace_whitespace isolates that from the whitespace-normalization pass.
+ */
+TEST(wrap_tabsize_zero)
+{
+    char *out = NULL;
+    size_t len = 0;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 3;
+    o.tabsize = 0;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wrap_u8("a\tb", 3, &o, &out, &len));
+    ASSERT_EQ(3, len);
+    ASSERT_EQ(0, memcmp(out, "a\tb", 3));
+    free(out);
+}
+
+/*
+ * A run of UTF-8 continuation bytes reaching the start of the buffer must
+ * not read before it while backing up to find a lead byte.
+ */
+TEST(wrap_lone_continuation_bytes)
+{
+    static const char *const inputs[] = {"\xBF", "\x80", "\xBF\xBF\xBF"};
+    size_t i;
+
+    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        char *out = NULL;
+        size_t len = 0;
+        wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+        size_t in_len = strlen(inputs[i]);
+
+        o.width = 3;
+        int rv = wrap_u8(inputs[i], in_len, &o, &out, &len);
+        ASSERT_EQ(0, rv);
+        free(out);
+    }
+}
+
 int
 main(void)
 {
@@ -207,5 +248,7 @@ main(void)
     RUN_TEST(wrap_u32_parity);
     RUN_TEST(wrap_text_u32_parity);
     RUN_TEST(wrap_lines_u8);
+    RUN_TEST(wrap_tabsize_zero);
+    RUN_TEST(wrap_lone_continuation_bytes);
     return test_summary();
 }

@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_ZERO[] = {
+const wcwidth_interval_t WCWIDTH_ZERO_WIDTH[] = {
     { 0x00000, 0x00000 },  /* (nil) */
     { 0x00300, 0x0036f },  /* Combining Grave Accent  ..Combining Latin Small Le */
     { 0x00483, 0x00489 },  /* Combining Cyrillic Titlo..Combining Cyrillic Milli */
@@ -346,5 +346,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_ZERO[] = {
     { 0xe0000, 0xe0fff },  /* (nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_ZERO) / sizeof(WCWIDTH_TABLE_ZERO[0]) == WCWIDTH_TABLE_ZERO_LEN,
-               "WCWIDTH_TABLE_ZERO_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_ZERO_WIDTH) / sizeof(WCWIDTH_ZERO_WIDTH[0]) == WCWIDTH_ZERO_WIDTH_LEN,
+               "WCWIDTH_ZERO_WIDTH_LEN out of date");

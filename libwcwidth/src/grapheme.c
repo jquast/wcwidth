@@ -114,27 +114,27 @@ gcb_of(uint32_t ucs)
         return GCB_ZWJ;
 
     /* Range checks via binary search */
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_CONTROL, WCWIDTH_TABLE_GRAPHEME_CONTROL_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_CONTROL, WCWIDTH_GRAPHEME_CONTROL_LEN))
         return GCB_CONTROL;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_EXTEND, WCWIDTH_TABLE_GRAPHEME_EXTEND_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_EXTEND, WCWIDTH_GRAPHEME_EXTEND_LEN))
         return GCB_EXTEND;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR,
-                         WCWIDTH_TABLE_GRAPHEME_REGIONAL_INDICATOR_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_REGIONAL_INDICATOR,
+                         WCWIDTH_GRAPHEME_REGIONAL_INDICATOR_LEN))
         return GCB_REGIONAL_INDICATOR;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_PREPEND, WCWIDTH_TABLE_GRAPHEME_PREPEND_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_PREPEND, WCWIDTH_GRAPHEME_PREPEND_LEN))
         return GCB_PREPEND;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_SPACINGMARK,
-                         WCWIDTH_TABLE_GRAPHEME_SPACINGMARK_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_SPACINGMARK,
+                         WCWIDTH_GRAPHEME_SPACINGMARK_LEN))
         return GCB_SPACING_MARK;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_L, WCWIDTH_TABLE_GRAPHEME_L_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_L, WCWIDTH_GRAPHEME_L_LEN))
         return GCB_L;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_V, WCWIDTH_TABLE_GRAPHEME_V_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_V, WCWIDTH_GRAPHEME_V_LEN))
         return GCB_V;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_T, WCWIDTH_TABLE_GRAPHEME_T_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_T, WCWIDTH_GRAPHEME_T_LEN))
         return GCB_T;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_LV, WCWIDTH_TABLE_GRAPHEME_LV_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_LV, WCWIDTH_GRAPHEME_LV_LEN))
         return GCB_LV;
-    if (wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_LVT, WCWIDTH_TABLE_GRAPHEME_LVT_LEN))
+    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_LVT, WCWIDTH_GRAPHEME_LVT_LEN))
         return GCB_LVT;
 
     return GCB_OTHER;
@@ -143,20 +143,20 @@ gcb_of(uint32_t ucs)
 static bool
 is_incb_linker(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_INCB_LINKER, WCWIDTH_TABLE_INCB_LINKER_LEN) != 0;
+    return wcwidth_bisearch(ucs, WCWIDTH_INCB_LINKER, WCWIDTH_INCB_LINKER_LEN) != 0;
 }
 
 static bool
 is_incb_consonant(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_INCB_CONSONANT, WCWIDTH_TABLE_INCB_CONSONANT_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_INCB_CONSONANT, WCWIDTH_INCB_CONSONANT_LEN)
            != 0;
 }
 
 static bool
 is_incb_extend(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_INCB_EXTEND, WCWIDTH_TABLE_INCB_EXTEND_LEN) != 0;
+    return wcwidth_bisearch(ucs, WCWIDTH_INCB_EXTEND, WCWIDTH_INCB_EXTEND_LEN) != 0;
 }
 
 /*

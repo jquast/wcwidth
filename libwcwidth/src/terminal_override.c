@@ -146,7 +146,7 @@ wcwidth_grapheme_override_lookup(const wcwidth_terminal_override_t *term, const 
 static bool
 is_grapheme_extend(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_TABLE_GRAPHEME_EXTEND, WCWIDTH_TABLE_GRAPHEME_EXTEND_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_EXTEND, WCWIDTH_GRAPHEME_EXTEND_LEN)
            != 0;
 }
 

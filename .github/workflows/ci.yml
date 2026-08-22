@@ -112,9 +112,9 @@ jobs:
         shell: bash
         run: |
           # The test suite imports wcwidth from the source tree, not from the installed wheel, so
-          # the extension must be built in-place for the extension-mode runs to
-          # exercise the C implementation.  setup.py runs against the ambient
-          # Python, which has no setuptools on the macOS toolchain builds.
+          # the extension must be built in-place for the extension-mode runs to exercise the C
+          # implementation.  setup.py runs against the ambient Python, which may not have
+          # setuptools.
           python -Im pip install setuptools
           python setup.py build_ext --inplace
 
@@ -145,10 +145,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
 
-  # Python-only runs: the wheel built here contains the C extension, but
-  # WCWIDTH_PYTHON=1 (set by the tox env) forces the Python implementation.
-  # Only the earliest and latest supported Python are run this way, on a single
-  # OS, keeping the Python code paths exercised and covered.
+  # Python-only tests: the wheel built here contains the C extension, but
+  # WCWIDTH_PYTHON=1 (set by the tox env) forces the Python-only implementation.
   tests-python:
     name: Python tests (${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -205,10 +203,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
 
-  # Sanitizer runs: rebuild the C extension with AddressSanitizer +
-  # UndefinedBehaviorSanitizer and run the full test suite under the
-  # sanitizer runtimes (Linux only; ASan needs an LD_PRELOAD'd libasan).
-  # The standalone C test suite is additionally checked under valgrind.
+  # Sanitizer runs (Linux only; ASan needs an LD_PRELOAD'd libasan).
+  # also run standalone C test suite using valgrind.
   sanitize:
     name: ASan/UBSan
     runs-on: ubuntu-latest

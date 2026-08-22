@@ -6,7 +6,7 @@
  */
 #include "wcwidth/tables.h"
 
-const wcwidth_interval_t WCWIDTH_TABLE_WIDE[] = {
+const wcwidth_interval_t WCWIDTH_WIDE_EASTASIAN[] = {
     { 0x01100, 0x0115f },  /* Hangul Choseong Kiyeok  ..Hangul Choseong Filler */
     { 0x0231a, 0x0231b },  /* Watch                   ..Hourglass */
     { 0x02329, 0x0232a },  /* Left-pointing Angle Brac..Right-pointing Angle Bra */
@@ -134,5 +134,5 @@ const wcwidth_interval_t WCWIDTH_TABLE_WIDE[] = {
     { 0x30000, 0x3fffd },  /* Cjk Unified Ideograph-30..(nil) */
 };
 
-_Static_assert(sizeof(WCWIDTH_TABLE_WIDE) / sizeof(WCWIDTH_TABLE_WIDE[0]) == WCWIDTH_TABLE_WIDE_LEN,
-               "WCWIDTH_TABLE_WIDE_LEN out of date");
+_Static_assert(sizeof(WCWIDTH_WIDE_EASTASIAN) / sizeof(WCWIDTH_WIDE_EASTASIAN[0]) == WCWIDTH_WIDE_EASTASIAN_LEN,
+               "WCWIDTH_WIDE_EASTASIAN_LEN out of date");

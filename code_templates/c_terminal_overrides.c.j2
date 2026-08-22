@@ -6,7 +6,7 @@
  * get_term_overrides() merge; grapheme clusters are stored as flat codepoint
  * pools with sorted lookup entries (see wcwidth_grapheme_entry_t).
  */
-#include "wcwidth/generated_tables.h"
+#include "wcwidth/tables.h"
 
 {%- for set in override_sets %}
 /* Override set {{ set.hash }} (terminals: {{ set.terminals | join(', ') }}) */

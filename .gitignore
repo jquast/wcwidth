@@ -11,6 +11,7 @@ __pycache__
 build
 /libwcwidth/build-cmake
 dist
+wheelhouse
 docs/_build
 htmlcov
 .coveralls.yml

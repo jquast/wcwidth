@@ -145,6 +145,27 @@ TEST(u8_u32_agree)
     }
 }
 
+/*
+ * A CSI cursor-movement parameter far larger than any real column must
+ * saturate rather than overflow.
+ */
+TEST(csi_huge_param_saturates)
+{
+    int error = WCWIDTH_ERROR_NONE;
+    static const char *const inputs[] = {
+        "\x1b[100000000000000000000C",
+        "\x1b[999999999999999999999999999999D",
+        "\x1b[99999999999999999999G",
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        int w = width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE,
+                         &WCWIDTH_WIDTH_OPTS_DEFAULT, &error);
+        ASSERT_TRUE(w >= 0);
+    }
+}
+
 int
 main(void)
 {
@@ -154,5 +175,6 @@ main(void)
     RUN_TEST(u32_basic);
     RUN_TEST(u32_ignore);
     RUN_TEST(u8_u32_agree);
+    RUN_TEST(csi_huge_param_saturates);
     return test_summary();
 }
