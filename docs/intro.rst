@@ -647,7 +647,7 @@ History
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
     wide characters, `PR #231`_.
   * **Bugfix** `clip()`_ with ``propagate_sgr=True``, should match behavior of `propagate_sgr()`_,
-    `PR #235`.
+    `PR #235`_.
 
 0.8.2 *2026-06-29*
   * **Bugfix** Do not raise IndexError when legacy POSIX ``n`` argument to `wcswidth()`_ or
@@ -906,6 +906,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
 .. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
+.. _`PR #230`: https://github.com/jquast/wcwidth/pull/230
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
