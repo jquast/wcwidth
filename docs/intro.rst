@@ -556,16 +556,6 @@ To upgrade requirements for building documentation, run::
 
    tox -e update_requirements_docs
 
-Utilities
----------
-
-Supplementary tools for browsing and testing terminals for wide unicode
-characters are found in the `bin/`_ of this project's source code.  Just ensure
-to first ``pip install -r requirements-develop.txt`` from this projects main
-folder. For example, an interactive browser for testing::
-
-  python ./bin/wcwidth-browser.py
-
 ====
 Uses
 ====
