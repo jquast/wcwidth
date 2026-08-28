@@ -42,6 +42,11 @@ jobs:
             toxenv: mypy
             label: mypy
 
+          # Packaging metadata and README render
+          - python-version: '3.14'
+            toxenv: twine_check
+            label: twine check
+
     steps:
       - uses: actions/checkout@v6
         with:
