@@ -7,12 +7,41 @@ Introduction
 
 This library is mainly for CLI/TUI programs that carefully produce output for Terminals.
 
-Installation
-------------
+Python Installation
+-------------------
 
 The stable version of this package is maintained on pypi, install or upgrade, using pip::
 
     pip install --upgrade wcwidth
+
+Portable C11 Library
+--------------------
+
+A portable C11 library, libwcwidth_, is also provided, closely matching the specification and
+results of the Python library, and it is used as an *optional* C extension of the Python package
+for a significant performance improvement. See the documentation of libwcwidth_ for the C API and
+its "Differences from the Python package" section for the precise, documented cases where the two
+do not agree (mainly malformed escape sequences, and a couple of features described below).
+
+The C extension backs `wcwidth()`_, `wcswidth()`_, `wcstwidth()`_, `width()`_, `ljust()`_,
+`rjust()`_, `center()`_, `propagate_sgr()`_, and `strip_sequences()`_ when it is available.
+`clip()`_ and `wrap()`_ are always pure Python, with or without the extension: libwcwidth does
+provide its own ``clip_u8()`` and ``wrap_u8()``, but deliberately simpler ones, lacking
+``overtyping``, OSC 8 hyperlink semantics, and several `wrap()`_ options
+(``break_on_hyphens``, ``fix_sentence_endings``, ``propagate_sgr``, splitting on any whitespace
+run rather than the ASCII space alone) -- backing the Python API with them would be a behavior
+change, not just a speedup, so the full-featured pure Python implementations remain canonical for
+these two functions regardless of which extension state is active.
+
+Check ``wcwidth.HAS_C_EXTENSION`` to see which is active, and set the environment variable
+``WCWIDTH_PYTHON=1`` before import to force the pure Python implementation -- useful when
+reporting a discrepancy, or when a build of the extension is unavailable for your platform (it is
+always an optional accelerator; the package works, and is fully tested, without it). The pure
+Python modules backing each C-accelerated function ship either way and are what
+``WCWIDTH_PYTHON=1`` selects, but they are internal implementation detail, not a second stable
+public API -- prefer the environment variable over importing them directly if you need a
+guaranteed-Python code path, since their module layout is not covered by the same compatibility
+guarantees as the functions re-exported from the top-level ``wcwidth`` package.
 
 Problem
 -------
@@ -83,12 +112,6 @@ software and version. The results of the ucs-detect project create our correctio
 ========
 Overview
 ========
-
-wcwidth()
----------
-
-Use function ``wcwidth()`` to determine the length of a *single unicode
-codepoint*.
 
 A brief overview, through examples, for all of the public API functions.
 
@@ -470,12 +493,12 @@ recognized names:
 .. code-block:: python
 
     >>> wcwidth.list_term_programs()
-    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'extraterm', 'foot',
-     'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty', 'konsole', 'mintty',
-     'mlterm', 'pterm', 'putty', 'rio', 'rxvt', 'rxvt-unicode-256color', 'st',
-     'st-256color', 'tabby', 'terminology', 'urxvt', 'vscode', 'vte', 'warp',
-     'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty', 'xterm-kitty',
-     'xterm.js')
+    ('absolutetelnet/ssh', 'alacritty', 'apple_terminal', 'bobcat', 'contour',
+     'extraterm', 'foot', 'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty',
+     'konsole', 'mintty', 'mlterm', 'pterm', 'putty', 'rio', 'rxvt',
+     'rxvt-unicode-256color', 'st', 'st-256color', 'tabby', 'terminology',
+     'urxvt', 'vscode', 'vte', 'warp', 'warpterminal', 'wezterm', 'xterm',
+     'xterm-ghostty', 'xterm-kitty', 'xterm.js')
 
 .. END_LIST_TERM_PROGRAMS
 
@@ -555,6 +578,38 @@ To upgrade requirements for testing, run::
 To upgrade requirements for building documentation, run::
 
    tox -e update_requirements_docs
+
+To upgrade the pinned ``cibuildwheel`` version used to build release wheels, run::
+
+   tox -e update_requirements_wheels
+
+Release wheels (manylinux, musllinux, macOS, Windows, including free-threaded builds) are built
+and tested -- but not published -- by `cibuildwheel`_ in CI (``.github/workflows/wheels.yml``),
+driven by the ``[tool.cibuildwheel]`` table in ``pyproject.toml``, on every tag push and by manual
+``workflow_dispatch``. The resulting wheels and sdist are uploaded as workflow artifacts for
+inspection; publishing to PyPI is a separate, manual step (below), not something CI does on its
+own. The same build-and-test config can be run locally with Docker installed::
+
+   tox -e build-wheels
+
+This builds every wheel for the current host OS (on Linux: manylinux and musllinux, for both
+x86_64 and aarch64 -- the latter under QEMU emulation, registered automatically by the ``docker
+run ... tonistiigi/binfmt`` step, matching the ``docker/setup-qemu-action`` CI uses). It cannot
+cross-build other OSes; macOS and Windows wheels still need to be built on those platforms, same as
+CI's per-OS runner matrix. Narrow to one target while iterating::
+
+   tox -e build-wheels -- --only cp313-manylinux_x86_64
+
+Publishing a Release
+---------------------
+
+Wheels and sdists are published to PyPI manually, not by CI. After downloading the built
+artifacts (from a CI run's ``wheels-*``/``sdist`` artifacts, or from local ``tox -e
+build-wheels`` runs across the platforms you have available) into a single ``dist/`` directory,
+upload with `twine`_::
+
+   python -Im pip install twine
+   python -Im twine upload dist/*
 
 ====
 Uses
@@ -642,6 +697,14 @@ languages:
 =======
 History
 =======
+
+0.9.0 *Next Release*
+  * **Changed** ``ambiguous_width`` values outside ``1``-``2`` are now clamped into range
+    (``< 1`` becomes ``1``, ``> 2`` becomes ``2``) rather than silently treated as ``1``
+    regardless of value. This is a behavior change only for out-of-range input: previously any
+    value other than exactly ``2`` measured as narrow, so ``ambiguous_width=99`` measured narrow
+    and now measures wide. Applies to `wcwidth()`_, `wcswidth()`_, `wcstwidth()`_, `width()`_,
+    `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_. `PR #233`_
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
@@ -908,6 +971,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
 .. _`PR #230`: https://github.com/jquast/wcwidth/pull/230
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
+.. _`PR #233`: https://github.com/jquast/wcwidth/pull/233
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
@@ -956,6 +1020,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`leviathan0992/Pylsy`: https://github.com/leviathan0992/Pylsy
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
+.. _`cibuildwheel`: https://cibuildwheel.pypa.io/
+.. _`twine`: https://twine.readthedocs.io/
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
@@ -992,6 +1058,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
+.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

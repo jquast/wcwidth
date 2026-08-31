@@ -9,7 +9,7 @@ import textwrap
 import pytest
 
 # local
-from wcwidth import iter_sequences
+import wcwidth
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 
@@ -46,7 +46,7 @@ HANGUL_GA = '\u1100\u1161'
 
 
 def _strip(text):
-    return ''.join(seg for seg, is_seq in iter_sequences(text) if not is_seq)
+    return ''.join(seg for seg, is_seq in wcwidth.iter_sequences(text) if not is_seq)
 
 
 def _adjust_stdlib_result(expected, kwargs):
@@ -80,7 +80,6 @@ def _colorize(text):
 @pytest.mark.parametrize('text,w,expected', [
     ('', 10, []),
     ('   ', 10, []),
-    ('\u5973', 0, ['\u5973']),
     ('\u5973', 1, ['\u5973']),
     (ZWJ_FAMILY, 1, [ZWJ_FAMILY]),
     (HANGUL_GA, 1, [HANGUL_GA]),
@@ -89,8 +88,19 @@ def test_wrap_edge_cases(text, w, expected):
     assert wrap(text, w) == expected
 
 
+@pytest.mark.parametrize('width', [0, -1])
+def test_wrap_bad_width(width):
+    with pytest.raises(ValueError):
+        wrap('Whatever, it doesn\'t matter.', width)
+
+
 def test_wrap_initial_indent():
     assert wrap('hello world', 10, initial_indent='> ') == ['> hello', 'world']
+
+
+def test_wrap_indent_consumes_full_width():
+    """When indent width equals self.width, line_width becomes 0."""
+    assert wrap('ab cd', width=3, subsequent_indent='   ') == ['ab', '   c', '   d']
 
 
 @pytest.mark.parametrize('text,w,break_long,expected', [
@@ -111,6 +121,115 @@ def test_wrap_long_words(text, w, break_long, expected):
 ])
 def test_wrap_hyphen_long_words(text, w, break_hyphens, propagate, expected):
     assert wrap(text, w, break_on_hyphens=break_hyphens, propagate_sgr=propagate) == expected
+
+
+# stdlib test_textwrap expectations: hyphen and em-dash splitting matches
+# CPython's wordsep rules exactly.
+@pytest.mark.parametrize('text,w,break_hyphens,expected', [
+    ('yaba daba-doo', 10, True, ['yaba daba-', 'doo']),
+    ('yaba daba-doo', 10, False, ['yaba', 'daba-doo']),
+    ('You can also do--this or even---this.', 15, True,
+     ['You can also do', '--this or even', '---this.']),
+    ('You can also do--this or even---this.', 17, True,
+     ['You can also do--', 'this or even---', 'this.']),
+    ('You can also do--this or even---this.', 29, True,
+     ['You can also do--this or even', '---this.']),
+    ('You can also do--this or even---this.', 32, True,
+     ['You can also do--this or even---', 'this.']),
+    ('aa \xe4\xe4-\xe4\xe4', 7, True, ['aa \xe4\xe4-', '\xe4\xe4']),
+    ('Die Empf\xe4nger-Auswahl', 13, True, ['Die', 'Empf\xe4nger-', 'Auswahl']),
+    ('This is a sentence with non-breaking\u202fspace.', 20, True,
+     ['This is a sentence', 'with non-', 'breaking\u202fspace.']),
+    ('This is a sentence with non-breaking\u202fspace.', 20, False,
+     ['This is a sentence', 'with', 'non-breaking\u202fspace.']),
+    ('This is a sentence with non-breaking\xa0space.', 20, True,
+     ['This is a sentence', 'with non-', 'breaking\xa0space.']),
+    ('This is a sentence with non-breaking\xa0space.', 20, False,
+     ['This is a sentence', 'with', 'non-breaking\xa0space.']),
+    ('You should use the -n option, or --dry-run in its long form.', 20, True,
+     ['You should use the', '-n option, or --dry-', 'run in its long', 'form.']),
+    ('You should use the -n option, or --dry-run in its long form.', 21, True,
+     ['You should use the -n', 'option, or --dry-run', 'in its long form.']),
+    ('You should use the -n option, or --dry-run in its long form.', 39, True,
+     ['You should use the -n option, or --dry-', 'run in its long form.']),
+    ('You should use the -n option, or --dry-run in its long form.', 42, True,
+     ['You should use the -n option, or --dry-run', 'in its long form.']),
+])
+def test_wrap_hyphen_breaks(text, w, break_hyphens, expected):
+    assert wrap(text, w, break_on_hyphens=break_hyphens) == expected
+
+
+@pytest.mark.parametrize('text,w,expected', [
+    ("this-is-a-useful-feature-for-reformatting-posts-from-tim-peters'ly", 40,
+     ['this-is-a-useful-feature-for-', "reformatting-posts-from-tim-peters'ly"]),
+    ("this-is-a-useful-feature-for-reformatting-posts-from-tim-peters'ly", 42,
+     ['this-is-a-useful-feature-for-reformatting-', "posts-from-tim-peters'ly"]),
+])
+def test_wrap_hyphenated_words(text, w, expected):
+    assert wrap(text, w) == expected
+
+
+LONG_WORD_TEXT = (
+    'We used enyzme 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate'
+    ' synthase.\n')
+LONG_OPTION_TEXT = '1234567890-1234567890--this_is_a_very_long_option_indeed-good-bye"\n'
+
+
+# stdlib test_textwrap.LongWordWithHyphensTestCase expectations, including
+# its quirk of checking text2 with default options in every method.
+@pytest.mark.parametrize('text,w,kwargs,expected', [
+    (LONG_WORD_TEXT, 50, {},
+     ['We used enyzme 2-succinyl-6-hydroxy-2,4-',
+      'cyclohexadiene-1-carboxylate synthase.']),
+    (LONG_WORD_TEXT, 50, {'break_on_hyphens': False},
+     ['We used enyzme 2-succinyl-6-hydroxy-2,4-cyclohexad',
+      'iene-1-carboxylate synthase.']),
+    (LONG_WORD_TEXT, 50, {'break_long_words': False},
+     ['We used enyzme',
+      '2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate',
+      'synthase.']),
+    (LONG_WORD_TEXT, 50, {'break_long_words': False, 'break_on_hyphens': False},
+     ['We used enyzme',
+      '2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate',
+      'synthase.']),
+    (LONG_WORD_TEXT, 10, {},
+     ['We used', 'enyzme 2-', 'succinyl-', '6-hydroxy-', '2,4-',
+      'cyclohexad', 'iene-1-', 'carboxylat', 'e', 'synthase.']),
+    (LONG_WORD_TEXT, 10, {'break_on_hyphens': False},
+     ['We used', 'enyzme 2-s', 'uccinyl-6-', 'hydroxy-2,',
+      '4-cyclohex', 'adiene-1-c', 'arboxylate', 'synthase.']),
+    (LONG_WORD_TEXT, 10, {'break_long_words': False},
+     ['We used', 'enyzme',
+      '2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate',
+      'synthase.']),
+    (LONG_WORD_TEXT, 10, {'break_long_words': False, 'break_on_hyphens': False},
+     ['We used', 'enyzme',
+      '2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate',
+      'synthase.']),
+    (LONG_OPTION_TEXT, 10, {},
+     ['1234567890', '-123456789', '0--this_is', '_a_very_lo',
+      'ng_option_', 'indeed-', 'good-bye"']),
+    (LONG_OPTION_TEXT, 10, {'break_on_hyphens': False},
+     ['1234567890', '-123456789', '0--this_is', '_a_very_lo',
+      'ng_option_', 'indeed-goo', 'd-bye"']),
+    (LONG_OPTION_TEXT, 10, {'break_long_words': False},
+     ['1234567890-1234567890', '--',
+      'this_is_a_very_long_option_indeed-', 'good-bye"']),
+    (LONG_OPTION_TEXT, 10, {'break_long_words': False, 'break_on_hyphens': False},
+     ['1234567890-1234567890--this_is_a_very_long_option_indeed-good-bye"']),
+])
+def test_wrap_long_hyphenated_words(text, w, kwargs, expected):
+    assert wrap(text, w, **kwargs) == expected
+
+
+@pytest.mark.parametrize('text,w,expected', [
+    ('I say, chaps! Anyone for "tennis?"\nHmmph!', 20,
+     ['I say, chaps!', 'Anyone for "tennis?"', 'Hmmph!']),
+    ('And she said, "Go to hell!"\nCan you believe that?', 20,
+     ['And she said, "Go to', 'hell!"  Can you', 'believe that?']),
+])
+def test_wrap_fix_sentence_endings(text, w, expected):
+    assert wrap(text, w, fix_sentence_endings=True) == expected
 
 
 # Comprehensive stdlib compatibility
@@ -511,3 +630,33 @@ def test_wrap_bare_esc_at_line_start():
     not found in any practical terminal sequence or string (ESC followed by NUL).
     """
     assert wrap('\x1b\x00あ', 1) == ['\x1b', '\x00', 'あ']
+
+
+def test_wrap_embedded_nul():
+    """Embedded NUL characters are preserved through wrapping."""
+    assert wcwidth.wrap('ab\x00cd ef', 5) == ['ab\x00cd', 'ef']
+    assert wcwidth.wrap('a\x00b', 5) == ['a\x00b']
+    assert wcwidth.wrap('\x00ab', 5) == ['\x00ab']
+
+
+def test_wrap_tab_expansion_counts_codepoints():
+    """Tab expansion column counts codepoints, not UTF-8 bytes."""
+    assert wcwidth.wrap('A\U0001f680\tB', 40) == ['A\U0001f680      B']
+    assert wcwidth.wrap('A\u4e2d\tB', 40) == ['A\u4e2d      B']
+    assert wcwidth.wrap('\x1b[?25l\tX', 40) == ['\x1b[?25l  X']
+
+
+def test_wrap_osc_boundaries():
+    """OSC sequences (OSC 66, OSC 0, hyperlink open) create word boundaries."""
+    assert wcwidth.wrap('abcdefgh\x1b]66;bad\x07X', 8) == ['abcdefgh', '\x1b]66;bad\x07X']
+    assert wcwidth.wrap('abcd\x1b]66;w=5;hello\x07efgh', 8) == ['abcd\x1b]66;w=5;hello\x07efgh']
+    assert wcwidth.wrap('abcd\x1b]0;title\x07efgh', 8) == ['abcd\x1b]0;title\x07efgh']
+    assert wcwidth.wrap('abc\x1b]8;id=x;http://example.com\x1b\\WXYZ\x1b]8;;\x1b\\def', 8) == [
+        'abc\x1b]8;id=x;http://example.com\x1b\\WXYZ\x1b]8;;\x1b\\', 'def']
+
+
+def test_wrap_unterminated_osc():
+    """Unterminated OSC consumes only the ESC ] prefix."""
+    assert wcwidth.wrap('a\x1b]66;', 30) == ['a\x1b]66;']
+    assert wcwidth.wrap('\x1b]66;', 30) == ['\x1b]66;']
+    assert wcwidth.wrap('a\x1b]0;title', 30) == ['a\x1b]0;title']

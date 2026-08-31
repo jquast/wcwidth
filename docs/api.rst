@@ -1,6 +1,6 @@
-==========
-Public API
-==========
+=================
+Python Public API
+=================
 
 This package follows SEMVER_ rules.  Therefore, for the functions of the below
 list, you may safely use version dependency definition ``wcwidth<1`` in your

@@ -1,10 +1,13 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [ "hatchling" ]
+# setuptools >= 61 is the first version reading [tool.setuptools] from
+# pyproject.toml; the upper bound is the last one supporting Python 3.8
+# (setuptools 77 dropped 3.8), which this package still supports.
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=61,<78", "wheel" ]
 
 [project]
 name = "wcwidth"
-version = "0.8.3"  # don't forget to also update wcwidth/__init__.py:__version__
+version = "0.9.0"  # stamped into __init__.py and wcwidth_config.h by bin/update-tables.py
 description = "Measures the displayed width of unicode strings in a terminal"
 readme = "README.rst"
 keywords = [
@@ -20,8 +23,12 @@ keywords = [
   "wcwidth",
   "xterm",
 ]
-license = "MIT"
-license-files = [ "LICENSE" ]
+# No [project] license key: the pre-639 license *table* is deprecated as of
+# setuptools 77, the PEP 639 SPDX string and license-files need setuptools>=77
+# (which dropped Python 3.8, still supported here), and the table form is the
+# only one setuptools<77 accepts.  setuptools>=77 auto-includes LICENSE in the
+# wheel metadata; older versions rely on the license classifier below and on
+# LICENSE in the sdist via MANIFEST.in.
 authors = [
   { name = "Jeff Quast", email = "contact@jeffquast.com" },
 ]
@@ -51,25 +58,54 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/jquast/wcwidth"
 
-[tool.hatch.build.targets.sdist]
-include = [
-  # hatch includes **everything**, even embarrassing TODO files or spreadsheets or whatever is in
-  # your root folder, a commonly dangerous thing even without hatch, like that we released an
-  # unimported table_vs15.py in version 0.2.14. A 'git clean -dfx' should work ..  but! *Global* git
-  # ignore is not honored by hatch, even files containing secrets may easily be leaked!
-  "/wcwidth/**",
-  "/bin/**",
-  "/code_templates/**",
-  "/docs/**",
-  "/tests/*.py",
-  "/README.rst",
-  "/LICENSE",
-  "/tox.ini",
-  "/requirements-*.in",
-  "/requirements-*.txt",
-  "/.gitignore",
-  "/.pylintrc",
+# The C extension 'wcwidth._wcwidth_c' is optional: setup.py skips it when the
+# build would fail (no compiler, PyPy, WCWIDTH_PYTHON=1) and the
+# Python implementation is used instead.
+
+[tool.setuptools]
+include-package-data = false
+packages = [
+  "wcwidth",
+  "wcwidth.table_grapheme_overrides",
 ]
 
-[tool.hatch.build.targets.sdist.force-include]
-"ucs-detect/data" = "ucs-detect/data"
+[tool.setuptools.package-data]
+wcwidth = [ "py.typed", "*.pyi" ]
+
+# The optional C extension 'wcwidth._wcwidth_c' is declared in setup.py with
+# the classic ext_modules API (see there for why, and for the graceful
+# fallback when the build cannot compile).
+
+[tool.cibuildwheel]
+# per-version wheels for every supported CPython, including free-threaded
+# 3.13t/3.14t builds; PyPy users get the Python sdist fallback
+build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp315-* cp313t-* cp314t-*"
+# musllinux (Alpine) wheels are built for every regular CPython version.
+# Free-threaded x musllinux is skipped: upstream musl free-threaded build
+# support is newer and less established than manylinux/macOS/Windows, so it
+# is left off until it can be verified rather than shipped speculatively.
+# extend the arch lists below to add more (e.g. manylinux/musllinux
+# i686/ppc64le/s390x, windows arm64) -- one line each
+skip = "cp313t-musllinux_* cp314t-musllinux_*"
+# Run the test suite against every built wheel, including musllinux (under
+# QEMU emulation for aarch64 -- see .github/workflows/wheels.yml) and the
+# free-threaded builds, so a broken wheel is caught here rather than after
+# publishing. {project} is the checked-out repo (tests/ lives there, not in
+# the wheel). --import-mode=importlib is required: pytest's default
+# "prepend" import mode walks up from tests/ (which has __init__.py) to the
+# first ancestor without one -- {project} itself -- and inserts *that* onto
+# sys.path ahead of site-packages, so "import wcwidth" would silently
+# resolve to the uncompiled source tree instead of the wheel this is meant
+# to verify. pytest-cov is required only because tox.ini's [pytest] section
+# bakes in --cov flags that pytest reads from rootdir regardless of tox.
+test-requires = "pytest pytest-cov"
+test-command = "python -m pytest {project}/tests --verbose --durations=10 --import-mode=importlib"
+
+[tool.cibuildwheel.linux]
+archs = [ "x86_64", "aarch64" ]
+
+[tool.cibuildwheel.macos]
+archs = [ "x86_64", "arm64" ]
+
+[tool.cibuildwheel.windows]
+archs = [ "x86_64" ]

@@ -1,6 +1,12 @@
 """Core tests for wcwidth module."""
 # std imports
+import os
+import re
+import sys
+import importlib
+import subprocess
 import importlib.metadata
+from pathlib import Path
 
 # 3rd party
 import pytest
@@ -20,6 +26,48 @@ def test_package_version():
 
     # verify.
     assert result == expected
+
+
+def test_cmake_and_setuptools_source_lists_parity():
+    """Libwcwidth source lists stay in parity and cover the Makefile glob."""
+    root = Path(__file__).resolve().parent.parent
+
+    # given,
+    setup_py = (root / 'setup.py').read_text()
+    cmake = (root / 'libwcwidth' / 'CMakeLists.txt').read_text()
+
+    # exercise,
+    py_sources = set(re.findall(r'"libwcwidth/(src/(?:tables/)?[a-z0-9_]+\.c)"', setup_py))
+    cm_sources = set(re.findall(r'^    (src/(?:tables/)?[a-z0-9_]+\.c)$', cmake, re.M))
+    on_disk = {
+        path.relative_to(root / 'libwcwidth').as_posix()
+        for path in (root / 'libwcwidth' / 'src').glob('*.c')
+    } | {
+        path.relative_to(root / 'libwcwidth').as_posix()
+        for path in (root / 'libwcwidth' / 'src' / 'tables').glob('*.c')
+    }
+
+    # verify,
+    assert py_sources == cm_sources == on_disk
+
+
+def test_c_version_matches_pyproject():
+    """wcwidth_config.h version macros and __version__ track pyproject.toml."""
+    root = Path(__file__).resolve().parent.parent
+
+    # given,
+    pyproject = (root / 'pyproject.toml').read_text()
+    config = (root / 'libwcwidth' / 'include' / 'wcwidth' / 'wcwidth_config.h').read_text()
+    version = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+    macro_parts = re.search(
+        r'#define WCWIDTH_VERSION_MAJOR (\d+)\n'
+        r'#define WCWIDTH_VERSION_MINOR (\d+)\n'
+        r'#define WCWIDTH_VERSION_PATCH (\d+)', config)
+
+    # verify,
+    assert re.search(r'#define WCWIDTH_VERSION "([^"]+)"', config).group(1) == version
+    assert f'{macro_parts.group(1)}.{macro_parts.group(2)}.{macro_parts.group(3)}' == version
+    assert wcwidth.__version__ == version
 
 
 def test_empty_string():
@@ -552,3 +600,98 @@ def test_legacy_module():
     for name in _legacy.__all__:
         obj = getattr(_legacy, name)
         assert obj is not None, f"could not import {name} from wcwidth.wcwidth"
+
+
+def test_python_functions_stay_python():
+    """Functions without C support always bind the Python implementation."""
+    python = {
+        'iter_graphemes': 'wcwidth.grapheme',
+        'iter_graphemes_reverse': 'wcwidth.grapheme',
+        'grapheme_boundary_before': 'wcwidth.grapheme',
+        'iter_sequences': 'wcwidth.escape_sequences',
+    }
+    for name, module in python.items():
+        assert getattr(wcwidth, name).__module__ == module
+
+
+def test_python_env_var():
+    """WCWIDTH_PYTHON=1 forces the Python implementation in a subprocess."""
+    env = dict(os.environ)
+    env['WCWIDTH_PYTHON'] = '1'
+    code = (
+        'import wcwidth; '
+        "assert not wcwidth.HAS_C_EXTENSION; "
+        "assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'"
+    )
+    subprocess.check_call([sys.executable, '-c', code], env=env)
+
+
+def test_import_error_fallback():
+    """A broken extension at import time falls back to the Python implementation."""
+    sys.modules['wcwidth._wcwidth_c'] = None
+    try:
+        importlib.reload(wcwidth)
+        assert not wcwidth.HAS_C_EXTENSION
+        assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
+    finally:
+        del sys.modules['wcwidth._wcwidth_c']
+        importlib.reload(wcwidth)
+
+
+WCSTWIDTH_POSITIONAL_CASES = [
+    ('abc', 2),
+    ('abc', 1),
+    ('abc', 0),
+    ('abc', None),
+    ('', 0),
+    ('', None),
+    ('\U0001F600', 1),
+    ('\U0001F600\U0001F600', 2),
+]
+
+
+@pytest.mark.parametrize('pwcs,n', WCSTWIDTH_POSITIONAL_CASES)
+def test_wcstwidth_positional_args(pwcs, n):
+    """Wcstwidth() accepts n as a positional argument."""
+    result = wcwidth.wcstwidth(pwcs, n)
+    assert isinstance(result, int)
+    assert result >= 0
+
+
+ALIGN_FUNCS = [wcwidth.ljust, wcwidth.rjust, wcwidth.center]
+
+
+@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
+@pytest.mark.parametrize('dest_width,fillchar', [
+    (2**62 + 2, '\U0001F600'),
+    ((2**64 + 2) // 3 + 2, '你'),
+])
+def test_align_huge_dest_width_raises_memory_error(func, dest_width, fillchar):
+    """Ljust()/rjust()/center() raise MemoryError for an unrepresentable dest_width."""
+    with pytest.raises(MemoryError):
+        func('hi', dest_width, fillchar)
+
+
+@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
+def test_align_control_codes_strict_rejects_illegal_control(func):
+    """Ljust()/rjust()/center() honor control_codes='strict'."""
+    with pytest.raises(ValueError):
+        func('\x01x', 10, ' ', control_codes='strict')
+
+
+def test_width_large_cursor_movement_saturates():
+    """Width() handles a CSI cursor-movement parameter far beyond any real column."""
+    assert wcwidth.width('\x1b[100000000000000000000C', control_codes='parse') >= 0
+
+
+def test_wrap_tabsize_zero_passes_through():
+    """Wrap() accepts tabsize=0 without raising."""
+    result = wcwidth.wrap('a\tb', 3, tabsize=0, replace_whitespace=False)
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize('text', ['\udcbf', '\udc80', '\udcbf\udcbf\udcbf'])
+def test_wrap_lone_surrogate_escaped_bytes(text):
+    """Wrap() handles a lone/incomplete surrogate-escaped byte without raising."""
+    result = wcwidth.wrap(text, 3)
+    assert isinstance(result, list)

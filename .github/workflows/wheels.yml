@@ -1,0 +1,52 @@
+name: Build Wheels
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      # aarch64 Linux wheels (manylinux and musllinux) are cross-built using QEMU
+      - if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: pypa/cibuildwheel@v2.23
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Build sdist
+        run: |
+          python -Im pip install build
+          python -Im build --sdist
+      - uses: actions/upload-artifact@v5
+        with:
+          name: sdist
+          path: dist/*.tar.gz

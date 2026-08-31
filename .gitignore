@@ -1,13 +1,17 @@
 __pycache__
 .coverage
+*.py,cover
 .cache
 .tox
 *.egg-info
 *.egg
 *.pyc
+*.so
 *.swp
 build
+/libwcwidth/build-cmake
 dist
+wheelhouse
 docs/_build
 htmlcov
 .coveralls.yml

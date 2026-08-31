@@ -498,6 +498,26 @@ def test_fitzpatrick_modifier_standalone_width():
     assert result == 2
 
 
+REGIONAL_INDICATOR_CASES = [
+    ('\U0001F1E6', 2, 'single'),
+    ('\U0001F1E6\U0001F1E7', 2, 'flag_pair'),
+    ('\U0001F1E6\U0001F1E6', 2, 'pair'),
+    ('\U0001F1E6\U0001F1E6\U0001F1E6', 4, 'triple'),
+    ('\U0001F1E6\U0001F1E6\U0001F1E6\U0001F1E6', 4, 'quadruple'),
+    ('\U0001F1E6\U0001F1E6\U0001F1E6\U0001F1E6\U0001F1E6', 6, 'quintuple'),
+    ('\U0001F1E6a\U0001F1E7', 5, 'separated'),
+    ('\U0001F1E6\uFE0F\U0001F1E7', 4, 'vs16_separated'),
+    ('\U0001F1E6\uFE0E\U0001F1E7', 4, 'vs15_separated'),
+    ('\U0001F1E6\u0903\U0001F1E7', 4, 'mc_separated'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', REGIONAL_INDICATOR_CASES)
+def test_width_regional_indicator_runs(text, expected, name):
+    """Regional indicators pair from the end; unpaired ones measure wide."""
+    assert wcwidth.width(text) == expected
+
+
 FS_SEQUENCE_CASES = [
     ('\x1bc', 'ris'),
     ('\x1bl', 'memory_lock'),
@@ -581,3 +601,34 @@ def test_screen_title_sequences():
 def test_ris_indeterminate():
     """RIS (ESC c) is flagged as indeterminate effect."""
     assert INDETERMINATE_EFFECT_SEQUENCE.match('\x1bc')
+
+
+VIRAMA_CONTROL_CASES = [
+    ('\u1039\x08A', 2, 'backspace'),
+    ('\u1039\x0bA', 2, 'vertical_tab'),
+    ('\u1039\rA', 2, 'carriage_return'),
+    ('\u1039\x00A', 2, 'nul'),
+    ('\u1039\x1b[0JA', 2, 'erase_display'),
+    ('\u1039\tA', 10, 'tab'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', VIRAMA_CONTROL_CASES)
+def test_width_virama_conjunct_survives_control_codes(text, expected, name):
+    """Virama conjunct state survives control characters in parse mode."""
+    assert wcwidth.width(text, control_codes='parse') == expected
+
+
+UNTERMINATED_OSC_CASES = [
+    ('\x1b]', 0, 'osc_intro'),
+    ('\x1b]66;', 3, 'osc66_intro'),
+    ('a\x1b]66;', 4, 'osc66_intro_prefix'),
+    ('\x1b]66;X', 4, 'osc66_intro_then_text'),
+    ('a\x1b]0;title', 8, 'osc0_unterminated'),
+]
+
+
+@pytest.mark.parametrize('text,expected,name', UNTERMINATED_OSC_CASES)
+def test_width_unterminated_osc_consumes_esc_bracket(text, expected, name):
+    """Unterminated OSC consumes only the ESC ] prefix as zero-width."""
+    assert wcwidth.width(text) == expected

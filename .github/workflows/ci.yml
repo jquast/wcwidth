@@ -113,6 +113,16 @@ jobs:
           mkdir source-dir
           tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
 
+      - name: Build C extension in-place
+        shell: bash
+        run: |
+          # The test suite imports wcwidth from the source tree, not from the installed wheel, so
+          # the extension must be built in-place for the extension-mode runs to exercise the C
+          # implementation.  setup.py runs against the ambient Python, which may not have
+          # setuptools.
+          python -Im pip install setuptools
+          python setup.py build_ext --inplace
+
       - name: Fetch test data files
         if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'
         continue-on-error: true
@@ -140,10 +150,96 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
 
+  # Python-only tests: the wheel built here contains the C extension, but
+  # WCWIDTH_PYTHON=1 (set by the tox env) forces the Python-only implementation.
+  tests-python:
+    name: Python tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.15']
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+          cache: pip
+
+      - name: Prepare tox
+        shell: bash
+        run: |
+          V=${{ matrix.python-version }}
+          V=py$(echo $V | tr -d .)
+          echo TOX_PYTHON=$V >>$GITHUB_ENV
+          python -Im pip install tox
+
+      - name: Prepare sdist and source-dir
+        shell: bash
+        run: |
+          python -Im pip install build
+          python -Im build
+
+          mkdir source-dir
+          tar -xzvf dist/wcwidth-*.tar.gz -C source-dir --strip-components=1
+
+      - name: Run tests (Python implementation)
+        shell: bash
+        run: |
+          python -Im tox -e ${{ env.TOX_PYTHON }}-python --installpkg dist/wcwidth-*.whl
+
+      - name: Rename coverage data
+        shell: bash
+        run: |
+          if test -f .coverage; then
+            mv .coverage{,.${{ matrix.python-version }}.$(date +"%Y-%m-%d_%H%M%S")}
+          fi
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-data.python-${{ matrix.python-version }}
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+  # Sanitizer runs (Linux only; ASan needs an LD_PRELOAD'd libasan).
+  # also run standalone C test suite using valgrind.
+  sanitize:
+    name: ASan/UBSan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+          cache: pip
+
+      - name: Install tox
+        run: python -Im pip install tox
+
+      - name: Run tests under AddressSanitizer
+        run: python -Im tox -e asan
+
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      - name: Run C tests under valgrind
+        run: make -C libwcwidth valgrind
+
   coverage:
     name: Combine & check coverage.
     runs-on: ubuntu-latest
-    needs: tests
+    needs: [tests, tests-python]
 
     steps:
       - uses: actions/checkout@v6

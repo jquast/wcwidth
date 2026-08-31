@@ -4,7 +4,10 @@ r"""
 The kitty text sizing protocol allows terminal apps to explicitly tell
 terminals how many cells text occupies, using the escape sequence::
 
-    ESC ] 66 ; metadata ; text BEL/ST
+    ESC ] 66 ; metadata [ ; text ] BEL/ST
+
+The ``text`` field is optional; when omitted, the sequence occupies
+``s * w`` cells (or zero when ``w`` is also unset).
 
 Metadata is colon-separated ``key=value`` pairs:
 
@@ -175,7 +178,7 @@ class TextSizing(typing.NamedTuple):
             vertical_align=0, horizontal_align=0), text='XY', terminator='\x07')
         """
         return cls(params=TextSizingParams.from_params(match.group(1), control_codes=control_codes),
-                   text=match.group(2),
+                   text=match.group(2) or '',
                    terminator=match.group(3))
 
     def display_width(self, ambiguous_width: int = 1) -> int:

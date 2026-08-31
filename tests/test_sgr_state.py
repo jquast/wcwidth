@@ -255,3 +255,16 @@ def test_extended_color_mixed_format_edge_cases():
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;2;255;128;48:2:0:0:0m').foreground is None
     # colon tuple with invalid base (99) is ignored
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[99:2:255:0:0m') == _SGR_STATE_DEFAULT
+
+
+PROPAGATE_NUL_CASES = [
+    (['\x1b[31m\x00after'], ['\x1b[31m\x00after\x1b[0m']),
+    (['\x1b[1m\x00mid\x00end'], ['\x1b[1m\x00mid\x00end\x1b[0m']),
+    (['\x1b[31m\x00', 'world\x1b[0m'], ['\x1b[31m\x00\x1b[0m', '\x1b[31mworld\x1b[0m']),
+]
+
+
+def test_propagate_sgr_preserves_embedded_nul():
+    """propagate_sgr() preserves content after embedded NUL bytes."""
+    for lines, expected in PROPAGATE_NUL_CASES:
+        assert propagate_sgr(lines) == expected

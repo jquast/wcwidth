@@ -21,6 +21,7 @@ from .text_sizing import TextSizing, TextSizingParams
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                _HORIZONTAL_CURSOR_MOVEMENT,
                                INDETERMINATE_EFFECT_SEQUENCE)
+from ._constants import _clamp_ambiguous_width
 
 
 class _HyperlinkAction(enum.Enum):
@@ -306,9 +307,9 @@ def _clip_simple(
 
             # OSC 66 Text Sizing.
             if (ts_meta := m.group('ts_meta')) is not None:
-                ts_text = m.group('ts_text')
+                ts_text = m.group('ts_text') or ''
                 ts_term = m.group('ts_term')
-                assert ts_text is not None and ts_term is not None
+                assert ts_term is not None
                 ts = TextSizing(
                     TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                     ts_text, ts_term)
@@ -605,9 +606,9 @@ def _clip_painter(
 
             # OSC 66 Text Sizing.
             if (ts_meta := m.group('ts_meta')) is not None:
-                ts_text = m.group('ts_text')
+                ts_text = m.group('ts_text') or ''
                 ts_term = m.group('ts_term')
-                assert ts_text is not None and ts_term is not None
+                assert ts_term is not None
                 ts = TextSizing(
                     TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                     ts_text, ts_term)
@@ -829,6 +830,7 @@ def clip(
         >>> clip('a\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     start = max(start, 0)
     if end <= start:
         return ''

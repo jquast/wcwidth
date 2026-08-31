@@ -4,7 +4,7 @@ Manual tests comparing wcwidth.py to libc's wcwidth(3) and wcswidth(3).
 
     https://github.com/jquast/wcwidth
 
-This suite of tests compares the libc return values with the pure-python return
+This suite of tests compares the libc return values with the Python return
 values. Although wcwidth(3) is POSIX, its actual implementation may differ,
 so these tests are not guaranteed to be successful on all platforms, especially
 where wcwidth(3)/wcswidth(3) is out of date. This is especially true for many

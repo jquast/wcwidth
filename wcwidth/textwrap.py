@@ -206,6 +206,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         # pylint: disable=too-many-nested-blocks
         # the hyperlink code in particular really pushes the complexity rating of this method.
         # preferring to keep it "all in one method" because of so much local state and manipulation.
+        if self.width <= 0:
+            raise ValueError('invalid width %r (must be > 0)' % self.width)
         if not chunks:
             return []
 

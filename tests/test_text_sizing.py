@@ -129,6 +129,8 @@ def test_text_sizing_width(params, text, expected_width):
     ('\x1b]66;s=2;\x07', '', 's=2', 0),
     ('\x1b]66;s=1:w=1;\x07', '', 'w=1', 1),
     ('\x1b]66;w=2;A\x07', 'A', 'w=2', 2),
+    ('\x1b]66;w=5\x07', '', 'w=5', 5),
+    ('\x1b]66;s=2\x07', '', 's=2', 0),
     ('\x1b]66;s=2:w=3;text\x1b\\', 'text', 's=2:w=3', 6),
 ])
 def test_text_sizing_sequence(given_sequence, expected_text, expected_params, expected_width):
@@ -153,6 +155,8 @@ def test_text_sizing_sequence(given_sequence, expected_text, expected_params, ex
     ('\x1b]66;s=1:w=0;\x07', 0),
     ('abc\x1b]66;w=3;x\x07def', 9),
     ('\x1b]66;w=2;A\x07\x1b]66;w=3;B\x07', 5),
+    ('\x1b]66;w=3\x07', 3),
+    ('\x1b]66;s=2\x07', 0),
     ('\x1b]66;s=2:w=3;text\x1b\\', 6),
     ('\x1b[31m\x1b]66;w=2;AB\x07\x1b[0m', 2),
     ('\x1b]66;;\x01\x07', 0),
@@ -168,6 +172,7 @@ def test_strings_with_text_sizing(text, expected):
     ('\x1b]66;s=2;hello\x1b\\', 'hello'),
     ('\x1b]66;;text\x07', 'text'),
     ('\x1b]66;s=3:w=2;\x07', ''),
+    ('\x1b]66;w=3\x07', ''),
     ('abc\x1b]66;w=2;XY\x07def', 'abcXYdef'),
     ('\x1b[31m\x1b]66;s=2;red\x07\x1b[0m', 'red'),
     ('\x1b]66;w=1;A\x07\x1b]66;w=1;B\x07', 'AB'),
