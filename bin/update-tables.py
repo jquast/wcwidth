@@ -24,7 +24,6 @@ import argparse
 import datetime
 import textwrap
 import functools
-import unicodedata
 from pathlib import Path
 from dataclasses import field, fields, dataclass
 
@@ -72,6 +71,9 @@ FETCH_BLOCKSIZE = int(os.environ.get('FETCH_BLOCKSIZE', '4096'))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', '10'))
 BACKOFF_FACTOR = float(os.environ.get('BACKOFF_FACTOR', '1.0'))
 
+# Global version string set by --draft CLI argument
+DRAFT_VERSION: 'Optional[UnicodeVersion]' = None
+
 # Global flag set by main() from --check-last-modified CLI argument.
 # When True, perform HTTP HEAD requests to check if remote files are newer.
 # Default is False because Unicode data files rarely change once published.
@@ -88,6 +90,24 @@ CHECK_LAST_MODIFIED = False
 HANGUL_JAMO_ZEROWIDTH = (
     *range(0x1160, 0x1200),  # Hangul Jungseong Filler .. Hangul Jongseong Ssangnieun
     *range(0xD7B0, 0xD800),  # Hangul Jungseong O-Yeo  .. Undefined Character of Hangul Jamo Extended-B
+)
+
+# Character names are parsed from UnicodeData.txt. Most characters are named outright in that file,
+# but two classes of name are only derived by rule, see UAX #44 "4.8 Name":
+HANGUL_JAMO_SHORT_L = ('G', 'GG', 'N', 'D', 'DD', 'R', 'M', 'B', 'BB', 'S', 'SS', '', 'J', 'JJ',
+                       'C', 'K', 'T', 'P', 'H')
+HANGUL_JAMO_SHORT_V = ('A', 'AE', 'YA', 'YAE', 'EO', 'E', 'YEO', 'YE', 'O', 'WA', 'WAE', 'OE',
+                       'YO', 'U', 'WEO', 'WE', 'WI', 'YU', 'EU', 'YI', 'I')
+HANGUL_JAMO_SHORT_T = ('', 'G', 'GG', 'GS', 'N', 'NJ', 'NH', 'D', 'L', 'LG', 'LM', 'LB', 'LS',
+                       'LT', 'LP', 'LH', 'M', 'B', 'BS', 'S', 'SS', 'NG', 'J', 'C', 'K', 'T',
+                       'P', 'H')
+HANGUL_SYLLABLE_BASE = 0xAC00
+NAME_DERIVATION_PREFIXES = (
+    ('CJK Ideograph', 'CJK UNIFIED IDEOGRAPH-'),
+    ('Tangut Ideograph', 'TANGUT IDEOGRAPH-'),
+    ('Khitan Small Script', 'KHITAN SMALL SCRIPT CHARACTER-'),
+    ('Nushu Character', 'NUSHU CHARACTER-'),
+    ('Egyptian Hieroglyph', 'EGYPTIAN HIEROGLYPH-'),
 )
 
 # Variation Selector-15 and 16
@@ -377,6 +397,12 @@ def fetch_unicode_versions() -> list[UnicodeVersion]:
                 if version not in EXCLUDE_VERSIONS:
                     versions.append(UnicodeVersion.parse(version))
     versions.sort()
+    if DRAFT_VERSION is not None:
+        latest = versions[-1]
+        if (latest.major, latest.minor) != (DRAFT_VERSION.major, DRAFT_VERSION.minor):
+            raise ValueError(
+                f'--draft={DRAFT_VERSION} requested, but {UnicodeDataFile.URL_DERIVED_AGE_DRAFT}'
+                f' describes Unicode {latest} as newest version. Are you sure this is a draft?')
     return versions
 
 
@@ -683,11 +709,66 @@ def cite_source_description(filename: str) -> tuple[str, str]:
     return fname, date
 
 
+@functools.cache
+def load_unicode_names() -> tuple[dict[int, str], tuple[tuple[int, int, str], ...],
+                                  dict[int, str]]:
+    """Parse character names of the latest unicode version from UnicodeData.txt."""
+    version = fetch_unicode_versions()[-1]
+    names: dict[int, str] = {}
+    derived_ranges: list[tuple[int, int, str]] = []
+    range_first: Optional[tuple[int, str]] = None
+    with open(UnicodeDataFile.UnicodeData(version), encoding='utf-8') as fin:
+        for line in fin:
+            fields = line.split(';')
+            if len(fields) < 2:
+                continue
+            ucs, name = int(fields[0], 16), fields[1]
+            if name.startswith('<'):
+                # A '<label, First>' line and its '<label, Last>' line bracket a range
+                label, _, marker = name[1:-1].rpartition(', ')
+                if marker == 'First':
+                    range_first = (ucs, label)
+                elif marker == 'Last' and range_first is not None:
+                    derived_ranges.append((range_first[0], ucs, range_first[1]))
+                    range_first = None
+                continue
+            names[ucs] = name
+
+    control_aliases: dict[int, str] = {}
+    with open(UnicodeDataFile.NameAliases(version), encoding='utf-8') as fin:
+        for entry in parse_unicode_table(fin):
+            if entry.code_range is None:
+                continue
+            if len(entry.properties) > 1 and entry.properties[1] == 'control':
+                control_aliases.setdefault(entry.code_range[0], entry.properties[0])
+    return names, tuple(derived_ranges), control_aliases
+
+
 def name_ucs(ucs: str) -> str:
-    try:
-        return string.capwords(unicodedata.name(ucs))
-    except ValueError:
+    """Return the capitalized name of a character, or None where it has no name."""
+    return string.capwords(_name_of(ord(ucs))) if _name_of(ord(ucs)) else None
+
+
+def _name_of(value: int) -> Optional[str]:
+    names, derived_ranges, control_aliases = load_unicode_names()
+    if (name := names.get(value)) is not None:
+        return name
+    for start, stop, label in derived_ranges:
+        if not start <= value <= stop:
+            continue
+        if label == 'Hangul Syllable':
+            # NR1
+            idx = value - HANGUL_SYLLABLE_BASE
+            return ('HANGUL SYLLABLE '
+                    + HANGUL_JAMO_SHORT_L[idx // 588]
+                    + HANGUL_JAMO_SHORT_V[(idx % 588) // 28]
+                    + HANGUL_JAMO_SHORT_T[idx % 28])
+        for prefix_label, prefix in NAME_DERIVATION_PREFIXES:
+            # NR2
+            if label.startswith(prefix_label):
+                return f'{prefix}{value:04X}'
         return None
+    return control_aliases.get(value)
 
 
 def parse_unicode_table(file: Iterable[str]) -> Iterator[TableEntry]:
@@ -958,12 +1039,16 @@ class UnicodeDataFile:
     check-last-modified'.
     """
 
+    URL_UNICODE_DATA = 'https://www.unicode.org/Public/{version}/ucd/UnicodeData.txt'
+    URL_NAME_ALIASES = 'https://www.unicode.org/Public/{version}/ucd/NameAliases.txt'
     URL_DERIVED_AGE = 'https://www.unicode.org/Public/UCD/latest/ucd/DerivedAge.txt'
+    URL_DERIVED_AGE_DRAFT = 'https://www.unicode.org/Public/draft/ucd/DerivedAge.txt'
     URL_EASTASIAN_WIDTH = 'https://www.unicode.org/Public/{version}/ucd/EastAsianWidth.txt'
     URL_DERIVED_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/extracted/DerivedGeneralCategory.txt'
     URL_EMOJI_VARIATION = 'https://unicode.org/Public/{version}/ucd/emoji/emoji-variation-sequences.txt'
     URL_LEGACY_VARIATION = 'https://unicode.org/Public/emoji/{version}/emoji-variation-sequences.txt'
     URL_EMOJI_ZWJ = 'https://unicode.org/Public/emoji/{version}/emoji-zwj-sequences.txt'
+    URL_EMOJI_ZWJ_DRAFT = 'https://www.unicode.org/Public/draft/emoji/emoji-zwj-sequences.txt'
     URL_GRAPHEME_BREAK = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakProperty.txt'
     URL_EMOJI_DATA = 'https://www.unicode.org/Public/{version}/ucd/emoji/emoji-data.txt'
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
@@ -973,7 +1058,23 @@ class UnicodeDataFile:
     URL_UDHR_ZIP = 'http://efele.net/udhr/assemblies/udhr_txt.zip'
 
     @classmethod
+    def UnicodeData(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'UnicodeData-{version}.txt')
+        cls.do_retrieve(url=cls.URL_UNICODE_DATA.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def NameAliases(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'NameAliases-{version}.txt')
+        cls.do_retrieve(url=cls.URL_NAME_ALIASES.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
     def DerivedAge(cls) -> str:
+        if DRAFT_VERSION is not None:
+            fname = os.path.join(PATH_DATA, f'DerivedAge-{DRAFT_VERSION}-draft.txt')
+            cls.do_retrieve(url=cls.URL_DERIVED_AGE_DRAFT, fname=fname)
+            return fname
         fname = os.path.join(PATH_DATA, 'DerivedAge.txt')
         cls.do_retrieve(url=cls.URL_DERIVED_AGE, fname=fname)
         return fname
@@ -1012,9 +1113,12 @@ class UnicodeDataFile:
 
     @classmethod
     def TestEmojiZWJSequences(cls) -> str:
-        # ZWJ sequences are only at /Public/emoji/{version}/, use 'latest' for tests
+        # ZWJ sequences are only at /Public/emoji/{version}/, use 'latest' for tests, there is
+        # no /Public/emoji/{next_version}/ folder before release, only /Public/draft/emoji/.
         fname = os.path.join(PATH_TESTS, 'emoji-zwj-sequences.txt')
-        cls.do_retrieve(url=cls.URL_EMOJI_ZWJ.format(version='latest'), fname=fname)
+        url = (cls.URL_EMOJI_ZWJ_DRAFT if DRAFT_VERSION is not None
+               else cls.URL_EMOJI_ZWJ.format(version='latest'))
+        cls.do_retrieve(url=url, fname=fname)
         return fname
 
     @classmethod
@@ -1114,13 +1218,34 @@ class UnicodeDataFile:
         print('ok')
 
     @staticmethod
+    def is_draft_url(url: str) -> bool:
+        """Whether url resolves into the pre-release '/Public/draft/' folder."""
+        if DRAFT_VERSION is None:
+            return False
+        # '/Public/{draft_version}/' urls are not typed out as '/Public/draft/', they 302 into it.
+        return bool(re.search(rf'/Public/(draft/|{DRAFT_VERSION.major}\.{DRAFT_VERSION.minor}(\.\d+)?/)',
+                              url))
+
+    @staticmethod
     def is_url_newer(url: str, fname: str) -> bool:
         if not os.path.exists(fname):
             return True
-        if CHECK_LAST_MODIFIED:
+        # Only draft files are worth re-checking by default: they are revised throughout the alpha
+        # and beta review periods, while a published file never changes once released. Checking all
+        # of them costs a silent HEAD request per file, and risks a rate-limit backoff of minutes.
+        if CHECK_LAST_MODIFIED or UnicodeDataFile.is_draft_url(url):
             session = UnicodeDataFile.get_http_session()
-            resp = session.head(url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+            # 'requests' does not follow redirects for HEAD by default, unlike GET, and a '/Public/
+            # {version}/' url redirects into '/Public/draft/' for a version that is not yet
+            # released: without allow_redirects, this is a 302 without any 'Last-Modified' header.
+            print(f'checking {url}: ', end='', flush=True)
+            resp = session.head(url, allow_redirects=True,
+                                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
             resp.raise_for_status()
+            print(resp.headers.get('Last-Modified', 'no last-modified'))
+            if 'Last-Modified' not in resp.headers:
+                # cannot compare, always re-fetch
+                return True
             remote_url_dt = dateutil.parser.parse(resp.headers['Last-Modified']).astimezone()
             local_file_dt = datetime.datetime.fromtimestamp(os.path.getmtime(fname)).astimezone()
             return remote_url_dt > local_file_dt
@@ -1708,6 +1833,13 @@ def parse_args() -> dict[str, Any]:
              '(for archival/testing purposes)'
     )
     parser.add_argument(
+        '--draft',
+        metavar='VERSION',
+        type=UnicodeVersion.parse,
+        help=('Generate tables from the pre-release (draft) UCD of the given not-yet-released '
+              'Unicode VERSION, E.g. --draft=18.0. For development only, do not commit or release!')
+    )
+    parser.add_argument(
         '--check-last-modified',
         action='store_true',
         help='Check if remote files are newer than local files (rarely needed)'
@@ -1727,6 +1859,8 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
     version = fetch_unicode_versions()[-1]
 
     # Fetch data files required for code generation
+    UnicodeDataFile.UnicodeData(version)
+    UnicodeDataFile.NameAliases(version)
     UnicodeDataFile.EastAsianWidth(version)
     UnicodeDataFile.DerivedGeneralCategory(version)
     UnicodeDataFile.EmojiVariationSequences(version)
@@ -1789,11 +1923,15 @@ def cleanup_stale_grapheme_files() -> None:
 
 
 def main(only_fetch: bool = False, fetch_all_versions: bool = False,
-         check_last_modified: bool = False) -> None:
+         check_last_modified: bool = False, draft: Optional[UnicodeVersion] = None) -> None:
     """Update east-asian, combining and zero width tables."""
     # Set global flag for HTTP requests to check Last-Modified headers
-    global CHECK_LAST_MODIFIED
+    global CHECK_LAST_MODIFIED, DRAFT_VERSION
+    DRAFT_VERSION = draft
     CHECK_LAST_MODIFIED = check_last_modified
+    if draft is not None:
+        print(f'!! --draft={draft}: using pre-release UCD from '
+              'https://www.unicode.org/Public/draft/, do not commit or release !!')
 
     # Always fetch data files first
     fetch_all_data_files(fetch_all_versions)
