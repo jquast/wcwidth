@@ -611,16 +611,6 @@ upload with `twine`_::
    python -Im pip install twine
    python -Im twine upload dist/*
 
-Utilities
----------
-
-Supplementary tools for browsing and testing terminals for wide unicode
-characters are found in the `bin/`_ of this project's source code.  Just ensure
-to first ``pip install -r requirements-develop.txt`` from this projects main
-folder. For example, an interactive browser for testing::
-
-  python ./bin/wcwidth-browser.py
-
 ====
 Uses
 ====
@@ -708,15 +698,19 @@ languages:
 History
 =======
 
-0.8.3 *Next Release*
-  * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
-    wide characters. `PR #231`_
+0.9.0 *Next Release*
   * **Changed** ``ambiguous_width`` values outside ``1``-``2`` are now clamped into range
     (``< 1`` becomes ``1``, ``> 2`` becomes ``2``) rather than silently treated as ``1``
     regardless of value. This is a behavior change only for out-of-range input: previously any
     value other than exactly ``2`` measured as narrow, so ``ambiguous_width=99`` measured narrow
     and now measures wide. Applies to `wcwidth()`_, `wcswidth()`_, `wcstwidth()`_, `width()`_,
     `ljust()`_, `rjust()`_, `center()`_, `wrap()`_, and `clip()`_. `PR #233`_
+
+0.8.3 *2026-08-28*
+  * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
+    wide characters, `PR #231`_.
+  * **Bugfix** `clip()`_ with ``propagate_sgr=True``, should match behavior of `propagate_sgr()`_,
+    `PR #235`_.
 
 0.8.2 *2026-06-29*
   * **Bugfix** Do not raise IndexError when legacy POSIX ``n`` argument to `wcswidth()`_ or
@@ -975,8 +969,10 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #223`: https://github.com/jquast/wcwidth/pull/223
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224
 .. _`PR #226`: https://github.com/jquast/wcwidth/pull/226
+.. _`PR #230`: https://github.com/jquast/wcwidth/pull/230
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #233`: https://github.com/jquast/wcwidth/pull/233
+.. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190

@@ -4,7 +4,7 @@
 import pytest
 
 # local
-from wcwidth import clip, width, strip_sequences
+from wcwidth import clip, width, propagate_sgr, strip_sequences
 
 STRIP_SEQUENCES_CASES = [
     ('', ''),
@@ -130,6 +130,86 @@ def test_clip_sequences_only():
     assert clip('\x1b[31m\x1b[0m', 0, 10) == ''
     # With propagate_sgr=False, sequences preserved
     assert repr(clip('\x1b[31m\x1b[0m', 0, 10, propagate_sgr=False)) == repr('\x1b[31m\x1b[0m')
+
+
+SGR_PATH_KWARGS = [{}, {'overtyping': True}, {'control_codes': 'ignore'}]
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+def test_clip_sgr_inside_window_preserved(kwargs):
+    """Style changes within (start, end) are emitted at their original position."""
+    # nothing is clipped away, so nothing changes,
+    assert (clip('\x1b[1mbold\x1b[m normal', 0, 20, **kwargs) ==
+            '\x1b[1mbold\x1b[m normal')
+    # and the same holds when the tail is clipped, the trailing reset is
+    # synthesized because the final style is still active.
+    assert (clip('\x1b[31mred\x1b[32mgreen\x1b[0m', 0, 4, **kwargs) ==
+            '\x1b[31mred\x1b[32mg\x1b[0m')
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+def test_clip_sgr_before_start_folded_into_prefix(kwargs):
+    """Style set before *start* is synthesized as a prefix, not emitted twice."""
+    assert clip('\x1b[1;34mHello world\x1b[0m', 6, 11, **kwargs) == '\x1b[1;34mworld\x1b[0m'
+    # the style in effect at *start* is the most recent one,
+    assert clip('\x1b[31mred\x1b[32mgreen\x1b[0m', 4, 8, **kwargs) == '\x1b[32mreen\x1b[0m'
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+def test_clip_sgr_after_end_discarded(kwargs):
+    """Style set at or beyond *end* does not appear in the result."""
+    assert clip('hello\x1b[31m world\x1b[0m', 0, 5, **kwargs) == 'hello'
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+@pytest.mark.parametrize('text', [
+    'plain text',
+    '\x1b[31mred',
+    '\x1b[31mred\x1b[0m',
+    '\x1b[1mbold\x1b[m normal',
+    '\x1b[31mred\x1b[32mgreen\x1b[0m',
+    'plain \x1b[4munderline',
+])
+def test_clip_matches_propagate_sgr(text, kwargs):
+    """Clipping nothing away agrees with :func:`propagate_sgr`."""
+    assert clip(text, 0, width(text), **kwargs) == propagate_sgr([text])[0]
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+@pytest.mark.parametrize('text', [
+    '\x1b[1m\x1b[31mbold red\x1b[0m',
+    '\x1b[31mred\x1b[32mgreen\x1b[0m',
+    '\x1b[?25l\x1b[31mred',
+])
+def test_clip_sgr_result_is_self_contained(text, kwargs):
+    """The result carries its own style: propagating it again is a no-op."""
+    result = clip(text, 0, width(text), **kwargs)
+    assert propagate_sgr([result])[0] == result
+    assert strip_sequences(result) == strip_sequences(text)
+
+
+@pytest.mark.parametrize('kwargs', SGR_PATH_KWARGS)
+def test_clip_sgr_after_non_sgr_sequence(kwargs):
+    """A non-SGR sequence before the first visible cell does not swallow the style."""
+    assert clip('\x1b[?25l\x1b[31mred', 0, 10, **kwargs) == '\x1b[31m\x1b[?25lred\x1b[0m'
+
+
+@pytest.mark.parametrize('kwargs', [{}, {'overtyping': True}])
+def test_clip_sgr_inside_hyperlink_tracked(kwargs):
+    """Style changed by hyperlink inner text still terminates with a reset."""
+    text = '\x1b]8;;http://x\x07a\x1b[31mb\x1b]8;;\x07c'
+    assert clip(text, 0, 10, **kwargs) == text + '\x1b[0m'
+
+
+@pytest.mark.parametrize('kwargs', [{}, {'overtyping': True}])
+def test_clip_sgr_inside_hyperlink_untracked(kwargs):
+    """With ``propagate_sgr=False``, hyperlink inner style is neither tracked nor reset."""
+    text = '\x1b]8;;http://x\x07a\x1b[31mb\x1b]8;;\x07c'
+    # sequences pass through verbatim, no synthesized prefix or trailing reset,
+    assert clip(text, 0, 10, propagate_sgr=False, **kwargs) == text
+    # and that holds when 'c', the only cell outside the hyperlink, is clipped away.
+    assert (clip(text, 0, 2, propagate_sgr=False, **kwargs) ==
+            '\x1b]8;;http://x\x07a\x1b[31mb\x1b]8;;\x07')
 
 
 def test_clip_sequences_osc_hyperlink():
