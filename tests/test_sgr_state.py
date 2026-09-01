@@ -148,6 +148,25 @@ def test_sgr_state_parse_colors_colon_format():
     assert state.foreground == (38, 2, 0, 255, 0, 0)
 
 
+def test_propagate_sgr_colon_format_color_is_restored():
+    r"""A restored ITU T.416 colon-format color denotes the color it was parsed from.
+
+    ``38:2:<colour space id>:R:G:B`` has a colour space element that the legacy
+    ``38;2;R;G;B`` form has no slot for, so restoring it with ';' separators shifts
+    R, G and B by one position and leaves a trailing parameter.
+    """
+    for original in ('\x1b[38:2::255:0:0m', '\x1b[38:2:1:255:0:0m', '\x1b[48:2::0:0:255m'):
+        expected = _sgr_state_update(_SGR_STATE_DEFAULT, original)
+        restored = _sgr_state_to_sequence(expected)
+        assert _sgr_state_update(_SGR_STATE_DEFAULT, restored) == expected
+
+    # and end-to-end, the style restored on the continuation line is the same color
+    continuation = wrap('\x1b[38:2::255:0:0mred text', width=4)[1]
+    restored_prefix = re.match(r'\x1b\[[\d;:]*m', continuation).group()
+    assert (_sgr_state_update(_SGR_STATE_DEFAULT, restored_prefix).foreground ==
+            (38, 2, 0, 255, 0, 0))
+
+
 def test_sgr_state_color_override():
     """Newer color replaces older regardless of format."""
     state = _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[38;5;208m')
