@@ -51,6 +51,13 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/jquast/wcwidth"
 
+[tool.hatch.build]
+# 'coverage annotate' writes a "<module>.py,cover" beside each source file; any left behind in
+# wcwidth/ is otherwise swept into the wheel, and into the sdist by "/wcwidth/**" below.
+exclude = [
+  "*,cover",
+]
+
 [tool.hatch.build.targets.sdist]
 include = [
   # hatch includes **everything**, even embarrassing TODO files or spreadsheets or whatever is in
