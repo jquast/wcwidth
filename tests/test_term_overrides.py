@@ -134,6 +134,26 @@ def test_vs15_wider_override_unchanged():
     assert wcwidth.width('\u231a\ufe0e', term_program='VTE') == 2
 
 
+def test_vs15_repeated_is_idempotent():
+    """A repeated VS15 must not narrow the base character more than once.
+
+    VS16 already guards against this by clearing ``last_measured_idx`` once it has been
+    consumed (see the "prevent double application" comment next to its handling), but the
+    VS15 branch skipped that reset, so a second VS15 right after the first one found
+    ``last_measured_idx`` still pointing at the same base character and narrowed it again.
+    """
+    base = '\u231a'  # WATCH, default width 2, narrows to 1 under a single VS15
+    assert wcwidth.wcswidth(base + '\ufe0e') == 1
+    assert wcwidth.wcswidth(base + '\ufe0e' * 2) == 1
+    assert wcwidth.wcswidth(base + '\ufe0e' * 3) == 1
+    assert wcwidth.wcstwidth(base + '\ufe0e' * 2, term_program='kitty') == 1
+    assert wcwidth.width(base + '\ufe0e' * 2) == 1
+    # a trailing character after the repeated selectors would otherwise also lose a
+    # column for every VS15 past the first one
+    assert wcwidth.wcswidth(base + '\ufe0e' * 2 + 'x') == 2
+    assert wcwidth.width(base + '\ufe0e' * 2 + 'x') == 2
+
+
 def test_grapheme_override_zwj_not_in_table():
     """ZWJ cluster not in override table falls through without error."""
     assert wcwidth.wcstwidth('😀\u200d😀', term_program='VTE') == 2
