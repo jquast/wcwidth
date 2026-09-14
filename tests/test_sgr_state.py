@@ -149,7 +149,8 @@ def test_sgr_state_parse_colors_colon_format():
 
 
 def test_propagate_sgr_colon_format_color_is_restored():
-    r"""A restored ITU T.416 colon-format color denotes the color it was parsed from.
+    r"""
+    A restored ITU T.416 colon-format color denotes the color it was parsed from.
 
     ``38:2:<colour space id>:R:G:B`` has a colour space element that the legacy
     ``38;2;R;G;B`` form has no slot for, so restoring it with ';' separators shifts
