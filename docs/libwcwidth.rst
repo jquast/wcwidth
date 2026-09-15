@@ -389,9 +389,7 @@ Every other table is searched with :c:func:`wcwidth_bisearch`.
 Unicode Version
 ---------------
 
-Tables generated from Unicode |unicode_version|, which is still a pre-release draft.  The
-Python package ships Unicode 17.0.0 tables until that release lands; the two halves of
-this project are deliberately out of step while the C11 library is a release candidate.
+Tables generated from Unicode |unicode_version|.
 
 .. |unicode_version| replace:: 18.0.0
 

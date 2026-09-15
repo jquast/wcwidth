@@ -9,9 +9,6 @@ derived from the Python wcwidth_ project.
 be used and reported on, but its API is not yet frozen: function signatures, header layout, and
 the contents of ``wcwidth_config.h`` may change before 1.0.
 
-Its tables are generated from the Unicode 18.0.0 draft, while the Python package still
-ships 17.0.0 tables; the two are deliberately out of step until 18.0.0 is released.
-
 Building
 --------
 
