@@ -24,7 +24,10 @@ PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True,
-    undefined=jinja2.StrictUndefined)
+    undefined=jinja2.StrictUndefined,
+    # No template renders HTML or XML, so autoescape is inert here; it is set
+    # to keep static analysis from flagging about default autoescape=False.
+    autoescape=jinja2.select_autoescape(['html', 'xml']))
 PATH_HEADERS = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth')
 PATH_DATA = os.path.join(PATH_UP, 'data')
 PATH_DOCS = os.path.join(PATH_UP, 'docs')

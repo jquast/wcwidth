@@ -15,8 +15,8 @@ functions return -1 when C0 and C1 control codes other than NUL are present; NUL
 zero-width.  They do not parse terminal escape sequences: any escape sequence contains control
 codes, so these functions return -1 for it.
 
-`wcwidth_width_u8()`_ is a higher-level wrapper of `wcswidth_u8()`_ that also measures terminal control
-sequences, like colors, bold, tabstops, and horizontal cursor movement.
+`wcwidth_width_u8()`_ is a higher-level wrapper of `wcswidth_u8()`_ that also measures terminal
+control sequences, like colors, bold, tabstops, and horizontal cursor movement.
 
 `wcstwidth_u8()`_ applies corrections for a specific terminal program and version, as described
 in the Python Corrections_ documentation.
@@ -264,8 +264,8 @@ codes:
 wcwidth_ljust_u8(), wcwidth_rjust_u8(), and wcwidth_center_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Justify UTF-8 text to ``opts.dest_width`` display cells, filling with a UTF-8 byte string.  Each returns a
-``malloc``\ 'd NUL-terminated string the caller must ``free``:
+Justify UTF-8 text to ``opts.dest_width`` display cells, filling with a UTF-8 byte string.  Each
+returns a ``malloc``\ 'd NUL-terminated string the caller must ``free``:
 
 .. code-block:: c
 
@@ -291,8 +291,9 @@ Justify UTF-8 text to ``opts.dest_width`` display cells, filling with a UTF-8 by
 wcwidth_clip_u8()
 ~~~~~~~~~~~~~~~~~
 
-Clip text to the visible column range ``[opts.v_start, opts.v_end)``, filling partially visible graphemes
-with a fill string.  Returns a ``malloc``\ 'd NUL-terminated string the caller must ``free``:
+Clip text to the visible column range ``[opts.v_start, opts.v_end)``, filling partially visible
+graphemes with a fill string.  Returns a ``malloc``\ 'd NUL-terminated string the caller must
+``free``:
 
 .. code-block:: c
 
@@ -328,9 +329,9 @@ codepoints.
 wcwidth_wrap_u8() and wcwidth_wrap_u8_text()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Wrap UTF-8 text into lines of at most ``opts.width`` display cells.  `wcwidth_wrap_u8()`_ collapses all
-whitespace, including newlines; `wcwidth_wrap_u8_text()`_ preserves input newlines as paragraph breaks.
-Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
+Wrap UTF-8 text into lines of at most ``opts.width`` display cells.  `wcwidth_wrap_u8()`_ collapses
+all whitespace, including newlines; `wcwidth_wrap_u8_text()`_ preserves input newlines as paragraph
+breaks.  Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
 
 .. code-block:: c
 
@@ -346,10 +347,10 @@ Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
     wcwidth_wrap_u8("コンニチハ", 15, &opts, &out, &out_len);       /* "コン\nニチ\nハ" */
     free(out);
 
-When the placeholder does not fit within the given width (``max_lines`` truncation), `wcwidth_wrap_u8()`_
-returns ``-2`` rather than ``-1``, so callers can raise a tailored error.  `wcwidth_wrap_lines_u8()`_
-additionally reports each line's start offset in the output buffer, which matters when a line
-contains ``'\n'`` from the placeholder itself:
+When the placeholder does not fit within the given width (``max_lines`` truncation),
+`wcwidth_wrap_u8()`_ returns ``-2`` rather than ``-1``, so callers can raise a tailored error.
+`wcwidth_wrap_lines_u8()`_ additionally reports each line's start offset in the output buffer, which
+matters when a line contains ``'\n'`` from the placeholder itself:
 
 .. code-block:: c
 
@@ -386,9 +387,9 @@ codepoint-array form, and allocates its result instead.
 Differences from the Python package
 -----------------------------------
 
-`wcwidth_width_u32()`_ and `wcwidth_width_u8()`_ parse only the sequences that move the cursor within a line or
-change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB, HPA), and OSC 66
-text sizing.  Every other recognized sequence counts as zero-width.
+`wcwidth_width_u32()`_ and `wcwidth_width_u8()`_ parse only the sequences that move the cursor
+within a line or change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB,
+HPA), and OSC 66 text sizing.  Every other recognized sequence counts as zero-width.
 
 Screen clears, scrolls, and vertical movement are indeterminate: their column effect depends on
 terminal state that the text does not carry.  ``WCWIDTH_STRICT`` reports them as an error, and the
@@ -400,17 +401,19 @@ escape sequence, matching their Python counterparts.
 The text transforms are simpler than the Python ones:
 
 * OSC 8 hyperlinks are not implemented; an OSC 8 sequence is treated as an ordinary zero-width OSC.
-  It measures correctly but is never rewritten, so a `wcwidth_clip_u8()`_ window starting or ending inside
-  a hyperlink yields an unbalanced pair, and `wcwidth_wrap_u8()`_ does not re-open the link on each line.
-  Callers must re-emit the opener and terminator themselves.
-* `wcwidth_clip_u8()`_ does not parse horizontal cursor movement (there is no counterpart to Python's
-  ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as zero-width.
-* `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where Python's
-  `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
+  It measures correctly but is never rewritten, so a `wcwidth_clip_u8()`_ window starting or ending
+  inside a hyperlink yields an unbalanced pair, and `wcwidth_wrap_u8()`_ does not re-open the link
+  on each line.  Callers must re-emit the opener and terminator themselves.
+* `wcwidth_clip_u8()`_ does not parse horizontal cursor movement (there is no counterpart to
+  Python's ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as
+  zero-width.
+* `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where
+  Python's `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
   ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
   mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
 
-`wcwidth_ljust_u8()`_, `wcwidth_rjust_u8()`_ and `wcwidth_center_u8()`_ match the Python functions exactly.
+`wcwidth_ljust_u8()`_, `wcwidth_rjust_u8()`_ and `wcwidth_center_u8()`_ match the Python functions
+exactly.
 
 Malformed escape sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

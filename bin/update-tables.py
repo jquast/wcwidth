@@ -63,7 +63,10 @@ THIS_FILEPATH = ('wcwidth/' +
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True,
-    undefined=jinja2.StrictUndefined)
+    undefined=jinja2.StrictUndefined,
+    # No template renders HTML or XML, so autoescape is inert here; it is set
+    # to keep static analysis from flagging the default of autoescape=False.
+    autoescape=jinja2.select_autoescape(['html', 'xml']))
 UTC_NOW = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 CONNECT_TIMEOUT = int(os.environ.get('CONNECT_TIMEOUT', '10'))
