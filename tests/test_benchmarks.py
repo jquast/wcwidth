@@ -686,3 +686,49 @@ def test_width_vs16_term_program(benchmark, term_program):
 def test_width_vs15_term_program(benchmark, term_program):
     """Benchmark width() with VS15 sequences to exercise vs15_wider bisearch."""
     benchmark(wcwidth.width, _VS15_TEXT, term_program=term_program)
+
+
+def test_clip_ascii_to_end(benchmark):
+    """Benchmark clip() with ASCII string, end=-1 (to end of line)."""
+    benchmark(wcwidth.clip, 'hello world', 6)
+
+
+def test_clip_long_ascii_to_end(benchmark):
+    """Benchmark clip() with long ASCII string, end=-1 (fast-path slice)."""
+    text = 'hello world ' * 1000
+    benchmark(wcwidth.clip, text, 500)
+
+
+def test_clip_japanese_to_end(benchmark):
+    """Benchmark clip() with Japanese characters, end=-1 (to end of line)."""
+    benchmark(wcwidth.clip, '中文字符串', 2)
+
+
+def test_clip_long_cjk_to_end(benchmark):
+    """Benchmark clip() with long CJK text, end=-1 (no early exit)."""
+    text = '中文测试字符串' * 100
+    benchmark(wcwidth.clip, text, 50)
+
+
+def test_clip_dense_ansi_to_end(benchmark):
+    """Benchmark clip() with dense ANSI sequences, end=-1 (SGR tracking)."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6)
+
+
+def test_clip_dense_ansi_to_end_no_propagate(benchmark):
+    """Benchmark clip() with dense ANSI, end=-1 and SGR propagation disabled."""
+    text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
+    benchmark(wcwidth.clip, text, 6, propagate_sgr=False)
+
+
+def test_clip_osc8_hyperlinks_to_end(benchmark):
+    """Benchmark clip() with OSC 8 hyperlinks, end=-1 (hyperlink parsing path)."""
+    text = '\x1b]8;;http://example.com\x07Click Here\x1b]8;;\x07 ' * 20
+    benchmark(wcwidth.clip, text, 10)
+
+
+def test_clip_cursor_cr_to_end(benchmark):
+    """Benchmark clip() with carriage-return overwrite, end=-1 (painter path)."""
+    text = 'hello\rworld ' * 20
+    benchmark(wcwidth.clip, text, 0)

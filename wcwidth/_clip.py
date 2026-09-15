@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # std imports
+import sys
 import enum
 from itertools import islice
 
@@ -718,8 +719,8 @@ def _clip_painter(
 
 def clip(
     text: str,
-    start: int,
-    end: int,
+    start: int = 0,
+    end: int = -1,
     *,
     fillchar: str = ' ',
     tabsize: int = 8,
@@ -732,29 +733,26 @@ def clip(
     r"""
     Clip text to display columns (start, end) while preserving all terminal sequences.
 
-    This function extracts a substring based on visible column positions rather than
-    character indices. Terminal escape sequences are preserved in the output since
-    they have zero display width. If a wide character (width 2) is split at
-    either boundary, it is replaced with ``fillchar``.
+    This function extracts a substring based on visible column positions rather than character
+    indices. Terminal escape sequences are preserved in output. If a wide character (width of 2) is
+    split at a boundary, it is replaced with ``fillchar``.
 
-    TAB characters (``\t``) are expanded to spaces up to the next tab stop,
-    controlled by the ``tabsize`` parameter.
+    TAB characters (``\t``) are expanded to spaces up to the next tab stop, controlled by the
+    ``tabsize`` parameter.  When cursor movement is detected, a "painter's algorithm" is used unless
+    ``overtyping=False`` is set.  Cursor movement control codes are parsed for their effects instead
+    of ignored.  For these operations, it is assumed that ``text`` begins at column 0.
 
-    When cursor movement is detected, a "painter's algorithm" is used unless ``overtyping=False`` is
-    set.  Cursor movement control codes are parsed for their effects instead of ignored.  For all
-    such operations, it is assumed that ``text`` begins at column 0.
-
-    **OSC 8 hyperlinks** are handled specially: the visible text inside a hyperlink
-    is clipped to the requested column range, and the hyperlink is rebuilt around
-    the clipped text.  Empty hyperlinks (those with no remaining visible text after
-    clipping) are removed::
+    For text containing **OSC 8 hyperlinks**, the visible text inside a hyperlink is clipped to the
+    requested column range and the hyperlink sequence is rebuilt::
 
         >>> clip('\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07', 6, 10)
         '\x1b]8;;http://example.com\x07This\x1b]8;;\x07'
 
     :param text: String to clip, may contain terminal escape sequences.
-    :param start: Absolute starting column (inclusive, 0-indexed).
-    :param end: Absolute ending column (exclusive).
+    :param start: Absolute starting column (inclusive, 0-indexed), default ``0``.
+    :param end: Absolute ending column (exclusive).  The default value, ``-1``,
+        signifies "to the end of the line", clipping only from *start* without
+        requiring the caller to measure the display width of *text*.
     :param fillchar: Character to use when a wide character must be split at
         a boundary (default space). Must have display width of 1.
     :param tabsize: Tab stop width (default 8). Set to 0 to pass tabs through
@@ -798,8 +796,9 @@ def clip(
         with all terminal sequences preserved and wide characters at boundaries
         replaced with ``fillchar``.
 
-    :raises ValueError: If ``control_codes='strict'`` and an indeterminate-effect
-        sequence or out-of-bounds cursor movement is encountered.
+    :raises ValueError: If ``end`` is negative and not ``-1``, or if
+        ``control_codes='strict'`` and an indeterminate-effect sequence or
+        out-of-bounds cursor movement is encountered.
 
     SGR (terminal styling) sequences are propagated by default. The result
     begins with any active style and ends with a reset::
@@ -821,6 +820,13 @@ def clip(
        OSC 8 hyperlink-aware clipping.  OSC 66 text sizing protocol support.
        Added ``overtyping`` parameter (default None, auto-detect).
 
+    .. versionchanged:: 0.8.4
+       ``start`` now defaults to ``0`` and ``end`` to ``-1``, meaning "to the
+       end of the line"::
+
+           >>> clip('\x1b[1;34mHello world\x1b[0m', 6)
+           '\x1b[1;34mworld\x1b[0m'
+
     Example::
 
         >>> clip('hello world', 0, 5)
@@ -831,6 +837,12 @@ def clip(
         'a       b'
     """
     start = max(start, 0)
+    if end < 0:
+        if end != -1:
+            raise ValueError(
+                f"end must be -1 (to end of line) or non-negative, got {end}")
+        # Unbounded: clip only from *start*, to the end of the line.
+        end = sys.maxsize
     if end <= start:
         return ''
 
