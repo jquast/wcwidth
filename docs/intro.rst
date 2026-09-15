@@ -69,10 +69,10 @@ provide Corrections_ for those terminals without grapheme support.
 
 See also:
 
-- `Grapheme Clusters and Terminal Emulators`_
-- `terminal-unicode-core.tex`_
+- `terminal-unicode-core.tex`_ (2021)
+- `Grapheme Clusters and Terminal Emulators`_ (2023)
 - `State of Terminal Emulators in 2025`_
-- `Perfecting Terminal Character Width Using Correction Tables (2026)`_
+- `Perfecting Terminal Character Width Using Correction Tables`_ (2026)
 
 The `jquast/ucs-detect`_ project publishes automatic results of compliance to our standard for Wide
 character, Languages, grapheme clustering, complex or combining scripts, emojis, zero-width joiner,
@@ -532,7 +532,7 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _`Grapheme Clusters and Terminal Emulators`: https://mitchellh.com/writing/grapheme-clusters-in-terminals
 .. _`terminal-unicode-core.tex`: https://github.com/contour-terminal/terminal-unicode-core/blob/master/spec/terminal-unicode-core.tex
 .. _`State of Terminal Emulators in 2025`: https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
-.. _`Perfecting Terminal Character Width Using Correction Tables (2026)`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
+.. _`Perfecting Terminal Character Width Using Correction Tables`: https://www.jeffquast.com/post/perfecting-terminal-character-width-using-correction-tables/
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
