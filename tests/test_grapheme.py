@@ -182,9 +182,56 @@ def test_wide_unicode_graphemes(input_str, expected):
     assert list(iter_graphemes(input_str)) == expected
 
 
+# Precomposed Hangul syllable GAG (U+AC01) has Grapheme_Cluster_Break=LVT, unlike the
+# decomposed HANGUL_LVT above (LV followed by T).
+HANGUL_LVT_PRECOMPOSED = '\uAC01'
+
+# HANGUL JONGSEONG KIYEOK, Grapheme_Cluster_Break=T
+HANGUL_T = '\u11A8'
+
+
+@pytest.mark.parametrize(("input_str", "expected"), [
+    (HANGUL_LVT_PRECOMPOSED, [HANGUL_LVT_PRECOMPOSED]),
+    ('ok' + HANGUL_LVT_PRECOMPOSED + 'ok',
+     ['o', 'k', HANGUL_LVT_PRECOMPOSED, 'o', 'k']),
+    # GB8: LVT x T
+    (HANGUL_LVT_PRECOMPOSED + HANGUL_T, [HANGUL_LVT_PRECOMPOSED + HANGUL_T]),
+    # GB8: T x T
+    (HANGUL_LVT_PRECOMPOSED + HANGUL_T * 2, [HANGUL_LVT_PRECOMPOSED + HANGUL_T * 2]),
+    # GB5/GB4: LVT is broken from surrounding control characters
+    (HANGUL_LVT_PRECOMPOSED + '\n', [HANGUL_LVT_PRECOMPOSED, '\n']),
+])
+def test_precomposed_hangul_graphemes(input_str, expected):
+    """GB8 joins T to a precomposed LVT syllable."""
+    assert list(iter_graphemes(input_str)) == expected
+
+
+@pytest.mark.skipif(NARROW_ONLY, reason="requires wide Unicode")
+@pytest.mark.parametrize(("input_str", "expected"), [
+    # GB11: ExtPict ZWJ x ExtPict, no Extend between
+    ('\U0001F600\u200D\U0001F600', ['\U0001F600\u200D\U0001F600']),
+    # GB11: ExtPict Extend* ZWJ x ExtPict, lookback skips the Extend
+    ('\U0001F600\u0301\u200D\U0001F600', ['\U0001F600\u0301\u200D\U0001F600']),
+    ('\U0001F600\u0301\u0300\u200D\U0001F600',
+     ['\U0001F600\u0301\u0300\u200D\U0001F600']),
+    # not GB11: lookback halts on a non-Extend, non-ExtPict codepoint
+    ('a\u200D\U0001F600', ['a\u200D', '\U0001F600']),
+    ('ok\u200D\U0001F600ok', ['o', 'k\u200D', '\U0001F600', 'o', 'k']),
+    # not GB11: lookback runs off the start of the string
+    ('\u200D\U0001F600', ['\u200D', '\U0001F600']),
+    ('\u0301\u200D\U0001F600', ['\u0301\u200D', '\U0001F600']),
+])
+def test_gb11_emoji_zwj_lookback(input_str, expected):
+    """GB11 joins emoji across ZWJ only when the lookback reaches an Extended_Pictographic."""
+    assert list(iter_graphemes(input_str)) == expected
+
+
 @pytest.mark.skipif(NARROW_ONLY, reason="requires wide Unicode")
 @pytest.mark.parametrize(("input_str", "expected"), [
     ('\u094D\u0915', ['\u094D\u0915']),
+    # GB9c: the linker lookback skips intervening InCB=Extend codepoints
+    ('\u094D\u0300\u0915', ['\u094D\u0300\u0915']),
+    ('ok\u094D\u0300\u0915ok', ['o', 'k\u094D\u0300\u0915', 'o', 'k']),
     ('\u1CF5\u0915', ['\u1CF5\u0915']),
     ('ok\u1CF5\u0915ok', ['o', 'k', '\u1CF5\u0915', 'o', 'k']),
     ('a\u094D\u0924', ['a\u094D\u0924']),
