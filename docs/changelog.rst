@@ -12,8 +12,8 @@ History
   * **Changed** `iter_graphemes()`_ no longer delegates to the Python 3.15 standard library,
     which differs from UAX #29 in subtle ways.  The performance is planned to return by way of
     the libwcwidth C11 library, `PR #246`_.
-  * **Bugfix** OSC 66 text sizing sequences without a text field, `PR #246`_.
-  * **Changed** ``ambiguous_width`` argument are now clamped allowed range ``(1, 2)``, `PR #246`_.
+  * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
+  * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
     ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
   * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #247`_.
