@@ -25,7 +25,7 @@ typedef struct
     bool replace_whitespace;
     bool break_long_words;
     bool drop_whitespace;
-    int max_lines;             /* 0 = no limit */
+    int max_lines; /* 0 = no limit */
     const char *initial_indent;
     const char *subsequent_indent;
     const char *placeholder; /* for truncation, default " [...]" */

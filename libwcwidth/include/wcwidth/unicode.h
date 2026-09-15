@@ -39,8 +39,7 @@ wcwidth_is_regional_indicator(uint32_t ucs)
 static inline bool
 wcwidth_is_extended_pictographic(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_EXTENDED_PICTOGRAPHIC,
-                            WCWIDTH_EXTENDED_PICTOGRAPHIC_LEN)
+    return wcwidth_bisearch(ucs, WCWIDTH_EXTENDED_PICTOGRAPHIC, WCWIDTH_EXTENDED_PICTOGRAPHIC_LEN)
            != 0;
 }
 

@@ -59,8 +59,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
         narrow_zeroer_len = term->set->narrow_zeroer_len;
         has_graphemes = term->grapheme_entries_len > 0;
     }
-    bool has_cp_overrides = narrower_len > 0 || zeroer_len > 0
-                            || narrow_wider_len > 0 || narrow_zeroer_len > 0;
+    bool has_cp_overrides =
+        narrower_len > 0 || zeroer_len > 0 || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
     /* Empty input */
     if (n == 0 || cp == NULL) {
@@ -146,9 +146,9 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
 
         /* VS15 (U+FE0E): text variation selector, requests narrow presentation. */
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
-            bool vs15_narrow =
-                wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW, WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
-                != 0;
+            bool vs15_narrow = wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
+                                                WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
+                               != 0;
             if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                 vs15_narrow = false;
             }

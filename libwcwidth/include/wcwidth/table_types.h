@@ -100,8 +100,8 @@ typedef struct
 
 typedef struct
 {
-    const char *alias;      /* TERM/TERM_PROGRAM value, lowercase */
-    const char *canonical;  /* canonical terminal name */
+    const char *alias;     /* TERM/TERM_PROGRAM value, lowercase */
+    const char *canonical; /* canonical terminal name */
 } wcwidth_terminal_alias_t;
 
 #ifdef __cplusplus

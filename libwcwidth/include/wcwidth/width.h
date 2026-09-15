@@ -24,7 +24,7 @@ typedef enum
  * distinguish the failure cause. */
 typedef enum
 {
-    WCWIDTH_ERROR_NONE = 0,         /* no error */
+    WCWIDTH_ERROR_NONE = 0,             /* no error */
     WCWIDTH_ERROR_INDETERMINATE,        /* indeterminate terminal sequence */
     WCWIDTH_ERROR_ILLEGAL_CTRL,         /* illegal C0/C1 control character */
     WCWIDTH_ERROR_VERTICAL_CTRL,        /* vertical movement control character */

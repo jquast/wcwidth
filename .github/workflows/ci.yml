@@ -34,7 +34,7 @@ jobs:
 
           # All other linting tools on 3.13
           - python-version: '3.13'
-            toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs
+            toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs,clang_format_check
             label: Linting
 
           # Type checking with mypy on 3.14

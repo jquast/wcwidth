@@ -211,8 +211,8 @@ _needs_cursor_tracking_u32(const uint32_t *cp, size_t n)
                     }
                 }
             }
-            else if (next == ']' && i + 4 < n
-                     && cp[i + 2] == '6' && cp[i + 3] == '6' && cp[i + 4] == ';') {
+            else if (next == ']' && i + 4 < n && cp[i + 2] == '6' && cp[i + 3] == '6'
+                     && cp[i + 4] == ';') {
                 return true;
             }
         }
@@ -363,7 +363,6 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
     }
 }
 
-
 /*
  * Scan an OSC/APC/DCS/PM body on the codepoint path, from *start* (the first
  * byte after the two-codepoint introducer).
@@ -378,8 +377,7 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
  * terminator) and *term_end (one past it).
  */
 static bool
-scan_osc_body_u32(const uint32_t *cp, size_t n, size_t start, size_t *term_start,
-                  size_t *term_end)
+scan_osc_body_u32(const uint32_t *cp, size_t n, size_t start, size_t *term_start, size_t *term_end)
 {
     size_t pos = start;
 
@@ -479,8 +477,8 @@ strip_ignore_u32(const uint32_t *cp, size_t n, uint32_t *out, size_t out_cap)
                 }
                 /* OSC 66 keeps its display text; every other OSC-family
                  * sequence is dropped whole. */
-                if (cp[idx + 1] == ']' && idx + 4 < n && cp[idx + 2] == '6'
-                    && cp[idx + 3] == '6' && cp[idx + 4] == ';') {
+                if (cp[idx + 1] == ']' && idx + 4 < n && cp[idx + 2] == '6' && cp[idx + 3] == '6'
+                    && cp[idx + 4] == ';') {
                     size_t semi = idx + 5;
                     size_t k;
 
@@ -643,8 +641,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
         narrow_zeroer_len = term->set->narrow_zeroer_len;
         has_graphemes = term->grapheme_entries_len > 0;
     }
-    bool has_cp_overrides = narrower_len > 0 || zeroer_len > 0
-                            || narrow_wider_len > 0 || narrow_zeroer_len > 0;
+    bool has_cp_overrides =
+        narrower_len > 0 || zeroer_len > 0 || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
     /* Printable-ASCII input is handled by the fast path in width_u8(). */
 
@@ -681,7 +679,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
 
                         case WCWIDTH_ESC_CUF:
                             current_col = (result.cursor_n > INT_MAX - current_col)
-                                          ? INT_MAX : current_col + result.cursor_n;
+                                              ? INT_MAX
+                                              : current_col + result.cursor_n;
                             break;
 
                         case WCWIDTH_ESC_CUB:
@@ -713,7 +712,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                         case WCWIDTH_ESC_OSC66: {
                             wcwidth_text_sizing_t ts;
                             wcwidth_ts_from_esc(&result, &ts);
-                            current_col = col_add(current_col, wcwidth_ts_display_width(&ts, ambiguous_width));
+                            current_col = col_add(current_col,
+                                                  wcwidth_ts_display_width(&ts, ambiguous_width));
                             break;
                         }
 
@@ -883,9 +883,9 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             }
 
             if (ucs == 0xFE0E && last_measured_idx >= 0) {
-                bool vs15_narrow =
-                    wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW, WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
-                    != 0;
+                bool vs15_narrow = wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
+                                                    WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
+                                   != 0;
                 if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                     vs15_narrow = false;
                 }
@@ -1132,8 +1132,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         narrow_zeroer_len = term->set->narrow_zeroer_len;
         has_graphemes = term->grapheme_entries_len > 0;
     }
-    bool has_cp_overrides = narrower_len > 0 || zeroer_len > 0
-                            || narrow_wider_len > 0 || narrow_zeroer_len > 0;
+    bool has_cp_overrides =
+        narrower_len > 0 || zeroer_len > 0 || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
     /* Printable-ASCII input is handled by the fast path in width_u32(). */
 
@@ -1308,8 +1308,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                      * OSCs and CSIs), the full escape may extend past the
                      * buffer.  Fall back to the byte-based classifier on an
                      * encoded copy of the remaining codepoints. */
-                    bool need_fallback =
-                        esc_truncated && result.type == WCWIDTH_ESC_OTHER;
+                    bool need_fallback = esc_truncated && result.type == WCWIDTH_ESC_OTHER;
                     if (need_fallback) {
                         char *rest_buf = NULL;
                         size_t rest_len = 0;
@@ -1343,7 +1342,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
 
                             case WCWIDTH_ESC_CUF:
                                 current_col = (result.cursor_n > INT_MAX - current_col)
-                                              ? INT_MAX : current_col + result.cursor_n;
+                                                  ? INT_MAX
+                                                  : current_col + result.cursor_n;
                                 break;
 
                             case WCWIDTH_ESC_CUB:
@@ -1375,7 +1375,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                             case WCWIDTH_ESC_OSC66: {
                                 wcwidth_text_sizing_t ts;
                                 wcwidth_ts_from_esc(&result, &ts);
-                                current_col = col_add(current_col, wcwidth_ts_display_width(&ts, ambiguous_width));
+                                current_col = col_add(
+                                    current_col, wcwidth_ts_display_width(&ts, ambiguous_width));
                                 break;
                             }
 
@@ -1531,9 +1532,9 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         }
 
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
-            bool vs15_narrow =
-                wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW, WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
-                != 0;
+            bool vs15_narrow = wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
+                                                WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
+                               != 0;
             if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                 vs15_narrow = false;
             }
@@ -1604,8 +1605,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                             uint32_t candidate_cps[32];
                             memcpy(candidate_cps, cp + cluster_start,
                                    candidate_len * sizeof(uint32_t));
-                            int override_w = wcwidth_grapheme_override_lookup(
-                                term, candidate_cps, candidate_len);
+                            int override_w = wcwidth_grapheme_override_lookup(term, candidate_cps,
+                                                                              candidate_len);
                             if (override_w >= 0) {
                                 current_col = col_before_cluster + override_w;
                                 if (current_col > max_extent) {
@@ -1687,8 +1688,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
             if (cluster_len < 32) {
                 uint32_t cluster_cps[32];
                 memcpy(cluster_cps, cp + cluster_start, cluster_len * sizeof(uint32_t));
-                int override_w =
-                    wcwidth_grapheme_override_lookup(term, cluster_cps, cluster_len);
+                int override_w = wcwidth_grapheme_override_lookup(term, cluster_cps, cluster_len);
                 if (override_w >= 0) {
                     current_col = col_before_cluster + override_w;
                 }

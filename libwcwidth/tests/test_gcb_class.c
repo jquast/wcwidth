@@ -85,9 +85,8 @@ TEST(gcb_extend_class_matches_the_extend_table)
     int mismatches = 0;
 
     for (ucs = 0; ucs <= UNICODE_MAX; ucs++) {
-        int in_table = wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_EXTEND,
-                                        WCWIDTH_GRAPHEME_EXTEND_LEN)
-                       != 0;
+        int in_table =
+            wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_EXTEND, WCWIDTH_GRAPHEME_EXTEND_LEN) != 0;
         int is_extend = wcwidth_gcb_class(ucs) == WCWIDTH_GCB_EXTEND;
 
         if (in_table != is_extend) {

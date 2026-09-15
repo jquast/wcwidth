@@ -62,8 +62,7 @@ size_t wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t
  * prefix/suffix insertion (may be NULL).
  * Returns 0 on success, -1 if any buffer is too small.
  */
-int wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens,
-                          size_t nlines);
+int wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens, size_t nlines);
 
 #ifdef __cplusplus
 }

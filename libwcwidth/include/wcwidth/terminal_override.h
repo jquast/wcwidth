@@ -31,8 +31,8 @@ const wcwidth_terminal_override_t *wcwidth_resolve_terminal(const char *term_pro
  * table.  Returns the terminal-measured width, or -1 when the cluster is not
  * overridden.
  */
-int wcwidth_grapheme_override_lookup(const wcwidth_terminal_override_t *term,
-                                     const uint32_t *cps, size_t len);
+int wcwidth_grapheme_override_lookup(const wcwidth_terminal_override_t *term, const uint32_t *cps,
+                                     size_t len);
 
 /*
  * Scan forward from *start* (a base character) to the end of a ZWJ grapheme
@@ -50,8 +50,7 @@ size_t wcwidth_scan_zwj_cluster_end_u8(const char *utf8, size_t n, size_t start)
  * the caller must treat the cluster as unmatched (no override key can be that
  * long).
  */
-size_t wcwidth_decode_cluster(const char *utf8, size_t lo, size_t hi,
-                              uint32_t *cps, size_t cap);
+size_t wcwidth_decode_cluster(const char *utf8, size_t lo, size_t hi, uint32_t *cps, size_t cap);
 
 #ifdef __cplusplus
 }

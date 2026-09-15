@@ -170,10 +170,9 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
 }
 
 static bool
-clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end,
-         const char *fillchar, size_t fillchar_len, int tabsize,
-         int ambiguous_width, const char *term_program, bool strict, bool track_sgr,
-         wcwidth_sgr_state_t *captured_style, bool *style_captured,
+clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const char *fillchar,
+         size_t fillchar_len, int tabsize, int ambiguous_width, const char *term_program,
+         bool strict, bool track_sgr, wcwidth_sgr_state_t *captured_style, bool *style_captured,
          strbuf_t *sb, int *error)
 {
     wcwidth_sgr_state_t current_style;
@@ -197,8 +196,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end,
                 break;
             }
             if (!track_sgr) {
-                const char *next =
-                    (const char *) memchr(text + idx + 1, ESC, text_len - idx - 1);
+                const char *next = (const char *) memchr(text + idx + 1, ESC, text_len - idx - 1);
                 if (next == NULL) {
                     break;
                 }
@@ -218,8 +216,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end,
             }
 
             if (result.type == WCWIDTH_ESC_SGR && track_sgr) {
-                wcwidth_sgr_update(&current_style, result.sgr_params,
-                                   result.sgr_params_len);
+                wcwidth_sgr_update(&current_style, result.sgr_params, result.sgr_params_len);
                 idx += result.length;
                 continue;
             }
@@ -314,8 +311,8 @@ fail:
 char *
 clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-        const char *term_program, bool propagate_sgr, const char *fillchar,
-        size_t fillchar_len, size_t *out_len, int *error)
+        const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
+        size_t *out_len, int *error)
 {
     strbuf_t sb;
     wcwidth_sgr_state_t captured_style;
@@ -358,8 +355,7 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
                 return result;
             }
             result_len =
-                (text_len - v_start < v_end - v_start)
-                    ? (text_len - v_start) : (v_end - v_start);
+                (text_len - v_start < v_end - v_start) ? (text_len - v_start) : (v_end - v_start);
             result = (char *) malloc(result_len + 1);
             if (result == NULL)
                 return NULL;
@@ -383,9 +379,8 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     captured_style = WCWIDTH_SGR_STATE_DEFAULT;
     style_captured = false;
 
-    if (!clip_run(text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize,
-                  ambiguous_width, term_program, strict, track_sgr,
-                  &captured_style, &style_captured, &sb, error)) {
+    if (!clip_run(text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize, ambiguous_width,
+                  term_program, strict, track_sgr, &captured_style, &style_captured, &sb, error)) {
         strbuf_free(&sb);
         return NULL;
     }
@@ -400,8 +395,8 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
 uint32_t *
 clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
          wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-         const char *term_program, bool propagate_sgr, const char *fillchar,
-         size_t fillchar_len, size_t *out_len, int *error)
+         const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
+         size_t *out_len, int *error)
 {
     char enc_stack[512];
     size_t enc_len;
@@ -421,9 +416,9 @@ clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
     }
     {
         size_t byte_len = 0;
-        char *bytes = clip_u8(utf8, enc_len, v_start, v_end, control_codes, tabsize,
-                              ambiguous_width, term_program, propagate_sgr, fillchar,
-                              fillchar_len, &byte_len, error);
+        char *bytes =
+            clip_u8(utf8, enc_len, v_start, v_end, control_codes, tabsize, ambiguous_width,
+                    term_program, propagate_sgr, fillchar, fillchar_len, &byte_len, error);
 
         if (utf8 != enc_stack) {
             free(utf8);

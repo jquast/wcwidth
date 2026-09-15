@@ -43,8 +43,7 @@ _Static_assert(GCB_ZWJ == WCWIDTH_GCB_ZWJ, "gcb_t drifted from generated classes
 _Static_assert(GCB_REGIONAL_INDICATOR == WCWIDTH_GCB_REGIONAL_INDICATOR,
                "gcb_t drifted from generated classes");
 _Static_assert(GCB_PREPEND == WCWIDTH_GCB_PREPEND, "gcb_t drifted from generated classes");
-_Static_assert(GCB_SPACING_MARK == WCWIDTH_GCB_SPACINGMARK,
-               "gcb_t drifted from generated classes");
+_Static_assert(GCB_SPACING_MARK == WCWIDTH_GCB_SPACINGMARK, "gcb_t drifted from generated classes");
 _Static_assert(GCB_L == WCWIDTH_GCB_L, "gcb_t drifted from generated classes");
 _Static_assert(GCB_V == WCWIDTH_GCB_V, "gcb_t drifted from generated classes");
 _Static_assert(GCB_T == WCWIDTH_GCB_T, "gcb_t drifted from generated classes");

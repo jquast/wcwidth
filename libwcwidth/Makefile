@@ -25,8 +25,11 @@ EX_BINS   = $(patsubst examples/%.c,$(BUILD)/%,$(EX_SRCS))
 
 LIB = $(BUILD)/libwcwidth.a
 
+# Generated tables under src/tables are excluded: their layout is the template's
+# business, and running clang-format over them would fight every regeneration.
 FORMAT_DIRS = src include tests examples
-FORMAT_FILES = $(shell find $(FORMAT_DIRS) -name '*.c' -o -name '*.h' | sort)
+FORMAT_FILES = $(shell find $(FORMAT_DIRS) \( -name '*.c' -o -name '*.h' \) \
+                    -not -path 'src/tables/*' | sort)
 
 .PHONY: all clean test examples format format-check asan ubsan valgrind
 

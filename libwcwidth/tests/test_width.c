@@ -84,7 +84,6 @@ TEST(u32_ignore)
     ASSERT_EQ(2, width_u32(osc66, 12, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
 }
 
-
 /*
  * width_u8() and width_u32() must agree on identical text, in every control
  * mode.  They are separate implementations -- the codepoint path exists to
@@ -94,16 +93,36 @@ TEST(u8_u32_agree)
 {
     static const char *const corpus[] = {
         /* well formed */
-        "hello", "\xe4\xb8\xad\xe6\x96\x87", "caf\xc3\xa9",
-        "\x1b[31mred\x1b[0m", "\x1b]66;w=2;XY\x07", "a\tb",
-        "\x1b[10Cx", "\x1b[5Dx", "\x1b[2J",
+        "hello",
+        "\xe4\xb8\xad\xe6\x96\x87",
+        "caf\xc3\xa9",
+        "\x1b[31mred\x1b[0m",
+        "\x1b]66;w=2;XY\x07",
+        "a\tb",
+        "\x1b[10Cx",
+        "\x1b[5Dx",
+        "\x1b[2J",
         /* malformed: unterminated, truncated, stray introducers */
-        "X\x1b[31", "X\x1b]66;w=2;", "X\x1b_apc", "X\x1b", "X\x1b(",
-        "\x1b]0;a\x1b" "b\x07Y", "\x1b_apc\x1b" "X\x07z", "\x1bPdcs\x1b" "Q\x07z",
-        "\x9b" "31mY", "\x1b^pm\x1b" "Y\x07z",
+        "X\x1b[31",
+        "X\x1b]66;w=2;",
+        "X\x1b_apc",
+        "X\x1b",
+        "X\x1b(",
+        "\x1b]0;a\x1b"
+        "b\x07Y",
+        "\x1b_apc\x1b"
+        "X\x07z",
+        "\x1bPdcs\x1b"
+        "Q\x07z",
+        "\x9b"
+        "31mY",
+        "\x1b^pm\x1b"
+        "Y\x07z",
         /* long enough to cross FAST_PATH_MIN_LEN, trailing unterminated CSI */
-        "\xe4\xb8\xad" "2\xc2\x9b==\x1b^\x0b\x1b^\x1b[31m;\x1b[31",
-        "b\xe4\xb8\xad" "2\xc2\x9b==\x1b^\x0b\x1b^\x1b[31m;\x1b[31",
+        "\xe4\xb8\xad"
+        "2\xc2\x9b==\x1b^\x0b\x1b^\x1b[31m;\x1b[31",
+        "b\xe4\xb8\xad"
+        "2\xc2\x9b==\x1b^\x0b\x1b^\x1b[31m;\x1b[31",
         /* mixed non-ASCII inside an OSC 66 payload */
         "\x1b]66;w=2;\xe4\xb8\xad\x07tail",
         "pre\x1b]66;s=2;\xc3\xa9\x1b\\post",
@@ -153,8 +172,8 @@ TEST(csi_huge_param_saturates)
     size_t i;
 
     for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
-        int w = width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE,
-                         &WCWIDTH_WIDTH_OPTS_DEFAULT, &error);
+        int w = width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT,
+                         &error);
         ASSERT_TRUE(w >= 0);
     }
 }

@@ -612,8 +612,7 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
     }
 
     bp = find_break_pos(c->data, c->len, sp_left, opts);
-    if (cur_line->count == 0
-        && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
+    if (cur_line->count == 0 && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
         bp = find_first_vis(c->data, c->len);
     }
     if (bp > c->len)

@@ -10,8 +10,8 @@ cs_assert(const char *text, size_t start, size_t end, const char *expected)
     size_t len = 0;
     int error = WCWIDTH_ERROR_NONE;
     char fillchar = ' ';
-    char *last = clip_u8(text, strlen(text), start, end, WCWIDTH_PARSE, 8, 1, NULL, true,
-                         &fillchar, 1, &len, &error);
+    char *last = clip_u8(text, strlen(text), start, end, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar,
+                         1, &len, &error);
     ASSERT_NOT_NULL(last);
     ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
     ASSERT_EQ(len, strlen(last));
@@ -50,8 +50,8 @@ TEST(clip_u32_basic)
         const uint32_t zwhw[] = {0x4E2D, 0x6587};
         const uint32_t exp2[] = {0x4E2D, ' '};
 
-        result = clip_u32(zwhw, 2, 0, 3, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar, 1, &len,
-                          &error);
+        result =
+            clip_u32(zwhw, 2, 0, 3, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar, 1, &len, &error);
         ASSERT_NOT_NULL(result);
         ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
         ASSERT_EQ((size_t) 2, len);

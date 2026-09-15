@@ -19,7 +19,7 @@ TEST(wcswidth_u8_basic)
     ASSERT_EQ(3, wcswidth_u8("abc", 3, 1));
     ASSERT_EQ(2, wcswidth_u8("\xE4\xB8\x80", 3, 1)); /* U+4E00 */
     ASSERT_EQ(1, wcswidth_u8("a\xCC\x81", 3, 1));    /* a + acute */
-    ASSERT_EQ(2, wcswidth_u8("a\0b", 3, 1));                   /* embedded NUL */
+    ASSERT_EQ(2, wcswidth_u8("a\0b", 3, 1));         /* embedded NUL */
 }
 
 TEST(wcstwidth_u32_basic)

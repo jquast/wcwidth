@@ -79,8 +79,7 @@ TEST(propagate_basic)
  */
 TEST(to_escape_bounded)
 {
-    static const size_t capacities[] = {0, 1, 2, 3, 4, 8, 16, 32, 63, 64,
-                                        65, 128, 256, 512};
+    static const size_t capacities[] = {0, 1, 2, 3, 4, 8, 16, 32, 63, 64, 65, 128, 256, 512};
     size_t i;
     wcwidth_sgr_state_t s = WCWIDTH_SGR_STATE_DEFAULT;
 

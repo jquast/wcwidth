@@ -73,7 +73,8 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
 
         /* 6. VS16 (U+FE0F): converts preceding narrow character to wide. */
         if (ucs == 0xFE0F && last_measured_idx >= 0) {
-            if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE, WCWIDTH_VS16_NARROW_TO_WIDE_LEN)) {
+            if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE,
+                                 WCWIDTH_VS16_NARROW_TO_WIDE_LEN)) {
                 cluster_width = 2;
             }
             last_measured_idx = -2;
@@ -82,7 +83,8 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
         }
 
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
-            if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW, WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
+            if (wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
+                                 WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
                 && last_measured_w == 2) {
                 total_width -= 1;
             }

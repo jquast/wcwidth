@@ -160,8 +160,8 @@ TEST(ljust_huge_dest_width)
 {
     int error = WCWIDTH_ERROR_NONE;
     size_t out_len = 12345;
-    char *result = ljust_u8("hi", 2, (size_t) -1 - 2, "\xf0\x9f\x98\x80", 4, WCWIDTH_PARSE, 1,
-                            NULL, &out_len, &error);
+    char *result = ljust_u8("hi", 2, (size_t) -1 - 2, "\xf0\x9f\x98\x80", 4, WCWIDTH_PARSE, 1, NULL,
+                            &out_len, &error);
     ASSERT_NULL(result);
 }
 
@@ -170,8 +170,8 @@ TEST(rjust_huge_dest_width_multibyte_fill)
     int error = WCWIDTH_ERROR_NONE;
     size_t out_len = 12345;
     size_t huge = (SIZE_MAX / 3) + 2;
-    char *result = rjust_u8("hi", 2, huge, "\xe4\xbd\xa0", 3, WCWIDTH_PARSE, 1, NULL, &out_len,
-                            &error);
+    char *result =
+        rjust_u8("hi", 2, huge, "\xe4\xbd\xa0", 3, WCWIDTH_PARSE, 1, NULL, &out_len, &error);
     ASSERT_NULL(result);
 }
 
