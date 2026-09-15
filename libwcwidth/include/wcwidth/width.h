@@ -62,11 +62,11 @@ extern const wcwidth_width_opts_t WCWIDTH_WIDTH_OPTS_DEFAULT;
  * Returns the width in display cells, or -1 on error.
  */
 int wcwidth_width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
-              const wcwidth_width_opts_t *opts, int *error);
+                      const wcwidth_width_opts_t *opts, int *error);
 
 /* UTF-8 variant of wcwidth_width_u32(). */
 int wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode,
-             const wcwidth_width_opts_t *opts, int *error);
+                     const wcwidth_width_opts_t *opts, int *error);
 
 #ifdef __cplusplus
 }

@@ -10,9 +10,10 @@ import glob
 import textwrap
 import importlib.util
 
-import jinja2
-
 from typing import Sequence
+
+# 3rd party
+import jinja2
 
 # Executed by tox, $ tox -e update
 #

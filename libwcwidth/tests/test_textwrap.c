@@ -82,7 +82,8 @@ TEST(wrap_basic)
     o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 4;
     const char *exp2[] = {"\xe4\xb8\xad\xe6\x96\x87", "\xe5\xad\x97\xe7\xac\xa6"};
-    ASSERT_EQ(0, wcwidth_wrap_u8("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97\xe7\xac\xa6", 12, &o, &out, &len));
+    ASSERT_EQ(
+        0, wcwidth_wrap_u8("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97\xe7\xac\xa6", 12, &o, &out, &len));
     check_lines(out, len, exp2, 2);
     free(out);
 
@@ -112,8 +113,8 @@ TEST(wrap_embedded_nul)
 
     o.width = 5;
     ASSERT_EQ(0, wcwidth_wrap_u8("ab\x00"
-                         "cd ef",
-                         8, &o, &out, &len));
+                                 "cd ef",
+                                 8, &o, &out, &len));
     ASSERT_EQ((int64_t) 8, (int64_t) len);
     ASSERT_EQ(0, memcmp(out,
                         "ab\x00"

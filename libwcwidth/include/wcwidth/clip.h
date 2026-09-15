@@ -60,7 +60,7 @@ extern const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT;
  *   error:    output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
  */
 char *wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
-              const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
+                      const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
 
 /*
  * Codepoint-array variant of wcwidth_clip_u8(): encodes the codepoints to UTF-8,
@@ -72,7 +72,7 @@ char *wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t 
  * bytes.
  */
 uint32_t *wcwidth_clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
-                   const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
+                           const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
 
 #ifdef __cplusplus
 }

@@ -322,9 +322,9 @@ fail:
 
 static char *
 clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
-        wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-        const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
-        size_t *out_len, int *error)
+          wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
+          const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
+          size_t *out_len, int *error)
 {
     strbuf_t sb;
     wcwidth_sgr_state_t captured_style;
@@ -413,19 +413,19 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
 
 char *
 wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
-        const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
+                const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
         opts = &WCWIDTH_CLIP_OPTS_DEFAULT;
     }
     return clip_impl(text, text_len, opts->v_start, opts->v_end, mode, opts->tabsize,
-                     opts->ambiguous_width, opts->term_program, opts->propagate_sgr,
-                     opts->fillchar, opts->fillchar_len, out_len, error);
+                     opts->ambiguous_width, opts->term_program, opts->propagate_sgr, opts->fillchar,
+                     opts->fillchar_len, out_len, error);
 }
 
 uint32_t *
 wcwidth_clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
-         const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
+                 const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 {
     char enc_stack[512];
     size_t enc_len;

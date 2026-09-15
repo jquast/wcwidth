@@ -1010,7 +1010,7 @@ _wrap_to_buffer(const char *text, size_t text_len, const wcwidth_wrap_opts_t *op
 
 int
 wcwidth_wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
-        size_t *out_len)
+                size_t *out_len)
 {
     return _wrap_to_buffer(text, text_len, opts, out, out_len, NULL, NULL);
 }
@@ -1038,7 +1038,7 @@ is_all_whitespace_or_empty(const char *s, size_t len)
 
 int
 wcwidth_wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
-             size_t *out_len)
+                     size_t *out_len)
 {
     lines_t lines;
     const char *p = text;
@@ -1169,15 +1169,15 @@ wrap_u32_common(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t 
 }
 
 int
-wcwidth_wrap_u32(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out,
-         size_t *out_len)
+wcwidth_wrap_u32(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts,
+                 uint32_t **out, size_t *out_len)
 {
     return wrap_u32_common(codepoints, n, opts, out, out_len, wcwidth_wrap_u8);
 }
 
 int
-wcwidth_wrap_u32_text(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out,
-              size_t *out_len)
+wcwidth_wrap_u32_text(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts,
+                      uint32_t **out, size_t *out_len)
 {
     return wrap_u32_common(codepoints, n, opts, out, out_len, wcwidth_wrap_u8_text);
 }
