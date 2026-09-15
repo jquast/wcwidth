@@ -6,6 +6,8 @@ wcwidth
    intro
    specs
    api
+   libwcwidth
+   api_c
    changelog
    unicode_version
    developing

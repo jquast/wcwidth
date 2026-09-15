@@ -8,6 +8,7 @@ __pycache__
 *.pyc
 *.swp
 build
+/libwcwidth/build-cmake
 *.so
 dist
 docs/_build

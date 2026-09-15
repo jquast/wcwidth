@@ -34,7 +34,7 @@ jobs:
 
           # All other linting tools on 3.13
           - python-version: '3.13'
-            toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs
+            toxenv: flake8,flake8_tests,isort_check,pydocstyle,pylint,pylint_tests,codespell,docs,clang_format_check
             label: Linting
 
           # Type checking with mypy on 3.14
@@ -139,6 +139,29 @@ jobs:
           path: .coverage.*
           include-hidden-files: true
           if-no-files-found: ignore
+
+  # The C11 library builds and tests along with, but not (yet) as a Python extension
+  libwcwidth:
+    name: libwcwidth (C11)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and test with make
+        run: make -C libwcwidth test
+
+      - name: Build and test with CMake
+        run: |
+          cmake -B libwcwidth/build-cmake -S libwcwidth
+          cmake --build libwcwidth/build-cmake
+          ctest --test-dir libwcwidth/build-cmake --output-on-failure
+
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      - name: Run C tests under valgrind
+        run: make -C libwcwidth valgrind
 
   coverage:
     name: Combine & check coverage.
