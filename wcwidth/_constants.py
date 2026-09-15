@@ -166,13 +166,9 @@ def resolve_terminal(term_program: bool | str = False) -> str | None:
 
 
 def _clamp_ambiguous_width(ambiguous_width: int) -> int:
-    """
-    Clamp *ambiguous_width* to 1 or 2, the only widths UAX #11 defines.
-
-    Clamped rather than rejected: this is called from rendering hot loops, where
-    raising on a computed value would be a hostile change.
-    """
-    # operator.index() rejects bool/float and accepts anything with __index__.
+    """Clamp *ambiguous_width* to 1 or 2."""
+    # this operator.index() rejects bool/float and overall this is faster than
+    # combining min() and max().
     value = _index(ambiguous_width)
     if value < 1:
         return 1
