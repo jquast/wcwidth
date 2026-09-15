@@ -134,24 +134,39 @@ def test_vs15_wider_override_unchanged():
     assert wcwidth.width('\u231a\ufe0e', term_program='VTE') == 2
 
 
-def test_vs15_repeated_is_idempotent():
-    """A repeated VS15 must not narrow the base character more than once.
+def test_vs15_repeated_ignored():
+    """A repeated VS15 does not narrow the base character more than once."""
+    watch = '\u231a'
+    assert wcwidth.wcswidth(watch + '\ufe0e') == 1
+    assert wcwidth.wcswidth(watch + '\ufe0e' * 2) == 1
+    assert wcwidth.wcswidth(watch + '\ufe0e' * 3) == 1
+    assert wcwidth.wcstwidth(watch + '\ufe0e' * 2, term_program='kitty') == 1
+    assert wcwidth.width(watch + '\ufe0e' * 2) == 1
+    assert wcwidth.wcswidth(watch + '\ufe0e' * 2 + 'x') == 2
+    assert wcwidth.width(watch + '\ufe0e' * 2 + 'x') == 2
 
-    VS16 already guards against this by clearing ``last_measured_idx`` once it has been
-    consumed (see the "prevent double application" comment next to its handling), but the
-    VS15 branch skipped that reset, so a second VS15 right after the first one found
-    ``last_measured_idx`` still pointing at the same base character and narrowed it again.
-    """
-    base = '\u231a'  # WATCH, default width 2, narrows to 1 under a single VS15
-    assert wcwidth.wcswidth(base + '\ufe0e') == 1
-    assert wcwidth.wcswidth(base + '\ufe0e' * 2) == 1
-    assert wcwidth.wcswidth(base + '\ufe0e' * 3) == 1
-    assert wcwidth.wcstwidth(base + '\ufe0e' * 2, term_program='kitty') == 1
-    assert wcwidth.width(base + '\ufe0e' * 2) == 1
-    # a trailing character after the repeated selectors would otherwise also lose a
-    # column for every VS15 past the first one
-    assert wcwidth.wcswidth(base + '\ufe0e' * 2 + 'x') == 2
-    assert wcwidth.width(base + '\ufe0e' * 2 + 'x') == 2
+
+def test_vs16_repeated_ignored():
+    """A repeated VS16 does not widen the base character more than once."""
+    heart = '\u2764'
+    assert wcwidth.wcswidth(heart + '\ufe0f') == 2
+    assert wcwidth.wcswidth(heart + '\ufe0f' * 2) == 2
+    assert wcwidth.wcswidth(heart + '\ufe0f' * 3) == 2
+    assert wcwidth.wcstwidth(heart + '\ufe0f' * 2, term_program='kitty') == 2
+    assert wcwidth.width(heart + '\ufe0f' * 2) == 2
+    assert wcwidth.wcswidth(heart + '\ufe0f' * 2 + 'x') == 3
+    assert wcwidth.width(heart + '\ufe0f' * 2 + 'x') == 3
+
+
+def test_vs15_vs16_do_not_stack():
+    """A variation selector following another does not re-measure the same base character."""
+    heart = '\u2764'
+    # VS16 widens, a trailing VS15 may not narrow it back
+    assert wcwidth.wcswidth(heart + '\ufe0f\ufe0e') == 2
+    assert wcwidth.width(heart + '\ufe0f\ufe0e') == 2
+    # VS15 is a no-op on an already-narrow base, a trailing VS16 may not widen it
+    assert wcwidth.wcswidth(heart + '\ufe0e\ufe0f') == 1
+    assert wcwidth.width(heart + '\ufe0e\ufe0f') == 1
 
 
 def test_grapheme_override_zwj_not_in_table():
