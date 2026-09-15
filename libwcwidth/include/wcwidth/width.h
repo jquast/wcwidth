@@ -19,9 +19,13 @@ typedef enum
     WCWIDTH_IGNORE,    /* strip all control codes and sequences */
 } wcwidth_control_mode_t;
 
-/* Error codes written to the *error out-param of wcwidth_width_u32/wcwidth_width_u8 (and the
- * string-measuring functions of clip.h/align.h).  Distinct codes let callers
- * distinguish the failure cause. */
+/* Error codes written to the *error out-param of wcwidth_width_u32() and
+ * wcwidth_width_u8(), and of the string transforms in clip.h and align.h.
+ * Distinct codes let callers distinguish the failure cause.
+ *
+ * Every out-param is int rather than wcwidth_error_t: the underlying type of
+ * an enum is implementation-defined, so int keeps the ABI stable across
+ * compilers.  Compare against these constants directly. */
 typedef enum
 {
     WCWIDTH_ERROR_NONE = 0,             /* no error */

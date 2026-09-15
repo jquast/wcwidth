@@ -1,6 +1,5 @@
 #include "test_common.h"
 #include "wcwidth/wcwidth.h"
-#include "wcwidth/wcstwidth.h"
 
 TEST(wcswidth_u32_basic)
 {

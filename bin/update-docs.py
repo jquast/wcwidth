@@ -49,13 +49,9 @@ PARAM_RE = re.compile(r'^\*?(\w+)\*?:\s*(.*)$')
 # contain a colon.
 SECTION_RE = re.compile(r'^[A-Za-z_][\w ]*:(\s|$)')
 
-# Names already emitted across all headers (wcstwidth.h redeclares wcwidth.h's functions).
-EMITTED: set[str] = set()
-
 # Headers in documentation order; any not listed here are appended alphabetically.
 HEADER_ORDER = [
     'wcwidth.h',
-    'wcstwidth.h',
     'width.h',
     'textwrap.h',
     'align.h',
@@ -63,7 +59,6 @@ HEADER_ORDER = [
     'escape.h',
     'utf8.h',
     'grapheme.h',
-    'hyperlink.h',
     'sgr.h',
     'text_sizing.h',
     'terminal_override.h',
@@ -381,11 +376,9 @@ def render_header_section(header: str, text: str) -> list[str]:
         if info is None:
             continue
         kind, name, m = info
-        if name not in EMITTED:
-            events.append((start, end, kind, name, stmt, m))
+        events.append((start, end, kind, name, stmt, m))
     for pos, name, value in macros:
-        if name not in EMITTED:
-            events.append((pos, pos, 'macro', name, value, None))
+        events.append((pos, pos, 'macro', name, value, None))
     events.sort(key=lambda event: event[0])
     if not events:
         return []
@@ -412,7 +405,6 @@ def render_header_section(header: str, text: str) -> list[str]:
             comment_idx += 1
         lines.extend(render_item(kind, name, payload, m, lead))
         lines.append('')
-        EMITTED.add(name)
         prev_end = end
     return lines
 

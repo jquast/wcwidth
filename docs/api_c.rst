@@ -59,11 +59,11 @@ Unicode character display width: wcwidth, wcswidth, wcstwidth.
 width.h
 -------
 
-Main entry-points for string display width: width_u32 / width_u8.
+Main entry-points for string display width: wcwidth_width_u32 / wcwidth_width_u8.
 
 .. c:enum:: wcwidth_control_mode_t
 
-   How width_u32() and width_u8() treat control characters and sequences.
+   How wcwidth_width_u32() and wcwidth_width_u8() treat control characters and sequences.
 
    .. c:enumerator:: WCWIDTH_PARSE
 
@@ -79,9 +79,13 @@ Main entry-points for string display width: width_u32 / width_u8.
 
 .. c:enum:: wcwidth_error_t
 
-   Error codes written to the \*error out-param of width_u32/width_u8 (and the
-   string-measuring functions of clip.h/align.h).  Distinct codes let callers
-   distinguish the failure cause.
+   Error codes written to the \*error out-param of wcwidth_width_u32() and
+   wcwidth_width_u8(), and of the string transforms in clip.h and align.h.
+   Distinct codes let callers distinguish the failure cause.
+
+   Every out-param is int rather than wcwidth_error_t: the underlying type of
+   an enum is implementation-defined, so int keeps the ABI stable across
+   compilers.  Compare against these constants directly.
 
    .. c:enumerator:: WCWIDTH_ERROR_NONE
 
@@ -113,7 +117,7 @@ Main entry-points for string display width: width_u32 / width_u8.
 
 .. c:struct:: wcwidth_width_opts_t
 
-   Measurement options for width_u32() and width_u8().
+   Measurement options for wcwidth_width_u32() and wcwidth_width_u8().
 
    .. c:member:: int tabsize
 
@@ -129,14 +133,14 @@ Main entry-points for string display width: width_u32 / width_u8.
 
 .. c:var:: const wcwidth_width_opts_t WCWIDTH_WIDTH_OPTS_DEFAULT
 
-   Default options for width_u32() and width_u8().
+   Default options for wcwidth_width_u32() and wcwidth_width_u8().
 
-.. c:function:: int width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts, int *error)
+.. c:function:: int wcwidth_width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts, int *error)
 
 
    Measure the visible width of text, including terminal control sequences such
    as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.
-   width_u32() encodes its codepoints to UTF-8 and measures as width_u8().
+   wcwidth_width_u32() encodes its codepoints to UTF-8 and measures as wcwidth_width_u8().
 
    Returns the width in display cells, or -1 on error.
 
@@ -144,9 +148,9 @@ Main entry-points for string display width: width_u32 / width_u8.
    :param opts: measurement options, or NULL for defaults.
    :param error: written with a wcwidth_error_t code when mode is WCWIDTH_STRICT and the input is indeterminate; may be NULL.
 
-.. c:function:: int width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts, int *error)
+.. c:function:: int wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts, int *error)
 
-   UTF-8 variant of width_u32().
+   UTF-8 variant of wcwidth_width_u32().
 
 
 textwrap.h
@@ -156,7 +160,7 @@ Text wrapping with ANSI-aware display width measurement.
 
 .. c:struct:: wcwidth_wrap_opts_t
 
-   Options for wrap_u8() and wrap_u8_text().
+   Options for wcwidth_wrap_u8() and wcwidth_wrap_u8_text().
 
    .. c:member:: int width
 
@@ -196,13 +200,13 @@ Text wrapping with ANSI-aware display width measurement.
 
    Default options for wrap().
 
-.. c:function:: int wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
+.. c:function:: int wcwidth_wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
 
 
    Wrap UTF-8 text into lines.
 
    Treats all whitespace (including '\n') as inter-word spaces and collapses
-   it.  Use wrap_u8_text() to preserve input newlines as paragraph breaks.
+   it.  Use wcwidth_wrap_u8_text() to preserve input newlines as paragraph breaks.
 
    Returns 0 on success, -1 on allocation error, and -2 when the placeholder
    does not fit within the given width (max_lines truncation).
@@ -214,22 +218,22 @@ Text wrapping with ANSI-aware display width measurement.
 .. c:function:: int wcwidth_wrap_lines_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len, size_t **offsets, size_t *offset_count)
 
 
-   Like wrap_u8(), but also reports the start offset of each line in the
+   Like wcwidth_wrap_u8(), but also reports the start offset of each line in the
    output buffer.  Lines are joined by '\n', so a line's byte length is
    \*offsets\*[i+1] - \*offsets\*[i] - 1 (or \*out_len\* - \*offsets\*[i] for the
    last), and a line may itself contain '\n' when the placeholder does.
 
-   Returns the same codes as wrap_u8().  On success, \*offsets\* is a malloc'd
+   Returns the same codes as wcwidth_wrap_u8().  On success, \*offsets\* is a malloc'd
    array of \*offset_count\* start offsets; the caller does free(\*offsets) in
    addition to free(\*out).  Empty output yields \*offset_count\* == 0.
 
 
-.. c:function:: int wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
+.. c:function:: int wcwidth_wrap_u8_text(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out, size_t *out_len)
 
 
    Wrap UTF-8 text preserving input newlines as paragraph breaks.
 
-   Splits text on '\n', wraps each non-empty line individually with wrap_u8(),
+   Splits text on '\n', wraps each non-empty line individually with wcwidth_wrap_u8(),
    and preserves empty or whitespace-only lines as paragraph breaks.  Paragraph
    breaks appear as "\n\n" in the output.
 
@@ -239,21 +243,21 @@ Text wrapping with ANSI-aware display width measurement.
    The caller does a single free(\*out) to release memory.
 
 
-.. c:function:: int wrap_u32(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out, size_t *out_len)
+.. c:function:: int wcwidth_wrap_u32(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out, size_t *out_len)
 
 
-   Codepoint-array variant of wrap_u8(): encodes the codepoints to UTF-8,
+   Codepoint-array variant of wcwidth_wrap_u8(): encodes the codepoints to UTF-8,
    wraps, and decodes the result back to a codepoint array.  The output is a
    malloc'd array of \*out_len\* codepoints and the caller does a single free()
-   of it, exactly as wrap_u8() returns UTF-8 bytes.
+   of it, exactly as wcwidth_wrap_u8() returns UTF-8 bytes.
 
    Returns 0 on success, -1 on allocation error.
 
 
-.. c:function:: int wrap_u32_text(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out, size_t *out_len)
+.. c:function:: int wcwidth_wrap_u32_text(const uint32_t *codepoints, size_t n, const wcwidth_wrap_opts_t *opts, uint32_t **out, size_t *out_len)
 
 
-   Codepoint-array variant of wrap_u8_text().
+   Codepoint-array variant of wcwidth_wrap_u8_text().
 
 
 
@@ -296,7 +300,7 @@ cell (default " ")
 
    Default options for the justify functions.
 
-.. c:function:: char *ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: char *wcwidth_ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
 
    Left/right/center justify text to opts->dest_width display cells.
@@ -310,19 +314,19 @@ cell (default " ")
 
    :param text: UTF-8 input, NOT NUL-terminated.
    :param text_len: byte length of text.
-   :param mode: how control characters and sequences are treated, as for width_u8().
+   :param mode: how control characters and sequences are treated, as for wcwidth_width_u8().
    :param opts: alignment options, or NULL for defaults.
    :param out_len: output: byte length of result (excluding NUL); may be NULL.
    :param error: output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
 
-.. c:function:: char *rjust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: char *wcwidth_rjust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
-.. c:function:: char *center_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: char *wcwidth_center_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
-.. c:function:: uint32_t *ljust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: uint32_t *wcwidth_ljust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
 
-   Codepoint-array variants of ljust_u8()/rjust_u8()/center_u8(): encode the
+   Codepoint-array variants of wcwidth_ljust_u8()/wcwidth_rjust_u8()/wcwidth_center_u8(): encode the
    codepoints to UTF-8, justify, and decode the result back to a codepoint
    array.  The returned array is \*out_len\* codepoints and the caller does a
    single free() of it.  Error and ownership semantics are as for the _u8()
@@ -331,9 +335,9 @@ cell (default " ")
    opts->fillchar stays UTF-8 bytes.
 
 
-.. c:function:: uint32_t *rjust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: uint32_t *wcwidth_rjust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
-.. c:function:: uint32_t *center_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: uint32_t *wcwidth_center_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 
 
 clip.h
@@ -344,7 +348,7 @@ Clip text to a visible column range [v_start, v_end).
 .. c:struct:: wcwidth_clip_opts_t
 
 
-   Options for clip_u32() and clip_u8().
+   Options for wcwidth_clip_u32() and wcwidth_clip_u8().
 
    Initialize from WCWIDTH_CLIP_OPTS_DEFAULT and set only what differs; a
    NULL opts argument uses the defaults unchanged.
@@ -389,9 +393,9 @@ display width 1 (default " ")
 
 .. c:var:: const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT
 
-   Default options for clip_u32() and clip_u8().
+   Default options for wcwidth_clip_u32() and wcwidth_clip_u8().
 
-.. c:function:: char *clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: char *wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode, const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 
 
    Clip text to the visible column range [opts->v_start, opts->v_end).
@@ -411,13 +415,13 @@ display width 1 (default " ")
    :param out_len: output: byte length of result (excluding NUL); may be NULL.
    :param error: output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
 
-.. c:function:: uint32_t *clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
+.. c:function:: uint32_t *wcwidth_clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 
 
-   Codepoint-array variant of clip_u8(): encodes the codepoints to UTF-8,
+   Codepoint-array variant of wcwidth_clip_u8(): encodes the codepoints to UTF-8,
    clips, and decodes the result back to a codepoint array.  The returned
    array is \*out_len\* codepoints and the caller does a single free() of it.
-   Error and ownership semantics are as for clip_u8(): on NULL return, \*error\*
+   Error and ownership semantics are as for wcwidth_clip_u8(): on NULL return, \*error\*
    is a nonzero wcwidth_error_t for a WCWIDTH_STRICT violation, or
    WCWIDTH_ERROR_NONE for an allocation failure.  opts->fillchar stays UTF-8
    bytes.
