@@ -697,6 +697,8 @@ languages:
 =======
 History
 =======
+0.8.4 *unreleased* ('master' branch, only)
+  * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
 
 0.9.0 *Next Release*
   * **Changed** ``ambiguous_width`` values outside ``1``-``2`` are now clamped into range
@@ -973,6 +975,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #233`: https://github.com/jquast/wcwidth/pull/233
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
+.. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190

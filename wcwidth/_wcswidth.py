@@ -146,6 +146,7 @@ def wcswidth(
         if ucs == 0xFE0E and last_measured_idx >= 0:
             if bisearch(last_measured_ucs, vs15_wn_table) and last_measured_w == 2:
                 total_width -= 1
+            last_measured_idx = -2
             idx += 1
             continue
 
@@ -334,7 +335,7 @@ def wcstwidth(
                 pass
             elif _bisearch(last_measured_ucs, vs16_nw_table):
                 cluster_width = 2
-            last_measured_idx = -2  # prevent double application
+            last_measured_idx = -2
             idx += 1
             continue
 
@@ -346,6 +347,7 @@ def wcstwidth(
                 vs15_narrow = False
             if vs15_narrow and last_measured_w == 2:
                 total_width -= 1
+            last_measured_idx = -2
             idx += 1
             continue
 

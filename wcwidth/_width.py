@@ -401,7 +401,7 @@ def width(
                 pass
             elif _bisearch(last_measured_ucs, vs16_nw_table):
                 cluster_width = 2
-            last_measured_idx = -2  # prevent double application
+            last_measured_idx = -2
             idx += 1
             continue
 
@@ -414,6 +414,7 @@ def width(
             if vs15_narrow and last_measured_w == 2:
                 current_col -= 1
                 max_extent = max(_max_extent_before, current_col)
+            last_measured_idx = -2
             idx += 1
             continue
 
