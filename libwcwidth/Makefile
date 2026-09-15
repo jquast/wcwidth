@@ -66,13 +66,14 @@ $(BUILD)/%: examples/%.c $(LIB)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDE) $< -L$(BUILD) -lwcwidth -o $@
 
-define run_test
-	@echo "=== $(notdir $(1)) ==="
-	@$(1)
-endef
-
+# One shell loop, not $(foreach): foreach joins its expansions with a space, so
+# each test binary was invoked with the next '@echo' as its arguments and only
+# the first header was ever printed.
 test: $(TEST_BINS)
-	$(foreach t,$(TEST_BINS),$(call run_test,$(t)))
+	@for t in $(TEST_BINS); do \
+	    echo "=== $$(basename $$t) ==="; \
+	    $$t || exit 1; \
+	done
 
 format:
 	clang-format -i $(FORMAT_FILES)

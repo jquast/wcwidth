@@ -100,6 +100,38 @@ extern const wcwidth_terminal_override_t WCWIDTH_TERMINAL_OVERRIDES[];
 extern const wcwidth_terminal_alias_t WCWIDTH_TERMINAL_ALIASES[];
 #define WCWIDTH_TERMINAL_ALIASES_LEN 11
 
+/* Grapheme cluster break classes; see gcb_t in libwcwidth/src/grapheme.c. */
+#define WCWIDTH_GCB_OTHER 0
+#define WCWIDTH_GCB_CR 1
+#define WCWIDTH_GCB_LF 2
+#define WCWIDTH_GCB_CONTROL 3
+#define WCWIDTH_GCB_EXTEND 4
+#define WCWIDTH_GCB_ZWJ 5
+#define WCWIDTH_GCB_REGIONAL_INDICATOR 6
+#define WCWIDTH_GCB_PREPEND 7
+#define WCWIDTH_GCB_SPACINGMARK 8
+#define WCWIDTH_GCB_L 9
+#define WCWIDTH_GCB_V 10
+#define WCWIDTH_GCB_T 11
+#define WCWIDTH_GCB_LV 12
+#define WCWIDTH_GCB_LVT 13
+
+#define WCWIDTH_GCB_CLASS_MIN 0x0u
+#define WCWIDTH_GCB_CLASS_MAX 0xe0fffu
+#define WCWIDTH_GCB_CLASS_SHIFT 8u
+#define WCWIDTH_GCB_CLASS_INDEX_LEN 3600
+#define WCWIDTH_GCB_CLASS_PAGES_LEN 11648
+extern const uint8_t WCWIDTH_GCB_CLASS_INDEX[];
+extern const uint8_t WCWIDTH_GCB_CLASS_PAGES[];
+
+static inline unsigned
+wcwidth_gcb_class(uint32_t ucs)
+{
+    return wcwidth_class_paged8_get(ucs, WCWIDTH_GCB_CLASS_MIN, WCWIDTH_GCB_CLASS_MAX,
+                                    WCWIDTH_GCB_CLASS_SHIFT, WCWIDTH_GCB_CLASS_INDEX,
+                                    WCWIDTH_GCB_CLASS_PAGES);
+}
+
 #ifdef __cplusplus
 }
 #endif

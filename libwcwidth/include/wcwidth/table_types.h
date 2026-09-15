@@ -35,6 +35,30 @@ typedef struct
 int wcwidth_bisearch(uint32_t ucs, const wcwidth_interval_t *table, size_t table_len);
 
 /*
+ * Look up the 4-bit class of *ucs* in a paged nibble table, or 0 when out of range.
+ *
+ * *index* maps each page of [min, max] to a page of *pool*; two codepoints share a byte.
+ */
+static inline unsigned
+wcwidth_class_paged8_get(uint32_t ucs, uint32_t min, uint32_t max, unsigned shift,
+                         const uint8_t *index, const uint8_t *pool)
+{
+    uint32_t offset;
+    uint32_t slot;
+    size_t page;
+    uint8_t packed;
+
+    if (ucs < min || ucs > max) {
+        return 0;
+    }
+    offset = ucs - min;
+    page = index[offset >> shift];
+    slot = offset & ((1u << shift) - 1u);
+    packed = pool[(page << (shift - 1)) + (slot >> 1)];
+    return (slot & 1u) ? (unsigned) (packed >> 4) : (unsigned) (packed & 0x0Fu);
+}
+
+/*
  * Terminal override record layouts.
  *
  * The six single-codepoint categories are the merged override intervals;

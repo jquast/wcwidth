@@ -376,6 +376,16 @@ The following canonical names are recognized; common ``TERM``/``TERM_PROGRAM`` a
 For the most accurate corrections, query the terminal's software version via XTVERSION_
 (``CSI > q``) and pass the canonical name.  See the Python Corrections_ documentation for details.
 
+Grapheme break classes
+----------------------
+
+Classifying a codepoint for grapheme cluster segmentation used to mean a chain of up to ten binary
+searches, run once per codepoint.  The classes are disjoint, so they are packed into a single
+nibble-per-codepoint table and resolved in one lookup, costing 15 KB.  Grapheme iteration is
+2-2.4x faster as a result.
+
+Every other table is searched with :c:func:`wcwidth_bisearch`.
+
 Unicode Version
 ---------------
 

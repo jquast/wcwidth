@@ -14,8 +14,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 # library
-# Keep this source list in parity with pyproject.toml's
-# [[tool.setuptools.ext-modules]] sources; the Makefile globs src/*.c itself.
+# Keep this source list in parity with setup.py's _EXT_SOURCES, which builds the
+# optional CPython extension from the same sources; the Makefile globs src/*.c
+# itself.  tests/test_core.py asserts the two lists match what is on disk.
 
 set(LIBWCWIDTH_SOURCES
     src/bisearch.c
@@ -42,6 +43,7 @@ set(LIBWCWIDTH_SOURCES
     src/tables/table_vs16.c
     src/tables/table_terminal_overrides.c
     src/tables/table_term_programs.c
+    src/tables/table_gcb_class.c
 )
 
 add_library(wcwidth ${LIBWCWIDTH_SOURCES})
@@ -72,6 +74,7 @@ if(BUILD_TESTING)
         tests/test_sgr.c
         tests/test_text_sizing.c
         tests/test_utf8.c
+        tests/test_gcb_class.c
     )
 
     foreach(test_src ${TEST_SOURCES})

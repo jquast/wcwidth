@@ -309,6 +309,11 @@ class RenderDefinition:
         """Symbol -> entry count, for the generated C header's length macros."""
         return {}
 
+    @property
+    def header_context(self) -> Mapping[str, Any]:
+        """Extra render context this definition contributes to the generated C header."""
+        return {}
+
 
 @dataclass
 class UnicodeVersionPyRenderDef(RenderDefinition):
@@ -339,6 +344,119 @@ LANGUAGES = {
         'prefix': 'WCWIDTH_',
     },
 }
+
+
+@dataclass(frozen=True)
+class GcbClassTable:
+    """Grapheme cluster break classes, packed one nibble per codepoint as a paged table."""
+
+    C_NAME = 'WCWIDTH_GCB_CLASS'
+    BUDGET_BYTES = 64 * 1024
+    PAGE_SHIFTS = range(5, 14)
+
+    # Precedence order gcb_of() applied; the classes are disjoint under it.
+    SINGLE_CODEPOINTS = (('CR', 0x000D), ('LF', 0x000A), ('ZWJ', 0x200D))
+    RANGE_CLASSES = ('CONTROL', 'EXTEND', 'REGIONAL_INDICATOR', 'PREPEND',
+                     'SPACINGMARK', 'L', 'V', 'T', 'LV', 'LVT')
+
+    # gcb_t, from libwcwidth/src/grapheme.c.
+    VALUES = {
+        'OTHER': 0, 'CR': 1, 'LF': 2, 'CONTROL': 3, 'EXTEND': 4, 'ZWJ': 5,
+        'REGIONAL_INDICATOR': 6, 'PREPEND': 7, 'SPACINGMARK': 8, 'L': 9,
+        'V': 10, 'T': 11, 'LV': 12, 'LVT': 13,
+    }
+
+    lo: int
+    hi: int
+    nbytes: int
+    shift: int
+    pool_pages: int
+    index_rows: tuple[str, ...]
+    pool_rows: tuple[str, ...]
+
+    @property
+    def c_name(self) -> str:
+        return self.C_NAME
+
+    @property
+    def index_len(self) -> int:
+        return sum(row.count(',') for row in self.index_rows)
+
+    @property
+    def pool_len(self) -> int:
+        return sum(row.count(',') for row in self.pool_rows)
+
+    @property
+    def named_values(self) -> list[tuple[str, int]]:
+        return sorted(self.VALUES.items(), key=lambda item: item[1])
+
+    @classmethod
+    def build(cls, tables: Mapping[str, TableDef]) -> Self:
+        """Assign each codepoint its break class and pick the cheapest page size."""
+        nibbles, lo, hi = cls._pack(tables)
+        best = None
+        for shift in cls.PAGE_SHIFTS:
+            page_bytes = 1 << (shift - 1)
+            index, pool = cls._paginate(nibbles, page_bytes)
+            if len(pool) > 0x100:
+                continue
+            nbytes = len(index) + len(pool) * page_bytes
+            if best is not None and nbytes >= best.nbytes:
+                continue
+            best = cls(lo=lo, hi=hi, nbytes=nbytes, shift=shift, pool_pages=len(pool),
+                       index_rows=cls._rows(index), pool_rows=cls._rows(b''.join(pool)))
+        if best is None:
+            raise ValueError('no page size keeps the class pool within a uint8_t index')
+        print(f'  {cls.C_NAME}: shift={best.shift} pages={best.pool_pages}, {best.nbytes} bytes')
+        if best.nbytes > cls.BUDGET_BYTES:
+            raise ValueError(f'class table is {best.nbytes} bytes, over the '
+                             f'{cls.BUDGET_BYTES} byte budget')
+        return best
+
+    @classmethod
+    def _pack(cls, tables: Mapping[str, TableDef]) -> tuple[bytes, int, int]:
+        assigned: dict[int, int] = {}
+        for name, codepoint in cls.SINGLE_CODEPOINTS:
+            assigned[codepoint] = cls.VALUES[name]
+        for name in cls.RANGE_CLASSES:
+            value = cls.VALUES[name]
+            for start, end in tables['GRAPHEME_' + name].as_value_ranges():
+                for codepoint in range(start, end + 1):
+                    assigned.setdefault(codepoint, value)
+        lo, hi = min(assigned), max(assigned)
+        nibbles = bytearray((hi - lo + 2) // 2)
+        for codepoint, value in assigned.items():
+            offset = codepoint - lo
+            if offset & 1:
+                nibbles[offset >> 1] |= value << 4
+            else:
+                nibbles[offset >> 1] |= value
+        return bytes(nibbles), lo, hi
+
+    @staticmethod
+    def _paginate(payload: bytes, page_bytes: int) -> tuple[list[int], list[bytes]]:
+        # Page 0 is all-zero, shared by every page of class 0; identical pages collapse too.
+        zero = bytes(page_bytes)
+        pool = [zero]
+        seen = {zero: 0}
+        index = []
+        for offset in range(0, len(payload), page_bytes):
+            page = bytes(payload[offset:offset + page_bytes]).ljust(page_bytes, b'\x00')
+            number = seen.get(page)
+            if number is None:
+                number = len(pool)
+                seen[page] = number
+                pool.append(page)
+            index.append(number)
+        return index, pool
+
+    @staticmethod
+    def _rows(data: Iterable[int]) -> tuple[str, ...]:
+        per_row = 16
+        values = list(data)
+        return tuple(
+            '    ' + ' '.join(f'0x{value:02x},' for value in values[offset:offset + per_row])
+            for offset in range(0, len(values), per_row))
 
 
 @dataclass
@@ -407,6 +525,28 @@ class GraphemeTableRenderDef(RenderDefinition):
             return {}
         return {prefix + var_name: len(table_def.as_value_ranges())
                 for var_name, table_def in self.render_context.tables.items()}
+
+
+@dataclass(frozen=True)
+class CGcbClassRenderCtx(RenderContext):
+    gcb: GcbClassTable
+
+
+@dataclass
+class CGcbClassRenderDef(RenderDefinition):
+    render_context: CGcbClassRenderCtx
+
+    @classmethod
+    def new(cls, gcb_tables: Mapping[str, TableDef]) -> Self:
+        return cls(
+            jinja_filename='c_gcb_class.c.j2',
+            output_filename=os.path.join(PATH_UP, LANGUAGES['.c']['dir'], 'table_gcb_class.c'),
+            render_context=CGcbClassRenderCtx(gcb=GcbClassTable.build(gcb_tables)),
+        )
+
+    @property
+    def header_context(self) -> Mapping[str, Any]:
+        return {'gcb': self.render_context.gcb}
 
 
 def _project_version() -> str:
@@ -2251,7 +2391,7 @@ def cleanup_stale_grapheme_files() -> None:
         print(f'removed obsolete {filepath}')
 
 
-def _generate_c_table_header(c_lens: Mapping[str, int]) -> None:
+def _generate_c_table_header(c_lens: Mapping[str, int], **extra: Any) -> None:
     """
     Write include/wcwidth/tables.h with all C table extern declarations and compile-time length
     macros.
@@ -2265,7 +2405,7 @@ def _generate_c_table_header(c_lens: Mapping[str, int]) -> None:
     header_path = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth',
                                'tables.h')
     output = JINJA_ENV.get_template('tables.h.j2').render(
-        c_lens=c_lens, c_names=c_names)
+        c_lens=c_lens, c_names=c_names, **extra)
     new_path = header_path + '.new'
     with open(new_path, 'w', encoding='utf-8', newline='\n') as fout:
         fout.write(output)
@@ -2305,10 +2445,12 @@ def python_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
 
 
 def c_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
-    """Render definitions for the C11 tables, config header, and terminal tables."""
+    """Render definitions for the C11 tables, class table, config header, and terminal tables."""
     for name, fetch in TABLE_FETCHES:
         yield UnicodeTableRenderDef.new(f'{name}.c', fetch())
-    yield GraphemeTableRenderDef.new('table_grapheme.c', fetch_table_grapheme_data())
+    grapheme_context = fetch_table_grapheme_data()
+    yield GraphemeTableRenderDef.new('table_grapheme.c', grapheme_context)
+    yield CGcbClassRenderDef.new(grapheme_context.tables)
     yield WcwidthConfigRenderDef.new(_project_version(), str(latest_version))
     yield CTerminalOverrideRenderDef.new()
     yield CTermProgramRenderDef.new()
@@ -2325,9 +2467,10 @@ def get_codegen_definitions() -> Iterator[RenderDefinition]:
     yield from c_defs(latest_version)
 
 
-def write_render_defs() -> dict[str, int]:
-    """Render and write every definition, returning the C table lengths."""
+def write_render_defs() -> tuple[dict[str, int], dict[str, Any]]:
+    """Render and write every definition, returning the C header's render context."""
     c_lens: dict[str, int] = {}
+    header_extra: dict[str, Any] = {}
     for render_def in get_codegen_definitions():
         print(f'write {render_def.output_filename}: ', flush=True, end='')
         new_filename = render_def.output_filename + '.new'
@@ -2338,7 +2481,8 @@ def write_render_defs() -> dict[str, int]:
         print('ok')
         # Collect C table entry counts for the generated header's length macros.
         c_lens.update(render_def.table_lengths)
-    return c_lens
+        header_extra.update(render_def.header_context)
+    return c_lens, header_extra
 
 
 def main(only_fetch: bool = False, fetch_all_versions: bool = False,
@@ -2361,8 +2505,8 @@ def main(only_fetch: bool = False, fetch_all_versions: bool = False,
         return
 
     # Render all tables and overrides, then the combined C extern header.
-    c_lens = write_render_defs()
-    _generate_c_table_header(c_lens)
+    c_lens, header_extra = write_render_defs()
+    _generate_c_table_header(c_lens, **header_extra)
 
     # Stamp the Python package version from pyproject.toml (source of truth)
     if update_py_version():

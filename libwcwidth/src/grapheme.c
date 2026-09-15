@@ -2,7 +2,7 @@
  * Grapheme cluster segmentation for UTF-8 text.
  *
  * Implements the UAX #29 grapheme cluster boundary algorithm using pre-computed
- * Unicode interval tables.
+ * Unicode tables.
  */
 #include "wcwidth/grapheme.h"
 #include "wcwidth/table_types.h"
@@ -32,6 +32,24 @@ typedef enum
     GCB_LV = 12,
     GCB_LVT = 13,
 } gcb_t;
+
+/* The generated table stores these values directly. */
+_Static_assert(GCB_OTHER == WCWIDTH_GCB_OTHER, "gcb_t drifted from generated classes");
+_Static_assert(GCB_CR == WCWIDTH_GCB_CR, "gcb_t drifted from generated classes");
+_Static_assert(GCB_LF == WCWIDTH_GCB_LF, "gcb_t drifted from generated classes");
+_Static_assert(GCB_CONTROL == WCWIDTH_GCB_CONTROL, "gcb_t drifted from generated classes");
+_Static_assert(GCB_EXTEND == WCWIDTH_GCB_EXTEND, "gcb_t drifted from generated classes");
+_Static_assert(GCB_ZWJ == WCWIDTH_GCB_ZWJ, "gcb_t drifted from generated classes");
+_Static_assert(GCB_REGIONAL_INDICATOR == WCWIDTH_GCB_REGIONAL_INDICATOR,
+               "gcb_t drifted from generated classes");
+_Static_assert(GCB_PREPEND == WCWIDTH_GCB_PREPEND, "gcb_t drifted from generated classes");
+_Static_assert(GCB_SPACING_MARK == WCWIDTH_GCB_SPACINGMARK,
+               "gcb_t drifted from generated classes");
+_Static_assert(GCB_L == WCWIDTH_GCB_L, "gcb_t drifted from generated classes");
+_Static_assert(GCB_V == WCWIDTH_GCB_V, "gcb_t drifted from generated classes");
+_Static_assert(GCB_T == WCWIDTH_GCB_T, "gcb_t drifted from generated classes");
+_Static_assert(GCB_LV == WCWIDTH_GCB_LV, "gcb_t drifted from generated classes");
+_Static_assert(GCB_LVT == WCWIDTH_GCB_LVT, "gcb_t drifted from generated classes");
 
 #define MAX_GRAPHEME_SCAN 32
 
@@ -105,39 +123,7 @@ predecode(const char *text, size_t len, uint32_t **cp_out, size_t **offsets_out,
 static gcb_t
 gcb_of(uint32_t ucs)
 {
-    /* Single codepoint matches */
-    if (ucs == 0x000D)
-        return GCB_CR;
-    if (ucs == 0x000A)
-        return GCB_LF;
-    if (ucs == 0x200D)
-        return GCB_ZWJ;
-
-    /* Range checks via binary search */
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_CONTROL, WCWIDTH_GRAPHEME_CONTROL_LEN))
-        return GCB_CONTROL;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_EXTEND, WCWIDTH_GRAPHEME_EXTEND_LEN))
-        return GCB_EXTEND;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_REGIONAL_INDICATOR,
-                         WCWIDTH_GRAPHEME_REGIONAL_INDICATOR_LEN))
-        return GCB_REGIONAL_INDICATOR;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_PREPEND, WCWIDTH_GRAPHEME_PREPEND_LEN))
-        return GCB_PREPEND;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_SPACINGMARK,
-                         WCWIDTH_GRAPHEME_SPACINGMARK_LEN))
-        return GCB_SPACING_MARK;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_L, WCWIDTH_GRAPHEME_L_LEN))
-        return GCB_L;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_V, WCWIDTH_GRAPHEME_V_LEN))
-        return GCB_V;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_T, WCWIDTH_GRAPHEME_T_LEN))
-        return GCB_T;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_LV, WCWIDTH_GRAPHEME_LV_LEN))
-        return GCB_LV;
-    if (wcwidth_bisearch(ucs, WCWIDTH_GRAPHEME_LVT, WCWIDTH_GRAPHEME_LVT_LEN))
-        return GCB_LVT;
-
-    return GCB_OTHER;
+    return (gcb_t) wcwidth_gcb_class(ucs);
 }
 
 static bool
@@ -149,8 +135,7 @@ is_incb_linker(uint32_t ucs)
 static bool
 is_incb_consonant(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_INCB_CONSONANT, WCWIDTH_INCB_CONSONANT_LEN)
-           != 0;
+    return wcwidth_bisearch(ucs, WCWIDTH_INCB_CONSONANT, WCWIDTH_INCB_CONSONANT_LEN) != 0;
 }
 
 static bool
