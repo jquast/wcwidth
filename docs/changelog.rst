@@ -4,6 +4,15 @@ History
 0.8.4 *unreleased* ('master' branch, only)
   * **New** libwcwidth_, a portable C11 library, published as a release candidate.
   * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
+  * **Updated** Unicode version 18.0.0, `PR #246`_.
+  * **Updated** UAX #29 revision 48 relaxes grapheme clustering rule GB9c: a linker no longer
+    requires a preceding ``InCB=Consonant`` to join the following consonant, `PR #246`_.
+  * **Updated** terminal Corrections_ tables from the latest ucs-detect results, discarding
+    measurements where the terminal moved the cursor to another row or reported a negative
+    width, which had been shipped as real override widths, `PR #246`_.
+  * **Changed** `iter_graphemes()`_ no longer delegates to the Python 3.15 standard library,
+    which differs from UAX #29 in subtle ways.  The performance is planned to return by way of
+    the libwcwidth C11 library, `PR #246`_.
   * **Bugfix** OSC 66 text sizing sequences without a text field, `PR #246`_.
   * **Changed** ``ambiguous_width`` argument are now clamped allowed range ``(1, 2)``, `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib

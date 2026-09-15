@@ -1748,6 +1748,10 @@ def make_single_override(
         cat_results = test_results.get(category, {})
         for _ver, ver_data in cat_results.items():
             for entry in ver_data.get('failed_codepoints', []):
+                if not (isinstance(entry.get('measured_by_terminal'), int)
+                        and 'delta_ypos' not in entry
+                        and 0 <= entry['measured_by_terminal'] <= MAX_MEASURED_WIDTH):
+                    continue
                 wchar = entry['wchar']
                 ucs = parse_wchar_codepoint(wchar)
                 term_w = entry['measured_by_terminal']
@@ -1783,39 +1787,10 @@ def make_single_override(
     return result
 
 
-# Widest terminal measurement representable in the generated C override tables, whose width field
-# is a single byte.  Real measurements top out around 15 (a ZWJ sequence drawn as its components).
-MAX_MEASURED_WIDTH = 0xFF
-
-
-def _grapheme_digest(sorted_items: Sequence[tuple[str, int]]) -> str:
-    """
-    Return the stable short digest naming a shared grapheme override table.
-
-    Keyed on codepoints rather than repr() of the cluster: repr() escapes characters that the
-    *running* interpreter's unicodedata considers unassigned, so hashing it made the generated
-    _known_* filenames depend on which Python ran the generator (U+1FAEF is printable under Unicode
-    17 but escaped under 16, silently renaming every table).
-    """
-    payload = '\n'.join(
-        '{}:{}'.format(','.join(f'{ord(char):x}' for char in cluster), width)
-        for cluster, width in sorted_items)
-    return hashlib.sha256(payload.encode()).hexdigest()[:8]
-
-
-def _is_reliable_measurement(entry: Mapping[str, object]) -> bool:
-    """
-    Whether a ucs-detect measurement is trustworthy enough to become an override.
-
-    Entries carrying 'delta_ypos' moved the cursor to another row: the terminal mis-rendered the
-    sequence entirely, and a width correction cannot express that.  Entries whose measured width is
-    negative are cursor-report failures (iterm2 reports -88 for some Burmese clusters), and widths
-    beyond MAX_MEASURED_WIDTH cannot be encoded in the generated C tables.
-    """
-    if 'delta_ypos' in entry:
-        return False
-    width = entry['measured_by_terminal']
-    return isinstance(width, int) and 0 <= width <= MAX_MEASURED_WIDTH
+# 'delta_ypos' means the terminal wrapped to another row; a width correction cannot express that.
+# Out-of-range widths are cursor-report failures -- iterm2 reports -88 for some Burmese clusters.
+# The widest real measurement is 29, so 80 is conservative headroom.
+MAX_MEASURED_WIDTH = 80
 
 
 def collect_grapheme_overrides(
@@ -1839,7 +1814,9 @@ def collect_grapheme_overrides(
             cat_results = test_results.get(category, {})
             for _ver, ver_data in cat_results.items():
                 for entry in ver_data.get('failed_codepoints', []):
-                    if not _is_reliable_measurement(entry):
+                    if not (isinstance(entry.get('measured_by_terminal'), int)
+                            and 'delta_ypos' not in entry
+                            and 0 <= entry['measured_by_terminal'] <= MAX_MEASURED_WIDTH):
                         continue
                     wchar = entry['wchar']
                     term_w = entry['measured_by_terminal']
@@ -1854,7 +1831,10 @@ def collect_grapheme_overrides(
                 if not isinstance(lang_data, dict):
                     continue
                 for entry in lang_data.get('failed', []):
-                    if 'inherited_from' in entry or not _is_reliable_measurement(entry):
+                    if ('inherited_from' in entry
+                            or not isinstance(entry.get('measured_by_terminal'), int)
+                            or 'delta_ypos' in entry
+                            or not 0 <= entry['measured_by_terminal'] <= MAX_MEASURED_WIDTH):
                         continue
                     wchar = entry['wchars']
                     term_w = entry['measured_by_terminal']
@@ -1882,6 +1862,17 @@ def _make_merged_category(variable_name: str,
     set_terminals = {k: tuple(sorted(v)) for k, v in set_terminals.items()}
     return MergedOverridesCategory(variable_name, deduped.shared_sets,
                                    deduped.terminal_refs, set_terminals)
+
+
+def _grapheme_digest(sorted_items: Sequence[tuple[str, int]]) -> str:
+    """Return the stable short digest naming a shared grapheme override table."""
+    # Key on codepoints, not repr(): repr() escapes whatever the *running* interpreter's
+    # unicodedata calls unassigned, which would make these filenames depend on which Python
+    # ran the generator.
+    payload = '\n'.join(
+        '{}:{}'.format(','.join(f'{ord(char):x}' for char in cluster), width)
+        for cluster, width in sorted_items)
+    return hashlib.sha256(payload.encode()).hexdigest()[:8]
 
 
 def fetch_override_grapheme_data(known_terminals: frozenset[str]) -> list[RenderDefinition]:

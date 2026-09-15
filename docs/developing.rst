@@ -25,7 +25,11 @@ Regenerate python code tables from latest Unicode Specification data files::
 
    tox -e update
 
-The script is located at ``bin/update-tables.py``, requires Python 3.9 or later.
+The script is located at ``bin/update-tables.py``, requires Python 3.9 or later.  While a
+Unicode version is still pre-release, pass its version to ``--draft``, so that the draft
+data files are fetched::
+
+   tox -e update -- --draft=18.0
 
 Building Documentation
 ----------------------
