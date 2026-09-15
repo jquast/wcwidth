@@ -491,23 +491,9 @@ or unset ``TERM`` and ``TERM_PROGRAM`` environment values, such as in ``conftest
         if saved_tprog is not None:
             os.environ['TERM_PROGRAM'] = saved_tprog
 
-==============
-Recent changes
-==============
-0.8.4 *unreleased* ('master' branch, only)
-  * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
-  * **Bugfix** OSC 66 text sizing sequences without a text field, `PR #246`_.
-  * **Changed** ``ambiguous_width`` argument are now clamped allowed range ``(1, 2)``, `PR #246`_.
-  * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
-    ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
-
-0.8.3 *2026-08-28*
-  * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
-    wide characters, `PR #231`_.
-  * **Bugfix** `clip()`_ with ``propagate_sgr=True``, should match behavior of `propagate_sgr()`_,
-    `PR #235`_.
-
-Full history of all releases at https://wcwidth.readthedocs.io/en/latest/changelog.html
+==================
+More documentation
+==================
 
 Developer documentation, for building and contributing to this project, at
 https://wcwidth.readthedocs.io/en/latest/developing.html
@@ -516,10 +502,6 @@ Projects using wcwidth, and implementations in other languages, at
 https://wcwidth.readthedocs.io/en/latest/related.html
 
 .. _`specification`: https://wcwidth.readthedocs.io/en/latest/specs.html
-.. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
-.. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
-.. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
-.. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`jquast/blessed`: https://github.com/jquast/blessed
 .. _`wcwidth(3)`:  https://man7.org/linux/man-pages/man3/wcwidth.3.html
 .. _`wcswidth(3)`: https://man7.org/linux/man-pages/man3/wcswidth.3.html
@@ -543,7 +525,6 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
 .. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
 .. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
-.. _`propagate_sgr()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.propagate_sgr
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`list_term_programs()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_term_programs
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
@@ -564,3 +545,4 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. |license| image:: https://img.shields.io/pypi/l/wcwidth.svg
     :target: https://pypi.org/project/wcwidth/
     :alt: MIT License
+
