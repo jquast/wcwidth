@@ -63,9 +63,10 @@ You may find that support *varies* for complex unicode sequences or codepoints.
 
 This library may be considered to presume the terminal is enabled for DEC Private Mode 2027
 ("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
-is often the default mode for those terminals that support it: Windows Terminal, WezTerm, ghostty,
-contour, and foot. This library does support any specific "legacy width" measurement, but does
-provide Corrections_ for those terminals without grapheme support.
+is often the default mode for those terminals that support it.
+
+This library does support any specific "legacy width" measurement by API, but it does provide
+Corrections_ for those terminals without grapheme support.
 
 See also:
 
