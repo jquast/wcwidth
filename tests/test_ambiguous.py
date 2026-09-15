@@ -79,3 +79,19 @@ def test_wide_not_affected_by_ambiguous():
     assert wcwidth.wcwidth(cjk) == 2
     assert wcwidth.wcwidth(cjk, ambiguous_width=2) == 2
     assert wcwidth.wcwidth(cjk, ambiguous_width=1) == 2
+
+
+@pytest.mark.parametrize('ambiguous_width,expected', [
+    (-1, 1),
+    (0, 1),
+    (3, 2),
+    (99, 2),
+])
+def test_ambiguous_width_out_of_range_is_clamped(ambiguous_width, expected):
+    """Values outside (1, 2) clamp to the nearest legal width, they do not raise."""
+    text = '①'  # CIRCLED_ONE, ambiguous
+    assert wcwidth.wcwidth(text, ambiguous_width=ambiguous_width) == expected
+    assert wcwidth.wcswidth(text, ambiguous_width=ambiguous_width) == expected
+    assert wcwidth.wcstwidth(text, ambiguous_width=ambiguous_width) == expected
+    assert wcwidth.width(text, ambiguous_width=ambiguous_width) == expected
+    assert wcwidth.clip(text, 0, expected, ambiguous_width=ambiguous_width) == text

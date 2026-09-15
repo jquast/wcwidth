@@ -17,6 +17,7 @@ from .sgr_state import (_SGR_PATTERN,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
+from ._constants import _clamp_ambiguous_width
 from .text_sizing import TextSizing, TextSizingParams
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                _HORIZONTAL_CURSOR_MOVEMENT,
@@ -306,9 +307,9 @@ def _clip_simple(
 
             # OSC 66 Text Sizing.
             if (ts_meta := m.group('ts_meta')) is not None:
-                ts_text = m.group('ts_text')
+                ts_text = m.group('ts_text') or ''
                 ts_term = m.group('ts_term')
-                assert ts_text is not None and ts_term is not None
+                assert ts_term is not None
                 ts = TextSizing(
                     TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                     ts_text, ts_term)
@@ -605,9 +606,9 @@ def _clip_painter(
 
             # OSC 66 Text Sizing.
             if (ts_meta := m.group('ts_meta')) is not None:
-                ts_text = m.group('ts_text')
+                ts_text = m.group('ts_text') or ''
                 ts_term = m.group('ts_term')
-                assert ts_text is not None and ts_term is not None
+                assert ts_term is not None
                 ts = TextSizing(
                     TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                     ts_text, ts_term)
@@ -836,6 +837,8 @@ def clip(
     # Fast path: printable ASCII only.
     if text.isascii() and text.isprintable():
         return text[start:end]
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # No escape sequences => no SGR tracking needed.
     has_esc = '\x1b' in text

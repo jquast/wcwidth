@@ -4,9 +4,12 @@ wcwidth
 .. toctree::
 
    intro
-   unicode_version
    specs
    api
+   changelog
+   unicode_version
+   developing
+   related
 
 Indices and tables
 ------------------

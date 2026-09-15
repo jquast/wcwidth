@@ -532,3 +532,53 @@ def test_clip_parse_indeterminate_preserved(seq, cap_name):
     assert 'hello' in result
     assert 'world' in result
     assert seq in result
+
+
+@pytest.mark.parametrize('text,expected', [
+    ('\x1b]66;bad\x07', ''),
+    ('\x1b]66;w=5;hello\x07', 'hello'),
+    ('before\x1b]66;bad\x07after', 'beforeafter'),
+    ('before\x1b]66;w=5;hello\x07after', 'beforehelloafter'),
+])
+def test_strip_sequences_osc66_stripped(text, expected):
+    """strip_sequences() preserves OSC 66 display text."""
+    assert strip_sequences(text) == expected
+
+
+@pytest.mark.parametrize('text,expected', [
+    ('a\x1b[', 'a'),
+    ('\x1b[\x1b[31mc', 'c'),
+    ('a\x1b[\x1b[31mb', 'ab'),
+])
+def test_strip_sequences_unterminated_csi(text, expected):
+    """strip_sequences() strips bare ESC[ (unterminated CSI)."""
+    assert strip_sequences(text) == expected
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    ('\x1b]66;bad\x07text', 0, 4, '\x1b]66;;\x07text'),
+    ('a\x1b]66;bad\x07b', 0, 5, 'a\x1b]66;;\x07b'),
+])
+def test_clip_canonicalizes_osc66_without_display_text(text, start, end, expected):
+    """Clip() canonicalizes OSC 66 with no display text (invalid meta dropped)."""
+    assert clip(text, start, end) == expected
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    ('\x1b]66;s=1:w=1;\x1b\\abc', 0, 5, '\x1b]66;w=1;\x1b\\abc'),
+    ('\x1b]66;s=1:w=1;XY\x1b\\', 0, 10, '\x1b]66;w=1;XY\x1b\\'),
+    ('\x1b]66;s=1:w=1;\x1b\\X', 1, 2, 'X'),
+])
+def test_clip_osc66_zero_text_unit(text, start, end, expected):
+    """Clip() treats zero-text OSC 66 as a width unit with default params omitted."""
+    assert clip(text, start, end) == expected
+
+
+def test_clip_osc8_empty_unit_skipped():
+    """Clip() drops empty OSC 8 units formed by dangling close sequences."""
+    assert clip('\x1b]8;;\x1b\\\x1b]8;;\x07X', 0, 5) == 'X'
+
+
+def test_clip_sgr_captured_only_at_visible_content():
+    """Clip() captures SGR only at visible content emission, not passthrough."""
+    assert clip('\x1b[31m\x1b]66;w=5;hello\x07', 10, 20) == ''

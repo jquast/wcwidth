@@ -552,3 +552,46 @@ def test_legacy_module():
     for name in _legacy.__all__:
         obj = getattr(_legacy, name)
         assert obj is not None, f"could not import {name} from wcwidth.wcwidth"
+
+
+@pytest.mark.parametrize('pwcs,n', [
+    ('abc', 2),
+    ('abc', 1),
+    ('abc', 0),
+    ('abc', None),
+    ('', 0),
+    ('', None),
+    ('\U0001F600', 1),
+    ('\U0001F600\U0001F600', 2),
+])
+def test_wcstwidth_positional_args(pwcs, n):
+    """Wcstwidth() accepts n as a positional argument."""
+    result = wcwidth.wcstwidth(pwcs, n)
+    assert isinstance(result, int)
+    assert result >= 0
+
+
+@pytest.mark.parametrize('func', [wcwidth.ljust, wcwidth.rjust, wcwidth.center],
+                         ids=lambda f: f.__name__)
+def test_align_control_codes_strict_rejects_illegal_control(func):
+    """Ljust()/rjust()/center() honor control_codes='strict'."""
+    with pytest.raises(ValueError):
+        func('\x01x', 10, ' ', control_codes='strict')
+
+
+def test_width_large_cursor_movement_saturates():
+    """Width() handles a CSI cursor-movement parameter far beyond any real column."""
+    assert wcwidth.width('\x1b[100000000000000000000C', control_codes='parse') >= 0
+
+
+def test_wrap_tabsize_zero_passes_through():
+    """Wrap() accepts tabsize=0 without raising."""
+    result = wcwidth.wrap('a\tb', 3, tabsize=0, replace_whitespace=False)
+    assert isinstance(result, list)
+
+
+@pytest.mark.parametrize('text', ['\udcbf', '\udc80', '\udcbf\udcbf\udcbf'])
+def test_wrap_lone_surrogate_escaped_bytes(text):
+    """Wrap() handles a lone/incomplete surrogate-escaped byte without raising."""
+    result = wcwidth.wrap(text, 3)
+    assert isinstance(result, list)

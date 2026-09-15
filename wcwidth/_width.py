@@ -26,7 +26,8 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET,
                          resolve_terminal,
-                         get_term_overrides)
+                         get_term_overrides,
+                         _clamp_ambiguous_width)
 from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .text_sizing import TextSizing, TextSizingParams
@@ -157,6 +158,8 @@ def width(
     if text.isascii() and text.isprintable():
         return len(text)
 
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
+
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check longer strings - the detection overhead hurts short string performance.
     if control_codes == 'parse' and len(text) > _WIDTH_FAST_PATH_MIN_LEN:
@@ -271,9 +274,9 @@ def width(
                         current_col = 0
                 # 2d. OSC 66 Text Sizing — has positive display width
                 elif (ts_meta := m.group('ts_meta')) is not None:
-                    ts_text = m.group('ts_text')
+                    ts_text = m.group('ts_text') or ''
                     ts_term = m.group('ts_term')
-                    assert ts_text is not None and ts_term is not None
+                    assert ts_term is not None
                     text_size = TextSizing(
                         TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                         ts_text, ts_term)

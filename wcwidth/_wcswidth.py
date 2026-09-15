@@ -21,7 +21,8 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET,
                          resolve_terminal,
-                         get_term_overrides)
+                         get_term_overrides,
+                         _clamp_ambiguous_width)
 from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_grapheme import GRAPHEME_EXTEND
@@ -95,6 +96,8 @@ def wcswidth(
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
@@ -236,6 +239,8 @@ def wcstwidth(
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
