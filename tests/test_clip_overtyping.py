@@ -157,3 +157,25 @@ def test_clip_strict_indeterminate_sequence_painter():
     """Clip() strict-mode raises on indeterminate sequence in painter path."""
     with pytest.raises(ValueError, match='Indeterminate cursor sequence'):
         clip('a\x1b[D\x1b[Hb', 0, 3, control_codes='strict')
+
+
+@pytest.mark.parametrize('text,start,kwargs,expected', [
+    ('hello\rworld', 0, {}, 'world'),
+    ('hello\rworld', 2, {}, 'rld'),
+    ('hello\x08\x08world', 2, {}, 'lworld'),
+    ('hello\x1b[2Dxy', 0, {}, 'helxy'),
+    ('ab\x1b[99Dcd', 0, {}, 'cd'),
+    ('plain text', 3, {'overtyping': True}, 'in text'),
+    ('abc\x1b[5Gde', 2, {'control_codes': 'strict'}, 'c de'),
+    ('\x1b[31mhello\rworld\x1b[0m', 2, {}, '\x1b[31mrld\x1b[0m'),
+])
+def test_clip_cursor_sequences_to_end_of_line(text, start, kwargs, expected):
+    """Clip() end=-1 (default) clips the painter's result to the end of the line."""
+    assert repr(clip(text, start, **kwargs)) == repr(expected)
+    assert repr(clip(text, start, -1, **kwargs)) == repr(expected)
+
+
+def test_clip_cursor_left_strict_out_of_bounds_to_end_of_line():
+    """Clip() end=-1 still raises in strict mode for out-of-bounds cursor-left."""
+    with pytest.raises(ValueError, match='Cursor left movement'):
+        clip('\x1b[2Dab', 0, control_codes='strict')

@@ -582,3 +582,75 @@ def test_clip_osc8_empty_unit_skipped():
 def test_clip_sgr_captured_only_at_visible_content():
     """Clip() captures SGR only at visible content emission, not passthrough."""
     assert clip('\x1b[31m\x1b]66;w=5;hello\x07', 10, 20) == ''
+
+
+@pytest.mark.parametrize('text,start,expected', [
+    ('', 0, ''),
+    ('hello world', 0, 'hello world'),
+    ('hello world', 6, 'world'),
+    ('hello', 5, ''),
+    ('hello', 99, ''),
+    ('hello', -5, 'hello'),
+    ('中文字', 1, ' 文字'),
+    ('中文字', 2, '文字'),
+    ('中文字', 6, ''),
+    ('cafe\u0301', 3, 'e\u0301'),
+    ('a\tb', 4, '    b'),
+    ('\x1b[1;34mHello world\x1b[0m', 6, '\x1b[1;34mworld\x1b[0m'),
+    ('\x1b[31mred\x1b[32mgreen\x1b[0m', 4, '\x1b[32mreen\x1b[0m'),
+    ('\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07', 6,
+     '\x1b]8;;http://example.com\x07This link\x1b]8;;\x07'),
+    ('\x1b]66;w=4:s=4;Look\x07', 1, '   \x1b]66;s=4:w=3;ook\x07'),
+    ('hello\rworld', 2, 'rld'),
+    ('hello\x08\x08world', 2, 'lworld'),
+    ('abc\x1b[5Gde', 2, 'c de'),
+])
+def test_clip_to_end_of_line(text, start, expected):
+    """Clip() end=-1 (default) clips from start through the final column."""
+    assert repr(clip(text, start)) == repr(expected)
+    assert repr(clip(text, start, -1)) == repr(expected)
+    assert repr(clip(text, start, width(text))) == repr(expected)
+
+
+def test_clip_default_arguments_whole_line():
+    """Clip() without start or end returns the whole line, matching propagate_sgr()."""
+    assert clip('hello world') == 'hello world'
+    text = '\x1b[1mbold\x1b[m normal \x1b[31mred\x1b[0m'
+    assert clip(text) == propagate_sgr([text])[0]
+
+
+@pytest.mark.parametrize('kwargs', [
+    {}, {'control_codes': 'parse'}, {'control_codes': 'ignore'}, {'control_codes': 'strict'},
+    {'overtyping': True}, {'overtyping': False}, {'tabsize': 0}, {'ambiguous_width': 2},
+    {'propagate_sgr': False}, {'fillchar': '.'},
+])
+def test_clip_to_end_of_line_matches_unbounded_end(kwargs):
+    """Clip() end=-1 matches any end beyond the final column, for all argument modes."""
+    text = '\x1b[1m§ hello \x1b]8;;http://x\x07link\x1b]8;;\x07 中文\x1b[0m'
+    for start in (0, 1, 5, 12, 40):
+        assert repr(clip(text, start, **kwargs)) == repr(clip(text, start, 10000, **kwargs))
+
+
+@pytest.mark.parametrize('text', [
+    'hello world',
+    '\x1b[31mred text\x1b[0m',
+    'a\tbcd',
+    '\x1b]8;;http://example.com\x07Click This link\x1b]8;;\x07',
+])
+def test_clip_to_end_of_line_width_invariant(text):
+    """Clip() end=-1 removes exactly *start* columns of display width."""
+    total = width(text)
+    for start in range(total + 2):
+        assert width(clip(text, start)) == max(0, total - start)
+
+
+@pytest.mark.parametrize('text,end,kwargs', [
+    ('hello world', -2, {}),
+    ('hello world', -(2 ** 32), {}),
+    ('中文字', -2, {}),
+    ('\x1b[31mred\x1b[0m', -5, {'control_codes': 'ignore'}),
+])
+def test_clip_negative_end_raises(text, end, kwargs):
+    """Clip() raises ValueError for a negative end other than -1."""
+    with pytest.raises(ValueError, match='end must be -1'):
+        clip(text, 0, end, **kwargs)

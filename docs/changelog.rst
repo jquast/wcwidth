@@ -7,6 +7,7 @@ History
   * **Changed** ``ambiguous_width`` argument are now clamped allowed range ``(1, 2)``, `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
     ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
+  * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #247`_.
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
@@ -274,9 +275,11 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
+.. _`PR #247`: https://github.com/jquast/wcwidth/pull/247
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
+.. _`Issue #242`: https://github.com/jquast/wcwidth/issues/242
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`jacobsandlund/uucode`: https://github.com/jacobsandlund/uucode
