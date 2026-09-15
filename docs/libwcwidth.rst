@@ -247,6 +247,15 @@ with a fill string.  Returns a ``malloc``\ 'd NUL-terminated string the caller m
     clip_u8("中文字", 9, 1, 5, WCWIDTH_PARSE, 8, 1, NULL, true, ".", 1, NULL, NULL);
     /* ".文." */
 
+Pass ``SIZE_MAX`` as ``v_end`` to clip only from ``v_start`` through the final column of *text*,
+without measuring it first -- the counterpart of the ``-1`` default of Python's ``clip()``:
+
+.. code-block:: c
+
+    clip_u8("\x1b[1;34mHello world\x1b[0m", 24, 6, SIZE_MAX, WCWIDTH_PARSE, 8, 1, NULL, true,
+            " ", 1, NULL, NULL);
+    /* "\x1b[1;34mworld\x1b[0m" */
+
 ``clip_u32()`` is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
 codepoints.
 

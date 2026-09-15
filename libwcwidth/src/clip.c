@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -325,6 +326,13 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
         *out_len = 0;
     if (error != NULL)
         *error = WCWIDTH_ERROR_NONE;
+
+    /* clip_run() tracks columns as int: clamp so an unbounded v_end of
+     * SIZE_MAX does not wrap negative there. */
+    if (v_start > (size_t) INT_MAX)
+        v_start = (size_t) INT_MAX;
+    if (v_end > (size_t) INT_MAX)
+        v_end = (size_t) INT_MAX;
 
     if (v_end <= v_start) {
         char *empty = (char *) malloc(1);

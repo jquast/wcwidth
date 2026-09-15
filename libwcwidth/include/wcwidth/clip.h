@@ -28,7 +28,9 @@ extern "C" {
  *   text:           UTF-8 encoded input string.
  *   text_len:       length of text in bytes (NOT NUL-terminated).
  *   v_start:        starting column (inclusive, 0-indexed).
- *   v_end:          ending column (exclusive).
+ *   v_end:          ending column (exclusive).  SIZE_MAX clips through the
+ *                   final column of text, as the -1 default of Python's
+ *                   clip() does; v_start and v_end are clamped to INT_MAX.
  *   control_codes:  how to handle control characters and sequences.
  *                   WCWIDTH_STRICT raises on indeterminate sequences;
  *                   cursor movement and OSC text sizing are not parsed.
