@@ -575,13 +575,11 @@ To upgrade the pinned ``cibuildwheel`` versions used to build release wheels, ru
    tox -e update_requirements_wheels,update_requirements_wheels314
 
 Release wheels (manylinux, musllinux, macOS, Windows, including free-threaded builds) are built and
-tested -- but not published -- by `cibuildwheel`_ in CI (``.github/workflows/wheels.yml``), driven
-by the ``[tool.cibuildwheel]`` table in ``pyproject.toml``, on release tag pushes and by manual
-``workflow_dispatch``.  Wheels and sdist are uploaded as workflow artifacts.
+tested by `cibuildwheel`_ in CI (``.github/workflows/wheels.yml``) on release tag pushes and by
+manual ``workflow_dispatch``.
 
-Two pinned ``cibuildwheel`` versions split the matrix, since no single one covers it: 2.23.x keeps
-the glibc 2.17 manylinux image but stops at cp313, and 3.4.x knows cp314 but requires glibc 2.28.
-Both run locally with Docker installed, writing to one ``wheelhouse/``::
+``build-wheels`` and ``build-wheels314`` split on versions. Both run locally with Docker installed,
+writing to one ``wheelhouse/``::
 
    tox -e build-wheels        # cp38-cp313
    tox -e build-wheels314     # cp314, cp314t
@@ -590,6 +588,13 @@ Each builds the current host OS's wheels only (on Linux: manylinux and musllinux
 aarch64 under QEMU), matching CI's per-OS runner matrix.  Narrow to one target while iterating::
 
    tox -e build-wheels -- --only cp313-manylinux_x86_64
+
+Emulating aarch64 needs qemu ``binfmt_misc`` handlers on the host; on Debian and Ubuntu::
+
+   sudo apt install qemu-user-static binfmt-support
+
+Without them the tox envs run the pinned ``tonistiigi/binfmt`` image ``--privileged`` instead.
+Building only the native architecture needs neither.
 
 Publishing a Release
 ---------------------
