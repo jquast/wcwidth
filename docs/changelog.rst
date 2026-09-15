@@ -2,6 +2,8 @@
 History
 =======
 0.8.4 *unreleased* ('master' branch, only)
+  * **New** libwcwidth_, a portable C11 library, published as a release candidate, with
+    tables generated from the Unicode 18.0.0 draft.
   * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** OSC 66 text sizing sequences without a text field, `PR #246`_.
   * **Changed** ``ambiguous_width`` argument are now clamped allowed range ``(1, 2)``, `PR #246`_.
@@ -302,3 +304,4 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
+.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html

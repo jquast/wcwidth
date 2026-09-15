@@ -58,6 +58,7 @@ include = [
   # unimported table_vs15.py in version 0.2.14. A 'git clean -dfx' should work ..  but! *Global* git
   # ignore is not honored by hatch, even files containing secrets may easily be leaked!
   "/wcwidth/**",
+  "/libwcwidth/**",
   "/bin/**",
   "/code_templates/**",
   "/docs/**",
