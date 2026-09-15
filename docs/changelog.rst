@@ -2,21 +2,14 @@
 History
 =======
 0.8.4 *unreleased* ('master' branch, only)
-  * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
-  * **Updated** Unicode version 18.0.0, `PR #246`_.
-  * **Updated** UAX #29 revision 48 relaxes grapheme clustering rule GB9c: a linker no longer
-    requires a preceding ``InCB=Consonant`` to join the following consonant, `PR #246`_.
-  * **Updated** terminal Corrections_ tables from the latest ucs-detect results, discarding
-    measurements where the terminal moved the cursor to another row or reported a negative
-    width, which had been shipped as real override widths, `PR #246`_.
-  * **Changed** `iter_graphemes()`_ no longer delegates to the Python 3.15 standard library,
-    which differs from UAX #29 in subtle ways.  The performance is planned to return by way of
-    the libwcwidth C11 library, `PR #246`_.
+  * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
+  * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18, `PR #238`_.
   * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
     ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
-  * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #247`_.
+  * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #250`_.
+  * **Updated** tables for Unicode version 18.0.0, `PR #238`_.
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
@@ -282,9 +275,10 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #230`: https://github.com/jquast/wcwidth/pull/230
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
+.. _`PR #238`: https://github.com/jquast/wcwidth/pull/238
 .. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
-.. _`PR #247`: https://github.com/jquast/wcwidth/pull/247
+.. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

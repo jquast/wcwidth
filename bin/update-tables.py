@@ -1750,7 +1750,7 @@ def make_single_override(
             for entry in ver_data.get('failed_codepoints', []):
                 if not (isinstance(entry.get('measured_by_terminal'), int)
                         and 'delta_ypos' not in entry
-                        and 0 <= entry['measured_by_terminal'] <= MAX_MEASURED_WIDTH):
+                        and 0 <= entry['measured_by_terminal'] <= 40):
                     continue
                 wchar = entry['wchar']
                 ucs = parse_wchar_codepoint(wchar)
@@ -1787,10 +1787,8 @@ def make_single_override(
     return result
 
 
-# 'delta_ypos' means the terminal wrapped to another row; a width correction cannot express that.
-# Out-of-range widths are cursor-report failures -- iterm2 reports -88 for some Burmese clusters.
-# The widest real measurement is 29, so 80 is conservative headroom.
-MAX_MEASURED_WIDTH = 80
+# out-of-bounds for wcstwidth() correction tables
+MAX_MEASURED_WIDTH = 40
 
 
 def collect_grapheme_overrides(
@@ -1866,9 +1864,8 @@ def _make_merged_category(variable_name: str,
 
 def _grapheme_digest(sorted_items: Sequence[tuple[str, int]]) -> str:
     """Return the stable short digest naming a shared grapheme override table."""
-    # Key on codepoints, not repr(): repr() escapes whatever the *running* interpreter's
-    # unicodedata calls unassigned, which would make these filenames depend on which Python
-    # ran the generator.
+    # we have to construct static strings, because repr() changes depending on running interpreter
+    # unicodedata version and unnecessarily jumble filenames.
     payload = '\n'.join(
         '{}:{}'.format(','.join(f'{ord(char):x}' for char in cluster), width)
         for cluster, width in sorted_items)
