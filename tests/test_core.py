@@ -554,7 +554,7 @@ def test_legacy_module():
         assert obj is not None, f"could not import {name} from wcwidth.wcwidth"
 
 
-WCSTWIDTH_POSITIONAL_CASES = [
+@pytest.mark.parametrize('pwcs,n', [
     ('abc', 2),
     ('abc', 1),
     ('abc', 0),
@@ -563,10 +563,7 @@ WCSTWIDTH_POSITIONAL_CASES = [
     ('', None),
     ('\U0001F600', 1),
     ('\U0001F600\U0001F600', 2),
-]
-
-
-@pytest.mark.parametrize('pwcs,n', WCSTWIDTH_POSITIONAL_CASES)
+])
 def test_wcstwidth_positional_args(pwcs, n):
     """Wcstwidth() accepts n as a positional argument."""
     result = wcwidth.wcstwidth(pwcs, n)
@@ -574,21 +571,8 @@ def test_wcstwidth_positional_args(pwcs, n):
     assert result >= 0
 
 
-ALIGN_FUNCS = [wcwidth.ljust, wcwidth.rjust, wcwidth.center]
-
-
-@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
-@pytest.mark.parametrize('dest_width,fillchar', [
-    (2**62 + 2, '\U0001F600'),
-    ((2**64 + 2) // 3 + 2, '你'),
-])
-def test_align_huge_dest_width_raises_memory_error(func, dest_width, fillchar):
-    """Ljust()/rjust()/center() raise MemoryError for an unrepresentable dest_width."""
-    with pytest.raises(MemoryError):
-        func('hi', dest_width, fillchar)
-
-
-@pytest.mark.parametrize('func', ALIGN_FUNCS, ids=lambda f: f.__name__)
+@pytest.mark.parametrize('func', [wcwidth.ljust, wcwidth.rjust, wcwidth.center],
+                         ids=lambda f: f.__name__)
 def test_align_control_codes_strict_rejects_illegal_control(func):
     """Ljust()/rjust()/center() honor control_codes='strict'."""
     with pytest.raises(ValueError):

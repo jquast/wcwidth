@@ -5,6 +5,9 @@ from __future__ import annotations
 # std imports
 import re
 
+# 3rd party
+import pytest
+
 # local
 from wcwidth import clip, wrap
 from wcwidth.sgr_state import (_SGR_STATE_DEFAULT,
@@ -277,14 +280,11 @@ def test_extended_color_mixed_format_edge_cases():
     assert _sgr_state_update(_SGR_STATE_DEFAULT, '\x1b[99:2:255:0:0m') == _SGR_STATE_DEFAULT
 
 
-PROPAGATE_NUL_CASES = [
+@pytest.mark.parametrize('lines,expected', [
     (['\x1b[31m\x00after'], ['\x1b[31m\x00after\x1b[0m']),
     (['\x1b[1m\x00mid\x00end'], ['\x1b[1m\x00mid\x00end\x1b[0m']),
     (['\x1b[31m\x00', 'world\x1b[0m'], ['\x1b[31m\x00\x1b[0m', '\x1b[31mworld\x1b[0m']),
-]
-
-
-def test_propagate_sgr_preserves_embedded_nul():
+])
+def test_propagate_sgr_preserves_embedded_nul(lines, expected):
     """propagate_sgr() preserves content after embedded NUL bytes."""
-    for lines, expected in PROPAGATE_NUL_CASES:
-        assert propagate_sgr(lines) == expected
+    assert propagate_sgr(lines) == expected
