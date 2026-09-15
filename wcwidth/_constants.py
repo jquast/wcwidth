@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # std imports
 import os
+from operator import index as _index
 from functools import lru_cache
 
 from typing import Tuple, NamedTuple
@@ -162,3 +163,19 @@ def resolve_terminal(term_program: bool | str = False) -> str | None:
     if canonical not in KNOWN_TERMINALS:
         return None
     return canonical
+
+
+def _clamp_ambiguous_width(ambiguous_width: int) -> int:
+    """
+    Clamp *ambiguous_width* to 1 or 2, the only widths UAX #11 defines.
+
+    Clamped rather than rejected: this is called from rendering hot loops, where
+    raising on a computed value would be a hostile change.
+    """
+    # operator.index() rejects bool/float and accepts anything with __index__.
+    value = _index(ambiguous_width)
+    if value < 1:
+        return 1
+    if value > 2:
+        return 2
+    return value

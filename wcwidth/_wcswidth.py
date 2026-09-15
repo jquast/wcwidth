@@ -21,7 +21,8 @@ from ._constants import (_EMOJI_ZWJ_SET,
                          _FITZPATRICK_RANGE,
                          _REGIONAL_INDICATOR_SET,
                          resolve_terminal,
-                         get_term_overrides)
+                         get_term_overrides,
+                         _clamp_ambiguous_width)
 from .table_vs15 import VS15_WIDE_TO_NARROW
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_grapheme import GRAPHEME_EXTEND
@@ -91,6 +92,7 @@ def wcswidth(
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
@@ -231,6 +233,7 @@ def wcstwidth(
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # This function intentionally keeps all logic inline for performance.
 
     # Fast path: pure ASCII printable strings are always width == length

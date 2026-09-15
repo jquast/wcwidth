@@ -70,7 +70,11 @@ __lazy_modules__ = [
 ]
 # local
 from .bisearch import bisearch
-from ._constants import _LATEST_VERSION, _AMBIGUOUS_TABLE, _ZERO_WIDTH_TABLE, _WIDE_EASTASIAN_TABLE
+from ._constants import (_LATEST_VERSION,
+                         _AMBIGUOUS_TABLE,
+                         _ZERO_WIDTH_TABLE,
+                         _WIDE_EASTASIAN_TABLE,
+                         _clamp_ambiguous_width)
 
 
 @lru_cache(maxsize=128)
@@ -135,6 +139,7 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
 
     See :ref:`Specification` for details of cell measurement.
     """
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     ucs = ord(wc) if wc else 0
 
     # small optimization: early return of 1 for printable ASCII, this provides

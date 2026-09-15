@@ -11,6 +11,7 @@ EMOJI_FAMILY = '\U0001F468\u200D\U0001F469\u200D\U0001F467'
 
 
 def test_ljust():
+    """Test ljust() against ASCII and sequence-aware inputs."""
     # our ljust() matches standard python ljust() for ascii
     assert ljust('hi', 5) == 'hi   ' == str.ljust('hi', 5)
     assert ljust('', 5) == '     ' == str.ljust('', 5)
@@ -30,6 +31,7 @@ def test_ljust():
 
 
 def test_rjust():
+    """Test rjust() against ASCII and sequence-aware inputs."""
     # our rjust() matches standard python rjust() for ascii
     assert rjust('hi', 5) == '   hi' == str.rjust('hi', 5)
     assert rjust('', 5) == '     ' == str.rjust('', 5)
@@ -46,6 +48,7 @@ def test_rjust():
 
 
 def test_center():
+    """Test center() against ASCII and sequence-aware inputs."""
     # our center() matches standard python center() for ascii
     assert center('hi', 6) == '  hi  ' == str.center('hi', 6)
     assert center('hi', 5) == '  hi ' == str.center('hi', 5)
