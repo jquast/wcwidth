@@ -2,7 +2,6 @@
 History
 =======
 0.8.4 *unreleased* ('master' branch, only)
-  * **New** libwcwidth_, a portable C11 library, published as a release candidate.
   * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Updated** Unicode version 18.0.0, `PR #246`_.
   * **Updated** UAX #29 revision 48 relaxes grapheme clustering rule GB9c: a linker no longer
