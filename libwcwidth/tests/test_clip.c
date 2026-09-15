@@ -17,7 +17,7 @@ cs_assert(const char *text, size_t start, size_t end, const char *expected)
     opts.v_start = start;
     opts.v_end = end;
     opts.fillchar = &fillchar;
-    last = clip_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &len, &error);
+    last = wcwidth_clip_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &len, &error);
     ASSERT_NOT_NULL(last);
     ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
     ASSERT_EQ(len, strlen(last));
@@ -62,7 +62,7 @@ TEST(clip_u32_basic)
     opts.v_start = 1;
     opts.v_end = 4;
     opts.fillchar = &fillchar;
-    result = clip_u32(cps, 5, WCWIDTH_PARSE, &opts, &len, &error);
+    result = wcwidth_clip_u32(cps, 5, WCWIDTH_PARSE, &opts, &len, &error);
     ASSERT_NOT_NULL(result);
     ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
     ASSERT_EQ((size_t) 3, len);
@@ -76,7 +76,7 @@ TEST(clip_u32_basic)
 
         opts.v_start = 0;
         opts.v_end = 3;
-        result = clip_u32(zwhw, 2, WCWIDTH_PARSE, &opts, &len, &error);
+        result = wcwidth_clip_u32(zwhw, 2, WCWIDTH_PARSE, &opts, &len, &error);
         ASSERT_NOT_NULL(result);
         ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
         ASSERT_EQ((size_t) 2, len);

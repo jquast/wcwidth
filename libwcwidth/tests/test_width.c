@@ -9,7 +9,7 @@ w_parse(const char *text)
 {
     wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
     int error = 0;
-    return width_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &error);
+    return wcwidth_width_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &error);
 }
 
 static int
@@ -17,7 +17,7 @@ w_ignore(const char *text)
 {
     wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
     int error = 0;
-    return width_u8(text, strlen(text), WCWIDTH_IGNORE, &opts, &error);
+    return wcwidth_width_u8(text, strlen(text), WCWIDTH_IGNORE, &opts, &error);
 }
 
 TEST(u8_parse_basic)
@@ -32,13 +32,13 @@ TEST(u8_parse_basic)
     ASSERT_EQ(5, w_parse("hello\rworld"));
     ASSERT_EQ(10, w_parse("\x1b[10Gx"));
     /* C-only: NULL input, zero length, embedded NUL */
-    ASSERT_EQ(0, width_u8(NULL, 0, WCWIDTH_PARSE, &opts, &error));
-    ASSERT_EQ(0, width_u8("hello", 0, WCWIDTH_PARSE, &opts, &error));
-    ASSERT_EQ(3, width_u8("a\0bc", 4, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(0, wcwidth_width_u8(NULL, 0, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(0, wcwidth_width_u8("hello", 0, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(3, wcwidth_width_u8("a\0bc", 4, WCWIDTH_PARSE, &opts, &error));
     /* ZWJ family with a resolved terminal reaches the u8 cluster scan. */
     opts.term_program = "kitty";
     ASSERT_EQ(2,
-              width_u8("\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7",
+              wcwidth_width_u8("\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7",
                        (size_t) 18, WCWIDTH_PARSE, &opts, &error));
 }
 
@@ -54,7 +54,7 @@ TEST(u8_strict)
     /* strict mode routes to the Python implementation */
     wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
     int error = 0;
-    int result = width_u8("\x1b[2J", 4, WCWIDTH_STRICT, &opts, &error);
+    int result = wcwidth_width_u8("\x1b[2J", 4, WCWIDTH_STRICT, &opts, &error);
 
     ASSERT_EQ(-1, result);
     ASSERT_TRUE(error != 0);
@@ -65,9 +65,9 @@ TEST(u32_basic)
     uint32_t text[] = {0x1B, '[', '3', '1', 'm', 'r', 'e', 'd', 0x1B, '[', '0', 'm'};
     int error = 0;
 
-    ASSERT_EQ(3, width_u32(text, 12, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(3, wcwidth_width_u32(text, 12, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
     ASSERT_EQ(0, error);
-    ASSERT_EQ(0, width_u32(NULL, 0, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(0, wcwidth_width_u32(NULL, 0, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
 }
 
 TEST(u32_ignore)
@@ -78,14 +78,14 @@ TEST(u32_ignore)
     uint32_t osc66[] = {0x1B, ']', '6', '6', ';', 's', '=', '2', ';', 'A', 'B', 0x07};
     int error = 0;
 
-    ASSERT_EQ(3, width_u32(sgr, 12, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
-    ASSERT_EQ(0, width_u32(tab, 1, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
-    ASSERT_EQ(4, width_u32(bs, 5, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
-    ASSERT_EQ(2, width_u32(osc66, 12, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(3, wcwidth_width_u32(sgr, 12, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(0, wcwidth_width_u32(tab, 1, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(4, wcwidth_width_u32(bs, 5, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(2, wcwidth_width_u32(osc66, 12, WCWIDTH_IGNORE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
 }
 
 /*
- * width_u8() and width_u32() must agree on identical text, in every control
+ * wcwidth_width_u8() and wcwidth_width_u32() must agree on identical text, in every control
  * mode.  They are separate implementations -- the codepoint path exists to
  * avoid an encode round-trip -- so nothing but a test keeps them in step.
  */
@@ -145,8 +145,8 @@ TEST(u8_u32_agree)
         ASSERT_NOT_NULL(cps);
         for (m = 0; m < 3; m++) {
             int e8 = 0, e32 = 0;
-            int w8 = width_u8(text, byte_len, modes[m], &WCWIDTH_WIDTH_OPTS_DEFAULT, &e8);
-            int w32 = width_u32(cps, cp_count, modes[m], &WCWIDTH_WIDTH_OPTS_DEFAULT, &e32);
+            int w8 = wcwidth_width_u8(text, byte_len, modes[m], &WCWIDTH_WIDTH_OPTS_DEFAULT, &e8);
+            int w32 = wcwidth_width_u32(cps, cp_count, modes[m], &WCWIDTH_WIDTH_OPTS_DEFAULT, &e32);
 
             ASSERT_EQ(w8, w32);
             ASSERT_EQ(e8, e32);
@@ -172,7 +172,7 @@ TEST(csi_huge_param_saturates)
     size_t i;
 
     for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
-        int w = width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT,
+        int w = wcwidth_width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT,
                          &error);
         ASSERT_TRUE(w >= 0);
     }

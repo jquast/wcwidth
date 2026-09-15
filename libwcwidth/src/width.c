@@ -644,7 +644,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
     bool has_cp_overrides =
         narrower_len > 0 || zeroer_len > 0 || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
-    /* Printable-ASCII input is handled by the fast path in width_u8(). */
+    /* Printable-ASCII input is handled by the fast path in wcwidth_width_u8(). */
 
     current_col = 0;
     max_extent = 0;
@@ -1081,7 +1081,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
 /*
  * Codepoint-array variant of _width_parse(): same semantics but operates on a
  * pre-decoded uint32_t array instead of raw UTF-8 bytes.  This avoids the
- * encode->decode round-trip that width_u32 otherwise imposes.
+ * encode->decode round-trip that wcwidth_width_u32 otherwise imposes.
  *
  * Escape sequences consist entirely of ASCII-range codepoints, so the region
  * around each ESC is encoded into a small stack buffer to reuse the byte-based
@@ -1135,7 +1135,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
     bool has_cp_overrides =
         narrower_len > 0 || zeroer_len > 0 || narrow_wider_len > 0 || narrow_zeroer_len > 0;
 
-    /* Printable-ASCII input is handled by the fast path in width_u32(). */
+    /* Printable-ASCII input is handled by the fast path in wcwidth_width_u32(). */
 
     current_col = 0;
     max_extent = 0;
@@ -1152,7 +1152,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         uint32_t ucs = cp[idx];
 
         /* Lone surrogates (U+D800-U+DFFF) are not valid Unicode and cannot
-         * be encoded in UTF-8.  The old width_u32 path normalized them to
+         * be encoded in UTF-8.  The old wcwidth_width_u32 path normalized them to
          * U+FFFD via its encode-decode round-trip; preserve that contract. */
         if (ucs >= 0xD800 && ucs <= 0xDFFF) {
             ucs = 0xFFFD;
@@ -1712,7 +1712,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
 }
 
 int
-width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts,
+wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts,
          int *error)
 {
     int tabsize;
@@ -1765,7 +1765,7 @@ width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_
 }
 
 int
-width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+wcwidth_width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
           const wcwidth_width_opts_t *opts, int *error)
 {
     int tabsize;

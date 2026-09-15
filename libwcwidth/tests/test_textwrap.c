@@ -75,18 +75,18 @@ TEST(wrap_basic)
     const char *exp[] = {"hello", "world"};
 
     o.width = 5;
-    ASSERT_EQ(0, wrap_u8("hello world", 11, &o, &out, &len));
+    ASSERT_EQ(0, wcwidth_wrap_u8("hello world", 11, &o, &out, &len));
     check_lines(out, len, exp, 2);
     free(out);
 
     o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 4;
     const char *exp2[] = {"\xe4\xb8\xad\xe6\x96\x87", "\xe5\xad\x97\xe7\xac\xa6"};
-    ASSERT_EQ(0, wrap_u8("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97\xe7\xac\xa6", 12, &o, &out, &len));
+    ASSERT_EQ(0, wcwidth_wrap_u8("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97\xe7\xac\xa6", 12, &o, &out, &len));
     check_lines(out, len, exp2, 2);
     free(out);
 
-    ASSERT_EQ(0, wrap_u8("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
+    ASSERT_EQ(0, wcwidth_wrap_u8("", 0, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
     ASSERT_EQ((int64_t) 0, (int64_t) len);
     free(out);
 }
@@ -99,7 +99,7 @@ TEST(wrap_text_basic)
     const char *exp[] = {"line one", "", "line two"};
 
     o.width = 40;
-    ASSERT_EQ(0, wrap_u8_text("line one\n\nline two", 18, &o, &out, &len));
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("line one\n\nline two", 18, &o, &out, &len));
     check_lines(out, len, exp, 3);
     free(out);
 }
@@ -111,7 +111,7 @@ TEST(wrap_embedded_nul)
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
 
     o.width = 5;
-    ASSERT_EQ(0, wrap_u8("ab\x00"
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\x00"
                          "cd ef",
                          8, &o, &out, &len));
     ASSERT_EQ((int64_t) 8, (int64_t) len);
@@ -135,8 +135,8 @@ TEST(wrap_u32_parity)
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
 
     o.width = 5;
-    ASSERT_EQ(0, wrap_u8("h\xc3\xa9llo w\xc3\xb6rld", 13, &o, &out8, &len8));
-    ASSERT_EQ(0, wrap_u32(cps, 11, &o, &out32, &len32));
+    ASSERT_EQ(0, wcwidth_wrap_u8("h\xc3\xa9llo w\xc3\xb6rld", 13, &o, &out8, &len8));
+    ASSERT_EQ(0, wcwidth_wrap_u32(cps, 11, &o, &out32, &len32));
     expect = wcwidth_decode_u32(out8, len8, stack, 64, &count);
     ASSERT_EQ((int64_t) count, (int64_t) len32);
     ASSERT_EQ(0, memcmp(expect, out32, count * sizeof(uint32_t)));
@@ -158,8 +158,8 @@ TEST(wrap_text_u32_parity)
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
 
     o.width = 40;
-    ASSERT_EQ(0, wrap_u8_text("line one\n\nline two", 18, &o, &out8, &len8));
-    ASSERT_EQ(0, wrap_u32_text(cps, 18, &o, &out32, &len32));
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("line one\n\nline two", 18, &o, &out8, &len8));
+    ASSERT_EQ(0, wcwidth_wrap_u32_text(cps, 18, &o, &out32, &len32));
     expect = wcwidth_decode_u32(out8, len8, stack, 64, &count);
     ASSERT_EQ((int64_t) count, (int64_t) len32);
     ASSERT_EQ(0, memcmp(expect, out32, count * sizeof(uint32_t)));
@@ -211,7 +211,7 @@ TEST(wrap_tabsize_zero)
     o.width = 3;
     o.tabsize = 0;
     o.replace_whitespace = false;
-    ASSERT_EQ(0, wrap_u8("a\tb", 3, &o, &out, &len));
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
     ASSERT_EQ(3, len);
     ASSERT_EQ(0, memcmp(out, "a\tb", 3));
     free(out);
@@ -233,7 +233,7 @@ TEST(wrap_lone_continuation_bytes)
         size_t in_len = strlen(inputs[i]);
 
         o.width = 3;
-        int rv = wrap_u8(inputs[i], in_len, &o, &out, &len);
+        int rv = wcwidth_wrap_u8(inputs[i], in_len, &o, &out, &len);
         ASSERT_EQ(0, rv);
         free(out);
     }

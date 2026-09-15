@@ -97,7 +97,7 @@ main(int argc, char **argv)
         if (len == (size_t) -1) /* EOF */
             break;
 
-        int w = width_u8(line, len, WCWIDTH_PARSE, &opts, NULL);
+        int w = wcwidth_width_u8(line, len, WCWIDTH_PARSE, &opts, NULL);
         if (w < 0)
             w = 0;
 

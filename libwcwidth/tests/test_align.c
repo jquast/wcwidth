@@ -21,7 +21,7 @@ call_ljust(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
     int error = WCWIDTH_ERROR_NONE;
     wcwidth_align_opts_t opts = opts_of(dest_width, &fillchar, 1);
-    return ljust_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
+    return wcwidth_ljust_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
 }
 
 static char *
@@ -29,7 +29,7 @@ call_rjust(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
     int error = WCWIDTH_ERROR_NONE;
     wcwidth_align_opts_t opts = opts_of(dest_width, &fillchar, 1);
-    return rjust_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
+    return wcwidth_rjust_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
 }
 
 static char *
@@ -37,7 +37,7 @@ call_center(const char *text, size_t dest_width, char fillchar, size_t *out_len)
 {
     int error = WCWIDTH_ERROR_NONE;
     wcwidth_align_opts_t opts = opts_of(dest_width, &fillchar, 1);
-    return center_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
+    return wcwidth_center_u8(text, strlen(text), WCWIDTH_PARSE, &opts, out_len, &error);
 }
 
 TEST(ljust_basic)
@@ -58,12 +58,12 @@ TEST(ljust_basic)
     free(result);
 
     /* C-only: NULL out_len is allowed */
-    result = ljust_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
+    result = wcwidth_ljust_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
     ASSERT_STREQ("hi   ", result);
     free(result);
 
     /* C-only: NULL error is allowed */
-    result = ljust_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
+    result = wcwidth_ljust_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
     ASSERT_STREQ("hi   ", result);
     free(result);
 }
@@ -84,11 +84,11 @@ TEST(rjust_basic)
     ASSERT_STREQ("  \xe4\xb8\xad", result);
     free(result);
 
-    result = rjust_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
+    result = wcwidth_rjust_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
     ASSERT_STREQ("   hi", result);
     free(result);
 
-    result = rjust_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
+    result = wcwidth_rjust_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
     ASSERT_STREQ("   hi", result);
     free(result);
 }
@@ -109,11 +109,11 @@ TEST(center_basic)
     ASSERT_STREQ("-\xe4\xb8\xad-", result);
     free(result);
 
-    result = center_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
+    result = wcwidth_center_u8("hi", 2, WCWIDTH_PARSE, &opts1, NULL, &error);
     ASSERT_STREQ("  hi  ", result);
     free(result);
 
-    result = center_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
+    result = wcwidth_center_u8("hi", 2, WCWIDTH_PARSE, &opts2, NULL, NULL);
     ASSERT_STREQ("  hi  ", result);
     free(result);
 }
@@ -126,7 +126,7 @@ TEST(ljust_u32_basic)
     int error = WCWIDTH_ERROR_NONE;
     const uint32_t cps[] = {'h', 'i'};
     const uint32_t expect[] = {'h', 'i', ' ', ' ', ' '};
-    uint32_t *result = ljust_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
+    uint32_t *result = wcwidth_ljust_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
     ASSERT_NOT_NULL(result);
     ASSERT_EQ((size_t) 5, len);
     ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
@@ -137,7 +137,7 @@ TEST(ljust_u32_basic)
         const uint32_t zhong[] = {0x4E2D};
         const uint32_t exp2[] = {0x4E2D, ' ', ' '};
 
-        result = ljust_u32(zhong, 1, WCWIDTH_PARSE, &opts2, &len, &error);
+        result = wcwidth_ljust_u32(zhong, 1, WCWIDTH_PARSE, &opts2, &len, &error);
         ASSERT_NOT_NULL(result);
         ASSERT_EQ((size_t) 3, len);
         ASSERT_EQ(0, memcmp(exp2, result, sizeof(exp2)));
@@ -152,7 +152,7 @@ TEST(rjust_u32_basic)
     int error = WCWIDTH_ERROR_NONE;
     const uint32_t cps[] = {'h', 'i'};
     const uint32_t expect[] = {' ', ' ', ' ', 'h', 'i'};
-    uint32_t *result = rjust_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
+    uint32_t *result = wcwidth_rjust_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
     ASSERT_NOT_NULL(result);
     ASSERT_EQ((size_t) 5, len);
     ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
@@ -166,7 +166,7 @@ TEST(center_u32_basic)
     int error = WCWIDTH_ERROR_NONE;
     const uint32_t cps[] = {'h', 'i'};
     const uint32_t expect[] = {' ', ' ', 'h', 'i', ' ', ' '};
-    uint32_t *result = center_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
+    uint32_t *result = wcwidth_center_u32(cps, 2, WCWIDTH_PARSE, &opts1, &len, &error);
     ASSERT_NOT_NULL(result);
     ASSERT_EQ((size_t) 6, len);
     ASSERT_EQ(0, memcmp(expect, result, sizeof(expect)));
@@ -183,7 +183,7 @@ TEST(ljust_huge_dest_width)
     wcwidth_align_opts_t opts1 = opts_of((size_t) -1 - 2, "\xf0\x9f\x98\x80", 4);
     int error = WCWIDTH_ERROR_NONE;
     size_t out_len = 12345;
-    char *result = ljust_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
+    char *result = wcwidth_ljust_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
     ASSERT_NULL(result);
 }
 
@@ -193,7 +193,7 @@ TEST(rjust_huge_dest_width_multibyte_fill)
     wcwidth_align_opts_t opts1 = opts_of(huge, "\xe4\xbd\xa0", 3);
     int error = WCWIDTH_ERROR_NONE;
     size_t out_len = 12345;
-    char *result = rjust_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
+    char *result = wcwidth_rjust_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
     ASSERT_NULL(result);
 }
 
@@ -202,7 +202,7 @@ TEST(center_huge_dest_width)
     wcwidth_align_opts_t opts1 = opts_of((size_t) -1 - 2, "\xf0\x9f\x98\x80", 4);
     int error = WCWIDTH_ERROR_NONE;
     size_t out_len = 12345;
-    char *result = center_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
+    char *result = wcwidth_center_u8("hi", 2, WCWIDTH_PARSE, &opts1, &out_len, &error);
     ASSERT_NULL(result);
 }
 
@@ -219,17 +219,17 @@ TEST(align_control_codes_strict)
     char *result;
 
     error = WCWIDTH_ERROR_NONE;
-    result = ljust_u8("\x01x", 2, WCWIDTH_STRICT, &opts1, NULL, &error);
+    result = wcwidth_ljust_u8("\x01x", 2, WCWIDTH_STRICT, &opts1, NULL, &error);
     ASSERT_NULL(result);
     ASSERT_EQ(WCWIDTH_ERROR_ILLEGAL_CTRL, error);
 
     error = WCWIDTH_ERROR_NONE;
-    result = rjust_u8("\x01x", 2, WCWIDTH_STRICT, &opts2, NULL, &error);
+    result = wcwidth_rjust_u8("\x01x", 2, WCWIDTH_STRICT, &opts2, NULL, &error);
     ASSERT_NULL(result);
     ASSERT_EQ(WCWIDTH_ERROR_ILLEGAL_CTRL, error);
 
     error = WCWIDTH_ERROR_NONE;
-    result = center_u8("\x01x", 2, WCWIDTH_STRICT, &opts3, NULL, &error);
+    result = wcwidth_center_u8("\x01x", 2, WCWIDTH_STRICT, &opts3, NULL, &error);
     ASSERT_NULL(result);
     ASSERT_EQ(WCWIDTH_ERROR_ILLEGAL_CTRL, error);
 }

@@ -38,7 +38,7 @@ measure_width(const char *text, size_t text_len, wcwidth_control_mode_t control_
             .ambiguous_width = ambiguous_width,
             .term_program = term_program,
         };
-        int w = width_u8(text, text_len, control_codes, &opts, error);
+        int w = wcwidth_width_u8(text, text_len, control_codes, &opts, error);
         if (w < 0) {
             return -1;
         }
@@ -257,7 +257,7 @@ center_impl(const char *text, size_t text_len, size_t dest_width, const char *fi
     return result;
 }
 
-/* Signature shared by ljust_u8(), rjust_u8(), and center_u8(). */
+/* Signature shared by wcwidth_ljust_u8(), wcwidth_rjust_u8(), and wcwidth_center_u8(). */
 typedef char *(*justify_fn)(const char *, size_t, size_t, const char *, size_t,
                             wcwidth_control_mode_t, int, const char *, size_t *, int *);
 
@@ -305,7 +305,7 @@ justify_u32(const uint32_t *codepoints, size_t n, size_t dest_width, const char 
 }
 
 char *
-ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+wcwidth_ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
               const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -316,7 +316,7 @@ ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
 }
 
 char *
-rjust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+wcwidth_rjust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
               const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -327,7 +327,7 @@ rjust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
 }
 
 char *
-center_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+wcwidth_center_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
                const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -338,7 +338,7 @@ center_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
 }
 
 uint32_t *
-ljust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+wcwidth_ljust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
                const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -349,7 +349,7 @@ ljust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
 }
 
 uint32_t *
-rjust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+wcwidth_rjust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
                const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -360,7 +360,7 @@ rjust_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
 }
 
 uint32_t *
-center_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+wcwidth_center_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
                 const wcwidth_align_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {

@@ -412,7 +412,7 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
 }
 
 char *
-clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
         const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 {
     if (opts == NULL) {
@@ -424,7 +424,7 @@ clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
 }
 
 uint32_t *
-clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+wcwidth_clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
          const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 {
     char enc_stack[512];
@@ -445,7 +445,7 @@ clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
     }
     {
         size_t byte_len = 0;
-        char *bytes = clip_u8(utf8, enc_len, mode, opts, &byte_len, error);
+        char *bytes = wcwidth_clip_u8(utf8, enc_len, mode, opts, &byte_len, error);
 
         if (utf8 != enc_stack) {
             free(utf8);

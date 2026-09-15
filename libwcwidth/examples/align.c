@@ -93,9 +93,9 @@ main(int argc, char **argv)
         if (len == (size_t) -1) /* EOF */
             break;
 
-        char *lj = ljust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
-        char *rj = rjust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
-        char *ct = center_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
+        char *lj = wcwidth_ljust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
+        char *rj = wcwidth_rjust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
+        char *ct = wcwidth_center_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
 
         printf("%s  %s  %s\n", lj ? lj : "", rj ? rj : "", ct ? ct : "");
 

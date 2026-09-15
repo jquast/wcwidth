@@ -135,7 +135,7 @@ main(int argc, char **argv)
     /* Wrap, preserving paragraph breaks */
     char *out = NULL;
     size_t out_len = 0;
-    if (wrap_u8_text(text, text_len, &opts, &out, &out_len) != 0) {
+    if (wcwidth_wrap_u8_text(text, text_len, &opts, &out, &out_len) != 0) {
         free(text);
         fprintf(stderr, "textwrap: wrapping failed\n");
         return 1;

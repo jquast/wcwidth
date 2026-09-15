@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * Options for clip_u32() and clip_u8().
+ * Options for wcwidth_clip_u32() and wcwidth_clip_u8().
  *
  * Initialize from WCWIDTH_CLIP_OPTS_DEFAULT and set only what differs; a
  * NULL opts argument uses the defaults unchanged.
@@ -36,7 +36,7 @@ typedef struct
     size_t fillchar_len;      /* byte length of fillchar */
 } wcwidth_clip_opts_t;
 
-/* Default options for clip_u32() and clip_u8(). */
+/* Default options for wcwidth_clip_u32() and wcwidth_clip_u8(). */
 extern const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT;
 
 /*
@@ -59,19 +59,19 @@ extern const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT;
  *   out_len:  output: byte length of result (excluding NUL); may be NULL.
  *   error:    output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
  */
-char *clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+char *wcwidth_clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
               const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
 
 /*
- * Codepoint-array variant of clip_u8(): encodes the codepoints to UTF-8,
+ * Codepoint-array variant of wcwidth_clip_u8(): encodes the codepoints to UTF-8,
  * clips, and decodes the result back to a codepoint array.  The returned
  * array is *out_len* codepoints and the caller does a single free() of it.
- * Error and ownership semantics are as for clip_u8(): on NULL return, *error*
+ * Error and ownership semantics are as for wcwidth_clip_u8(): on NULL return, *error*
  * is a nonzero wcwidth_error_t for a WCWIDTH_STRICT violation, or
  * WCWIDTH_ERROR_NONE for an allocation failure.  opts->fillchar stays UTF-8
  * bytes.
  */
-uint32_t *clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+uint32_t *wcwidth_clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
                    const wcwidth_clip_opts_t *opts, size_t *out_len, int *error);
 
 #ifdef __cplusplus
