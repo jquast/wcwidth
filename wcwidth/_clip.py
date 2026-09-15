@@ -830,7 +830,6 @@ def clip(
         >>> clip('a\tb', 0, 10)  # Tab expanded to spaces
         'a       b'
     """
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     start = max(start, 0)
     if end <= start:
         return ''
@@ -838,6 +837,8 @@ def clip(
     # Fast path: printable ASCII only.
     if text.isascii() and text.isprintable():
         return text[start:end]
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # No escape sequences => no SGR tracking needed.
     has_esc = '\x1b' in text

@@ -150,7 +150,6 @@ def width(
         1
     """
     # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
     # in consideration of this function a likely "hot path", they are inline, breaking many pylint
     # complexity rules.
@@ -158,6 +157,8 @@ def width(
     # Fast path for ASCII printable (no tabs, escapes, or control chars)
     if text.isascii() and text.isprintable():
         return len(text)
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # Fast parse: if no horizontal cursor movements are possible, switch to 'ignore' mode.
     # Only check longer strings - the detection overhead hurts short string performance.

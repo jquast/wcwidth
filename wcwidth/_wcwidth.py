@@ -139,7 +139,6 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
 
     See :ref:`Specification` for details of cell measurement.
     """
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     ucs = ord(wc) if wc else 0
 
     # small optimization: early return of 1 for printable ASCII, this provides
@@ -147,6 +146,8 @@ def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) ->
     # less than 1% impact to others.
     if 32 <= ucs < 0x7f:
         return 1
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # C0/C1 control characters are -1 for compatibility with POSIX-like calls
     if ucs and ucs < 32 or 0x07F <= ucs < 0x0A0:

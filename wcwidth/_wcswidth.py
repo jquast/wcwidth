@@ -92,11 +92,12 @@ def wcswidth(
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     _wcwidth = wcwidth if ambiguous_width == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)
 
@@ -233,12 +234,13 @@ def wcstwidth(
     """
     # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type
     # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # This function intentionally keeps all logic inline for performance.
 
     # Fast path: pure ASCII printable strings are always width == length
     if n is None and pwcs.isascii() and pwcs.isprintable():
         return len(pwcs)
+
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # Resolve terminal software for override lookup
     term_canonical = resolve_terminal(term_program)
