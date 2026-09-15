@@ -54,12 +54,9 @@ HAS_C_EXTENSION = False
 if not os.environ.get('WCWIDTH_PYTHON', ''):
     try:
         # local
-        # import ... as _wcwidth_c: binds only the submodule name, so mypy
-        # does not see 'wcwidth' redefined by the later function imports.
-        # The import statement (unlike 'from . import _wcwidth_c', which
-        # pylint suggests via consider-using-from-import) always consults
-        # sys.modules, so a poisoned/broken submodule raises here even on
-        # reload -- see test_import_error_fallback.
+        # 'import ... as' binds only the submodule name, keeping mypy from
+        # seeing 'wcwidth' redefined below, and always consults sys.modules so
+        # a broken submodule raises even on reload.
         import wcwidth._wcwidth_c as _wcwidth_c  # noqa: F401  pylint:disable=unused-import,consider-using-from-import
     except ImportError:  # pragma: no cover - exercised by test_c_extension.py
         pass

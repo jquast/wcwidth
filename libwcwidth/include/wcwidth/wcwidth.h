@@ -36,10 +36,8 @@ int wcswidth_u32(const uint32_t *codepoints, size_t n, int ambiguous_width);
 /*
  * UTF-8 variant of wcswidth_u32().
  *
- * *n*: number of UTF-8 bytes to process.  Exactly *n* bytes are read; the
- * text is never treated as NUL-terminated, so embedded NULs are permitted and
- * measure as zero-width.  There is no "compute the length for me" sentinel:
- * pass strlen(utf8) explicitly if that is what you mean.
+ * *n*: number of UTF-8 bytes to process.  Exactly *n* bytes are read, never
+ * treating the text as NUL-terminated; pass strlen(utf8) for a C string.
  */
 int wcswidth_u8(const char *utf8, size_t n, int ambiguous_width);
 

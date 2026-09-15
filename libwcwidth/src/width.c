@@ -409,9 +409,8 @@ scan_osc_body_u32(const uint32_t *cp, size_t n, size_t start, size_t *term_start
  *
  * CSI, nF, Fe and the rest are ASCII-only, so an encoded copy of the ASCII
  * run can go straight to the byte classifier and its byte length is the
- * codepoint count.  Delegating keeps rules like "an unterminated CSI consumes
- * only ESC [" in one place; a second hand-written copy of that rule is what
- * previously made IGNORE mode disagree with the byte path.
+ * codepoint count, keeping rules like "an unterminated CSI consumes only
+ * ESC [" in one place.
  *
  * ESC ( / ESC ) designate a single character that may itself be non-ASCII, so
  * they are counted directly rather than through the ASCII run.
@@ -431,10 +430,9 @@ escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
     }
 
     /*
-     * Copy in two steps.  Nearly every sequence here is under 16 codepoints,
-     * and copying the full 64 for each one dominated the cost on SGR-dense
-     * text.  A classification that consumed the whole copy may have been
-     * truncated by it, so only then is the wider copy needed.
+     * Copy 16 first: nearly every sequence is shorter, and copying 64 each
+     * time dominates on SGR-dense text.  The classifier misreads a truncated
+     * run as an unterminated sequence, so widen and retry before classifying.
      */
     for (;;) {
         size_t j = 0;
@@ -443,13 +441,14 @@ escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
             buf[j] = (char) cp[idx + j];
             j++;
         }
+        if (j == cap && idx + j < n && cp[idx + j] < 0x80 && cap < sizeof(buf)) {
+            cap = sizeof(buf);
+            continue;
+        }
         if (j == 0 || !wcwidth_escape_classify(buf, j, 0, &result) || result.length == 0) {
             return 1;
         }
-        if (result.length < j || idx + j >= n || cap == sizeof(buf)) {
-            return result.length;
-        }
-        cap = sizeof(buf);
+        return result.length;
     }
 }
 
@@ -896,6 +895,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                      * width. */
                     current_col -= 1;
                 }
+                last_measured_idx = -2; /* prevent double application */
                 idx += consumed;
                 continue;
             }
@@ -1540,6 +1540,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
             if (vs15_narrow && last_measured_w == 2) {
                 current_col -= 1;
             }
+            last_measured_idx = -2; /* prevent double application */
             idx++;
             continue;
         }

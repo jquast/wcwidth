@@ -101,88 +101,48 @@ corrections, and grapheme clustering are discussed in the Python documentation_.
 String length conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every string function takes an explicit length, and every one of them reads exactly that many
-units:
+Every string function takes an explicit length and reads exactly that many units:
 
 ``_u32`` functions
     count codepoints in the array,
 ``_u8`` functions
     count bytes.
 
-There is no "measure it for me" sentinel.  A library that accepts one has to call ``strlen(3)``
-on your behalf, which means trusting that a NUL exists inside the buffer -- when it does not, the
-scan runs off the end of the allocation, and the bug surfaces far from the call that caused it.
-Passing the length you already know is both faster and impossible to get wrong in that way.  When
-the text really is a NUL-terminated C string, write ``strlen(text)`` at the call site, where the
-assumption is visible.
-
-Because the length is authoritative, a NUL is an ordinary zero-width character rather than a
-terminator: text may contain NULs anywhere, they measure as zero-width, and they survive into the
-output of the transforms, whose ``*out_len`` reports the true byte length.
+There is no NUL-terminated sentinel form; pass ``strlen(text)`` when the text is a C string.  The
+length is authoritative, so a NUL is an ordinary zero-width character rather than a terminator: it
+may appear anywhere, and survives into transform output, whose ``*out_len`` is the true length.
 
 Alternate encodings
 ~~~~~~~~~~~~~~~~~~~
 
-This library is UTF-8 centric.  Every ``_u8`` function takes and returns UTF-8 bytes; every
-``_u32`` function takes and returns a ``uint32_t`` codepoint array.  The two families mirror
-each other: use ``_u8`` when your text is UTF-8, ``_u32`` when you hold decoded codepoints.
-The measurement functions (``wcswidth_u32()``, ``wcstwidth_u32()``, ``width_u32()``) are
-encoding-neutral either way -- a width number is a width number.
+Use ``_u8`` when your text is UTF-8 and ``_u32`` when you hold decoded codepoints; the two
+families mirror each other.  Auxiliary strings are UTF-8 in *both* families -- the ``fillchar``
+padding argument and the ``initial_indent``/``subsequent_indent``/``placeholder`` wrap options --
+since they are short constants, not the text being processed.
 
-The text transforms (``ljust_u32``, ``rjust_u32``, ``center_u32``, ``clip_u32``, ``wrap_u32``,
-``wrap_u32_text``, ``wcwidth_escape_strip_u32``) take and return codepoint arrays.  Auxiliary
-strings -- the ``fillchar`` padding argument and the ``initial_indent``/``subsequent_indent``/
-``placeholder`` wrap options -- are UTF-8 bytes in both families: they are short constants the
-caller writes once, not the text being processed.
-
-Text in another encoding (Latin-1, CP437, Shift-JIS, ...) is transcoded at the boundary; the
-library itself never sees the legacy bytes.  Two shapes are common:
-
-* Transcode the legacy bytes to UTF-8 once with iconv(3) or ICU, then use the ``_u8`` forms
-  end-to-end -- the simplest path.
-* When the program already holds decoded codepoints (its own tables, or a mixed-encoding
-  pipeline), use the ``_u32`` forms and re-encode the result with iconv(3) or ICU.
-  ``wcwidth_encode_u32()`` and ``wcwidth_decode_u32()`` move between the two
-  representations when a caller needs both:
+Other encodings (Latin-1, CP437, Shift-JIS, ...) are transcoded by the caller; the library carries
+no encoding tables.  Either transcode to UTF-8 once with iconv(3) or ICU and use the ``_u8`` forms
+throughout, or use the ``_u32`` forms and re-encode the result.  ``wcwidth_encode_u32()`` and
+``wcwidth_decode_u32()`` convert between the two representations:
 
 .. code-block:: c
 
-    /* CP437 "caf\x82" decoded to codepoints by the caller (own tables,
-     * or iconv to UTF-8 then wcwidth_decode_u32). */
-    uint32_t cps[] = {'c', 'a', 'f', 0xE9};  /* 0x82 in CP437 is U+00E9 */
-    size_t n = 4, out_len, utf8_len, in_left, out_left;
+    /* CP437 "caf\x82" decoded to codepoints by the caller. */
+    uint32_t cps[] = {'c', 'a', 'f', 0xE9};   /* 0x82 in CP437 is U+00E9 */
+    char stack[64], *utf8;
+    size_t out_len, utf8_len;
     uint32_t *out;
-    char utf8_stack[64], *utf8, *in, *buf, *outp;
-    iconv_t cd;
 
-    out = ljust_u32(cps, n, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, &out_len, NULL);
-    /* out is a codepoint array: {c, a, f, U+00E9, ' '} (5 entries). */
+    out = ljust_u32(cps, 4, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, &out_len, NULL);
+    /* out is {c, a, f, U+00E9, ' '}; encode for the caller's iconv(3) or ICU. */
+    utf8 = wcwidth_encode_u32(out, out_len, stack, sizeof(stack), &utf8_len);
 
-    /* Re-encode to CP437 via iconv, with UTF-8 as the interchange form.
-     * A manual byte cast only works when every codepoint happens to fit
-     * the target encoding; iconv reports EILSEQ for the rest, so the
-     * caller can substitute or fail deliberately. */
-    utf8 = wcwidth_encode_u32(out, out_len, utf8_stack, sizeof(utf8_stack), &utf8_len);
-    buf = malloc(utf8_len + 1);
-    cd = iconv_open("CP437", "UTF-8");
-    if (cd == (iconv_t) -1)
-        return -1;
-    in = utf8;
-    outp = buf;
-    in_left = utf8_len;
-    out_left = utf8_len;  /* reserve the final byte of buf for the NUL */
-    if (iconv(cd, &in, &in_left, &outp, &out_left) == (size_t) -1)
-        ; /* EILSEQ: this codepoint has no CP437 form -- substitute or fail */
-    iconv_close(cd);
-    *outp = '\0'; /* buf is the CP437 result: "caf\x82 " */
-    free(buf);
-    if (utf8 != utf8_stack)
+    if (utf8 != stack)
         free(utf8);
     free(out);
 
-The library deliberately provides no legacy decoding: the codepoint-array interface keeps it
-free of encoding tables, and every serious C project already has a transcoding pipeline.
-ICU's ``ucnv_*`` API is the portable alternative to iconv(3).
+Re-encoding to a legacy charset is the caller's iconv(3) or ICU (``ucnv_*``) call; a byte cast
+works only when every codepoint fits the target, where iconv reports ``EILSEQ`` instead.
 
 wcwidth_u32()
 ~~~~~~~~~~~~~
@@ -346,86 +306,56 @@ codepoint-array form, and allocates its result instead.
 Differences from the Python package
 -----------------------------------
 
-``width_u32()`` and ``width_u8()`` parse the sequences that move the cursor
-within a line or change how much room text occupies: SGR, horizontal cursor
-movement (CUF, CUB, HPA), and OSC 66 text sizing.  That is the whole of it --
-this is not a general terminal emulator.  Every other recognized sequence is
-counted as zero-width, and sequences whose effect on the column cannot be
-known from the text alone -- screen clears, scrolls, vertical movement -- are
-reported as indeterminate, which is what ``WCWIDTH_STRICT`` turns into an
-error.  ``wcswidth_*()`` and ``wcstwidth_*()`` parse nothing at all: matching
-their Python counterparts, they take no ``wcwidth_control_mode_t`` and return
--1 for any escape sequence.
+``width_u32()`` and ``width_u8()`` parse only the sequences that move the cursor within a line or
+change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB, HPA), and OSC 66 text
+sizing.  This is not a terminal emulator.  Every other recognized sequence counts as zero-width, and
+sequences whose column effect cannot be known from the text alone -- screen clears, scrolls,
+vertical movement -- are indeterminate, which ``WCWIDTH_STRICT`` turns into an error.
+``wcswidth_*()`` and ``wcstwidth_*()`` parse nothing: like their Python counterparts they take no
+``wcwidth_control_mode_t`` and return -1 for any escape sequence.
 
 The text transforms are simpler than the Python ones:
 
-* OSC 8 hyperlinks are not implemented at all.  Python parses them, clips
-  them as semantic units, and continues them across wrapped lines with a
-  synthesized ``id=`` parameter; the C11 library treats an OSC 8 sequence as
-  an ordinary zero-width OSC, so it measures correctly but is never
-  rewritten.  A ``clip_u8()`` window that begins or ends inside a hyperlink
-  therefore yields an unbalanced pair -- clipping ``[0, 2)`` keeps the opener
-  but drops the closer, leaving the link open across whatever is printed
-  next -- and ``wrap_u8()`` does not re-open the link on each line.  Callers
-  that transform hyperlinked text must re-emit the opener and terminator
-  themselves.
-* ``clip_u8()`` does not parse horizontal cursor movement (the Python
-  ``overtyping`` painter's algorithm has no C11 counterpart) or OSC 66 text
-  sizing; every sequence other than SGR is passed through as zero-width.
-* ``wrap_u8()`` and ``wrap_u8_text()`` fit line width using ``width_u8()``,
-  but split words on the ASCII space alone, where Python's ``wrap()`` splits
-  on any run of whitespace.  Python's ``break_on_hyphens``,
-  ``fix_sentence_endings``, and ``propagate_sgr`` have no counterpart here, so
-  ``wcwidth_wrap_opts_t`` does not offer them: a hyphenated word is broken
-  mid-word rather than at the hyphen, a sentence-ending period is not widened
-  to two spaces, and SGR state is not re-opened on each wrapped line, so
-  colour set before a break does not survive it.
+* OSC 8 hyperlinks are not implemented; an OSC 8 sequence is treated as an ordinary zero-width OSC.
+  It measures correctly but is never rewritten, so a ``clip_u8()`` window starting or ending inside
+  a hyperlink yields an unbalanced pair, and ``wrap_u8()`` does not re-open the link on each line.
+  Callers must re-emit the opener and terminator themselves.
+* ``clip_u8()`` does not parse horizontal cursor movement (there is no counterpart to Python's
+  ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as zero-width.
+* ``wrap_u8()`` and ``wrap_u8_text()`` split words on the ASCII space alone, where Python's
+  ``wrap()`` splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
+  ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
+  mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
 
-``ljust_u8()``, ``rjust_u8()``, and ``center_u8()`` have nothing to list here:
-they delegate measurement to ``width_u8()`` and produce the same output as the
-Python ``ljust()``, ``rjust()``, and ``center()``.
+``ljust_u8()``, ``rjust_u8()`` and ``center_u8()`` match the Python functions exactly.
 
 Malformed escape sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A sequence that is *well formed* -- one a conforming program would actually
-emit -- measures the same here as in Python.  A sequence that is malformed may
-not: an unterminated CSI or OSC, a lone ESC at the end of a buffer, or an
-introducer followed by a byte the standard does not allow there can differ by
-a cell or two, and ``wcwidth_escape_strip()`` may keep bytes that Python's
-``strip_sequences()`` drops, or the reverse.  Feeding random escape soup to
-both, roughly 2% of inputs measure differently.
+Well-formed sequences -- those a conforming program would emit -- measure the same here as in
+Python.  Malformed ones may not: an unterminated CSI or OSC, a lone ESC at the end of a buffer, or
+an introducer followed by a byte the standard disallows can differ by a cell or two, and
+``wcwidth_escape_strip()`` may keep bytes that Python's ``strip_sequences()`` drops, or the
+reverse.  Over random escape soup, roughly 2% of inputs measure differently.
 
-The cause is that Python recognizes sequences with a regular expression while
-this library uses a hand-written scanner, and the two do not agree on where a
-malformed sequence ends.  How narrow that is worth stating: for a character-set
-designation ``ESC (``, every one of the 79 final bytes ECMA-48 permits
-(``0x30``-``0x7e``, which is every real designation -- ``ESC ( B`` for US
-ASCII, ``ESC ( 0`` for DEC line drawing, and the rest) measures identically in
-both, as does every intermediate byte.  Of the 33 C0 controls, which the
-standard does not permit in that position at all, exactly one differs:
+Python recognizes sequences by regular expression and this library by hand-written scanner, and the
+two disagree on where a malformed sequence ends.  The divergence is narrow: for a character-set
+designation ``ESC (``, all 79 final bytes ECMA-48 permits measure identically, as does every
+intermediate byte.  Only one of the 33 C0 controls -- which are not permitted there at all --
+differs:
 
 .. code-block:: c
 
     width_u8("X\x1b(\nY", 5, WCWIDTH_PARSE, &opts, NULL);   /* 2; Python says 3 */
 
-Python's pattern is ``\x1b[()].`` and ``.`` does not match a newline, so it
-leaves those three bytes as literal text; this library consumes them as a
-sequence.  A real terminal does neither -- ECMA-48 executes a C0 control
-encountered inside an escape sequence and keeps waiting for the final byte, so
-xterm moves the cursor down a line and the sequence stays open.
+Python's ``\x1b[()].`` does not match a newline and leaves the three bytes as text; this library
+consumes them as a sequence.  A real terminal does neither.  ``WCWIDTH_IGNORE`` behaves the same,
+since it too must decide where a sequence ends.
 
-The disagreement is the same under ``WCWIDTH_IGNORE``, which strips control
-codes but still has to decide where each sequence ends.
-
-Neither answer is more useful than the other, since neither is what a terminal
-would do, and terminals differ among themselves on malformed input.  If your
-text is arbitrary bytes rather than sequences you emitted yourself, do not
-depend on the two implementations agreeing.  ``WCWIDTH_STRICT`` is the
-exception: it refuses indeterminate input rather than guessing a width for it,
-and over the same random-escape corpus the C and Python implementations
-returned identical results -- the same widths, and the same errors with the
-same messages -- for every input.
+Neither answer is more correct, and terminals themselves differ on malformed input, so do not rely
+on the two implementations agreeing when the text is arbitrary bytes.  ``WCWIDTH_STRICT`` is the
+exception: it refuses indeterminate input rather than guessing, and over the same corpus C and
+Python returned identical widths and identical error messages for every input.
 
 Supported Terminals
 -------------------

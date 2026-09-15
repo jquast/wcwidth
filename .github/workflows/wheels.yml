@@ -2,12 +2,17 @@ name: Build Wheels
 
 on:
   push:
-    tags: ['v*']
+    # Release tags are bare versions ("0.9.0"); 'v0.9.0' and '0.9.0rc1' match too.
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
+# Two cibuildwheel lines split the matrix; see [tool.cibuildwheel] in
+# pyproject.toml. Keep each Action tag in step with its requirements-wheels*.in.
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: cp38-cp313 wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,6 +35,33 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build_wheels_314:
+    name: cp314 wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: pypa/cibuildwheel@v3.4
+        env:
+          CIBW_BUILD: cp314-* cp314t-*
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: wheels-314-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
   build_sdist:

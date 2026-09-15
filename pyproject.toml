@@ -23,12 +23,9 @@ keywords = [
   "wcwidth",
   "xterm",
 ]
-# No [project] license key: the pre-639 license *table* is deprecated as of
-# setuptools 77, the PEP 639 SPDX string and license-files need setuptools>=77
-# (which dropped Python 3.8, still supported here), and the table form is the
-# only one setuptools<77 accepts.  setuptools>=77 auto-includes LICENSE in the
-# wheel metadata; older versions rely on the license classifier below and on
-# LICENSE in the sdist via MANIFEST.in.
+# No [project] license key: the PEP 639 form needs setuptools>=77 (which drops
+# Python 3.8) and the table form is deprecated there.  LICENSE reaches the
+# wheel automatically on setuptools>=77, the sdist via MANIFEST.in.
 authors = [
   { name = "Jeff Quast", email = "contact@jeffquast.com" },
 ]
@@ -58,10 +55,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/jquast/wcwidth"
 
-# The C extension 'wcwidth._wcwidth_c' is optional: setup.py skips it when the
-# build would fail (no compiler, PyPy, WCWIDTH_PYTHON=1) and the
-# Python implementation is used instead.
-
 [tool.setuptools]
 include-package-data = false
 packages = [
@@ -72,32 +65,23 @@ packages = [
 [tool.setuptools.package-data]
 wcwidth = [ "py.typed", "*.pyi" ]
 
-# The optional C extension 'wcwidth._wcwidth_c' is declared in setup.py with
-# the classic ext_modules API (see there for why, and for the graceful
-# fallback when the build cannot compile).
+# The optional C extension 'wcwidth._wcwidth_c' is declared in setup.py, which
+# skips it when it cannot build (no compiler, PyPy, WCWIDTH_PYTHON=1).
 
 [tool.cibuildwheel]
-# per-version wheels for every supported CPython, including free-threaded
-# 3.13t/3.14t builds; PyPy users get the Python sdist fallback
-build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp315-* cp313t-* cp314t-*"
-# musllinux (Alpine) wheels are built for every regular CPython version.
-# Free-threaded x musllinux is skipped: upstream musl free-threaded build
-# support is newer and less established than manylinux/macOS/Windows, so it
-# is left off until it can be verified rather than shipped speculatively.
-# extend the arch lists below to add more (e.g. manylinux/musllinux
-# i686/ppc64le/s390x, windows arm64) -- one line each
+# Two pinned cibuildwheel lines build the matrix between them, because no single
+# one covers it: 2.23.x keeps the glibc 2.17 manylinux image but stops at cp313,
+# and 3.4.x knows cp314 but moves to glibc 2.28.  CIBW_BUILD selects each half
+# (tox -e build-wheels / build-wheels314; the same split in wheels.yml), so this
+# `build` is only the default for a bare cibuildwheel run.  PyPy uses the sdist.
+build = "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* cp313t-*"
+# Free-threaded x musllinux is skipped as unverified upstream.  Add further
+# targets (i686/ppc64le/s390x, windows arm64) to the arch lists below.
 skip = "cp313t-musllinux_* cp314t-musllinux_*"
-# Run the test suite against every built wheel, including musllinux (under
-# QEMU emulation for aarch64 -- see .github/workflows/wheels.yml) and the
-# free-threaded builds, so a broken wheel is caught here rather than after
-# publishing. {project} is the checked-out repo (tests/ lives there, not in
-# the wheel). --import-mode=importlib is required: pytest's default
-# "prepend" import mode walks up from tests/ (which has __init__.py) to the
-# first ancestor without one -- {project} itself -- and inserts *that* onto
-# sys.path ahead of site-packages, so "import wcwidth" would silently
-# resolve to the uncompiled source tree instead of the wheel this is meant
-# to verify. pytest-cov is required only because tox.ini's [pytest] section
-# bakes in --cov flags that pytest reads from rootdir regardless of tox.
+# Test every built wheel.  {project} is the checked-out repo, since tests/ is
+# not in the wheel.  --import-mode=importlib is required, or pytest puts
+# {project} on sys.path ahead of site-packages and imports the source tree
+# instead of the wheel.  pytest-cov satisfies the --cov flags in tox.ini.
 test-requires = "pytest pytest-cov"
 test-command = "python -m pytest {project}/tests --verbose --durations=10 --import-mode=importlib"
 
@@ -108,4 +92,5 @@ archs = [ "x86_64", "aarch64" ]
 archs = [ "x86_64", "arm64" ]
 
 [tool.cibuildwheel.windows]
-archs = [ "x86_64" ]
+# Windows archs are x86 / AMD64 / ARM64; "x86_64" matches no Windows config.
+archs = [ "AMD64" ]

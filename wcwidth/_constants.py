@@ -167,19 +167,12 @@ def resolve_terminal(term_program: bool | str = False) -> str | None:
 
 def _clamp_ambiguous_width(ambiguous_width: int) -> int:
     """
-    Clamp *ambiguous_width* into the only range UAX #11 defines: 1 or 2.
+    Clamp *ambiguous_width* to 1 or 2, the only widths UAX #11 defines.
 
-    East Asian Ambiguous is narrow or wide and nothing else.  Out-of-range
-    values are clamped rather than rejected: width measurement is called from
-    rendering hot loops, and a new exception path there would break callers
-    passing a computed value.
-
-    Note this is a behaviour change from silently treating every value other
-    than 2 as 1 -- an ``ambiguous_width`` of 99 now measures wide, not narrow.
+    Clamped rather than rejected: this is called from rendering hot loops, where
+    raising on a computed value would be a hostile change.
     """
-    # operator.index() mirrors the C extension's PyLong_AsLongAndOverflow():
-    # a non-integer is a type error in both, a bool is an int in both, and an
-    # arbitrarily large int clamps rather than overflowing.
+    # operator.index() matches the C extension's PyLong_AsLongAndOverflow().
     value = _index(ambiguous_width)
     if value < 1:
         return 1

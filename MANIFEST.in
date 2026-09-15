@@ -1,9 +1,16 @@
-# sdist contents: mirrors the previous hatchling sdist include list, plus the
-# libwcwidth C sources needed to build the optional extension from source.
+# sdist contents.  An allowlist: nothing ships that is not named here.
 include LICENSE README.rst tox.ini .gitignore .pylintrc
 include requirements-*.in requirements-*.txt
 recursive-include wcwidth *.py *.pyi py.typed
-recursive-include libwcwidth *
+# libwcwidth sources only; a wildcard would also pick up local build output
+# (build/, build-cmake/, .coverage).  Add new source directories as they appear.
+recursive-include libwcwidth/src *.c *.h
+recursive-include libwcwidth/include *.h
+recursive-include libwcwidth/tests *.c *.h
+recursive-include libwcwidth/examples *.c
+recursive-include libwcwidth/cmake *.in
+include libwcwidth/CMakeLists.txt libwcwidth/Makefile libwcwidth/README.rst
+include libwcwidth/.clang-format
 recursive-include bin *.py
 recursive-include code_templates *.j2 *.py
 recursive-include docs *.rst *.py

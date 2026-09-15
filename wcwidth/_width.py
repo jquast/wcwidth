@@ -79,7 +79,6 @@ def width(
     ambiguous_width: int = 1,
     term_program: bool | str = False,
 ) -> int:
-    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     r"""
     Return printable width of text containing many kinds of control codes and sequences.
 
@@ -150,6 +149,7 @@ def width(
         >>> width('1\x1b[10C', control_codes='ignore')   # faster but wrong in this case
         1
     """
+    ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
     # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks
     # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
     # in consideration of this function a likely "hot path", they are inline, breaking many pylint

@@ -1,0 +1,5 @@
+# cibuildwheel 3.x is the first line that knows cp314; it builds only the
+# targets requirements-wheels.in cannot (see tox -e build-wheels314).  Its
+# manylinux base image is newer (glibc 2.28), which is why the older line is
+# kept for cp38-cp313 rather than replaced.
+cibuildwheel==3.4.*

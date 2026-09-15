@@ -37,6 +37,9 @@ TYPEDEF_RE = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
 FUNC_RE = re.compile(r'^(.*?)\b(\w+)\s*\(([^()]*)\)\s*;?$', re.DOTALL)
 EXTERN_RE = re.compile(r'extern\s+(const\s+.+?)\s+(\w+)\s*(?:\[\s*\])?\s*;', re.DOTALL)
 PARAM_RE = re.compile(r'^\*?(\w+)\*?:\s*(.*)$')
+# A "Word:" or "Two words:" heading, as opposed to prose that happens to
+# contain a colon.
+SECTION_RE = re.compile(r'^[A-Za-z_][\w ]*:(\s|$)')
 
 # Names already emitted across all headers (wcstwidth.h redeclares wcwidth.h's functions).
 EMITTED: set[str] = set()
@@ -184,7 +187,10 @@ def description(comment: str | None,
             if m and m.group(1) in param_names:
                 current = m.group(1)
                 fields.append((current, escape_stars(m.group(2).strip())))
-            elif current is not None and ':' not in line:
+            # A continuation line ends the field only when it opens a new one:
+            # a bare "Word:" heading.  Testing for any colon instead would
+            # split ordinary prose out of the field and leave it stranded.
+            elif current is not None and not SECTION_RE.match(line):
                 name, desc = fields[-1]
                 fields[-1] = (name, desc + ' ' + escape_stars(line))
             elif line in ('Parameters:', 'Arguments:'):

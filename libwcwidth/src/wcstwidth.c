@@ -155,6 +155,7 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
             if (vs15_narrow && last_measured_w == 2) {
                 total_width -= 1;
             }
+            last_measured_idx = -2; /* prevent double application */
             idx += 1;
             continue;
         }

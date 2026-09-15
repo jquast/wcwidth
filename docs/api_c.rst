@@ -41,8 +41,7 @@ Unicode character display width: wcwidth, wcswidth, wcstwidth.
 
    UTF-8 variant of wcswidth_u32().
 
-   measure as zero-width.  There is no "compute the length for me" sentinel:
-   :param n: number of UTF-8 bytes to process.  Exactly \*n\* bytes are read; the text is never treated as NUL-terminated, so embedded NULs are permitted and pass strlen(utf8) explicitly if that is what you mean.
+   :param n: number of UTF-8 bytes to process.  Exactly \*n\* bytes are read, never treating the text as NUL-terminated; pass strlen(utf8) for a C string.
 
 .. c:function:: int wcstwidth_u32(const uint32_t *codepoints, size_t n, int ambiguous_width, const char *term_program)
 
@@ -136,9 +135,9 @@ Main entry-points for string display width: width_u32 / width_u8.
 .. c:function:: int width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts, int *error)
 
 
-   Measure the visible width of text, including terminal control sequences
-   such as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.  width_u32() encodes its codepoints to UTF-8 and
-   measures as width_u8().
+   Measure the visible width of text, including terminal control sequences such
+   as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.
+   width_u32() encodes its codepoints to UTF-8 and measures as width_u8().
 
    Returns the width in display cells, or -1 on error.
 
