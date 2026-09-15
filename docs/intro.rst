@@ -321,6 +321,12 @@ Use `clip()`_ to extract a substring by column positions, preserving terminal se
     >>> clip('中文字', 1, 5, fillchar='.')
     '.文.'
 
+    >>> # 'end' defaults to -1, meaning "to the end of the line"
+    >>> clip('中文字', 1)
+    ' 文字'
+    >>> clip('\x1b[1;31mHello world\x1b[0m', 6)
+    '\x1b[1;31mworld\x1b[0m'
+
     >>> # SGR codes are propagated by default - result begins with active style
     >>> # and ends with reset if styles are active
     >>> clip('\x1b[1;31mHello world\x1b[0m', 6, 11)
