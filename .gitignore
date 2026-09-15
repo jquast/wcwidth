@@ -8,6 +8,7 @@ __pycache__
 *.pyc
 *.swp
 build
+*.so
 dist
 docs/_build
 htmlcov

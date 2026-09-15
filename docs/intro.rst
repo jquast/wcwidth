@@ -644,6 +644,13 @@ History
 =======
 0.8.4 *unreleased* ('master' branch, only)
   * **Bugfix** Support ITU T.416 colon-format SGR color parameters, `PR #239`_.
+  * **Bugfix** OSC 66 text sizing sequences without a text field, such as ``\x1b]66;w=5\x07``,
+    are now recognized by `width()`_ and `clip()`_, `PR #247`_.
+  * **Bugfix** ``ambiguous_width`` values outside the 1 or 2 defined by UAX #11 are now clamped
+    instead of honored, `PR #247`_.
+  * **Bugfix** Locally built extension modules no longer leak into the sdist, `PR #247`_.
+  * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
+    ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #247`_.
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
@@ -912,6 +919,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
+.. _`PR #247`: https://github.com/jquast/wcwidth/pull/247
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #190`: https://github.com/jquast/wcwidth/issues/190
