@@ -10,6 +10,8 @@ import glob
 import textwrap
 import importlib.util
 
+import jinja2
+
 from typing import Sequence
 
 # Executed by tox, $ tox -e update
@@ -19,6 +21,10 @@ from typing import Sequence
 # example in README.rst.
 
 PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+JINJA_ENV = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
+    keep_trailing_newline=True,
+    undefined=jinja2.StrictUndefined)
 PATH_HEADERS = os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth')
 PATH_DATA = os.path.join(PATH_UP, 'data')
 PATH_DOCS = os.path.join(PATH_UP, 'docs')
@@ -29,7 +35,9 @@ README_DOC = os.path.join(PATH_UP, 'README.rst')
 COMMENT_RE = re.compile(r'/\*(.*?)\*/', re.DOTALL)
 MACRO_RE = re.compile(r'#define\s+(\w+)\s*(.*)$')
 GUARD_IFNDEF_RE = re.compile(r'^\s*#\s*ifndef\s+(\w+)')
-SKIP_LINE_RE = re.compile(r'^\s*#\s*(?:ifdef|endif|include)\b|^\s*extern\s+"C"\s*\{|^\s*\}\s*$')
+SKIP_LINE_RE = re.compile(r'^\s*#\s*(?:ifdef|endif|include)\b|^\s*extern\s+"C"\s*\{')
+CPP_GUARD_RE = re.compile(r'^\s*#\s*ifdef\s+__cplusplus')
+CLOSE_BRACE_RE = re.compile(r'^\s*\}\s*$')
 ENUM_RE = re.compile(r'typedef\s+enum\s*\{(.*)\}\s*(\w+)\s*;', re.DOTALL)
 STRUCT_RE = re.compile(r'typedef\s+struct\s*\{(.*)\}\s*(\w+)\s*;', re.DOTALL)
 FUNC_PTR_RE = re.compile(r'typedef\s+(.+?)\(\s*\*\s*(\w+)\s*\)\s*\(([^()]*)\)\s*;', re.DOTALL)
@@ -37,7 +45,7 @@ TYPEDEF_RE = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
 FUNC_RE = re.compile(r'^(.*?)\b(\w+)\s*\(([^()]*)\)\s*;?$', re.DOTALL)
 EXTERN_RE = re.compile(r'extern\s+(const\s+.+?)\s+(\w+)\s*(?:\[\s*\])?\s*;', re.DOTALL)
 PARAM_RE = re.compile(r'^\*?(\w+)\*?:\s*(.*)$')
-# A "Word:" or "Two words:" heading, as opposed to prose that happens to
+# A "Word:" or "Two words:" heading, as opposed to a line that happens to
 # contain a colon.
 SECTION_RE = re.compile(r'^[A-Za-z_][\w ]*:(\s|$)')
 
@@ -85,6 +93,7 @@ def preprocess_header(text: str) -> tuple[str, list[tuple[int, str, str]]]:
     macros = []
     guard_names = set()
     offset = 0
+    in_cpp_guard = False
     for line in text.splitlines(keepends=True):
         if m := GUARD_IFNDEF_RE.match(line):
             guard_names.add(m.group(1))
@@ -93,6 +102,14 @@ def preprocess_header(text: str) -> tuple[str, list[tuple[int, str, str]]]:
             if m.group(1) not in guard_names:
                 macros.append((offset, m.group(1), m.group(2).strip()))
             continue
+        # The '}' closing extern "C" sits alone inside '#ifdef __cplusplus'.
+        # Every other bare '}' closes a function body and must be kept, or
+        # brace depth never returns to zero and the rest of the header is
+        # swallowed into one unparsable statement.
+        if in_cpp_guard and CLOSE_BRACE_RE.match(line):
+            in_cpp_guard = False
+            continue
+        in_cpp_guard = bool(CPP_GUARD_RE.match(line))
         if SKIP_LINE_RE.match(line):
             continue
         body_parts.append(line)
@@ -124,11 +141,20 @@ def split_statements(masked: str) -> list[tuple[int, int]]:
     stmts = []
     depth = 0
     start = 0
+    body_start = -1
     for i, c in enumerate(masked):
         if c == '{':
             depth += 1
+            if depth == 1:
+                body_start = i
         elif c == '}':
             depth -= 1
+            # A definition (static inline) carries no ';'.  Close it at the
+            # declarator and discard the body; a typedef runs on to its name.
+            if depth == 0 and not masked[start:i].lstrip().startswith('typedef'):
+                if span := trim_span(masked, (start, body_start)):
+                    stmts.append(span)
+                start = i + 1
         elif c == ';' and depth == 0:
             if span := trim_span(masked, (start, i + 1)):
                 stmts.append(span)
@@ -169,7 +195,7 @@ def escape_stars(text: str) -> str:
 
 def description(comment: str | None,
                 param_names: Sequence[str] = ()) -> tuple[list[str], list[tuple[str, str]]]:
-    """Split a header comment into prose lines and :param: fields."""
+    """Split a header comment into lines and :param: fields."""
     body = []
     fields: list[tuple[str, str]] = []
     current = None
@@ -189,7 +215,7 @@ def description(comment: str | None,
                 fields.append((current, escape_stars(m.group(2).strip())))
             # A continuation line ends the field only when it opens a new one:
             # a bare "Word:" heading.  Testing for any colon instead would
-            # split ordinary prose out of the field and leave it stranded.
+            # split a continuation out of the field and leave it stranded.
             elif current is not None and not SECTION_RE.match(line):
                 name, desc = fields[-1]
                 fields[-1] = (name, desc + ' ' + escape_stars(line))
@@ -403,22 +429,8 @@ def header_files() -> list[str]:
 
 
 def render_api_doc() -> str:
-    out = [
-        f'.. Generated by wcwidth code generation (bin/{os.path.basename(__file__)}); do not edit.',
-        '',
-        '.. _c-api:',
-        '',
-        'C11 Public API',
-        '==============',
-        '',
-        '**This C11 API is a release candidate.**  It is released together with the Python',
-        '`wcwidth` package, riding along in the same PyPI releases and git tags so that it',
-        'can be used and reported on, but it is not yet covered by the SEMVER_ promise that',
-        'the Python API makes: function signatures, header layout, and the contents of',
-        '``wcwidth_config.h`` may still change.  From 1.0 onward the C11 API becomes stable',
-        'within a major version, as the Python API is today.',
-        '',
-    ]
+    """Render docs/api_c.rst: the template, then the header doc comments."""
+    out = []
     for path in header_files():
         with open(path, encoding='utf-8') as fin:
             text = fin.read()
@@ -426,8 +438,9 @@ def render_api_doc() -> str:
         if section:
             out.extend(section)
             out.append('')
-    out.append('.. _SEMVER: https://semver.org')
-    return '\n'.join(out).rstrip() + '\n'
+    return JINJA_ENV.get_template('api_c.rst.j2').render(
+        generator=f'bin/{os.path.basename(__file__)}',
+        sections='\n'.join(out).rstrip()).rstrip() + '\n'
 
 
 def update_doc(path: str, pattern: str, replacement: str) -> bool:
@@ -529,18 +542,9 @@ def unicode_source_headers() -> list[tuple[str, str]]:
 
 def unicode_version_page() -> str:
     """Render docs/unicode_version.rst from the Unicode data file headers."""
-    return (
-        '=====================\n'
-        'Unicode release files\n'
-        '=====================\n'
-        '\n'
-        'This library aims to be forward-looking, portable, and most correct.\n'
-        'The most current release of this API is based on the Unicode Standard\n'
-        'release files:\n'
-        '\n'
-        '\n'
-        + ''.join(f'``{name}``\n  *{date}*\n\n' for name, date in unicode_source_headers())
-    )
+    return JINJA_ENV.get_template('unicode_version.rst.j2').render(
+        generator=f'bin/{os.path.basename(__file__)}',
+        source_headers=unicode_source_headers())
 
 
 def main() -> None:

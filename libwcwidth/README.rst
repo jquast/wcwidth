@@ -5,9 +5,7 @@ libwcwidth
 A portable C11 library for measuring the displayed width of Unicode strings in a terminal,
 derived from the Python wcwidth_ project.
 
-**This library is a release candidate.**  It rides along in the wcwidth git tags so that it can
-be used and reported on, but its API is not yet frozen: function signatures, header layout, and
-the contents of ``wcwidth_config.h`` may change before 1.0.
+**Status of C11 library is a release candidate.**
 
 Building
 --------

@@ -10,15 +10,15 @@ The Python documentation_ closely matches this C library, except that the C API 
 codepoint array interfaces.
 
 The lowest-level functions are derived from POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
-`wcswidth(3)`_, which this library implements as ``wcwidth_u32()`` and ``wcswidth_u32()``.  These
+`wcswidth(3)`_, which this library implements as `wcwidth_u32()`_ and `wcswidth_u32()`_.  These
 functions return -1 when C0 and C1 control codes other than NUL are present; NUL measures as
 zero-width.  They do not parse terminal escape sequences: any escape sequence contains control
 codes, so these functions return -1 for it.
 
-``width_u8()`` is a higher-level wrapper of ``wcswidth_u8()`` that also measures terminal control
+`width_u8()`_ is a higher-level wrapper of `wcswidth_u8()`_ that also measures terminal control
 sequences, like colors, bold, tabstops, and horizontal cursor movement.
 
-``wcstwidth_u8()`` applies corrections for a specific terminal program and version, as described
+`wcstwidth_u8()`_ applies corrections for a specific terminal program and version, as described
 in the Python Corrections_ documentation.
 
 Quick Start
@@ -98,6 +98,38 @@ The full function reference is the `C11 API`_ page, generated from the headers; 
 demonstrates each function by example.  Conceptual topics such as ambiguous width, terminal
 corrections, and grapheme clustering are discussed in the Python documentation_.
 
+Memory ownership
+~~~~~~~~~~~~~~~~
+
+The text transforms allocate their result and return ``NULL`` on failure, be certain to ``free()``
+on success:
+
+.. code-block:: c
+
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    char *out;
+
+    opts.v_end = 3;
+    out = clip_u8("中文字", 9, WCWIDTH_PARSE, &opts, NULL, NULL);
+    if (out == NULL)
+        return -1;
+    /* ... use out ... */
+    free(out);
+
+`wcwidth_encode_u32()`_ and `wcwidth_decode_u32()`_ instead return the caller's scratch buffer
+if the result fits, allocating only when it does not.  ``free()`` these with the condition that
+the result is at a new address:
+
+.. code-block:: c
+
+    char stack[64], *utf8 = wcwidth_encode_u32(cps, n, stack, sizeof(stack), &utf8_len);
+
+    if (utf8 == NULL)
+        return -1;
+    /* ... use utf8, utf8_len ... */
+    if (utf8 != stack)
+        free(utf8);
+
 String length conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -122,8 +154,8 @@ since they are short constants, not the text being processed.
 
 Other encodings (Latin-1, CP437, Shift-JIS, ...) are transcoded by the caller; the library carries
 no encoding tables.  Either transcode to UTF-8 once with iconv(3) or ICU and use the ``_u8`` forms
-throughout, or use the ``_u32`` forms and re-encode the result.  ``wcwidth_encode_u32()`` and
-``wcwidth_decode_u32()`` convert between the two representations:
+throughout, or use the ``_u32`` forms and re-encode the result.  `wcwidth_encode_u32()`_ and
+`wcwidth_decode_u32()`_ convert between the two representations:
 
 .. code-block:: c
 
@@ -131,11 +163,22 @@ throughout, or use the ``_u32`` forms and re-encode the result.  ``wcwidth_encod
     uint32_t cps[] = {'c', 'a', 'f', 0xE9};   /* 0x82 in CP437 is U+00E9 */
     char stack[64], *utf8;
     size_t out_len, utf8_len;
+    wcwidth_align_opts_t opts = WCWIDTH_ALIGN_OPTS_DEFAULT;
     uint32_t *out;
 
-    out = ljust_u32(cps, 4, 5, " ", 1, WCWIDTH_PARSE, 1, NULL, &out_len, NULL);
+    opts.dest_width = 5;
+    out = ljust_u32(cps, 4, WCWIDTH_PARSE, &opts, &out_len, NULL);
+    if (out == NULL)
+        return -1;
+
     /* out is {c, a, f, U+00E9, ' '}; encode for the caller's iconv(3) or ICU. */
     utf8 = wcwidth_encode_u32(out, out_len, stack, sizeof(stack), &utf8_len);
+    if (utf8 == NULL) {
+        free(out);
+        return -1;
+    }
+
+    /* ... hand utf8/utf8_len to iconv(3) or ICU ... */
 
     if (utf8 != stack)
         free(utf8);
@@ -160,7 +203,7 @@ NUL), ``2`` for wide East Asian characters, and ``-1`` for control codes:
 
 ``ambiguous_width`` (1 or 2) sets the width of East Asian Ambiguous characters, and only of those:
 U+2640 above is Ambiguous, so it answers to the second argument, while U+2630 is Wide and measures
-2 under either setting.  A single codepoint needs no ``_u8`` variant; use ``wcswidth_u8()`` to
+2 under either setting.  A single codepoint needs no ``_u8`` variant; use `wcswidth_u8()`_ to
 measure text.
 
 wcswidth_u32() and wcswidth_u8()
@@ -179,7 +222,7 @@ when any control code other than NUL is present:
 wcstwidth_u32() and wcstwidth_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Terminal-aware variants of ``wcswidth_u32()`` and ``wcswidth_u8()``; the ``term_program``
+Terminal-aware variants of `wcswidth_u32()`_ and `wcswidth_u8()`_; the ``term_program``
 argument applies terminal-specific corrections:
 
 .. code-block:: c
@@ -191,8 +234,8 @@ width_u32() and width_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Measure the visible width of text including terminal control sequences: colors, bold, tabstops,
-horizontal cursor movement, and OSC 66 Text Sizing.  ``width_u32()`` encodes
-its codepoints to UTF-8 and measures as ``width_u8()``:
+horizontal cursor movement, and OSC 66 Text Sizing.  `width_u32()`_ encodes
+its codepoints to UTF-8 and measures as `width_u8()`_:
 
 .. code-block:: c
 
@@ -221,49 +264,72 @@ codes:
 ljust_u8(), rjust_u8(), and center_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Justify UTF-8 text to a display width, filling with a UTF-8 byte string.  Each returns a
+Justify UTF-8 text to ``opts.dest_width`` display cells, filling with a UTF-8 byte string.  Each returns a
 ``malloc``\ 'd NUL-terminated string the caller must ``free``:
 
 .. code-block:: c
 
-    ljust_u8("コンニチハ", 15, 11, "*", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+    wcwidth_align_opts_t opts = WCWIDTH_ALIGN_OPTS_DEFAULT;
+    char *out;
+
+    opts.fillchar = "*";
+    opts.dest_width = 11;
+
+    out = ljust_u8("コンニチハ", 15, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "コンニチハ*" */
-    rjust_u8("コンニチハ", 15, 11, "*", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+    free(out);
+
+    out = rjust_u8("コンニチハ", 15, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "*コンニチハ" */
-    center_u8("cafe\xcc\x81", 6, 6, "*", 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+    free(out);
+
+    opts.dest_width = 6;
+    out = center_u8("cafe\xcc\x81", 6, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "*café*" */
+    free(out);
 
 clip_u8()
 ~~~~~~~~~
 
-Clip text to a visible column range ``[v_start, v_end)``, filling partially visible graphemes
+Clip text to the visible column range ``[opts.v_start, opts.v_end)``, filling partially visible graphemes
 with a fill string.  Returns a ``malloc``\ 'd NUL-terminated string the caller must ``free``:
 
 .. code-block:: c
 
-    clip_u8("中文字", 9, 0, 3, WCWIDTH_PARSE, 8, 1, NULL, true, " ", 1, NULL, NULL);
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    char *out;
+
+    opts.v_end = 3;
+    out = clip_u8("中文字", 9, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "中 " */
+    free(out);
 
-    clip_u8("中文字", 9, 1, 5, WCWIDTH_PARSE, 8, 1, NULL, true, ".", 1, NULL, NULL);
+    opts.v_start = 1;
+    opts.v_end = 5;
+    opts.fillchar = ".";
+    out = clip_u8("中文字", 9, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* ".文." */
+    free(out);
 
-Pass ``SIZE_MAX`` as ``v_end`` to clip only from ``v_start`` through the final column of *text*,
-without measuring it first -- the counterpart of the ``-1`` default of Python's ``clip()``:
+Leave ``opts.v_end`` at its ``SIZE_MAX`` default to clip from ``v_start`` through the final column
+of *text*, without measuring it first -- the counterpart of the ``-1`` default of Python's `clip()`_:
 
 .. code-block:: c
 
-    clip_u8("\x1b[1;34mHello world\x1b[0m", 24, 6, SIZE_MAX, WCWIDTH_PARSE, 8, 1, NULL, true,
-            " ", 1, NULL, NULL);
+    opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    opts.v_start = 6;   /* v_end stays SIZE_MAX: through the final column */
+    out = clip_u8("\x1b[1;34mHello world\x1b[0m", 22, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "\x1b[1;34mworld\x1b[0m" */
+    free(out);
 
-``clip_u32()`` is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
+`clip_u32()`_ is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
 codepoints.
 
 wrap_u8() and wrap_u8_text()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Wrap UTF-8 text into lines of at most ``opts.width`` display cells.  ``wrap_u8()`` collapses all
-whitespace, including newlines; ``wrap_u8_text()`` preserves input newlines as paragraph breaks.
+Wrap UTF-8 text into lines of at most ``opts.width`` display cells.  `wrap_u8()`_ collapses all
+whitespace, including newlines; `wrap_u8_text()`_ preserves input newlines as paragraph breaks.
 Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
 
 .. code-block:: c
@@ -274,11 +340,14 @@ Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
 
     opts.width = 5;
     wrap_u8("hello world", 11, &opts, &out, &out_len);    /* "hello\nworld" */
+    free(out);
+
     opts.width = 4;
     wrap_u8("コンニチハ", 15, &opts, &out, &out_len);       /* "コン\nニチ\nハ" */
+    free(out);
 
-When the placeholder does not fit within the given width (``max_lines`` truncation), ``wrap_u8()``
-returns ``-2`` rather than ``-1``, so callers can raise a tailored error.  ``wcwidth_wrap_lines_u8()``
+When the placeholder does not fit within the given width (``max_lines`` truncation), `wrap_u8()`_
+returns ``-2`` rather than ``-1``, so callers can raise a tailored error.  `wcwidth_wrap_lines_u8()`_
 additionally reports each line's start offset in the output buffer, which matters when a line
 contains ``'\n'`` from the placeholder itself:
 
@@ -287,10 +356,12 @@ contains ``'\n'`` from the placeholder itself:
     size_t *offsets, count;
     wcwidth_wrap_lines_u8("one two", 7, &opts, &out, &out_len, &offsets, &count);
     /* out is "one\ntwo", offsets = {0, 4} */
+    free(offsets);
+    free(out);
 
 OSC 66 text sizing is atomic to the word splitter: a sequence and its display text are one
 unbreakable unit, so a line is never broken inside one, even at a space or hyphen in the display
-text.  Python's ``wrap()`` behaves the same way.  ``wrap_u32()`` and ``wrap_u32_text()`` are the
+text.  Python's `wrap()`_ behaves the same way.  `wrap_u32()`_ and `wrap_u32_text()`_ are the
 codepoint-array forms.
 
 wcwidth_escape_strip()
@@ -309,34 +380,37 @@ written to a caller-supplied buffer and is always NUL-terminated:
 The return value is the byte length the stripped text needs, excluding the terminator, so the
 buffer must hold ``needed + 1`` bytes; the output was truncated whenever the return value is
 greater than or equal to ``out_cap``.  A caller sizing its own buffer can measure first by passing
-an ``out_cap`` of 0, then allocate and fill.  ``wcwidth_escape_strip_u32()`` is the
+an ``out_cap`` of 0, then allocate and fill.  `wcwidth_escape_strip_u32()`_ is the
 codepoint-array form, and allocates its result instead.
 
 Differences from the Python package
 -----------------------------------
 
-``width_u32()`` and ``width_u8()`` parse only the sequences that move the cursor within a line or
-change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB, HPA), and OSC 66 text
-sizing.  This is not a terminal emulator.  Every other recognized sequence counts as zero-width, and
-sequences whose column effect cannot be known from the text alone -- screen clears, scrolls,
-vertical movement -- are indeterminate, which ``WCWIDTH_STRICT`` turns into an error.
-``wcswidth_*()`` and ``wcstwidth_*()`` parse nothing: like their Python counterparts they take no
-``wcwidth_control_mode_t`` and return -1 for any escape sequence.
+`width_u32()`_ and `width_u8()`_ parse only the sequences that move the cursor within a line or
+change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB, HPA), and OSC 66
+text sizing.  Every other recognized sequence counts as zero-width.
+
+Screen clears, scrolls, and vertical movement are indeterminate: their column effect depends on
+terminal state that the text does not carry.  ``WCWIDTH_STRICT`` reports them as an error, and the
+other modes count them as zero-width.
+
+``wcswidth_*()`` and ``wcstwidth_*()`` take no ``wcwidth_control_mode_t`` and return -1 for any
+escape sequence, matching their Python counterparts.
 
 The text transforms are simpler than the Python ones:
 
 * OSC 8 hyperlinks are not implemented; an OSC 8 sequence is treated as an ordinary zero-width OSC.
-  It measures correctly but is never rewritten, so a ``clip_u8()`` window starting or ending inside
-  a hyperlink yields an unbalanced pair, and ``wrap_u8()`` does not re-open the link on each line.
+  It measures correctly but is never rewritten, so a `clip_u8()`_ window starting or ending inside
+  a hyperlink yields an unbalanced pair, and `wrap_u8()`_ does not re-open the link on each line.
   Callers must re-emit the opener and terminator themselves.
-* ``clip_u8()`` does not parse horizontal cursor movement (there is no counterpart to Python's
+* `clip_u8()`_ does not parse horizontal cursor movement (there is no counterpart to Python's
   ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as zero-width.
-* ``wrap_u8()`` and ``wrap_u8_text()`` split words on the ASCII space alone, where Python's
-  ``wrap()`` splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
+* `wrap_u8()`_ and `wrap_u8_text()`_ split words on the ASCII space alone, where Python's
+  `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
   ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
   mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
 
-``ljust_u8()``, ``rjust_u8()`` and ``center_u8()`` match the Python functions exactly.
+`ljust_u8()`_, `rjust_u8()`_ and `center_u8()`_ match the Python functions exactly.
 
 Malformed escape sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,7 +418,7 @@ Malformed escape sequences
 Well-formed sequences -- those a conforming program would emit -- measure the same here as in
 Python.  Malformed ones may not: an unterminated CSI or OSC, a lone ESC at the end of a buffer, or
 an introducer followed by a byte the standard disallows can differ by a cell or two, and
-``wcwidth_escape_strip()`` may keep bytes that Python's ``strip_sequences()`` drops, or the
+`wcwidth_escape_strip()`_ may keep bytes that Python's `strip_sequences()`_ drops, or the
 reverse.  Over random escape soup, roughly 2% of inputs measure differently.
 
 Python recognizes sequences by regular expression and this library by hand-written scanner, and the
@@ -385,16 +459,6 @@ The following canonical names are recognized; common ``TERM``/``TERM_PROGRAM`` a
 For the most accurate corrections, query the terminal's software version via XTVERSION_
 (``CSI > q``) and pass the canonical name.  See the Python Corrections_ documentation for details.
 
-Grapheme break classes
-----------------------
-
-Classifying a codepoint for grapheme cluster segmentation used to mean a chain of up to ten binary
-searches, run once per codepoint.  The classes are disjoint, so they are packed into a single
-nibble-per-codepoint table and resolved in one lookup, costing 15 KB.  Grapheme iteration is
-2-2.4x faster as a result.
-
-Every other table is searched with :c:func:`wcwidth_bisearch`.
-
 Unicode Version
 ---------------
 
@@ -402,6 +466,29 @@ Tables generated from Unicode |unicode_version|.
 
 .. |unicode_version| replace:: 18.0.0
 
+.. _`center_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.center_u8
+.. _`clip()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.clip
+.. _`clip_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.clip_u32
+.. _`clip_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.clip_u8
+.. _`ljust_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.ljust_u8
+.. _`rjust_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.rjust_u8
+.. _`strip_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.strip_sequences
+.. _`wcstwidth_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcstwidth_u8
+.. _`wcswidth_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcswidth_u32
+.. _`wcswidth_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcswidth_u8
+.. _`wcwidth_decode_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_decode_u32
+.. _`wcwidth_encode_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_encode_u32
+.. _`wcwidth_escape_strip()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_escape_strip
+.. _`wcwidth_escape_strip_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_escape_strip_u32
+.. _`wcwidth_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_u32
+.. _`wcwidth_wrap_lines_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_wrap_lines_u8
+.. _`width_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.width_u32
+.. _`width_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.width_u8
+.. _`wrap()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wrap
+.. _`wrap_u32()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wrap_u32
+.. _`wrap_u32_text()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wrap_u32_text
+.. _`wrap_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wrap_u8
+.. _`wrap_u8_text()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wrap_u8_text
 .. _wcwidth: https://github.com/jquast/wcwidth
 .. _documentation: https://wcwidth.readthedocs.io/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections

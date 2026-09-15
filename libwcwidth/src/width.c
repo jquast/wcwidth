@@ -932,8 +932,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             {
                 int w = wcwidth_u32(ucs, ambiguous_width);
                 if (w < 0) {
-                    /* Non-printable: shouldn't happen after our C0/C1 checks,
-                     * but handle gracefully. */
+                    /* Non-printable; unreachable after the C0/C1 checks
+                     * above, skipped defensively. */
                     idx += consumed;
                     continue;
                 }
@@ -1083,9 +1083,9 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
  * pre-decoded uint32_t array instead of raw UTF-8 bytes.  This avoids the
  * encode->decode round-trip that width_u32 otherwise imposes.
  *
- * Escape sequences consist entirely of ASCII-range codepoints, so we encode
- * the region around each ESC into a small stack buffer to reuse the byte-based
- * wcwidth_escape_classify.
+ * Escape sequences consist entirely of ASCII-range codepoints, so the region
+ * around each ESC is encoded into a small stack buffer to reuse the byte-based
+ * wcwidth_escape_classify().
  */
 static int
 _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int ambiguous_width,

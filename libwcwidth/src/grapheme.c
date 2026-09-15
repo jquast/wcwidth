@@ -219,9 +219,8 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
     /* GB9c: Indic conjunct cluster
      * \p{InCB=Linker} \p{InCB=Extend}* x \p{InCB=Consonant}
      *
-     * Unicode 18.0.0 (UAX #29 revision 48) dropped the leading \p{InCB=Consonant}
-     * requirement: a linker no longer needs a consonant before it to join the
-     * following consonant.
+     * Unicode 18.0.0 (UAX #29 revision 48) drops the leading
+     * \p{InCB=Consonant} requirement.
      */
     if (cp_idx > 0 && is_incb_consonant(cp[cp_idx])) {
         size_t i = cp_idx;
@@ -433,12 +432,9 @@ wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos)
         return 0;
     }
 
-    /* Find the codepoint index corresponding to byte position *pos*.
-     * We want the codepoint whose byte range covers (pos - 1), i.e. the
-     * codepoint just before the break we're looking for.
-     *
-     * offsets[i] is the byte start of codepoint i.
-     * Find the largest i such that offsets[i] < pos.
+    /* Find the codepoint index corresponding to byte position *pos*: the
+     * codepoint whose byte range covers (pos - 1).  offsets[i] is the byte
+     * start of codepoint i, so this is the largest i with offsets[i] < pos.
      */
     cp_pos = 0;
     for (i = 1; i < cp_count; i++) {

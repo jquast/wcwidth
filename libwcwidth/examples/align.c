@@ -82,18 +82,20 @@ main(int argc, char **argv)
     char *line = NULL;
     size_t cap = 0;
     const char fill = ' ';
+    wcwidth_align_opts_t opts = WCWIDTH_ALIGN_OPTS_DEFAULT;
+
+    opts.dest_width = (size_t) width;
+    opts.fillchar = &fill;
+    opts.fillchar_len = 1;
 
     while (1) {
         size_t len = readline(stdin, &line, &cap);
         if (len == (size_t) -1) /* EOF */
             break;
 
-        char *lj =
-            ljust_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
-        char *rj =
-            rjust_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
-        char *ct =
-            center_u8(line, len, (size_t) width, &fill, 1, WCWIDTH_PARSE, 1, NULL, NULL, NULL);
+        char *lj = ljust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
+        char *rj = rjust_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
+        char *ct = center_u8(line, len, WCWIDTH_PARSE, &opts, NULL, NULL);
 
         printf("%s  %s  %s\n", lj ? lj : "", rj ? rj : "", ct ? ct : "");
 

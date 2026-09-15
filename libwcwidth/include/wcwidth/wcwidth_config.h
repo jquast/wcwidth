@@ -1,8 +1,8 @@
 /*
  * Library version, Unicode version, and UTF-8 configuration macros.
  *
- * The version macros track the Python `wcwidth` package release: C11 and
- * Python ship together, so the same version number applies to both.
+ * The version macros track the Python ``wcwidth`` package release, so the
+ * same version number applies to both.
  */
 
 /*

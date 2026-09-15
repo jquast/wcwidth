@@ -26,6 +26,17 @@
 
 #define ESC 0x1b
 
+const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT = {
+    .v_start = 0,
+    .v_end = SIZE_MAX,
+    .tabsize = 8,
+    .ambiguous_width = 1,
+    .term_program = NULL,
+    .propagate_sgr = true,
+    .fillchar = " ",
+    .fillchar_len = 1,
+};
+
 typedef struct
 {
     char *buf;
@@ -309,8 +320,8 @@ fail:
     return false;
 }
 
-char *
-clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
+static char *
+clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
         const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
         size_t *out_len, int *error)
@@ -400,11 +411,21 @@ clip_u8(const char *text, size_t text_len, size_t v_start, size_t v_end,
     return strbuf_detach(&sb, out_len);
 }
 
+char *
+clip_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
+        const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
+{
+    if (opts == NULL) {
+        opts = &WCWIDTH_CLIP_OPTS_DEFAULT;
+    }
+    return clip_impl(text, text_len, opts->v_start, opts->v_end, mode, opts->tabsize,
+                     opts->ambiguous_width, opts->term_program, opts->propagate_sgr,
+                     opts->fillchar, opts->fillchar_len, out_len, error);
+}
+
 uint32_t *
-clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
-         wcwidth_control_mode_t control_codes, int tabsize, int ambiguous_width,
-         const char *term_program, bool propagate_sgr, const char *fillchar, size_t fillchar_len,
-         size_t *out_len, int *error)
+clip_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
+         const wcwidth_clip_opts_t *opts, size_t *out_len, int *error)
 {
     char enc_stack[512];
     size_t enc_len;
@@ -424,9 +445,7 @@ clip_u32(const uint32_t *codepoints, size_t n, size_t v_start, size_t v_end,
     }
     {
         size_t byte_len = 0;
-        char *bytes =
-            clip_u8(utf8, enc_len, v_start, v_end, control_codes, tabsize, ambiguous_width,
-                    term_program, propagate_sgr, fillchar, fillchar_len, &byte_len, error);
+        char *bytes = clip_u8(utf8, enc_len, mode, opts, &byte_len, error);
 
         if (utf8 != enc_stack) {
             free(utf8);

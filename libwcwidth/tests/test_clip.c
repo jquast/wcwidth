@@ -11,8 +11,13 @@ cs_assert(const char *text, size_t start, size_t end, const char *expected)
     size_t len = 0;
     int error = WCWIDTH_ERROR_NONE;
     char fillchar = ' ';
-    char *last = clip_u8(text, strlen(text), start, end, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar,
-                         1, &len, &error);
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    char *last;
+
+    opts.v_start = start;
+    opts.v_end = end;
+    opts.fillchar = &fillchar;
+    last = clip_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &len, &error);
     ASSERT_NOT_NULL(last);
     ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
     ASSERT_EQ(len, strlen(last));
@@ -51,8 +56,13 @@ TEST(clip_u32_basic)
     char fillchar = ' ';
     const uint32_t cps[] = {'h', 'e', 'l', 'l', 'o'};
     const uint32_t expect[] = {'e', 'l', 'l'};
-    uint32_t *result =
-        clip_u32(cps, 5, 1, 4, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar, 1, &len, &error);
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    uint32_t *result;
+
+    opts.v_start = 1;
+    opts.v_end = 4;
+    opts.fillchar = &fillchar;
+    result = clip_u32(cps, 5, WCWIDTH_PARSE, &opts, &len, &error);
     ASSERT_NOT_NULL(result);
     ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
     ASSERT_EQ((size_t) 3, len);
@@ -64,8 +74,9 @@ TEST(clip_u32_basic)
         const uint32_t zwhw[] = {0x4E2D, 0x6587};
         const uint32_t exp2[] = {0x4E2D, ' '};
 
-        result =
-            clip_u32(zwhw, 2, 0, 3, WCWIDTH_PARSE, 8, 1, NULL, true, &fillchar, 1, &len, &error);
+        opts.v_start = 0;
+        opts.v_end = 3;
+        result = clip_u32(zwhw, 2, WCWIDTH_PARSE, &opts, &len, &error);
         ASSERT_NOT_NULL(result);
         ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
         ASSERT_EQ((size_t) 2, len);

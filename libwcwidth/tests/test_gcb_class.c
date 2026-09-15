@@ -76,8 +76,9 @@ TEST(gcb_class_matches_the_search_chain)
 }
 
 /*
- * terminal_override.c asks the class table what it used to ask WCWIDTH_GRAPHEME_EXTEND
- * directly; equivalent only while nothing ahead of Extend in precedence is in that table.
+ * terminal_override.c resolves Extend through the class table rather than
+ * WCWIDTH_GRAPHEME_EXTEND directly; the two agree only while nothing ahead of
+ * Extend in precedence appears in that table.
  */
 TEST(gcb_extend_class_matches_the_extend_table)
 {
