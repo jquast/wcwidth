@@ -526,6 +526,11 @@ def test_resolve_terminal_strips_whitespace(value, expected):
     ('\u0915\u093e', 'kitty', 1),
     ('\u0915\u093e', 'foot', 1),
     ('\u0915\u093e', 'alacritty', 2),
+    # GHA + VIRAMA + ANUSVARA + TA, a conjunct whose override key spans the
+    # cluster *and* the following character, matched by the first phase of the
+    # two-phase override lookup.
+    ('\u0918\u094d\u0902\u0924', 'kitty', 1),
+    ('\u0918\u094d\u0902\u0924', 'terminology', 4),
 ])
 def test_wcswidth_language_grapheme(text, term_program, expected):
     """Language grapheme clusters use per-terminal override tables."""
@@ -538,6 +543,8 @@ def test_wcswidth_language_grapheme(text, term_program, expected):
     ('\u0915\u093e', 'kitty', 1),  # DEVANAGARI LETTER KA + VOWEL SIGN AA
     ('\u0915\u093e', 'foot', 1),
     ('\u0c05\u0c02', 'kitty', 1),  # TELUGU LETTER A + SIGN ANUSVARA
+    ('\u0918\u094d\u0902\u0924', 'kitty', 1),  # GHA + VIRAMA + ANUSVARA + TA
+    ('\u0918\u094d\u0902\u0924', 'terminology', 4),
 ])
 def test_width_language_grapheme(text, term_program, expected):
     """Width() applies language grapheme overrides."""
