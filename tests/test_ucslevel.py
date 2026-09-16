@@ -8,7 +8,7 @@ def test_list_versions_single():
     """list_versions returns only the latest version."""
     versions = wcwidth.list_versions()
     assert len(versions) == 1
-    assert versions[0] == "17.0.0"
+    assert versions[0] == "18.0.0"
 
 
 def test_latest():

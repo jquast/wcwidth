@@ -4,7 +4,9 @@
 Introduction
 ============
 
-This library is mainly for CLI/TUI programs that carefully produce output for Terminals.
+This Python library is mainly for CLI/TUI programs that carefully produce output for Terminals.
+
+See page libwcwidth_ about the portable C11 library.
 
 Installation
 ------------
@@ -470,12 +472,12 @@ recognized names:
 .. code-block:: python
 
     >>> wcwidth.list_term_programs()
-    ('alacritty', 'apple_terminal', 'bobcat', 'contour', 'extraterm', 'foot',
-     'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty', 'konsole', 'mintty',
-     'mlterm', 'pterm', 'putty', 'rio', 'rxvt', 'rxvt-unicode-256color', 'st',
-     'st-256color', 'tabby', 'terminology', 'urxvt', 'vscode', 'vte', 'warp',
-     'warpterminal', 'wezterm', 'xterm', 'xterm-ghostty', 'xterm-kitty',
-     'xterm.js')
+    ('absolutetelnet/ssh', 'alacritty', 'apple_terminal', 'bobcat', 'contour',
+     'extraterm', 'foot', 'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty',
+     'konsole', 'mintty', 'mlterm', 'pterm', 'putty', 'rio', 'rxvt',
+     'rxvt-unicode-256color', 'st', 'st-256color', 'tabby', 'terminology',
+     'urxvt', 'vscode', 'vte', 'warp', 'warpterminal', 'wezterm', 'xterm',
+     'xterm-ghostty', 'xterm-kitty', 'xterm.js')
 
 .. END_LIST_TERM_PROGRAMS
 
@@ -543,6 +545,7 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
+.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

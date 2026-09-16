@@ -872,11 +872,11 @@ same version number applies to both.
 
 .. c:macro:: WCWIDTH_VERSION_PATCH
 
-   Defined as ``3``.
+   Defined as ``4``.
 
 .. c:macro:: WCWIDTH_VERSION
 
-   Defined as ``"0.8.3"``.
+   Defined as ``"0.8.4"``.
 
 .. c:macro:: WCWIDTH_UNICODE_VERSION
 

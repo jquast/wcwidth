@@ -37,9 +37,9 @@ TEST(u8_parse_basic)
     ASSERT_EQ(3, wcwidth_width_u8("a\0bc", 4, WCWIDTH_PARSE, &opts, &error));
     /* ZWJ family with a resolved terminal reaches the u8 cluster scan. */
     opts.term_program = "kitty";
-    ASSERT_EQ(2,
-              wcwidth_width_u8("\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7",
-                       (size_t) 18, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(2, wcwidth_width_u8(
+                     "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7",
+                     (size_t) 18, WCWIDTH_PARSE, &opts, &error));
 }
 
 TEST(u8_ignore)
@@ -172,8 +172,8 @@ TEST(csi_huge_param_saturates)
     size_t i;
 
     for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
-        int w = wcwidth_width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT,
-                         &error);
+        int w = wcwidth_width_u8(inputs[i], strlen(inputs[i]), WCWIDTH_PARSE,
+                                 &WCWIDTH_WIDTH_OPTS_DEFAULT, &error);
         ASSERT_TRUE(w >= 0);
     }
 }

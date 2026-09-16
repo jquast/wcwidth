@@ -1712,8 +1712,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
 }
 
 int
-wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const wcwidth_width_opts_t *opts,
-         int *error)
+wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode,
+                 const wcwidth_width_opts_t *opts, int *error)
 {
     int tabsize;
     int ambiguous_width;
@@ -1766,7 +1766,7 @@ wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode, const 
 
 int
 wcwidth_width_u32(const uint32_t *codepoints, size_t n, wcwidth_control_mode_t mode,
-          const wcwidth_width_opts_t *opts, int *error)
+                  const wcwidth_width_opts_t *opts, int *error)
 {
     int tabsize;
     int ambiguous_width;
