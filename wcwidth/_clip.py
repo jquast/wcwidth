@@ -813,7 +813,7 @@ def clip(
 
         >>> clip('\x1b[1;34mHello world\x1b[0m', 6, 11)
         '\x1b[1;34mworld\x1b[0m'
-        >>> wcwidth.clip('\x1b[1mbold\x1b[m normal', 1, 9)
+        >>> clip('\x1b[1mbold\x1b[m normal', 1, 9)
         '\x1b[1mold\x1b[m norm'
 
     Set ``propagate_sgr=False`` to disable this behavior.

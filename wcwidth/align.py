@@ -41,11 +41,11 @@ def ljust(
 
     Example::
 
-        >>> wcwidth.ljust('hi', 5)
+        >>> ljust('hi', 5)
         'hi   '
-        >>> wcwidth.ljust('\x1b[31mhi\x1b[0m', 5)
+        >>> ljust('\x1b[31mhi\x1b[0m', 5)
         '\x1b[31mhi\x1b[0m   '
-        >>> wcwidth.ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
+        >>> ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '👨‍👩‍👧    '
     """
     if text.isascii() and text.isprintable():
@@ -91,11 +91,11 @@ def rjust(
 
     Example::
 
-        >>> wcwidth.rjust('hi', 5)
+        >>> rjust('hi', 5)
         '   hi'
-        >>> wcwidth.rjust('\x1b[31mhi\x1b[0m', 5)
+        >>> rjust('\x1b[31mhi\x1b[0m', 5)
         '   \x1b[31mhi\x1b[0m'
-        >>> wcwidth.rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
+        >>> rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '    👨‍👩‍👧'
     """
     if text.isascii() and text.isprintable():
@@ -146,11 +146,11 @@ def center(
 
     Example::
 
-        >>> wcwidth.center('hi', 6)
+        >>> center('hi', 6)
         '  hi  '
-        >>> wcwidth.center('\x1b[31mhi\x1b[0m', 6)
+        >>> center('\x1b[31mhi\x1b[0m', 6)
         '  \x1b[31mhi\x1b[0m  '
-        >>> wcwidth.center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
+        >>> center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '  👨‍👩‍👧  '
     """
     if text.isascii() and text.isprintable():
