@@ -57,11 +57,6 @@ def parse_grapheme_break_test_line(line):
     return input_str, expected_clusters
 
 
-def _version_tuple(version):
-    """'18.0.0' -> (18, 0, 0), for ordering comparisons."""
-    return tuple(int(part) for part in version.split('.'))
-
-
 def read_grapheme_break_test_version():
     """Return the Unicode version named by the GraphemeBreakTest.txt header."""
     test_file = os.path.join(os.path.dirname(__file__), 'GraphemeBreakTest.txt')
@@ -73,29 +68,6 @@ def read_grapheme_break_test_version():
         f"Cannot determine Unicode version from {test_file!r}, "
         f"first line is {header.strip()!r}")
     return match.group(1)
-
-
-def _fixture_skew():
-    """Return (fixture_version, table_version) if they disagree, else None."""
-    test_file = os.path.join(os.path.dirname(__file__), 'GraphemeBreakTest.txt')
-    if not os.path.exists(test_file):
-        return None
-    fixture_version = read_grapheme_break_test_version()
-    table_version = list_versions()[-1]
-    if fixture_version == table_version:
-        return None
-    return fixture_version, table_version
-
-
-# unicode.org publishes GraphemeBreakTest.txt for a version only once it is final, so while we
-# ship tables for a pre-release Unicode the fetched fixture is legitimately one version behind.
-# Skip rather than fail in that direction; a fixture *newer* than our tables is a real bug.
-_SKEW = _fixture_skew()
-_SKEW_OLDER = _SKEW is not None and _version_tuple(_SKEW[0]) < _version_tuple(_SKEW[1])
-_skipif_skew = pytest.mark.skipif(
-    _SKEW_OLDER,
-    reason="GraphemeBreakTest.txt is Unicode {} but tables are {}; unicode.org has not "
-           "published the final fixture yet".format(*(_SKEW or ('', ''))))
 
 
 def read_grapheme_break_test():
@@ -247,7 +219,6 @@ def test_indic_conjunct_graphemes(input_str, expected):
 
 @pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'GraphemeBreakTest.txt')),
                     reason="GraphemeBreakTest.txt is missing; run bin/update-tables.py")
-@_skipif_skew
 def test_grapheme_break_test_fixture_version():
     """GraphemeBreakTest.txt must match the Unicode version of our tables."""
     fixture_version = read_grapheme_break_test_version()
@@ -262,7 +233,6 @@ def test_grapheme_break_test_fixture_version():
 @pytest.mark.skipif(NARROW_ONLY, reason="requires wide Unicode")
 @pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'GraphemeBreakTest.txt')),
                     reason="GraphemeBreakTest.txt is missing; run bin/update-tables.py")
-@_skipif_skew
 @pytest.mark.parametrize(("input_str", "expected"), read_grapheme_break_test())
 def test_unicode_grapheme_break_test(input_str, expected):
     """Validate against official Unicode GraphemeBreakTest.txt."""
@@ -351,7 +321,6 @@ def test_iter_graphemes_reverse_unicode(input_str, expected):
 @pytest.mark.skipif(NARROW_ONLY, reason="requires wide Unicode")
 @pytest.mark.skipif(not os.path.exists(os.path.join(os.path.dirname(__file__), 'GraphemeBreakTest.txt')),
                     reason="GraphemeBreakTest.txt is missing; run bin/update-tables.py")
-@_skipif_skew
 @pytest.mark.parametrize(("input_str", "expected"), read_grapheme_break_test())
 def test_grapheme_roundtrip_consistency(input_str, expected):
     """Forward and reverse iteration produce identical boundaries."""
