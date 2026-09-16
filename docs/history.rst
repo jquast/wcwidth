@@ -4,12 +4,12 @@ History
 0.8.4 *unreleased* ('master' branch, only)
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
-  * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18, `PR #238`_.
+  * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
   * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
     ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
   * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #250`_.
-  * **Updated** tables for Unicode version 18.0.0, `PR #238`_.
+  * **Updated** tables for Unicode version 18.0, `PR #238`_.
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and

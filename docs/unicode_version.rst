@@ -10,14 +10,8 @@ The most current release of this API is based on the Unicode Standard
 release files:
 
 
-``DerivedGeneralCategory-17.0.0.txt``
-  *Date: 2025-07-24, 00:12:50 GMT*
-
 ``DerivedGeneralCategory-18.0.0.txt``
   *Date: 2026-06-29, 15:25:02 GMT*
-
-``EastAsianWidth-17.0.0.txt``
-  *Date: 2025-07-24, 00:12:54 GMT*
 
 ``EastAsianWidth-18.0.0.txt``
   *Date: 2026-06-29, 15:25:05 GMT*

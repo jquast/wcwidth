@@ -8,9 +8,9 @@ wcwidth
    api
    libwcwidth
    api_c
-   changelog
    unicode_version
    developing
+   history
    related
 
 Indices and tables
