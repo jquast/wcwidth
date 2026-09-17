@@ -8,8 +8,6 @@ History
   * **Bugfix** `width()`_, `ljust()`_, `rjust()`_, `center()`_, `clip()`_ and `strip_sequences()`_
     treated ``ESC ( LF`` as text instead of a character set designation (rare), `PR #259`_.
   * **Bugfix** `clip()`_ painter's algorithm and "tab expansion" should be spaces, `PR #259`_.
-  * **Bugfix** Variation Selector 15 no longer narrows the same base character more than once,
-    `Issue #241`_, `PR #244`_.
   * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
   * **Changed** ``ambiguous_width`` arguments are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
@@ -285,7 +283,6 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`PR #238`: https://github.com/jquast/wcwidth/pull/238
 .. _`PR #243`: https://github.com/jquast/wcwidth/pull/243
-.. _`PR #244`: https://github.com/jquast/wcwidth/pull/244
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
@@ -294,7 +291,6 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
-.. _`Issue #241`: https://github.com/jquast/wcwidth/issues/241
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`jacobsandlund/uucode`: https://github.com/jacobsandlund/uucode
@@ -320,3 +316,4 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
+.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
