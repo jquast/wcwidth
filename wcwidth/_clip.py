@@ -557,7 +557,7 @@ def _clip_painter(
 
         # Early exit: past visible region.
         if col >= end and char not in '\r\x08\t\x1b':
-            # Movement right of the window still rewinds into it.
+            # Movement right-of the window can still rewinds back into it.
             if movement_ahead is None:
                 movement_ahead = _HORIZONTAL_CURSOR_MOVEMENT.search(text, idx) is not None
             if not movement_ahead:
@@ -704,8 +704,6 @@ def _clip_painter(
         if char == '\t':
             if tabsize > 0:
                 next_tab = col + (tabsize - (col % tabsize))
-                # A tab writes spaces, not fillchar, and one cell per column so
-                # that a later write can overwrite a single one of them.
                 for fill_col in range(max(col, start), min(next_tab, end)):
                     _write_cells(' ', 1, fill_col)
                 col = next_tab

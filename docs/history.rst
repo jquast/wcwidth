@@ -5,6 +5,9 @@ History
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
+  * **Bugfix** `width()`_, `ljust()`_, `rjust()`_, `center()`_, `clip()`_ and `strip_sequences()`_
+    treated ``ESC ( LF`` as text instead of a character set designation (rare), `PR #259`_.
+  * **Bugfix** `clip()`_ painter's algorithm and "tab expansion" should be spaces, `PR #259`_.
   * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
   * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
@@ -281,6 +284,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
+.. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

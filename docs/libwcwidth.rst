@@ -324,12 +324,11 @@ of *text*, without measuring it first -- the counterpart of the ``-1`` default o
     free(out);
 
 Some sequences are unsupported, and `wcwidth_clip_u8()`_ returns ``NULL`` with ``*error`` set to
-``WCWIDTH_ERROR_UNSUPPORTED`` rather than answering differently from Python's `clip()`_:
+``WCWIDTH_ERROR_UNSUPPORTED``, these sequences are only supported in Python's `clip()`_:
 
 * **Horizontal cursor movement** -- BS, CR, and CSI ending in ``C`` (CUF), ``D`` (CUB) or ``G``
   (HPA).  There is no counterpart to the ``overtyping`` option of Python's `clip()`_.
-* **OSC 8 hyperlinks** and **OSC 66 text sizing** -- measured, but never rewritten, so a window
-  cutting through one would leave an unbalanced pair or an unclipped sequence.
+* **OSC 8 hyperlinks** and **OSC 66 text sizing** are not supported.
 
 .. code-block:: c
 
@@ -430,17 +429,6 @@ The text transforms are simpler:
   Python's `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
   ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
   mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
-
-Malformed escape sequences
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Python recognizes sequences by regular expression and this library by hand-written scanner, and
-the two agree on every well-formed sequence and nearly every malformed one.  Over 200,000 random
-escape soups, two measured differently and `wcwidth_escape_strip()`_ matched `strip_sequences()`_
-everywhere.  Both exceptions are a CSI carrying a private parameter byte before a cursor final,
-such as ``ESC [ > D``, which this library resolves as CUB where Python counts it zero-width.  A
-real terminal does neither reliably, so do not depend on the two agreeing when the text is
-arbitrary bytes.
 
 Supported Terminals
 -------------------
