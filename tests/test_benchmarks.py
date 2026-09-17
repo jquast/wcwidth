@@ -300,6 +300,24 @@ def test_clip_long_cjk_past_window(benchmark):
     benchmark(wcwidth.clip, text, 0, 50)
 
 
+def test_clip_cjk_paragraph(benchmark):
+    """Benchmark clip() with long CJK text clipped entirely within the window."""
+    text = '中文测试字符串' * 100
+    benchmark(wcwidth.clip, text, 0, 1400)
+
+
+def test_clip_cjk_paragraph_overtyping(benchmark):
+    """Benchmark clip() with long CJK text and overtyping forced (painter path)."""
+    text = '中文测试字符串' * 100
+    benchmark(wcwidth.clip, text, 0, 1400, overtyping=True)
+
+
+def test_clip_emoji_zwj(benchmark):
+    """Benchmark clip() with ZWJ emoji sequences (grapheme segmentation path)."""
+    text = '👩🏻‍💻 x ' * 50
+    benchmark(wcwidth.clip, text, 0, 120)
+
+
 def test_clip_dense_ansi_past_window(benchmark):
     """Benchmark clip() with dense ANSI sequences past clip window (SGR tracking)."""
     text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50

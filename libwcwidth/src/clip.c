@@ -142,16 +142,17 @@ grapheme_width(const char *g, size_t g_len, int ambiguous_width, const char *ter
     return (w < 0) ? 0 : w;
 }
 
+/*
+ * Wrap the clipped result in the SGR state active at its start.  The prefix
+ * restores *style*; *reset* says whether a trailing "\x1b[0m" is needed.
+ */
 static void
-apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
+apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool reset)
 {
     /* wcwidth_sgr_to_escape() documents out_cap >= WCWIDTH_SGR_PROPAGATE_SPARE
      * (sgr.h); a full 24-bit fg+bg state does not fit in less. */
     char prefix[WCWIDTH_SGR_PROPAGATE_SPARE];
     size_t prefix_len;
-
-    if (!active)
-        return;
 
     prefix_len = wcwidth_sgr_to_escape(style, prefix, sizeof(prefix));
 
@@ -176,7 +177,7 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool active)
         sb->cap = new_cap;
     }
 
-    if (wcwidth_sgr_is_active(style)) {
+    if (reset) {
         strbuf_append(sb, "\x1b[0m", 4);
     }
 }
@@ -185,7 +186,7 @@ static bool
 clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const char *fillchar,
          size_t fillchar_len, int tabsize, int ambiguous_width, const char *term_program,
          bool strict, bool track_sgr, wcwidth_sgr_state_t *captured_style, bool *style_captured,
-         strbuf_t *sb, int *error)
+         wcwidth_sgr_state_t *end_style, bool *has_end_style, strbuf_t *sb, int *error)
 {
     wcwidth_sgr_state_t current_style;
     int col;
@@ -195,6 +196,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
 
     current_style = WCWIDTH_SGR_STATE_DEFAULT;
     *style_captured = false;
+    *has_end_style = false;
     col = 0;
     idx = 0;
     giter = NULL;
@@ -203,7 +205,9 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
     while (idx < text_len) {
         unsigned char ch = (unsigned char) text[idx];
 
-        if (col >= (int) v_end && ch != ESC) {
+        /* TAB, CR and BS emit nothing past the window, but stopping at one
+         * would drop the sequences behind it. */
+        if (col >= (int) v_end && ch != ESC && ch != '\t' && ch != '\r' && ch != '\b') {
             if (*style_captured) {
                 break;
             }
@@ -229,6 +233,14 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
 
             if (result.type == WCWIDTH_ESC_SGR && track_sgr) {
                 wcwidth_sgr_update(&current_style, result.sgr_params, result.sgr_params_len);
+                /* An SGR before the first visible emission folds into the
+                 * prefix; one inside the window is emitted where it appeared
+                 * and moves the state deciding the trailing reset. */
+                if (*style_captured && col < (int) v_end) {
+                    strbuf_append(sb, result.start, result.length);
+                    *end_style = current_style;
+                    *has_end_style = true;
+                }
                 idx += result.length;
                 continue;
             }
@@ -238,8 +250,8 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
                 goto fail;
             }
 
-            if ((int) v_start <= col && col < (int) v_end)
-                strbuf_append(sb, result.start, result.length);
+            /* Zero-width, so preserved wherever they occur. */
+            strbuf_append(sb, result.start, result.length);
             idx += result.length;
             continue;
         }
@@ -248,8 +260,14 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
             if (tabsize > 0) {
                 int next_tab = col + (tabsize - (col % tabsize));
                 while (col < next_tab) {
-                    if ((int) v_start <= col && col < (int) v_end)
+                    if ((int) v_start <= col && col < (int) v_end) {
                         strbuf_append(sb, " ", 1);
+                        /* A visible emission, so it captures the style. */
+                        if (track_sgr && !*style_captured) {
+                            *captured_style = current_style;
+                            *style_captured = true;
+                        }
+                    }
                     col++;
                 }
             }
@@ -267,8 +285,14 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
             int g_w;
 
             if (giter == NULL || giter_upto != idx) {
+                /* Stop at the next ESC: the iterator predecodes all it is
+                 * given and each escape rebuilds it, so spanning the remainder
+                 * is quadratic.  ESC always breaks a cluster. */
+                const char *stop = (const char *) memchr(text + idx, ESC, text_len - idx);
+                size_t seg_len = (stop != NULL) ? (size_t) (stop - (text + idx)) : text_len - idx;
+
                 wcwidth_grapheme_iter_free(giter);
-                giter = wcwidth_grapheme_iter_new(text + idx, text_len - idx);
+                giter = wcwidth_grapheme_iter_new(text + idx, seg_len);
                 giter_upto = idx;
                 if (giter == NULL) {
                     goto fail;
@@ -329,6 +353,8 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
     strbuf_t sb;
     wcwidth_sgr_state_t captured_style;
     bool style_captured;
+    wcwidth_sgr_state_t end_style;
+    bool has_end_style;
     bool strict;
     bool has_esc;
     bool track_sgr;
@@ -397,15 +423,20 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
 
     captured_style = WCWIDTH_SGR_STATE_DEFAULT;
     style_captured = false;
+    end_style = WCWIDTH_SGR_STATE_DEFAULT;
+    has_end_style = false;
 
     if (!clip_run(text, text_len, v_start, v_end, fillchar, fillchar_len, tabsize, ambiguous_width,
-                  term_program, strict, track_sgr, &captured_style, &style_captured, &sb, error)) {
+                  term_program, strict, track_sgr, &captured_style, &style_captured, &end_style,
+                  &has_end_style, &sb, error)) {
         strbuf_free(&sb);
         return NULL;
     }
 
     if (track_sgr && style_captured) {
-        apply_sgr_wrap(&sb, &captured_style, wcwidth_sgr_is_active(&captured_style));
+        /* The trailing reset follows the last SGR inside the window. */
+        const wcwidth_sgr_state_t *trailing = has_end_style ? &end_style : &captured_style;
+        apply_sgr_wrap(&sb, &captured_style, wcwidth_sgr_is_active(trailing));
     }
 
     return strbuf_detach(&sb, out_len);

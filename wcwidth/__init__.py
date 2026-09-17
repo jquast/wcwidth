@@ -75,7 +75,5 @@ __all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_
            'list_versions', 'list_term_programs', 'propagate_sgr',
            'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')
 
-# Using 'hatchling', it does not seem to provide the pyproject.toml nicety, "dynamic = ['version']"
-# like flit_core, maybe there is some better way but for now we have to duplicate it in both places
-# Prefer the installed distribution version when available (helps test environments)
-__version__ = '0.8.4'  # don't forget to also update pyproject.toml:version
+# Version is stamped by code generation (bin/update-tables.py) from pyproject.toml.
+__version__ = '0.8.4'

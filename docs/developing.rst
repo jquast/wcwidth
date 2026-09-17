@@ -12,7 +12,7 @@ Execute all code generation, autoformatters, linters and unit tests using tox::
 
 Or execute individual tasks, see ``tox -lv`` for all available targets::
 
-   tox -e pylint,py36,py314
+   tox -e pylint,py39,py314
 
 To run tests with detailed coverage reporting showing missing lines::
 
@@ -31,21 +31,28 @@ data files are fetched::
 
    tox -e update -- --draft=18.0
 
+The terminal Corrections_ tables are generated from the ``ucs-detect`` git submodule, which
+is not distributed in the sdist because of its size.  Fetch it first::
+
+   git submodule update --init ucs-detect
+
 Building Documentation
 ----------------------
 
-This project is using `sphinx`_ 4.5 to build documentation::
+This project uses `sphinx`_::
 
    tox -e sphinx
 
-The output will be in ``docs/_build/html/``.
+The output will be in ``docs/_build/html/``, to review::
+
+    open docs/_build/html/index.html
 
 Updating Requirements
 ---------------------
 
 This project is using `pip-tools`_ to manage requirements.
 
-To upgrade requirements for updating unicode version, run::
+To upgrade requirements for updating unicode tables, run::
 
    tox -e update_requirements_update
 
@@ -59,4 +66,6 @@ To upgrade requirements for building documentation, run::
 
 .. _`pip-tools`: https://pip-tools.readthedocs.io/
 .. _`sphinx`: https://www.sphinx-doc.org/
+
+.. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
 

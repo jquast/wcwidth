@@ -64,6 +64,7 @@ struct wcwidth_grapheme_iter_t
     int prev_gcb;             /* GCB property of previous codepoint */
     int ri_count;             /* RI pair counter, 0 or 1 */
     bool exhausted;
+    bool owns_cp; /* false when 'cp' is the caller's array (_u32 form) */
 };
 
 static gcb_t gcb_of(uint32_t ucs);
@@ -291,6 +292,7 @@ wcwidth_grapheme_iter_new(const char *utf8, size_t len)
 
     iter->text = utf8;
     iter->text_len = len;
+    iter->owns_cp = true;
 
     if (len == 0) {
         iter->cp = NULL;
@@ -319,38 +321,72 @@ wcwidth_grapheme_iter_new(const char *utf8, size_t len)
     return iter;
 }
 
+wcwidth_grapheme_iter_t *
+wcwidth_grapheme_iter_new_u32(const uint32_t *codepoints, size_t n)
+{
+    wcwidth_grapheme_iter_t *iter;
+
+    iter = malloc(sizeof(wcwidth_grapheme_iter_t));
+    if (iter == NULL) {
+        return NULL;
+    }
+
+    /* A codepoint index is its own offset, so no offsets table; 'cp' belongs
+     * to the caller. */
+    iter->text = NULL;
+    iter->text_len = 0;
+    iter->cp = (uint32_t *) codepoints;
+    iter->cp_offsets = NULL;
+    iter->cp_count = (codepoints == NULL) ? 0 : n;
+    iter->cp_idx = 0;
+    iter->cluster_start_idx = 0;
+    iter->ri_count = 0;
+    iter->owns_cp = false;
+
+    if (iter->cp_count == 0) {
+        iter->prev_gcb = GCB_OTHER;
+        iter->exhausted = true;
+        return iter;
+    }
+
+    iter->prev_gcb = gcb_of(iter->cp[0]);
+    iter->ri_count = (iter->prev_gcb == GCB_REGIONAL_INDICATOR) ? 1 : 0;
+    iter->exhausted = false;
+    return iter;
+}
+
 void
 wcwidth_grapheme_iter_free(wcwidth_grapheme_iter_t *iter)
 {
     if (iter == NULL)
         return;
-    free(iter->cp);
-    free(iter->cp_offsets);
+    if (iter->owns_cp) {
+        free(iter->cp);
+        free(iter->cp_offsets);
+    }
     free(iter);
 }
 
-const char *
-wcwidth_grapheme_next(wcwidth_grapheme_iter_t *iter, size_t *out_len)
+/*
+ * Next cluster as the codepoint index range [*out_start*, *out_end*), false
+ * when exhausted.  The UTF-8 form maps the result back through cp_offsets.
+ */
+static bool
+grapheme_next_indices(wcwidth_grapheme_iter_t *iter, size_t *out_start, size_t *out_end)
 {
-    const char *result;
-
-    if (iter == NULL || iter->exhausted) {
-        return NULL;
-    }
-
-    /* Empty input */
-    if (iter->cp_count == 0) {
-        iter->exhausted = true;
-        return NULL;
+    if (iter == NULL || iter->exhausted || iter->cp_count == 0) {
+        if (iter != NULL) {
+            iter->exhausted = true;
+        }
+        return false;
     }
 
     /* Single codepoint input -- yield it immediately */
     if (iter->cp_count == 1) {
         iter->exhausted = true;
-        if (out_len != NULL) {
-            *out_len = iter->text_len;
-        }
-        return iter->text;
+        *out_start = 0;
+        *out_end = 1;
+        return true;
     }
 
     /* Advance past the first codepoint (already loaded in prev_gcb) */
@@ -365,19 +401,14 @@ wcwidth_grapheme_next(wcwidth_grapheme_iter_t *iter, size_t *out_len)
 
         if (should_break(iter->cp, iter->cp_idx, (gcb_t) iter->prev_gcb, curr_gcb, &new_ri)) {
             /* Break before cp_idx -- yield current cluster */
-            size_t start_off = iter->cp_offsets[iter->cluster_start_idx];
-            size_t end_off = iter->cp_offsets[iter->cp_idx];
-
-            result = iter->text + start_off;
-            if (out_len != NULL) {
-                *out_len = end_off - start_off;
-            }
+            *out_start = iter->cluster_start_idx;
+            *out_end = iter->cp_idx;
 
             iter->cluster_start_idx = iter->cp_idx;
             iter->prev_gcb = curr_gcb;
             iter->ri_count = new_ri;
             iter->cp_idx++;
-            return result;
+            return true;
         }
 
         iter->ri_count = new_ri;
@@ -387,92 +418,89 @@ wcwidth_grapheme_next(wcwidth_grapheme_iter_t *iter, size_t *out_len)
 
     /* Yield the final cluster */
     iter->exhausted = true;
-
-    {
-        size_t start_off = iter->cp_offsets[iter->cluster_start_idx];
-        result = iter->text + start_off;
-        if (out_len != NULL) {
-            *out_len = iter->text_len - start_off;
-        }
-    }
-
-    return result;
+    *out_start = iter->cluster_start_idx;
+    *out_end = iter->cp_count;
+    return true;
 }
 
-size_t
-wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos)
+const char *
+wcwidth_grapheme_next(wcwidth_grapheme_iter_t *iter, size_t *out_len)
 {
-    uint32_t *cp = NULL;
-    size_t *offsets = NULL;
-    size_t cp_count = 0;
-    size_t cp_pos;
+    size_t start_idx;
+    size_t end_idx;
+    size_t start_off;
+    size_t end_off;
+
+    if (!grapheme_next_indices(iter, &start_idx, &end_idx)) {
+        return NULL;
+    }
+
+    start_off = iter->cp_offsets[start_idx];
+    end_off = (end_idx < iter->cp_count) ? iter->cp_offsets[end_idx] : iter->text_len;
+
+    if (out_len != NULL) {
+        *out_len = end_off - start_off;
+    }
+    return iter->text + start_off;
+}
+
+const uint32_t *
+wcwidth_grapheme_next_u32(wcwidth_grapheme_iter_t *iter, size_t *out_len)
+{
+    size_t start_idx;
+    size_t end_idx;
+
+    if (!grapheme_next_indices(iter, &start_idx, &end_idx)) {
+        return NULL;
+    }
+
+    if (out_len != NULL) {
+        *out_len = end_idx - start_idx;
+    }
+    return iter->cp + start_idx;
+}
+
+/*
+ * Codepoint index of the start of the cluster containing *cp_pos*.  Steps back
+ * to a position that is certainly a cluster start -- ASCII or a CONTROL, at
+ * most MAX_GRAPHEME_SCAN away -- then re-derives the boundaries forward.
+ */
+static size_t
+cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
+{
+    uint32_t target_cp;
     size_t safe_start;
     size_t cluster_start;
     gcb_t left_gcb;
     int ri_count;
     size_t i;
 
-    if (pos == 0 || len == 0) {
+    if (cp_count == 0 || cp_pos == 0) {
         return 0;
     }
+    if (cp_pos >= cp_count) {
+        cp_pos = cp_count - 1;
+    }
+    target_cp = cp[cp_pos];
 
-    /* Clamp pos to len */
-    if (pos > len) {
-        pos = len;
+    /* GB3: CR x LF -- LF after CR is part of same cluster */
+    if (target_cp == 0x0A && cp[cp_pos - 1] == 0x0D) {
+        return cp_pos - 1;
     }
 
-    /* Pre-decode the UTF-8 text */
-    if (!predecode(utf8, len, &cp, &offsets, &cp_count)) {
-        return 0;
-    }
+    /* Fast path: ASCII (except LF) starts its own cluster */
+    if (target_cp < 0x80) {
+        if (target_cp >= 0x20) {
+            uint32_t prev_cp_val = cp[cp_pos - 1];
 
-    if (cp_count == 0) {
-        free(cp);
-        free(offsets);
-        return 0;
-    }
-
-    /* Find the codepoint index corresponding to byte position *pos*: the
-     * codepoint whose byte range covers (pos - 1).  offsets[i] is the byte
-     * start of codepoint i, so this is the largest i with offsets[i] < pos.
-     */
-    cp_pos = 0;
-    for (i = 1; i < cp_count; i++) {
-        if (offsets[i] >= pos) {
-            break;
-        }
-        cp_pos = i;
-    }
-    /* cp_pos is now the codepoint index containing the byte at pos-1 */
-
-    {
-        uint32_t target_cp = cp[cp_pos];
-
-        /* GB3: CR x LF -- LF after CR is part of same cluster */
-        if (target_cp == 0x0A && cp_pos > 0 && cp[cp_pos - 1] == 0x0D) {
-            size_t result = offsets[cp_pos - 1];
-            free(cp);
-            free(offsets);
-            return result;
-        }
-
-        /* Fast path: ASCII (except LF) starts its own cluster */
-        if (target_cp < 0x80) {
-            size_t result = offsets[cp_pos];
-
-            /* GB9b: Check for preceding PREPEND */
-            if (cp_pos > 0 && target_cp >= 0x20) {
-                uint32_t prev_cp_val = cp[cp_pos - 1];
-                if (prev_cp_val >= 0x80 && gcb_of(prev_cp_val) == GCB_PREPEND) {
-                    /* Recurse to find the PREPEND's own cluster start */
-                    size_t prepend_off = offsets[cp_pos - 1];
-                    result = wcwidth_grapheme_boundary_before(utf8, len, prepend_off);
-                }
+            /* GB9b: a PREPEND belongs to this cluster, so the start is where
+             * the PREPEND's own cluster begins -- its index, not the
+             * codepoint before it. */
+            if (prev_cp_val >= 0x80 && gcb_of(prev_cp_val) == GCB_PREPEND) {
+                return cluster_start_index(cp, cp_count, cp_pos - 1);
             }
-            free(cp);
-            free(offsets);
-            return result;
         }
+        return cp_pos;
     }
 
     /* Scan backward from cp_pos to find a safe starting point */
@@ -504,10 +532,146 @@ wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos)
         left_gcb = right_gcb;
     }
 
-    {
-        size_t result = offsets[cluster_start];
+    return cluster_start;
+}
+
+/*
+ * Codepoint index one past the end of the cluster containing *cp_pos*.  Needs
+ * the cluster's own start, because GB12/13 pairing counts from there.
+ */
+static size_t
+cluster_end_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
+{
+    size_t cluster_start;
+    gcb_t left_gcb;
+    int ri_count;
+    size_t i;
+
+    if (cp_count == 0) {
+        return 0;
+    }
+    if (cp_pos >= cp_count) {
+        return cp_count;
+    }
+
+    cluster_start = cluster_start_index(cp, cp_count, cp_pos);
+    left_gcb = gcb_of(cp[cluster_start]);
+    ri_count = (left_gcb == GCB_REGIONAL_INDICATOR) ? 1 : 0;
+
+    for (i = cluster_start + 1; i < cp_count; i++) {
+        gcb_t right_gcb = gcb_of(cp[i]);
+        int new_ri = ri_count;
+
+        if (should_break(cp, i, left_gcb, right_gcb, &new_ri)) {
+            return i;
+        }
+        ri_count = new_ri;
+        left_gcb = right_gcb;
+    }
+
+    return cp_count;
+}
+
+/*
+ * Codepoint index covering byte *pos*; *before* selects the codepoint covering
+ * byte pos - 1 instead, for the backward search.
+ */
+static size_t
+byte_to_cp_index(const size_t *offsets, size_t cp_count, size_t pos, bool before)
+{
+    size_t result = 0;
+    size_t i;
+
+    for (i = 1; i < cp_count; i++) {
+        if (before ? (offsets[i] >= pos) : (offsets[i] > pos)) {
+            break;
+        }
+        result = i;
+    }
+    return result;
+}
+
+size_t
+wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos)
+{
+    uint32_t *cp = NULL;
+    size_t *offsets = NULL;
+    size_t cp_count = 0;
+    size_t result;
+
+    if (pos == 0 || len == 0) {
+        return 0;
+    }
+    if (pos > len) {
+        pos = len;
+    }
+    if (!predecode(utf8, len, &cp, &offsets, &cp_count)) {
+        return 0;
+    }
+    if (cp_count == 0) {
         free(cp);
         free(offsets);
-        return result;
+        return 0;
     }
+
+    result =
+        offsets[cluster_start_index(cp, cp_count, byte_to_cp_index(offsets, cp_count, pos, true))];
+    free(cp);
+    free(offsets);
+    return result;
+}
+
+size_t
+wcwidth_grapheme_boundary_after(const char *utf8, size_t len, size_t pos)
+{
+    uint32_t *cp = NULL;
+    size_t *offsets = NULL;
+    size_t cp_count = 0;
+    size_t end_idx;
+    size_t result;
+
+    if (len == 0) {
+        return 0;
+    }
+    if (pos >= len) {
+        return len;
+    }
+    if (!predecode(utf8, len, &cp, &offsets, &cp_count)) {
+        return len;
+    }
+    if (cp_count == 0) {
+        free(cp);
+        free(offsets);
+        return len;
+    }
+
+    end_idx = cluster_end_index(cp, cp_count, byte_to_cp_index(offsets, cp_count, pos, false));
+    result = (end_idx < cp_count) ? offsets[end_idx] : len;
+    free(cp);
+    free(offsets);
+    return result;
+}
+
+size_t
+wcwidth_grapheme_boundary_before_u32(const uint32_t *codepoints, size_t n, size_t pos)
+{
+    if (codepoints == NULL || n == 0 || pos == 0) {
+        return 0;
+    }
+    if (pos > n) {
+        pos = n;
+    }
+    return cluster_start_index(codepoints, n, pos - 1);
+}
+
+size_t
+wcwidth_grapheme_boundary_after_u32(const uint32_t *codepoints, size_t n, size_t pos)
+{
+    if (codepoints == NULL || n == 0) {
+        return 0;
+    }
+    if (pos >= n) {
+        return n;
+    }
+    return cluster_end_index(codepoints, n, pos);
 }

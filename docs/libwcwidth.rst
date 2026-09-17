@@ -406,11 +406,13 @@ The text transforms are simpler than the Python ones:
   on each line.  Callers must re-emit the opener and terminator themselves.
 * `wcwidth_clip_u8()`_ does not parse horizontal cursor movement (there is no counterpart to
   Python's ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as
-  zero-width.
+  zero-width, where it appeared.
 * `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where
   Python's `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
   ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
   mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
+
+Apart from those constructs, `wcwidth_clip_u8()`_ matches Python's `clip()`_, SGR included.
 
 `wcwidth_ljust_u8()`_, `wcwidth_rjust_u8()`_ and `wcwidth_center_u8()`_ match the Python functions
 exactly.

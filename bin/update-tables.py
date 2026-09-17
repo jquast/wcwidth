@@ -559,11 +559,11 @@ def _project_version() -> str:
 
 
 def _version_parts(version: str) -> tuple[int, int, int]:
-    """Return (major, minor, patch) from a dotted version string."""
-    parts = tuple(int(component) for component in version.split('.')[:3])
-    if len(parts) != 3:
+    """Return (major, minor, patch) from a version string, ignoring any pre-release suffix."""
+    match = re.match(r'^(\d+)\.(\d+)\.(\d+)', version)
+    if match is None:
         raise ValueError(f'expected a MAJOR.MINOR.PATCH version, got {version!r}')
-    return parts
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
 
 @dataclass(frozen=True)
@@ -1712,8 +1712,13 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
 @functools.lru_cache(maxsize=1)
 def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
     """Return (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    yaml_paths = sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml')))
+    if not yaml_paths:
+        raise FileNotFoundError(
+            f'no terminal measurements in {PATH_UCS_DETECT_DATA}; fetch them with '
+            f"'git submodule update --init ucs-detect'")
     items: list[tuple[str, str, Any]] = []
-    for yaml_path in sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))):
+    for yaml_path in yaml_paths:
         print(f"reading {yaml_path}: ", end='', flush=True)
         with open(yaml_path, encoding='utf-8') as f:
             doc = yaml.load(f, Loader=SafeLoader)
@@ -1750,7 +1755,7 @@ def make_single_override(
             for entry in ver_data.get('failed_codepoints', []):
                 if not (isinstance(entry.get('measured_by_terminal'), int)
                         and 'delta_ypos' not in entry
-                        and 0 <= entry['measured_by_terminal'] <= 40):
+                        and 0 <= entry['measured_by_terminal'] <= MAX_MEASURED_WIDTH):
                     continue
                 wchar = entry['wchar']
                 ucs = parse_wchar_codepoint(wchar)
