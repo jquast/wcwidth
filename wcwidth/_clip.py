@@ -519,8 +519,9 @@ def _clip_painter(
     # is emitted, meaning captured_style is still in effect at the end.
     end_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
-    # Resolved on the first attempt to stop early.
-    movement_ahead: Optional[bool] = None
+    # Index of the next horizontal movement at or after the scan position, -1 when
+    # none is left.  Resolved on the first attempt to stop early, and again once passed.
+    next_movement: Optional[int] = None
 
     def _write_cells(s: str, w: int, write_col: int,
                      is_hyperlink: bool = False) -> None:
@@ -558,9 +559,15 @@ def _clip_painter(
         # Early exit: past visible region.
         if col >= end and char not in '\r\x08\t\x1b':
             # Movement right-of the window can still rewinds back into it.
-            if movement_ahead is None:
-                movement_ahead = _HORIZONTAL_CURSOR_MOVEMENT.search(text, idx) is not None
-            if not movement_ahead:
+            if next_movement is None or 0 <= next_movement < idx:
+                # Every match begins with one of these, and rfind is ~600x cheaper
+                # than scanning the remainder for a movement that is not there.
+                if max(text.rfind('\x08'), text.rfind('\r'), text.rfind('\x1b')) < idx:
+                    next_movement = -1
+                else:
+                    found = _HORIZONTAL_CURSOR_MOVEMENT.search(text, idx)
+                    next_movement = -1 if found is None else found.end()
+            if next_movement < 0:
                 if captured_style is not None:
                     break
                 next_esc = text.find('\x1b', idx + 1)
