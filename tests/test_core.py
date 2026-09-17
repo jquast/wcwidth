@@ -1,6 +1,8 @@
 """Core tests for wcwidth module."""
 # std imports
+import re
 import importlib.metadata
+from pathlib import Path
 
 # 3rd party
 import pytest
@@ -20,6 +22,25 @@ def test_package_version():
 
     # verify.
     assert result == expected
+
+
+def test_version_matches_pyproject():
+    """pyproject.toml version is stamped into __version__ and wcwidth_config.h."""
+    # given,
+    root = Path(__file__).resolve().parent.parent
+    pyproject = (root / 'pyproject.toml').read_text()
+    config = (root / 'libwcwidth' / 'include' / 'wcwidth' / 'wcwidth_config.h').read_text()
+    version = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+    macros = re.search(
+        r'#define WCWIDTH_VERSION_MAJOR (\d+)\n'
+        r'#define WCWIDTH_VERSION_MINOR (\d+)\n'
+        r'#define WCWIDTH_VERSION_PATCH (\d+)', config)
+
+    # verify,
+    assert wcwidth.__version__ == version
+    assert re.search(r'#define WCWIDTH_VERSION "([^"]+)"', config).group(1) == version
+    release = re.match(r'\d+\.\d+\.\d+', version).group(0)
+    assert f'{macros.group(1)}.{macros.group(2)}.{macros.group(3)}' == release
 
 
 def test_empty_string():
