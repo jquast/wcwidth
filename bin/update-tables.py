@@ -106,13 +106,30 @@ HANGUL_JAMO_SHORT_T = ('', 'G', 'GG', 'GS', 'N', 'NJ', 'NH', 'D', 'L', 'LG', 'LM
                        'LT', 'LP', 'LH', 'M', 'B', 'BS', 'S', 'SS', 'NG', 'J', 'C', 'K', 'T',
                        'P', 'H')
 HANGUL_SYLLABLE_BASE = 0xAC00
+# NR2, matched by prefix so that 'CJK Ideograph Extension A' resolves through 'CJK Ideograph'
+# and 'Tangut Ideograph Supplement' through 'Tangut Ideograph'.
 NAME_DERIVATION_PREFIXES = (
     ('CJK Ideograph', 'CJK UNIFIED IDEOGRAPH-'),
     ('Tangut Ideograph', 'TANGUT IDEOGRAPH-'),
     ('Khitan Small Script', 'KHITAN SMALL SCRIPT CHARACTER-'),
     ('Nushu Character', 'NUSHU CHARACTER-'),
     ('Egyptian Hieroglyph', 'EGYPTIAN HIEROGLYPH-'),
+    ('Jurchen Character', 'JURCHEN CHARACTER-'),
+    ('Seal Character', 'SMALL SEAL CHARACTER-'),
 )
+
+# NR4, surrogate and private-use characters have no name at all.
+NAME_DERIVATION_UNNAMED = (
+    'Low Surrogate',
+    'Non Private Use High Surrogate',
+    'Plane 15 Private Use',
+    'Plane 16 Private Use',
+    'Private Use',
+    'Private Use High Surrogate',
+)
+
+# NR1, composed algorithmically from HANGUL_JAMO_SHORT_{L,V,T}.
+NAME_DERIVATION_ALGORITHMIC = ('Hangul Syllable',)
 
 # Variation Selector-15 and 16
 HEX_STR_VS15, HEX_STR_VS16 = ('FE0E', 'FE0F')
@@ -940,6 +957,7 @@ def load_unicode_names() -> tuple[dict[int, str], tuple[tuple[int, int, str], ..
                 if marker == 'First':
                     range_first = (ucs, label)
                 elif marker == 'Last' and range_first is not None:
+                    _check_name_derivation(range_first[0], ucs, range_first[1])
                     derived_ranges.append((range_first[0], ucs, range_first[1]))
                     range_first = None
                 continue
@@ -955,6 +973,25 @@ def load_unicode_names() -> tuple[dict[int, str], tuple[tuple[int, int, str], ..
     return names, tuple(derived_ranges), control_aliases
 
 
+def _check_name_derivation(start: int, stop: int, label: str) -> None:
+    """
+    Assert a UnicodeData.txt '<label, First>' range has a known UAX #44 "4.8 Name" derivation.
+
+    Each new unicode version may introduce ranges, and a range whose label is unrecognized would
+    otherwise be silently rendered as a nameless '(nil)' table comment.  Fail the table build
+    instead, so that the new label is classified deliberately.
+    """
+    if label in NAME_DERIVATION_ALGORITHMIC or label in NAME_DERIVATION_UNNAMED:
+        return
+    if any(label.startswith(prefix_label) for prefix_label, _ in NAME_DERIVATION_PREFIXES):
+        return
+    raise ValueError(
+        f"UnicodeData.txt range '<{label}, First>' (U+{start:04X}..U+{stop:04X}) has no name "
+        f'derivation rule.  Consult UAX #44 "4.8 Name" and add {label!r} to one of '
+        f'NAME_DERIVATION_PREFIXES (NR2), NAME_DERIVATION_UNNAMED (NR4), or '
+        f'NAME_DERIVATION_ALGORITHMIC (NR1).')
+
+
 def name_ucs(ucs: str) -> str:
     """Return the capitalized name of a character, or None where it has no name."""
     return string.capwords(_name_of(ord(ucs))) if _name_of(ord(ucs)) else None
@@ -967,7 +1004,7 @@ def _name_of(value: int) -> Optional[str]:
     for start, stop, label in derived_ranges:
         if not start <= value <= stop:
             continue
-        if label == 'Hangul Syllable':
+        if label in NAME_DERIVATION_ALGORITHMIC:
             # NR1
             idx = value - HANGUL_SYLLABLE_BASE
             return ('HANGUL SYLLABLE '
@@ -978,6 +1015,8 @@ def _name_of(value: int) -> Optional[str]:
             # NR2
             if label.startswith(prefix_label):
                 return f'{prefix}{value:04X}'
+        # NR4, surrogate and private-use ranges; _check_name_derivation() has already
+        # rejected any label that reaches here without being one of them.
         return None
     return control_aliases.get(value)
 
@@ -1966,10 +2005,21 @@ def collect_term_programs() -> TermPrograms:
     term_aliases = {k: v for k, v in term_aliases.items() if v not in EXCLUDED_MULTIPLEXERS}
     tprog_aliases = {k: v for k, v in tprog_aliases.items() if v not in EXCLUDED_MULTIPLEXERS}
 
+    aliases = {**term_aliases, **tprog_aliases}
+    _check_term_aliases(aliases, known)
+
     return TermPrograms(
         known_terminals=frozenset(known),
-        aliases={**term_aliases, **tprog_aliases},
+        aliases=aliases,
     )
+
+
+def _check_term_aliases(aliases: dict[str, str], known: set[str]) -> None:
+    """Assert no alias key is itself a canonical terminal name."""
+    if collisions := sorted(key for key in aliases if key in known):
+        detail = ', '.join(f'{key!r} -> {aliases[key]!r}' for key in collisions)
+        raise ValueError('ucs-detect data aliases canonical terminal name(s) '
+                         f'to another terminal: {detail}.  ')
 
 
 @dataclass(frozen=True)
