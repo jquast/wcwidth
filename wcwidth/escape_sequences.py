@@ -33,8 +33,10 @@ ZERO_WIDTH_PATTERN = re.compile(
     r'\x1bP[^\x1b\x07]*(?:\x07|\x1b\\)|'
     # PM sequences
     r'\x1b\^[^\x1b\x07]*(?:\x07|\x1b\\)|'
-    # Character set designation (subset of nF, handled separately for clarity)
-    r'\x1b[()].|'
+    # Character set designation (subset of nF, handled separately for clarity).  The final byte
+    # is (?s:.) rather than '.' so that a newline terminates it like any other byte, matching
+    # libwcwidth's parse_charset().
+    r'\x1b[()](?s:.)|'
     # nF sequences: ESC + one or more intermediate bytes (0x20-0x2F) + final byte (0x30-0x7E)
     r'\x1b[\x20-\x2f]+[\x30-\x7e]|'
     # Fe sequences (C1 controls)
@@ -44,6 +46,22 @@ ZERO_WIDTH_PATTERN = re.compile(
     # Fs sequences (independent functions)
     r'\x1b[\x60-\x7e]'
 )
+
+# TEXT_SIZING_PATTERN with named groups, shared by _STRIP_WITH_TEXT_SIZING and
+# _SEQUENCE_CLASSIFY.
+_TEXT_SIZING_NAMED = (r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*)'
+                      r'(?:;(?P<ts_text>[^\x07\x1b]*))?(?P<ts_term>\x07|\x1b\\)')
+
+# Text sizing and every other zero-width sequence in one alternation, for strip_sequences().
+# Substituting OSC 66 in its own pass would join the text on either side of a removed sequence,
+# and an ESC left of one would then introduce whatever followed it.
+_STRIP_WITH_TEXT_SIZING = re.compile(_TEXT_SIZING_NAMED + '|' + ZERO_WIDTH_PATTERN.pattern)
+
+
+def _strip_repl(match: "re.Match[str]") -> str:
+    """Keep the inner text of an OSC 66 match, drop every other sequence."""
+    return match.group('ts_text') or ''
+
 
 # Cursor right movement: CSI [n] C, parameter may be parsed by width()
 CURSOR_RIGHT_SEQUENCE = re.compile(r'\x1b\[(\d*)C')
@@ -72,8 +90,7 @@ _SEQUENCE_CLASSIFY = re.compile(
     + '|' + CURSOR_HPA_SEQUENCE.pattern.replace('(', '(?P<hpa_n>', 1)
     + '|' + CURSOR_RIGHT_SEQUENCE.pattern.replace('(', '(?P<cforward_n>', 1)
     + '|' + CURSOR_LEFT_SEQUENCE.pattern.replace('(', '(?P<cbackward_n>', 1)
-    + '|' + (r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*)'
-             r'(?:;(?P<ts_text>[^\x07\x1b]*))?(?P<ts_term>\x07|\x1b\\)')
+    + '|' + _TEXT_SIZING_NAMED
     + '|' + r'(?P<other_seq>(?:' + ZERO_WIDTH_PATTERN.pattern + '))'
 )
 
@@ -191,5 +208,5 @@ def strip_sequences(text: str) -> str:
         '[view]'
     """
     if '\x1b]66;' in text:
-        text = TEXT_SIZING_PATTERN.sub(r'\2', text)
+        return _STRIP_WITH_TEXT_SIZING.sub(_strip_repl, text)
     return ZERO_WIDTH_PATTERN.sub('', text)

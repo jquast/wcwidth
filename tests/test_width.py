@@ -153,6 +153,7 @@ ESCAPE_SEQUENCE_CASES = [
     ('\x1b]8;;https://example.com\x07link\x1b]8;;\x07', 4, 'OSC_hyperlink'),
     ('\x1b]0;title\x07text', 4, 'OSC_title'),
     ('\x1b(B', 0, 'charset'),
+    ('\x1b(\n', 0, 'charset_newline_final'),
     ('\x1b[', 0, 'Fe_CSI'),
 ]
 
