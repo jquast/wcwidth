@@ -34,6 +34,33 @@ void wcwidth_grapheme_iter_free(wcwidth_grapheme_iter_t *iter);
  */
 size_t wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos);
 
+/* Byte offset one past the end of the cluster containing *pos*, or *len* when
+ * that cluster runs to the end.
+ */
+size_t wcwidth_grapheme_boundary_after(const char *utf8, size_t len, size_t pos);
+
+/*
+ * Codepoint-array forms: the same segmentation over an already-decoded buffer,
+ * where every position, offset and length is a codepoint index.
+ */
+
+/* Iterate *codepoints*, which is borrowed, not copied, and must outlive the
+ * iterator.  Returns NULL if allocation fails.
+ */
+wcwidth_grapheme_iter_t *wcwidth_grapheme_iter_new_u32(const uint32_t *codepoints, size_t n);
+
+/* Next cluster, or NULL when exhausted.  *out_len* receives its length in
+ * codepoints and the returned pointer is into the caller's array.  Only
+ * meaningful for an iterator from wcwidth_grapheme_iter_new_u32().
+ */
+const uint32_t *wcwidth_grapheme_next_u32(wcwidth_grapheme_iter_t *iter, size_t *out_len);
+
+/* Codepoint index of the start of the cluster containing *pos*. */
+size_t wcwidth_grapheme_boundary_before_u32(const uint32_t *codepoints, size_t n, size_t pos);
+
+/* Codepoint index one past the end of the cluster containing *pos*, or *n*. */
+size_t wcwidth_grapheme_boundary_after_u32(const uint32_t *codepoints, size_t n, size_t pos);
+
 #ifdef __cplusplus
 }
 #endif

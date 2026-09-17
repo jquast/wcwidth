@@ -649,6 +649,33 @@ Grapheme cluster segmentation for UTF-8 text.
    Returns the byte offset of the cluster start.
 
 
+.. c:function:: size_t wcwidth_grapheme_boundary_after(const char *utf8, size_t len, size_t pos)
+
+   Byte offset one past the end of the cluster containing \*pos\*, or \*len\* when
+   that cluster runs to the end.
+
+
+.. c:function:: wcwidth_grapheme_iter_t *wcwidth_grapheme_iter_new_u32(const uint32_t *codepoints, size_t n)
+
+   Iterate \*codepoints\*, which is borrowed, not copied, and must outlive the
+   iterator.  Returns NULL if allocation fails.
+
+
+.. c:function:: const uint32_t *wcwidth_grapheme_next_u32(wcwidth_grapheme_iter_t *iter, size_t *out_len)
+
+   Next cluster, or NULL when exhausted.  \*out_len\* receives its length in
+   codepoints and the returned pointer is into the caller's array.  Only
+   meaningful for an iterator from wcwidth_grapheme_iter_new_u32().
+
+
+.. c:function:: size_t wcwidth_grapheme_boundary_before_u32(const uint32_t *codepoints, size_t n, size_t pos)
+
+   Codepoint index of the start of the cluster containing \*pos\*.
+
+.. c:function:: size_t wcwidth_grapheme_boundary_after_u32(const uint32_t *codepoints, size_t n, size_t pos)
+
+   Codepoint index one past the end of the cluster containing \*pos\*, or \*n\*.
+
 
 sgr.h
 -----

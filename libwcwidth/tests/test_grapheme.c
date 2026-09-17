@@ -101,12 +101,105 @@ TEST(indic_conjunct_unicode18)
     ASSERT_EQ((int64_t) 5, (int64_t) count_clusters("ok" STR_ZANABAZAR "ok"));
 }
 
+/* ARABIC NUMBER SIGN U+0600, GCB=Prepend */
+#define STR_PREPEND "\xd8\x80"
+
+TEST(boundary_after_basic)
+{
+    /* "abc": every cluster is one byte */
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_after("abc", 3, 0));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_after("abc", 3, 1));
+    /* past the end, and empty input */
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_grapheme_boundary_after("abc", 3, 3));
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_grapheme_boundary_after("abc", 3, 99));
+    ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_after("", 0, 0));
+
+    /* multi-codepoint clusters report their whole extent from any byte within */
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_grapheme_boundary_after(STR_E_ACUTE, 3, 0));
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_grapheme_boundary_after(STR_E_ACUTE, 3, 1));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_after(STR_CRLF, 2, 0));
+    ASSERT_EQ((int64_t) 8, (int64_t) wcwidth_grapheme_boundary_after(STR_FLAG_US, 8, 0));
+    ASSERT_EQ((int64_t) 18, (int64_t) wcwidth_grapheme_boundary_after(STR_FAMILY, 18, 0));
+
+    /* a cluster followed by more text ends where the next one starts */
+    ASSERT_EQ((int64_t) 8, (int64_t) wcwidth_grapheme_boundary_after(STR_FLAG_US "ok", 10, 0));
+    ASSERT_EQ((int64_t) 9, (int64_t) wcwidth_grapheme_boundary_after(STR_FLAG_US "ok", 10, 8));
+}
+
+TEST(boundary_prepend_gb9b)
+{
+    /* GB9b: Prepend attaches to what follows, so the clusters are "a"
+     * and <U+0600 b>, and the second starts at the PREPEND itself. */
+    const char *text = "a" STR_PREPEND "b";
+
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_before(text, 4, 4));
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_before(text, 4, 3));
+    ASSERT_EQ((int64_t) 2, (int64_t) count_clusters(text));
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_after(text, 4, 0));
+    ASSERT_EQ((int64_t) 4, (int64_t) wcwidth_grapheme_boundary_after(text, 4, 1));
+}
+
+TEST(iterator_u32)
+{
+    /* "éok" -- one two-codepoint cluster then two single ones */
+    static const uint32_t cps[] = {0x65, 0x301, 0x6F, 0x6B};
+    wcwidth_grapheme_iter_t *iter = wcwidth_grapheme_iter_new_u32(cps, 4);
+    const uint32_t *g;
+    size_t len = 0;
+
+    ASSERT_NOT_NULL(iter);
+    g = wcwidth_grapheme_next_u32(iter, &len);
+    ASSERT_TRUE(g == cps); /* borrowed, not copied */
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    g = wcwidth_grapheme_next_u32(iter, &len);
+    ASSERT_TRUE(g == cps + 2);
+    ASSERT_EQ((int64_t) 1, (int64_t) len);
+    g = wcwidth_grapheme_next_u32(iter, &len);
+    ASSERT_TRUE(g == cps + 3);
+    ASSERT_EQ((int64_t) 1, (int64_t) len);
+    ASSERT_NULL(wcwidth_grapheme_next_u32(iter, &len));
+    wcwidth_grapheme_iter_free(iter);
+
+    /* empty and NULL inputs */
+    iter = wcwidth_grapheme_iter_new_u32(cps, 0);
+    ASSERT_NOT_NULL(iter);
+    ASSERT_NULL(wcwidth_grapheme_next_u32(iter, &len));
+    wcwidth_grapheme_iter_free(iter);
+
+    iter = wcwidth_grapheme_iter_new_u32(NULL, 0);
+    ASSERT_NOT_NULL(iter);
+    ASSERT_NULL(wcwidth_grapheme_next_u32(iter, &len));
+    wcwidth_grapheme_iter_free(iter);
+}
+
+TEST(boundary_u32)
+{
+    /* flag, then "ok": clusters are [0,2), [2,3), [3,4) in codepoints */
+    static const uint32_t cps[] = {0x1F1FA, 0x1F1F8, 0x6F, 0x6B};
+
+    ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_before_u32(cps, 4, 2));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_before_u32(cps, 4, 3));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_after_u32(cps, 4, 0));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_after_u32(cps, 4, 1));
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_grapheme_boundary_after_u32(cps, 4, 2));
+
+    /* degenerate inputs */
+    ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_before_u32(cps, 4, 0));
+    ASSERT_EQ((int64_t) 4, (int64_t) wcwidth_grapheme_boundary_after_u32(cps, 4, 99));
+    ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_before_u32(NULL, 0, 1));
+    ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_after_u32(NULL, 0, 0));
+}
+
 int
 main(void)
 {
     RUN_TEST(iterator_basic);
     RUN_TEST(iterator_null_handling);
     RUN_TEST(boundary_before_basic);
+    RUN_TEST(boundary_after_basic);
+    RUN_TEST(boundary_prepend_gb9b);
+    RUN_TEST(iterator_u32);
+    RUN_TEST(boundary_u32);
     RUN_TEST(indic_conjunct_unicode18);
     return test_summary();
 }
