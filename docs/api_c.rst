@@ -115,6 +115,10 @@ Main entry-points for string display width: wcwidth_width_u32 / wcwidth_width_u8
 
       CR with indeterminate starting column
 
+   .. c:enumerator:: WCWIDTH_ERROR_UNSUPPORTED
+
+      unsupported terminal sequence
+
 .. c:struct:: wcwidth_width_opts_t
 
    Measurement options for wcwidth_width_u32() and wcwidth_width_u8().
@@ -401,16 +405,21 @@ display width 1 (default " ")
    Clip text to the visible column range [opts->v_start, opts->v_end).
 
    Returns a malloc'd string on success, NULL on error.  When NULL is
-   returned and \*error is set to a nonzero wcwidth_error_t (from width.h),
-   the failure is a WCWIDTH_STRICT violation; otherwise it is an
-   allocation failure.  \*error is always written on return.
+   returned, \*error (from width.h) is WCWIDTH_ERROR_UNSUPPORTED for a
+   terminal sequence this function does not support, another nonzero
+   wcwidth_error_t for a WCWIDTH_STRICT violation, and WCWIDTH_ERROR_NONE
+   for an allocation failure.  \*error is always written on return.
+
+   Unsupported are horizontal cursor movement (BS, CR, CUF, CUB, HPA),
+   OSC 8 hyperlinks and OSC 66 text sizing; docs/libwcwidth.rst explains
+   why each is rejected instead of passed through.
    On success, \*out_len receives the byte length of the result
    (excluding NUL terminator, which is always present).
    The caller must free the returned pointer with a single free() call.
 
    :param text: UTF-8 encoded input string, NOT NUL-terminated.
    :param text_len: length of text in bytes.
-   :param mode: how control characters and sequences are treated. WCWIDTH_STRICT raises on indeterminate sequences; cursor movement and OSC text sizing are not parsed.
+   :param mode: how control characters and sequences are treated. WCWIDTH_STRICT raises on indeterminate sequences.
    :param opts: clipping options, or NULL for defaults.
    :param out_len: output: byte length of result (excluding NUL); may be NULL.
    :param error: output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
@@ -421,10 +430,8 @@ display width 1 (default " ")
    Codepoint-array variant of wcwidth_clip_u8(): encodes the codepoints to UTF-8,
    clips, and decodes the result back to a codepoint array.  The returned
    array is \*out_len\* codepoints and the caller does a single free() of it.
-   Error and ownership semantics are as for wcwidth_clip_u8(): on NULL return, \*error\*
-   is a nonzero wcwidth_error_t for a WCWIDTH_STRICT violation, or
-   WCWIDTH_ERROR_NONE for an allocation failure.  opts->fillchar stays UTF-8
-   bytes.
+   Error and ownership semantics are as for wcwidth_clip_u8(), including
+   WCWIDTH_ERROR_UNSUPPORTED.  opts->fillchar stays UTF-8 bytes.
 
 
 

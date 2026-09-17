@@ -323,6 +323,27 @@ of *text*, without measuring it first -- the counterpart of the ``-1`` default o
     /* "\x1b[1;34mworld\x1b[0m" */
     free(out);
 
+Some sequences are unsupported, and `wcwidth_clip_u8()`_ returns ``NULL`` with ``*error`` set to
+``WCWIDTH_ERROR_UNSUPPORTED`` rather than answering differently from Python's `clip()`_:
+
+* **Horizontal cursor movement** -- BS, CR, and CSI ending in ``C`` (CUF), ``D`` (CUB) or ``G``
+  (HPA).  There is no counterpart to the ``overtyping`` option of Python's `clip()`_.
+* **OSC 8 hyperlinks** and **OSC 66 text sizing** -- measured, but never rewritten, so a window
+  cutting through one would leave an unbalanced pair or an unclipped sequence.
+
+.. code-block:: c
+
+    int error;
+
+    opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    opts.v_end = 3;
+    out = wcwidth_clip_u8("abcdef\x1b[3Dxy", 12, WCWIDTH_PARSE, &opts, NULL, &error);
+    /* NULL, error == WCWIDTH_ERROR_UNSUPPORTED */
+
+Movement is reported wherever it appears, because a CUB or HPA right of the window still rewinds
+into it.  The OSC sequences are reported only when the clip reaches one: the scan stops at the
+first ordinary character past ``v_end``, and nothing beyond that can change the result.
+
 `wcwidth_clip_u32()`_ is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
 codepoints.
 
@@ -389,61 +410,37 @@ Differences from the Python package
 
 `wcwidth_width_u32()`_ and `wcwidth_width_u8()`_ parse only the sequences that move the cursor
 within a line or change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB,
-HPA), and OSC 66 text sizing.  Every other recognized sequence counts as zero-width.
-
-Screen clears, scrolls, and vertical movement are indeterminate: their column effect depends on
-terminal state that the text does not carry.  ``WCWIDTH_STRICT`` reports them as an error, and the
-other modes count them as zero-width.
+HPA), and OSC 66 text sizing.  Every other recognized sequence is zero-width.  Screen clears,
+scrolls and vertical movement are indeterminate -- their column effect depends on terminal state
+the text does not carry -- so ``WCWIDTH_STRICT`` reports them as an error and the other modes
+count them as zero-width.
 
 ``wcswidth_*()`` and ``wcstwidth_*()`` take no ``wcwidth_control_mode_t`` and return -1 for any
-escape sequence, matching their Python counterparts.
+escape sequence, matching their Python counterparts.  `wcwidth_ljust_u8()`_, `wcwidth_rjust_u8()`_
+and `wcwidth_center_u8()`_ match the Python functions exactly.
 
-The text transforms are simpler than the Python ones:
+The text transforms are simpler:
 
-* OSC 8 hyperlinks are not implemented; an OSC 8 sequence is treated as an ordinary zero-width OSC.
-  It measures correctly but is never rewritten, so a `wcwidth_clip_u8()`_ window starting or ending
-  inside a hyperlink yields an unbalanced pair, and `wcwidth_wrap_u8()`_ does not re-open the link
-  on each line.  Callers must re-emit the opener and terminator themselves.
-* `wcwidth_clip_u8()`_ does not parse horizontal cursor movement (there is no counterpart to
-  Python's ``overtyping``) or OSC 66 text sizing; every sequence but SGR passes through as
-  zero-width, where it appeared.
+* `wcwidth_clip_u8()`_ rejects the unsupported sequences described above; every other sequence but
+  SGR is zero-width, preserved where it appeared rather than clipped as a unit.  It otherwise
+  matches Python's `clip()`_, SGR included.
+* `wcwidth_wrap_u8()`_ treats an OSC 8 hyperlink as an ordinary zero-width OSC, so the link is not
+  re-opened on each line; callers must re-emit the opener and terminator themselves.
 * `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where
   Python's `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
   ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
   mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
 
-Apart from those constructs, `wcwidth_clip_u8()`_ matches Python's `clip()`_, SGR included.
-
-`wcwidth_ljust_u8()`_, `wcwidth_rjust_u8()`_ and `wcwidth_center_u8()`_ match the Python functions
-exactly.
-
 Malformed escape sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Well-formed sequences -- those a conforming program would emit -- measure the same here as in
-Python.  Malformed ones may not: an unterminated CSI or OSC, a lone ESC at the end of a buffer, or
-an introducer followed by a byte the standard disallows can differ by a cell or two, and
-`wcwidth_escape_strip()`_ may keep bytes that Python's `strip_sequences()`_ drops, or the
-reverse.  Over random escape soup, roughly 2% of inputs measure differently.
-
-Python recognizes sequences by regular expression and this library by hand-written scanner, and the
-two disagree on where a malformed sequence ends.  The divergence is narrow: for a character-set
-designation ``ESC (``, all 79 final bytes ECMA-48 permits measure identically, as does every
-intermediate byte.  Only one of the 33 C0 controls -- which are not permitted there at all --
-differs:
-
-.. code-block:: c
-
-    wcwidth_width_u8("X\x1b(\nY", 5, WCWIDTH_PARSE, &opts, NULL);   /* 2; Python says 3 */
-
-Python's ``\x1b[()].`` does not match a newline and leaves the three bytes as text; this library
-consumes them as a sequence.  A real terminal does neither.  ``WCWIDTH_IGNORE`` behaves the same,
-since it too must decide where a sequence ends.
-
-Neither answer is more correct, and terminals themselves differ on malformed input, so do not rely
-on the two implementations agreeing when the text is arbitrary bytes.  ``WCWIDTH_STRICT`` is the
-exception: it refuses indeterminate input rather than guessing, and over the same corpus C and
-Python returned identical widths and identical error messages for every input.
+Python recognizes sequences by regular expression and this library by hand-written scanner, and
+the two agree on every well-formed sequence and nearly every malformed one.  Over 200,000 random
+escape soups, two measured differently and `wcwidth_escape_strip()`_ matched `strip_sequences()`_
+everywhere.  Both exceptions are a CSI carrying a private parameter byte before a cursor final,
+such as ``ESC [ > D``, which this library resolves as CUB where Python counts it zero-width.  A
+real terminal does neither reliably, so do not depend on the two agreeing when the text is
+arbitrary bytes.
 
 Supported Terminals
 -------------------
