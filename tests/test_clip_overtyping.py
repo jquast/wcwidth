@@ -201,3 +201,47 @@ def test_clip_hyperlink_clipped_away_keeps_underlying_cell():
     """An emptied hyperlink paints nothing, so it does not erase the column it sits on."""
     text = 'jX\x1b[2G' + HL_OPEN + '\x1b[5Ga' + HL_CLOSE
     assert clip(text, 0, 4) == 'j' + HL_OPEN + HL_CLOSE + 'X'
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    ('abcdef\x1b[6DZZZ', 0, 3, 'ZZZ'),
+    ('abcdef' + 'x' * 20 + '\x1b[30DZZZ', 0, 3, 'ZZZ'),
+    ('abcdef' + 'x' * 20 + '\x1b[1GZ', 0, 3, 'Zbc'),
+    ('abcdef' + 'x' * 20 + '\rZ', 0, 3, 'Zbc'),
+])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_clip_movement_past_window(text, start, end, expected, propagate_sgr):
+    """Movement right of the window rewinds into it, whatever propagate_sgr is set to."""
+    assert clip(text, start, end, propagate_sgr=propagate_sgr) == expected
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    ('ab\t\x1b]0;t\x07\x1b[2D', 0, 2, 'ab\x1b]0;t\x07'),
+    ('ab\t\x1b[2J\x1b[2D', 0, 2, 'ab\x1b[2J'),
+])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_clip_sequences_after_tab_past_window(text, start, end, expected, propagate_sgr):
+    """A tab past the window does not end the scan, so later sequences survive."""
+    assert clip(text, start, end, propagate_sgr=propagate_sgr) == expected
+
+
+@pytest.mark.parametrize('fillchar', [' ', '?', '.'])
+def test_clip_tab_expands_to_spaces_not_fillchar(fillchar):
+    assert clip('a\tb\x1b[1D', 0, 4, fillchar=fillchar) == 'a   '
+
+
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_clip_zero_width_text_sizing_survives_following_cell(propagate_sgr):
+    """An OSC 66 with no display text occupies no column, so the next cell cannot erase it."""
+    assert clip('\x1b]66;bad\x07text\x1b[1DX', 0, 4,
+                propagate_sgr=propagate_sgr) == '\x1b]66;;\x07texX'
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    ('ab\x1b[1Dcdefgh\x1b[31m', 0, 2, 'ac\x1b[31m'),
+    ('ab\rcdefgh\x1b[31mZ', 0, 2, 'cd\x1b[31m'),
+    ('abcdefgh\x1b[31m', 0, 2, 'ab\x1b[31m'),
+])
+def test_clip_sequence_past_window_without_captured_sgr(text, start, end, expected):
+    """Scanning continues to a sequence past the window when no SGR was captured."""
+    assert clip(text, start, end, overtyping=True, propagate_sgr=False) == expected
