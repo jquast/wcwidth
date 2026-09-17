@@ -329,6 +329,17 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
  * out_cap - 1 on truncation keeps every later `offset < out_cap` guard
  * meaningful and leaves room for the terminator.
  */
+/*
+ * ITU T.416 "38:2:<colour space>:R:G:B" carries an element the legacy
+ * "38;2;R;G;B" form has no slot for, so rejoining it with ';' would shift R,
+ * G and B one position.  Six elements with mode 2 means the colon form.
+ */
+static char
+sgr_color_separator(const int *color, int len)
+{
+    return (len > 5 && color[1] == 2) ? ':' : ';';
+}
+
 static size_t
 sgr_write_int(char *out, size_t out_cap, size_t offset, int value)
 {
@@ -434,22 +445,24 @@ wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t out_ca
     }
 
     if (state->fg_len > 0) {
+        char inner = sgr_color_separator(state->fg, state->fg_len);
         for (i = 0; i < state->fg_len; i++) {
             if (need_sep && i == 0 && offset < out_cap)
                 out[offset++] = ';';
             if (i > 0 && offset < out_cap)
-                out[offset++] = ';';
+                out[offset++] = inner;
             offset = sgr_write_int(out, out_cap, offset, state->fg[i]);
         }
         need_sep = 1;
     }
 
     if (state->bg_len > 0) {
+        char inner = sgr_color_separator(state->bg, state->bg_len);
         for (i = 0; i < state->bg_len; i++) {
             if (need_sep && i == 0 && offset < out_cap)
                 out[offset++] = ';';
             if (i > 0 && offset < out_cap)
-                out[offset++] = ';';
+                out[offset++] = inner;
             offset = sgr_write_int(out, out_cap, offset, state->bg[i]);
         }
         need_sep = 1;

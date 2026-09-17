@@ -139,6 +139,29 @@ TEST(to_escape_bounded)
     }
 }
 
+TEST(to_escape_colon_form)
+{
+    char buf[64];
+    wcwidth_sgr_state_t s;
+
+    /* the colon form must not be rejoined with ';' */
+    s = make_state("\x1b[38:2::10:20:30m");
+    ASSERT_EQ(6, s.fg_len);
+    wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
+    ASSERT_STREQ("\x1b[38:2:0:10:20:30m", buf);
+
+    s = make_state("\x1b[48:2::10:20:30m");
+    ASSERT_EQ(6, s.bg_len);
+    wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
+    ASSERT_STREQ("\x1b[48:2:0:10:20:30m", buf);
+
+    /* the legacy form keeps its semicolons */
+    s = make_state("\x1b[38;2;10;20;30m");
+    ASSERT_EQ(5, s.fg_len);
+    wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
+    ASSERT_STREQ("\x1b[38;2;10;20;30m", buf);
+}
+
 int
 main(void)
 {
@@ -146,6 +169,7 @@ main(void)
     RUN_TEST(is_active_basic);
     RUN_TEST(to_escape_basic);
     RUN_TEST(to_escape_bounded);
+    RUN_TEST(to_escape_colon_form);
     RUN_TEST(propagate_basic);
     return test_summary();
 }

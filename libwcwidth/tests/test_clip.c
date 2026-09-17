@@ -85,11 +85,36 @@ TEST(clip_u32_basic)
     }
 }
 
+TEST(sequences_outside_window)
+{
+    cs_assert("a\x1b]0;t\x07", 0, 1, "a\x1b]0;t\x07");
+    cs_assert("\x1b]0;t\x07xy", 1, 2, "\x1b]0;t\x07y");
+
+    /* a tab past v_end must not end the scan */
+    cs_assert("\t\t\x1b]0;t\x07", 0, 1, " \x1b]0;t\x07");
+}
+
+TEST(sgr_inside_window)
+{
+    cs_assert("ab\x1b[31mcd\x1b[0mef", 0, 4, "ab\x1b[31mcd\x1b[0m");
+    cs_assert("ab\x1b[31mcdef", 0, 4, "ab\x1b[31mcd\x1b[0m");
+    cs_assert("\x1b[31mab\x1b[32mcd\x1b[0m", 0, 4, "\x1b[31mab\x1b[32mcd\x1b[0m");
+}
+
+TEST(tab_captures_style)
+{
+    cs_assert("\x1b[31m\tx", 0, 4, "\x1b[31m    \x1b[0m");
+    cs_assert("\x1b[31m\tx", 0, 9, "\x1b[31m        x\x1b[0m");
+}
+
 int
 main(void)
 {
     RUN_TEST(basic);
     RUN_TEST(unbounded_end);
     RUN_TEST(clip_u32_basic);
+    RUN_TEST(sequences_outside_window);
+    RUN_TEST(sgr_inside_window);
+    RUN_TEST(tab_captures_style);
     return test_summary();
 }
