@@ -36,6 +36,26 @@ is not distributed in the sdist because of its size.  Fetch it first::
 
    git submodule update --init ucs-detect
 
+Release
+-------
+
+Bump for the next version in ``pyproject.toml`` and "stamp" version into python and C11 project::
+
+    tox -e update,format
+
+When these changes land in 'master', tag it::
+
+   git tag 0.9.0 && git push --tags
+
+The GitHub wheels_ workflow reacts to a new tag and builds all wheels using cibuildwheel_.  Once CI
+builds finish successfully, download and check them for release::
+
+   tox -e check_release
+
+This script exits 0 and reports success of pre-release checks, use twine to release to PyPI::
+
+   twine upload dist/*
+
 Building Documentation
 ----------------------
 
@@ -56,9 +76,9 @@ To upgrade requirements for updating unicode tables, run::
 
    tox -e update_requirements_update
 
-To upgrade requirements for testing, run::
+To upgrade testing requirements, run::
 
-   tox -e update_requirements38,update_requirements39
+   tox -e update_requirements39
 
 To upgrade requirements for building documentation, run::
 
@@ -68,4 +88,5 @@ To upgrade requirements for building documentation, run::
 .. _`sphinx`: https://www.sphinx-doc.org/
 
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
-
+.. _wheels: https://github.com/jquast/wcwidth/blob/master/.github/workflows/wheels.yml
+.. _cibuildwheel: https://cibuildwheel.pypa.io/

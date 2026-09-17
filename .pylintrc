@@ -9,12 +9,13 @@ load-plugins=
 persistent = no
 jobs = 0
 unsafe-load-any-extension = yes
-good-names = wc,fp
+good-names = wc,fp,HAS_C_EXTENSION
 
 [MESSAGES CONTROL]
 disable=
     I,
     fixme,
+    import-error,  # optional C extension is not built in lint environments
     c-extension-no-member,
     ungrouped-imports,
     useless-object-inheritance,

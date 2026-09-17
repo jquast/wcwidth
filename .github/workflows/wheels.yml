@@ -1,0 +1,97 @@
+name: Build Wheels
+
+on:
+  push:
+    # Release tags are bare versions; a 'v' prefix and a pre-release suffix match too.
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One cibuildwheel line builds the whole matrix, see [tool.cibuildwheel] in
+# pyproject.toml. Keep the Action tag in step with requirements-wheels.in.
+jobs:
+  build_wheels:
+    name: cp39-cp314 ${{ matrix.archs }} wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # One runner per architecture, so cibuildwheel runs its test-command on
+        # the hardware each wheel targets.  Emulation would build them fine but
+        # skip or fake the tests.
+        include:
+          - os: ubuntu-latest
+            archs: x86_64 i686
+          - os: ubuntu-24.04-arm
+            archs: aarch64
+          - os: macos-latest
+            archs: arm64
+          - os: macos-26-intel
+            archs: x86_64
+          - os: windows-latest
+            archs: AMD64 x86
+          - os: windows-11-arm
+            archs: ARM64
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: true
+
+      - uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084 # v3.4.1
+        env:
+          CIBW_ARCHS: ${{ matrix.archs }}
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  build_pure_wheel:
+    name: Build pure-Python wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - name: Build py3-none-any wheel
+        # Every release through 0.8.3 shipped only this wheel, so it installed
+        # anywhere without a build.  The binary wheels above cover CPython on
+        # the common platforms and pip prefers them; this is what everything
+        # else -- PyPy, uncommon architectures, a Python newer than the matrix
+        # -- gets instead of having to compile from the sdist.
+        env:
+          WCWIDTH_NO_EXTENSION: '1'
+        run: |
+          python -Im pip install build
+          python -Im build --wheel
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: pure-wheel
+          path: dist/*-py3-none-any.whl
+
+  build_sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - name: Build sdist
+        run: |
+          python -Im pip install build
+          python -Im build --sdist
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: sdist
+          path: dist/*.tar.gz

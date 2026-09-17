@@ -1,8 +1,6 @@
 """Tests for sequence-aware text wrapping functions."""
 
 # std imports
-import sys
-import platform
 import textwrap
 
 # 3rd party
@@ -369,10 +367,6 @@ def test_wrap_mixed(benchmark, text, w, expected):
     # ASCII + tab + CJK: 'a' is 1 col, tab to 4 (3 spaces), CJK is 2 cols
     ('a\t\u4e2d b', 8, 4, ['a   \u4e2d b']),
 ])
-@pytest.mark.skipif(
-    platform.python_implementation() == 'PyPy' and sys.version_info < (3, 9),
-    reason='PyPy 3.8 str.expandtabs() counts UTF-8 bytes instead of characters'
-)
 def test_wrap_tabsize_wide_chars(text, w, tabsize, expected):
     """Verify tabsize respects wide character column positions."""
     assert wrap(text, w, tabsize=tabsize) == expected

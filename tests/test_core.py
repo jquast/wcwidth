@@ -1,8 +1,11 @@
 """Core tests for wcwidth module."""
 # std imports
 import re
+import sys
+import importlib
 import importlib.metadata
 from pathlib import Path
+from itertools import product
 
 # 3rd party
 import pytest
@@ -12,8 +15,9 @@ import wcwidth
 from wcwidth._width import _WIDTH_FAST_PATH_MIN_LEN
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-# libwcwidth/ is developed in this repository but is not shipped in the source distribution,
-# see [tool.hatch.build.targets.sdist] of pyproject.toml.
+# libwcwidth/ ships in the source distribution, see MANIFEST.in: a user installing from sdist
+# compiles the extension from these sources, so its absence is a packaging failure, not a
+# reason to skip.
 _LIBWCWIDTH_CONFIG_H = _PROJECT_ROOT / 'libwcwidth' / 'include' / 'wcwidth' / 'wcwidth_config.h'
 
 
@@ -35,6 +39,27 @@ def test_package_version():
     assert result == expected
 
 
+def test_cmake_and_setuptools_source_lists_parity():
+    """Libwcwidth source lists stay in parity and cover the Makefile glob."""
+    # given,
+    setup_py = (_PROJECT_ROOT / 'setup.py').read_text()
+    cmake = (_PROJECT_ROOT / 'libwcwidth' / 'CMakeLists.txt').read_text()
+
+    # exercise,
+    py_sources = set(re.findall(r'"libwcwidth/(src/(?:tables/)?[a-z0-9_]+\.c)"', setup_py))
+    cm_sources = set(re.findall(r'^    (src/(?:tables/)?[a-z0-9_]+\.c)$', cmake, re.M))
+    on_disk = {
+        path.relative_to(_PROJECT_ROOT / 'libwcwidth').as_posix()
+        for path in (_PROJECT_ROOT / 'libwcwidth' / 'src').glob('*.c')
+    } | {
+        path.relative_to(_PROJECT_ROOT / 'libwcwidth').as_posix()
+        for path in (_PROJECT_ROOT / 'libwcwidth' / 'src' / 'tables').glob('*.c')
+    }
+
+    # verify,
+    assert py_sources == cm_sources == on_disk
+
+
 def test_version_matches_pyproject():
     """pyproject.toml version is stamped into __version__."""
     # given,
@@ -44,8 +69,6 @@ def test_version_matches_pyproject():
     assert wcwidth.__version__ == version
 
 
-@pytest.mark.skipif(not _LIBWCWIDTH_CONFIG_H.exists(),
-                    reason='libwcwidth/ is not distributed in the source package')
 def test_version_matches_libwcwidth():
     """pyproject.toml version is stamped into libwcwidth's wcwidth_config.h."""
     # given,
@@ -58,6 +81,7 @@ def test_version_matches_libwcwidth():
 
     # verify,
     assert re.search(r'#define WCWIDTH_VERSION "([^"]+)"', config).group(1) == version
+    # the numeric macros carry only the release segment, a pre-release suffix is not an int
     release = re.match(r'\d+\.\d+\.\d+', version).group(0)
     assert f'{macros.group(1)}.{macros.group(2)}.{macros.group(3)}' == release
 
@@ -635,3 +659,104 @@ def test_wrap_lone_surrogate_escaped_bytes(text):
     """Wrap() handles a lone/incomplete surrogate-escaped byte without raising."""
     result = wcwidth.wrap(text, 3)
     assert isinstance(result, list)
+
+
+def test_python_functions_stay_python():
+    """Functions without C support always bind the Python implementation."""
+    python = {
+        'iter_graphemes_reverse': 'wcwidth.grapheme',
+        'grapheme_boundary_before': 'wcwidth.grapheme',
+        'iter_sequences': 'wcwidth.escape_sequences',
+    }
+    for name, module in python.items():
+        assert getattr(wcwidth, name).__module__ == module
+
+
+def test_python_env_var(monkeypatch):
+    """WCWIDTH_PYTHON=1 forces the Python implementation."""
+    monkeypatch.setenv('WCWIDTH_PYTHON', '1')
+    try:
+        importlib.reload(wcwidth)
+        assert not wcwidth.HAS_C_EXTENSION
+        assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
+    finally:
+        monkeypatch.undo()
+        importlib.reload(wcwidth)
+
+
+def test_import_error_fallback():
+    """A broken extension at import time falls back to the Python implementation."""
+    sys.modules['wcwidth._wcwidth_c'] = None
+    try:
+        importlib.reload(wcwidth)
+        assert not wcwidth.HAS_C_EXTENSION
+        assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
+    finally:
+        del sys.modules['wcwidth._wcwidth_c']
+        importlib.reload(wcwidth)
+
+
+_C_PARITY_ALPHABET = (
+    'ab',
+    '中文',
+    '\t',
+    '\x1b[31m',
+    '\x1b]8;;http://x\x1b\\',
+    '\x1b]8;;\x1b\\',
+    '\x1b]66;w=2:A\x1b\\',
+    '\x1b]0;t\x07',
+    '\x1b[2J',
+    '\x1b(B',
+    '\x1bP q\x1b\\',
+    '\x1b_x\x1b\\',
+    '\x1b^x\x1b\\',
+    '\x1bXx\x1b\\',
+    '\x1b(\n',
+    '\x1b)\n',
+    '\x1b[\n',
+    '\x1b]8;',
+    '\x1b \n',
+    '\x1b',
+)
+
+
+def _c_parity_corpus():
+    corpus = list(_C_PARITY_ALPHABET)
+    corpus += [a + b for a in _C_PARITY_ALPHABET for b in _C_PARITY_ALPHABET]
+    corpus += [''.join(t) for t in product(_C_PARITY_ALPHABET, repeat=3)]
+    return corpus
+
+
+def _c_parity_pairs():
+    """Each (name, python callable, C callable) triple to compare."""
+    # local
+    from wcwidth.align import ljust, rjust, center
+    from wcwidth._width import width
+    from wcwidth._wcwidth_c import ljust as c_ljust
+    from wcwidth._wcwidth_c import rjust as c_rjust
+    from wcwidth._wcwidth_c import width as c_width
+    from wcwidth._wcwidth_c import center as c_center
+    from wcwidth._wcwidth_c import strip_sequences as c_strip
+    from wcwidth.escape_sequences import strip_sequences
+
+    return (
+        ('width', width, c_width),
+        ('ljust', lambda text: ljust(text, 20), lambda text: c_ljust(text, 20)),
+        ('rjust', lambda text: rjust(text, 20), lambda text: c_rjust(text, 20)),
+        ('center', lambda text: center(text, 20), lambda text: c_center(text, 20)),
+        ('strip_sequences', strip_sequences, c_strip),
+    )
+
+
+@pytest.mark.skipif(not wcwidth.HAS_C_EXTENSION,
+                    reason="C extension not built; there is nothing to compare against")
+def test_c_extension_parity():
+    """The C functions bound by wcwidth/__init__.py match their Python counterparts."""
+    pairs = _c_parity_pairs()
+    divergent = []
+    for text in _c_parity_corpus():
+        for name, py_fn, c_fn in pairs:
+            py_result, c_result = py_fn(text), c_fn(text)
+            if py_result != c_result:
+                divergent.append((name, text, py_result, c_result))
+    assert not divergent[:10]
