@@ -6,8 +6,6 @@ Introduction
 
 This Python library is mainly for CLI/TUI programs that carefully produce output for Terminals.
 
-See page libwcwidth_ about the portable C11 library.
-
 Installation
 ------------
 
@@ -545,7 +543,6 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _XTVERSION: https://vtdn.dev/docs/dcs/xtversion/
 .. _ENQ: https://documentation.help/PuTTY/config-answerback.html
 .. _detectable: https://ucs-detect.readthedocs.io/results.html#terminal-identification
-.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/wcwidth.svg?logo=pypi
     :alt: Downloads
     :target: https://pypi.org/project/wcwidth/

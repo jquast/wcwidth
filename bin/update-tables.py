@@ -2019,7 +2019,7 @@ def _check_term_aliases(aliases: dict[str, str], known: set[str]) -> None:
     if collisions := sorted(key for key in aliases if key in known):
         detail = ', '.join(f'{key!r} -> {aliases[key]!r}' for key in collisions)
         raise ValueError('ucs-detect data aliases canonical terminal name(s) '
-                         f'to another terminal: {detail}.  ')
+                         f'to another terminal: {detail}.')
 
 
 @dataclass(frozen=True)

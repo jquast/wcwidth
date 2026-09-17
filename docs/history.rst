@@ -3,17 +3,21 @@ History
 =======
 0.8.4 *unreleased* ('master' branch, only)
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
-  * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
+  * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #243`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
   * **Bugfix** `width()`_, `ljust()`_, `rjust()`_, `center()`_, `clip()`_ and `strip_sequences()`_
     treated ``ESC ( LF`` as text instead of a character set designation (rare), `PR #259`_.
   * **Bugfix** `clip()`_ painter's algorithm and "tab expansion" should be spaces, `PR #259`_.
+  * **Bugfix** Variation Selector 15 no longer narrows the same base character more than once,
+    `Issue #241`_, `PR #244`_.
   * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
-  * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
+  * **Changed** ``ambiguous_width`` arguments are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
     ``textwrap``.  Previously ``wrap('女', 0)`` returned ``['女']``, `PR #246`_.
   * **Changed** `clip()`_ arguments ``start=0`` and ``end=-1`` become optional, `PR #250`_.
   * **Updated** tables for Unicode version 18.0, `PR #238`_.
+  * **Updated** ``ucs-detect`` data files used in some automatic tests are no longer
+    distributed, `PR #253`_.
 
 0.8.3 *2026-08-28*
   * **Bugfix** Do not hang on `wrap()`_ calls of width 1 with text containing OSC8 hyperlinks and
@@ -99,10 +103,10 @@ History
   * **Bugfix** missing ``py.typed``, ``Typing :: Typed``. `PR #184`_.
 
 0.3.2 *2026-01-23*
-  * **Updated** type hinting for full ``mympy --strict`` compliance. `PR #183`_.
+  * **Updated** type hinting for full ``mypy --strict`` compliance. `PR #183`_.
 
 0.3.1 *2026-01-22*
-  * **Performance** improvement up to 30% in `width()_`. `PR #181`_.
+  * **Performance** improvement up to 30% in `width()`_. `PR #181`_.
 
 0.3.0 *2026-01-21*
   * **Drop Support** for Python 3.6 and 3.7. `PR #156`_.
@@ -280,15 +284,17 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #231`: https://github.com/jquast/wcwidth/pull/231
 .. _`PR #235`: https://github.com/jquast/wcwidth/pull/235
 .. _`PR #238`: https://github.com/jquast/wcwidth/pull/238
-.. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
+.. _`PR #243`: https://github.com/jquast/wcwidth/pull/243
+.. _`PR #244`: https://github.com/jquast/wcwidth/pull/244
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
+.. _`PR #253`: https://github.com/jquast/wcwidth/pull/253
 .. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
-.. _`Issue #242`: https://github.com/jquast/wcwidth/issues/242
+.. _`Issue #241`: https://github.com/jquast/wcwidth/issues/241
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
 .. _`Avram Lubkin`: https://github.com/avylove
 .. _`jacobsandlund/uucode`: https://github.com/jacobsandlund/uucode
@@ -314,4 +320,3 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
-.. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
