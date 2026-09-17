@@ -339,9 +339,7 @@ Some sequences are unsupported, and `wcwidth_clip_u8()`_ returns ``NULL`` with `
     out = wcwidth_clip_u8("abcdef\x1b[3Dxy", 12, WCWIDTH_PARSE, &opts, NULL, &error);
     /* NULL, error == WCWIDTH_ERROR_UNSUPPORTED */
 
-Movement is reported wherever it appears, because a CUB or HPA right of the window still rewinds
-into it.  The OSC sequences are reported only when the clip reaches one: the scan stops at the
-first ordinary character past ``v_end``, and nothing beyond that can change the result.
+Movement is reported wherever it appears; the OSC sequences only where the clip reaches one.
 
 `wcwidth_clip_u32()`_ is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
 codepoints.

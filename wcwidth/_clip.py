@@ -519,8 +519,7 @@ def _clip_painter(
     # is emitted, meaning captured_style is still in effect at the end.
     end_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
-    # Index of the next horizontal movement at or after the scan position, -1 when
-    # none is left.  Resolved on the first attempt to stop early, and again once passed.
+    # Next movement at or after the scan position, -1 when none is left.
     next_movement: Optional[int] = None
 
     def _write_cells(s: str, w: int, write_col: int,
@@ -528,8 +527,7 @@ def _clip_painter(
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
         nonlocal captured_style, seq_order
         if w == 0:
-            # Occupies no column, so it belongs with the other zero-width
-            # items: a cell here would be overwritten by the next write.
+            # Zero-width: a cell here would be overwritten by the next write.
             if s:
                 sequences.append((write_col, seq_order, s))
                 seq_order += 1
@@ -560,8 +558,7 @@ def _clip_painter(
         if col >= end and char not in '\r\x08\t\x1b':
             # Movement right-of the window can still rewinds back into it.
             if next_movement is None or 0 <= next_movement < idx:
-                # Every match begins with one of these, and rfind is ~600x cheaper
-                # than scanning the remainder for a movement that is not there.
+                # Any match starts with one of these, and rfind is far cheaper.
                 if max(text.rfind('\x08'), text.rfind('\r'), text.rfind('\x1b')) < idx:
                     next_movement = -1
                 else:

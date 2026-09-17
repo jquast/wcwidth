@@ -1,10 +1,9 @@
 /*
  * Text truncation with sequence awareness.
  *
- * This is a simplified C11 implementation.  It supports fewer terminal
- * sequences than Python's clip(); docs/libwcwidth.rst lists which.  Rather
- * than answer differently, it fails with WCWIDTH_ERROR_UNSUPPORTED when an
- * unsupported sequence would affect the result.
+ * This is a simplified C11 implementation.  It fails with
+ * WCWIDTH_ERROR_UNSUPPORTED rather than answer differently from Python's
+ * clip(); docs/libwcwidth.rst lists the sequences it does not support.
  */
 #include "wcwidth/clip.h"
 #include "wcwidth/escape.h"
@@ -179,13 +178,9 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool reset)
 }
 
 /*
- * Whether text holds the unsupported horizontal cursor movement: BS, CR, or a
- * CSI whose final byte is CUF, CUB or HPA.
- *
- * Found up front rather than inside clip_run(), which stops at the first
- * ordinary character past the window: movement to the right of that point is
- * never seen there, yet a CUB or HPA still rewinds into the window and
- * changes what Python's painter would produce.
+ * Whether text holds horizontal cursor movement: BS, CR, or a CSI ending in
+ * CUF, CUB or HPA.  Found up front because clip_run() stops past the window,
+ * where movement can still rewind back into it.
  */
 static bool
 has_cursor_movement(const char *text, size_t text_len)
@@ -293,9 +288,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
                 goto fail;
             }
 
-            /* The unsupported OSC sequences: measured, but never clipped as
-             * a unit.  Reached only inside the region actually scanned, which
-             * is the only region that can affect the result. */
+            /* Unsupported OSC: measured, but never clipped as a unit. */
             if (result.type == WCWIDTH_ESC_OSC66
                 || (result.length >= 4 && memcmp(result.start, "\x1b]8;", 4) == 0)) {
                 *error = WCWIDTH_ERROR_UNSUPPORTED;
@@ -414,8 +407,7 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
 
     if (out_len != NULL)
         *out_len = 0;
-    /* clip_run() reports through *error unconditionally; give it somewhere to
-     * write when the caller did not ask for the code. */
+    /* clip_run() always writes *error; give it somewhere when the caller did not. */
     if (error == NULL)
         error = &local_error;
     *error = WCWIDTH_ERROR_NONE;

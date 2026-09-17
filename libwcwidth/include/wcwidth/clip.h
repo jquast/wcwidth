@@ -48,9 +48,8 @@ extern const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT;
  * wcwidth_error_t for a WCWIDTH_STRICT violation, and WCWIDTH_ERROR_NONE
  * for an allocation failure.  *error is always written on return.
  *
- * Unsupported are horizontal cursor movement (BS, CR, CUF, CUB, HPA),
- * OSC 8 hyperlinks and OSC 66 text sizing; docs/libwcwidth.rst explains
- * why each is rejected instead of passed through.
+ * Unsupported: horizontal cursor movement (BS, CR, CUF, CUB, HPA), OSC 8
+ * hyperlinks and OSC 66 text sizing.
  * On success, *out_len receives the byte length of the result
  * (excluding NUL terminator, which is always present).
  * The caller must free the returned pointer with a single free() call.

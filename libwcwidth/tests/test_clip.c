@@ -122,11 +122,7 @@ TEST(tab_captures_style)
     cs_assert("\x1b[31m\tx", 0, 9, "\x1b[31m        x\x1b[0m");
 }
 
-/*
- * clip() does not resolve horizontal cursor movement into its column model and
- * does not rewrite OSC 8 hyperlinks or clip OSC 66 text sizing as a unit.  It
- * reports these rather than returning a result that silently differs.
- */
+/* Unsupported sequences are reported, not answered differently. */
 TEST(unsupported_cursor_movement)
 {
     cs_assert_unsupported("abcdef\x1b[5Cgh");

@@ -33,9 +33,8 @@ ZERO_WIDTH_PATTERN = re.compile(
     r'\x1bP[^\x1b\x07]*(?:\x07|\x1b\\)|'
     # PM sequences
     r'\x1b\^[^\x1b\x07]*(?:\x07|\x1b\\)|'
-    # Character set designation (subset of nF, handled separately for clarity).  The final byte
-    # is (?s:.) rather than '.' so that a newline terminates it like any other byte, matching
-    # libwcwidth's parse_charset().
+    # Character set designation (subset of nF, handled separately for clarity).
+    # The final byte is (?s:.) so a newline terminates it like any other byte.
     r'\x1b[()](?s:.)|'
     # nF sequences: ESC + one or more intermediate bytes (0x20-0x2F) + final byte (0x30-0x7E)
     r'\x1b[\x20-\x2f]+[\x30-\x7e]|'
@@ -47,14 +46,11 @@ ZERO_WIDTH_PATTERN = re.compile(
     r'\x1b[\x60-\x7e]'
 )
 
-# TEXT_SIZING_PATTERN with named groups, shared by _STRIP_WITH_TEXT_SIZING and
-# _SEQUENCE_CLASSIFY.
+# TEXT_SIZING_PATTERN with named groups, shared by the two patterns below.
 _TEXT_SIZING_NAMED = (r'\x1b\]66;(?P<ts_meta>[^;\x07\x1b]*)'
                       r'(?:;(?P<ts_text>[^\x07\x1b]*))?(?P<ts_term>\x07|\x1b\\)')
 
-# Text sizing and every other zero-width sequence in one alternation, for strip_sequences().
-# Substituting OSC 66 in its own pass would join the text on either side of a removed sequence,
-# and an ESC left of one would then introduce whatever followed it.
+# One alternation: a separate OSC 66 pass would splice the text around each removal.
 _STRIP_WITH_TEXT_SIZING = re.compile(_TEXT_SIZING_NAMED + '|' + ZERO_WIDTH_PATTERN.pattern)
 
 
