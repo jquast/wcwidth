@@ -9,6 +9,7 @@ __pycache__
 *.swp
 build
 /libwcwidth/build-cmake
+/libwcwidth/core
 *.so
 dist
 docs/_build
