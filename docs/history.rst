@@ -1,7 +1,7 @@
 =======
 History
 =======
-0.8.4 *unreleased* ('master' branch, only)
+0.8.4 *2026-09-17*
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #243`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
