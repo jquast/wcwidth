@@ -2,6 +2,7 @@
 History
 =======
 0.8.4 *unreleased* ('master' branch, only)
+  * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
   * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
@@ -279,6 +280,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
+.. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

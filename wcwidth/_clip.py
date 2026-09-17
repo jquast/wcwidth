@@ -183,9 +183,6 @@ def _reconstruct_painter(
         if walk_col in cells:
             cell_text, cell_w = cells[walk_col]
             parts.append(cell_text)
-            # A zero-width cell still consumes its column.  Advancing by cell_w
-            # alone would revisit it forever, appending to *parts* until the
-            # process is killed.
             walk_col += cell_w or 1
         else:
             if start <= walk_col <= max_cell_col:
@@ -528,9 +525,6 @@ def _clip_painter(
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
         nonlocal captured_style
         if not s and w == 0:
-            # Nothing to paint: an OSC 8 hyperlink whose inner text clipped away
-            # entirely arrives here.  Storing it would replace whatever the column
-            # already holds, and leave a zero-width cell for _reconstruct_painter().
             return
         for offset in range(w):
             src_col = write_col + offset

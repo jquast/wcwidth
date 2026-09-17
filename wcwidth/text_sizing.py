@@ -115,7 +115,6 @@ class TextSizingParams(typing.NamedTuple):
 
             >>> TextSizingParams.from_params('s=2:w=3')
             TextSizingParams(scale=2, width=3)
-
         """
         kwargs: typing.Dict[str, int] = {}
         if not raw:
@@ -175,7 +174,6 @@ class TextSizing(typing.NamedTuple):
             >>> from wcwidth.escape_sequences import TEXT_SIZING_PATTERN
             >>> TextSizing.from_match(TEXT_SIZING_PATTERN.match('\x1b]66;w=2;XY\x07'))
             TextSizing(params=TextSizingParams(width=2), text='XY', terminator='\x07')
-
         """
         return cls(params=TextSizingParams.from_params(match.group(1), control_codes=control_codes),
                    text=match.group(2) or '',
