@@ -73,7 +73,7 @@ const wcwidth_interval_t WCWIDTH_WIDE_EASTASIAN[] = {
     { 0x17000, 0x18cda },  /* Tangut Ideograph-17000  ..Khitan Small Script Char */
     { 0x18cff, 0x18d20 },  /* Khitan Small Script Char..Tangut Ideograph-18d20 */
     { 0x18d80, 0x18df2 },  /* Tangut Component-769    ..Tangut Component-883 */
-    { 0x18e00, 0x19191 },  /* (nil) */
+    { 0x18e00, 0x19191 },  /* Jurchen Character-18e00 ..Jurchen Character-19191 */
     { 0x191a0, 0x191d2 },  /* Jurchen Radical-01      ..Jurchen Radical-51 */
     { 0x1aff0, 0x1aff3 },  /* Katakana Letter Minnan T..Katakana Letter Minnan T */
     { 0x1aff5, 0x1affb },  /* Katakana Letter Minnan T..Katakana Letter Minnan N */

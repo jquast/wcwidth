@@ -252,10 +252,12 @@ def render(kind: str, signature: str, comment: str | None,
         lines.append(f'   .. {mkind}:: {name}')
         if doc:
             lines.append('')
-            lines.append('      ' + doc)
+            # every line of a wrapped comment must be indented, or the member's description
+            # dedents out of its parent directive and the C domain sees a duplicate declaration
+            lines.extend('' if not line else f'      {line}' for line in doc.splitlines())
     if note:
         lines.append('')
-        lines.append(f'   {note}')
+        lines.extend('' if not line else f'   {line}' for line in note.splitlines())
     return lines
 
 

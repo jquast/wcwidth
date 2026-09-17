@@ -286,7 +286,7 @@ Text alignment: ljust, rjust, center.
    .. c:member:: const char *fillchar
 
       UTF-8 padding, repeated once per padding
-cell (default " ")
+      cell (default " ")
 
    .. c:member:: size_t fillchar_len
 
@@ -365,9 +365,9 @@ Clip text to a visible column range [v_start, v_end).
    .. c:member:: size_t v_end
 
       ending column, exclusive.  SIZE_MAX (the
-default) clips through the final column of
-text, as the -1 default of Python's clip()
-does.  Clamped to INT_MAX with v_start.
+      default) clips through the final column of
+      text, as the -1 default of Python's clip()
+      does.  Clamped to INT_MAX with v_start.
 
    .. c:member:: int tabsize
 
@@ -384,12 +384,12 @@ does.  Clamped to INT_MAX with v_start.
    .. c:member:: bool propagate_sgr
 
       wrap result with the SGR state at the first
-visible character (default true)
+      visible character (default true)
 
    .. c:member:: const char *fillchar
 
       UTF-8 fill for a partially visible grapheme,
-display width 1 (default " ")
+      display width 1 (default " ")
 
    .. c:member:: size_t fillchar_len
 

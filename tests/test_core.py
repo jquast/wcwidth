@@ -11,6 +11,17 @@ import pytest
 import wcwidth
 from wcwidth._width import _WIDTH_FAST_PATH_MIN_LEN
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# libwcwidth/ is developed in this repository but is not shipped in the source distribution,
+# see [tool.hatch.build.targets.sdist] of pyproject.toml.
+_LIBWCWIDTH_CONFIG_H = _PROJECT_ROOT / 'libwcwidth' / 'include' / 'wcwidth' / 'wcwidth_config.h'
+
+
+def _pyproject_version():
+    """Return the ``version`` declared by pyproject.toml."""
+    pyproject = (_PROJECT_ROOT / 'pyproject.toml').read_text()
+    return re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+
 
 def test_package_version():
     """wcwidth.__version__ is expected value."""
@@ -25,19 +36,27 @@ def test_package_version():
 
 
 def test_version_matches_pyproject():
-    """pyproject.toml version is stamped into __version__ and wcwidth_config.h."""
+    """pyproject.toml version is stamped into __version__."""
     # given,
-    root = Path(__file__).resolve().parent.parent
-    pyproject = (root / 'pyproject.toml').read_text()
-    config = (root / 'libwcwidth' / 'include' / 'wcwidth' / 'wcwidth_config.h').read_text()
-    version = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
+    version = _pyproject_version()
+
+    # verify,
+    assert wcwidth.__version__ == version
+
+
+@pytest.mark.skipif(not _LIBWCWIDTH_CONFIG_H.exists(),
+                    reason='libwcwidth/ is not distributed in the source package')
+def test_version_matches_libwcwidth():
+    """pyproject.toml version is stamped into libwcwidth's wcwidth_config.h."""
+    # given,
+    version = _pyproject_version()
+    config = _LIBWCWIDTH_CONFIG_H.read_text()
     macros = re.search(
         r'#define WCWIDTH_VERSION_MAJOR (\d+)\n'
         r'#define WCWIDTH_VERSION_MINOR (\d+)\n'
         r'#define WCWIDTH_VERSION_PATCH (\d+)', config)
 
     # verify,
-    assert wcwidth.__version__ == version
     assert re.search(r'#define WCWIDTH_VERSION "([^"]+)"', config).group(1) == version
     release = re.match(r'\d+\.\d+\.\d+', version).group(0)
     assert f'{macros.group(1)}.{macros.group(2)}.{macros.group(3)}' == release
