@@ -186,7 +186,7 @@ jobs:
           delete-merged: true
 
       - name: Download coverage data
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: coverage-data
 
