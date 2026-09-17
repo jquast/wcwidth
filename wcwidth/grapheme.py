@@ -258,11 +258,11 @@ def _iter_graphemes_python(
     Example::
 
         >>> list(iter_graphemes('cafe\u0301'))
-        ['c', 'a', 'f', 'e\u0301']
+        ['c', 'a', 'f', 'é']
         >>> list(iter_graphemes('ok\U0001F468\u200D\U0001F469\u200D\U0001F467'))
-        ['o', 'k', '\U0001F468\u200D\U0001F469\u200D\U0001F467']
+        ['o', 'k', '👨\u200d👩\u200d👧']
         >>> list(iter_graphemes('ok\U0001F1FA\U0001F1F8'))
-        ['o', 'k', '\U0001F1FA\U0001F1F8']
+        ['o', 'k', '🇺🇸']
 
     .. versionadded:: 0.3.0
     """

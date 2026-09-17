@@ -183,7 +183,7 @@ def _reconstruct_painter(
         if walk_col in cells:
             cell_text, cell_w = cells[walk_col]
             parts.append(cell_text)
-            walk_col += cell_w
+            walk_col += cell_w or 1
         else:
             if start <= walk_col <= max_cell_col:
                 parts.append(fillchar)
@@ -524,6 +524,8 @@ def _clip_painter(
                      is_hyperlink: bool = False) -> None:
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
         nonlocal captured_style
+        if not s and w == 0:
+            return
         for offset in range(w):
             src_col = write_col + offset
             if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
@@ -805,7 +807,7 @@ def clip(
 
         >>> clip('\x1b[1;34mHello world\x1b[0m', 6, 11)
         '\x1b[1;34mworld\x1b[0m'
-        >>> wcwidth.clip('\x1b[1mbold\x1b[m normal', 1, 9)
+        >>> clip('\x1b[1mbold\x1b[m normal', 1, 9)
         '\x1b[1mold\x1b[m norm'
 
     Set ``propagate_sgr=False`` to disable this behavior.

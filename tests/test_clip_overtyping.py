@@ -179,3 +179,25 @@ def test_clip_cursor_left_strict_out_of_bounds_to_end_of_line():
     """Clip() end=-1 still raises in strict mode for out-of-bounds cursor-left."""
     with pytest.raises(ValueError, match='Cursor left movement'):
         clip('\x1b[2Dab', 0, control_codes='strict')
+
+
+HL_OPEN = '\x1b]8;;http://x\x07'
+HL_CLOSE = '\x1b]8;;\x07'
+
+
+@pytest.mark.parametrize('text,start,end,expected', [
+    (HL_OPEN + '\x1b[5Ga' + HL_CLOSE, 0, 4, HL_OPEN + HL_CLOSE),
+    (HL_OPEN + '\x1b[5Ga' + HL_CLOSE, 0, 6, HL_OPEN + '    a' + HL_CLOSE),
+    ('j' + HL_OPEN + '\x1b[5Ga' + HL_CLOSE + 'i\x1b[5G字', 0, 4, 'j' + HL_OPEN + HL_CLOSE),
+    ('j' + HL_OPEN + '\x1b[5Ga' + HL_CLOSE + 'i\x1b[5G字', 0, 6,
+     'j' + HL_OPEN + '    a' + HL_CLOSE),
+])
+def test_clip_hyperlink_inner_text_clipped_away(text, start, end, expected):
+    """Clip() terminates when a hyperlink's inner text clips to zero width."""
+    assert clip(text, start, end) == expected
+
+
+def test_clip_hyperlink_clipped_away_keeps_underlying_cell():
+    """An emptied hyperlink paints nothing, so it does not erase the column it sits on."""
+    text = 'jX\x1b[2G' + HL_OPEN + '\x1b[5Ga' + HL_CLOSE
+    assert clip(text, 0, 4) == 'j' + HL_OPEN + HL_CLOSE + 'X'
