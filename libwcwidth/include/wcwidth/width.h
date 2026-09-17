@@ -35,6 +35,7 @@ typedef enum
     WCWIDTH_ERROR_CURSOR_LEFT_EXCEED,   /* CUB/backspace moves before column 0 */
     WCWIDTH_ERROR_CURSOR_LEFT_ABSOLUTE, /* HPA to an indeterminate column */
     WCWIDTH_ERROR_HORIZONTAL_MOVEMENT,  /* CR with indeterminate starting column */
+    WCWIDTH_ERROR_UNSUPPORTED,          /* unsupported terminal sequence */
 } wcwidth_error_t;
 
 /* Measurement options for wcwidth_width_u32() and wcwidth_width_u8(). */

@@ -3,17 +3,11 @@ History
 =======
 0.8.4 *unreleased* ('master' branch, only)
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
-  * **Bugfix** libwcwidth_ grapheme cluster boundary before a Prepend character (GB9b),
-    `PR #253`_.
-  * **Bugfix** libwcwidth_ width of ITU T.416 colon-format SGR color parameters, `PR #253`_.
-  * **Bugfix** libwcwidth_ `wcwidth_clip_u8()`_ discarded escape sequences outside the clip
-    window, and SGR sequences within it, `PR #253`_.
-  * **New** libwcwidth_ `wcwidth_grapheme_boundary_after()`_ and codepoint-array forms of the
-    grapheme API, `PR #253`_.
-  * **Changed** the ``ucs-detect`` terminal measurements are no longer distributed in the
-    sdist, reducing it from 1.6MB to 0.4MB, `PR #253`_.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #239`_.
   * **Bugfix** width of OSC 66 text sizing sequences without a text field, `PR #246`_.
+  * **Bugfix** `width()`_, `ljust()`_, `rjust()`_, `center()`_, `clip()`_ and `strip_sequences()`_
+    treated ``ESC ( LF`` as text instead of a character set designation (rare), `PR #259`_.
+  * **Bugfix** `clip()`_ painter's algorithm and "tab expansion" should be spaces, `PR #259`_.
   * **Changed** `iter_graphemes()`_ clustering rule GB9c for Unicode 18.0, `PR #238`_.
   * **Changed** ``ambiguous_width`` argument are now clamped to allowed range (1, 2), `PR #246`_.
   * **Changed** `wrap()`_ now raises ``ValueError`` for a width of zero or less, matching stdlib
@@ -289,8 +283,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #239`: https://github.com/jquast/wcwidth/pull/239
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
-.. _`PR #253`: https://github.com/jquast/wcwidth/pull/253
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
+.. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
@@ -321,5 +315,3 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
 .. _libwcwidth: https://wcwidth.readthedocs.io/en/latest/libwcwidth.html
-.. _`wcwidth_clip_u8()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_clip_u8
-.. _`wcwidth_grapheme_boundary_after()`: https://wcwidth.readthedocs.io/en/latest/api_c.html#c.wcwidth_grapheme_boundary_after

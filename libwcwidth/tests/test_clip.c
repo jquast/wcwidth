@@ -25,6 +25,21 @@ cs_assert(const char *text, size_t start, size_t end, const char *expected)
     free(last);
 }
 
+static void
+cs_assert_unsupported(const char *text)
+{
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    char fillchar = ' ';
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+
+    opts.v_start = 0;
+    opts.v_end = 3;
+    opts.fillchar = &fillchar;
+    ASSERT_NULL(wcwidth_clip_u8(text, strlen(text), WCWIDTH_PARSE, &opts, &len, &error));
+    ASSERT_EQ(WCWIDTH_ERROR_UNSUPPORTED, error);
+}
+
 TEST(basic)
 {
     cs_assert("hello", 0, 5, "hello");
@@ -107,6 +122,27 @@ TEST(tab_captures_style)
     cs_assert("\x1b[31m\tx", 0, 9, "\x1b[31m        x\x1b[0m");
 }
 
+/* Unsupported sequences are reported, not answered differently. */
+TEST(unsupported_cursor_movement)
+{
+    cs_assert_unsupported("abcdef\x1b[5Cgh");
+    cs_assert_unsupported("abcdef\x1b[3Dgh");
+    cs_assert_unsupported("abcdef\x1b[2Ggh");
+    cs_assert_unsupported("abcdef\bgh");
+    cs_assert_unsupported("abcdef\rgh");
+    /* past the clip window, where the scan stops, and still reported */
+    cs_assert_unsupported("abcdefghijklmnop\x1b[3D");
+    cs_assert_unsupported("abcdefghijklmnop\b");
+}
+
+TEST(unsupported_osc)
+{
+    cs_assert_unsupported("ab\x1b]8;;http://e\x1b\\LNK\x1b]8;;\x1b\\");
+    cs_assert_unsupported("ab\x1b]66;w=2:A\x1b\\");
+    /* OSC 0 is an ordinary zero-width sequence and stays supported */
+    cs_assert("ab\x1b]0;t\x07xy", 0, 3, "ab\x1b]0;t\x07x");
+}
+
 int
 main(void)
 {
@@ -116,5 +152,7 @@ main(void)
     RUN_TEST(sequences_outside_window);
     RUN_TEST(sgr_inside_window);
     RUN_TEST(tab_captures_style);
+    RUN_TEST(unsupported_cursor_movement);
+    RUN_TEST(unsupported_osc);
     return test_summary();
 }

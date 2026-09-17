@@ -519,12 +519,20 @@ def _clip_painter(
     # is emitted, meaning captured_style is still in effect at the end.
     end_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
+    # Next movement at or after the scan position, -1 when none is left.
+    next_movement: Optional[int] = None
 
     def _write_cells(s: str, w: int, write_col: int,
                      is_hyperlink: bool = False) -> None:
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
-        nonlocal captured_style
-        if not s and w == 0:
+        nonlocal captured_style, seq_order
+        if w == 0:
+            # Zero-width: a cell here would be overwritten by the next write.
+            if s:
+                sequences.append((write_col, seq_order, s))
+                seq_order += 1
+                if propagate_sgr and captured_style is None:
+                    captured_style = current_style
             return
         for offset in range(w):
             src_col = write_col + offset
@@ -546,9 +554,24 @@ def _clip_painter(
     while idx < len(text):
         char = text[idx]
 
-        # Early exit: past visible region, SGR captured, no escape ahead.
-        if col >= end and captured_style is not None and char != '\x1b':
-            break
+        # Early exit: past visible region.
+        if col >= end and char not in '\r\x08\t\x1b':
+            # Movement right-of the window can still rewinds back into it.
+            if next_movement is None or 0 <= next_movement < idx:
+                # Any match starts with one of these, and rfind is far cheaper.
+                if max(text.rfind('\x08'), text.rfind('\r'), text.rfind('\x1b')) < idx:
+                    next_movement = -1
+                else:
+                    found = _HORIZONTAL_CURSOR_MOVEMENT.search(text, idx)
+                    next_movement = -1 if found is None else found.end()
+            if next_movement < 0:
+                if captured_style is not None:
+                    break
+                next_esc = text.find('\x1b', idx + 1)
+                if next_esc == -1:
+                    break
+                idx = next_esc
+                continue
 
         if char == '\x1b':
             m = _SEQUENCE_CLASSIFY.match(text, idx)
@@ -685,10 +708,9 @@ def _clip_painter(
         if char == '\t':
             if tabsize > 0:
                 next_tab = col + (tabsize - (col % tabsize))
-                while col < next_tab:
-                    if start <= col < end:
-                        _write_cells(fillchar, 1, col)
-                    col += 1
+                for fill_col in range(max(col, start), min(next_tab, end)):
+                    _write_cells(' ', 1, fill_col)
+                col = next_tab
             else:
                 sequences.append((col, seq_order, '\t'))
                 seq_order += 1

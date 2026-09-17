@@ -546,6 +546,15 @@ def test_strip_sequences_osc66_stripped(text, expected):
 
 
 @pytest.mark.parametrize('text,expected', [
+    ('\x1b\x1b]66;bad\x07[31m', '\x1b[31m'),
+    ('\x1b\x1b]66;w=5;hello\x07[31m', '\x1bhello[31m'),
+])
+def test_strip_sequences_osc66_no_splice(text, expected):
+    """strip_sequences() does not join the text on either side of an OSC 66 sequence."""
+    assert strip_sequences(text) == expected
+
+
+@pytest.mark.parametrize('text,expected', [
     ('a\x1b[', 'a'),
     ('\x1b[\x1b[31mc', 'c'),
     ('a\x1b[\x1b[31mb', 'ab'),

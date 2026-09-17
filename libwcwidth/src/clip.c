@@ -1,14 +1,9 @@
 /*
  * Text truncation with sequence awareness.
  *
- * This is a simplified C11 implementation.  Differences from the Python
- * clip are documented in docs/libwcwidth.rst.  In particular:
- *   - OSC 66 text sizing is passed through as an opaque sequence rather
- *     than being clipped as a semantic unit.  OSC 8 hyperlinks are not
- *     implemented; they measure as zero-width but are never rewritten,
- *     so a window starting or ending inside a link is left unbalanced.
- *   - Cursor-movement sequences (HPA, CUF, CUB) are passed through
- *     rather than resolved into the column model.
+ * This is a simplified C11 implementation.  It fails with
+ * WCWIDTH_ERROR_UNSUPPORTED rather than answer differently from Python's
+ * clip(); docs/libwcwidth.rst lists the sequences it does not support.
  */
 #include "wcwidth/clip.h"
 #include "wcwidth/escape.h"
@@ -182,6 +177,49 @@ apply_sgr_wrap(strbuf_t *sb, const wcwidth_sgr_state_t *style, bool reset)
     }
 }
 
+/*
+ * Whether text holds horizontal cursor movement: BS, CR, or a CSI ending in
+ * CUF, CUB or HPA.  Found up front because clip_run() stops past the window,
+ * where movement can still rewind back into it.
+ */
+static bool
+has_cursor_movement(const char *text, size_t text_len)
+{
+    size_t i = 0;
+
+    if (memchr(text, '\b', text_len) != NULL || memchr(text, '\r', text_len) != NULL) {
+        return true;
+    }
+
+    while (i < text_len) {
+        const char *esc = (const char *) memchr(text + i, ESC, text_len - i);
+        size_t pos;
+
+        if (esc == NULL) {
+            break;
+        }
+        i = (size_t) (esc - text) + 1;
+        if (i >= text_len || text[i] != '[') {
+            continue;
+        }
+        /* CSI: parameter bytes, then intermediate bytes, then the final byte. */
+        pos = i + 1;
+        while (pos < text_len && (unsigned char) text[pos] >= 0x30
+               && (unsigned char) text[pos] <= 0x3f) {
+            pos++;
+        }
+        while (pos < text_len && (unsigned char) text[pos] >= 0x20
+               && (unsigned char) text[pos] <= 0x2f) {
+            pos++;
+        }
+        if (pos < text_len && (text[pos] == 'C' || text[pos] == 'D' || text[pos] == 'G')) {
+            return true;
+        }
+        i = pos;
+    }
+    return false;
+}
+
 static bool
 clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const char *fillchar,
          size_t fillchar_len, int tabsize, int ambiguous_width, const char *term_program,
@@ -247,6 +285,13 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
 
             if (strict && result.type == WCWIDTH_ESC_INDETERMINATE) {
                 *error = WCWIDTH_ERROR_INDETERMINATE;
+                goto fail;
+            }
+
+            /* Unsupported OSC: measured, but never clipped as a unit. */
+            if (result.type == WCWIDTH_ESC_OSC66
+                || (result.length >= 4 && memcmp(result.start, "\x1b]8;", 4) == 0)) {
+                *error = WCWIDTH_ERROR_UNSUPPORTED;
                 goto fail;
             }
 
@@ -358,11 +403,14 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
     bool strict;
     bool has_esc;
     bool track_sgr;
+    int local_error;
 
     if (out_len != NULL)
         *out_len = 0;
-    if (error != NULL)
-        *error = WCWIDTH_ERROR_NONE;
+    /* clip_run() always writes *error; give it somewhere when the caller did not. */
+    if (error == NULL)
+        error = &local_error;
+    *error = WCWIDTH_ERROR_NONE;
 
     /* clip_run() tracks columns as int: clamp so an unbounded v_end of
      * SIZE_MAX does not wrap negative there. */
@@ -410,6 +458,11 @@ clip_impl(const char *text, size_t text_len, size_t v_start, size_t v_end,
                 *out_len = result_len;
             return result;
         }
+    }
+
+    if (has_cursor_movement(text, text_len)) {
+        *error = WCWIDTH_ERROR_UNSUPPORTED;
+        return NULL;
     }
 
     has_esc = (memchr(text, ESC, text_len) != NULL);
