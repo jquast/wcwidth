@@ -1,0 +1,16 @@
+# Whitelist of contents of 'sdist'
+include LICENSE README.rst tox.ini .gitignore .pylintrc
+include requirements-*.in requirements-*.txt
+recursive-include bin *.py
+recursive-include code_templates *.j2 *.py
+recursive-include docs *.rst *.py
+recursive-include tests *.py
+recursive-include wcwidth *.py *.pyi py.typed
+recursive-include libwcwidth/src *.c *.h
+recursive-include libwcwidth/include *.h
+recursive-include libwcwidth/tests *.c *.h
+recursive-include libwcwidth/examples *.c
+recursive-include libwcwidth/cmake *.in
+include libwcwidth/CMakeLists.txt libwcwidth/Makefile libwcwidth/README.rst libwcwidth/LICENSE
+include libwcwidth/.clang-format
+

@@ -1,6 +1,10 @@
 =======
 History
 =======
+0.9.0 *unreleased* ('jq/libwcwidth-shim-wheels' branch)
+  * **New** Optional CPython extension using libwcwidth_, improving performance 10-58x `PR #248`_.
+  * **Drop Support** for Python 3.8, `PR #248`_.
+
 0.8.4 *2026-09-17*
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #243`_.
@@ -284,6 +288,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #238`: https://github.com/jquast/wcwidth/pull/238
 .. _`PR #243`: https://github.com/jquast/wcwidth/pull/243
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
+.. _`PR #247`: https://github.com/jquast/wcwidth/pull/247
+.. _`PR #248`: https://github.com/jquast/wcwidth/pull/248
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
 .. _`PR #253`: https://github.com/jquast/wcwidth/pull/253

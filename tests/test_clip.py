@@ -1,10 +1,18 @@
 """Tests for clip() and strip_sequences() functions."""
 
+# std imports
+import os
+import sys
+import importlib
+from itertools import product
+
 # 3rd party
 import pytest
 
 # local
+import wcwidth._clip as _clip_module
 from wcwidth import clip, width, propagate_sgr, strip_sequences
+from wcwidth.escape_sequences import _HORIZONTAL_CURSOR_MOVEMENT
 
 STRIP_SEQUENCES_CASES = [
     ('', ''),
@@ -663,3 +671,382 @@ def test_clip_negative_end_raises(text, end, kwargs):
     """Clip() raises ValueError for a negative end other than -1."""
     with pytest.raises(ValueError, match='end must be -1'):
         clip(text, 0, end, **kwargs)
+
+
+pytestmark_parity = pytest.mark.skipif(
+    _clip_module._c_clip is None,
+    reason="C extension not built; there is nothing to compare against")
+
+HERE = os.path.dirname(__file__)
+
+PARITY_WINDOWS = ((0, 0), (0, 1), (0, 2), (1, 2), (3, 4), (2, 9), (0, 40),
+                  (0, -1), (5, -1), (40, 60))
+
+PARITY_OPTIONS = (
+    {},
+    {'propagate_sgr': False},
+    {'ambiguous_width': 2},
+    {'fillchar': '?'},
+    {'tabsize': 4},
+    {'control_codes': 'ignore'},
+    {'control_codes': 'strict'},
+    {'overtyping': False},
+)
+
+
+def python_clip(*args, **kwargs):
+    """Call clip() with the C offload disabled, for use as the reference."""
+    saved = _clip_module._c_clip
+    _clip_module._c_clip = None
+    try:
+        return _clip_module.clip(*args, **kwargs)
+    finally:
+        _clip_module._c_clip = saved
+
+
+def _read_parity_lines(filename):
+    """Return non-comment, non-empty lines of *filename*, or [] when absent."""
+    path = os.path.join(HERE, filename)
+    if not os.path.exists(path):
+        return []
+    result = []
+    with open(path, encoding='utf-8') as fp:
+        for line in fp:
+            line = line.rstrip('\n')
+            if not line or line.lstrip().startswith(('#', '@')):
+                continue
+            result.append(line)
+    return result
+
+
+def _read_parity_sequences(filename):
+    """Parse a unicode.org '0041 FE0F ; comment' file into strings."""
+    sequences = []
+    for line in _read_parity_lines(filename):
+        try:
+            sequences.append(''.join(
+                chr(int(cp, 16)) for cp in line.split(';', 1)[0].strip().split()))
+        except ValueError:
+            continue
+    return sequences
+
+
+# udhr_combined.txt holds 113,957 lines, far more than these tests can measure
+# against both implementations on every run, so they take an evenly spaced
+# sample.  Printable ASCII is excluded from it because clip() answers that from
+# the slicing fast path without ever reaching the offload.
+#
+# The two sizes are tuned to a wall-clock budget rather than to coverage: under
+# half a second per test by default, and a few seconds per test when running
+# fully.  Full runs happen automatically under CI, and locally with
+# FULL_TESTING=1.
+UDHR_SAMPLE_DEFAULT = 40
+UDHR_SAMPLE_FULL = 3000
+
+
+def _full_testing():
+    """Whether to use the wider corpora: automatic under CI, or FULL_TESTING=1."""
+    return bool(os.environ.get('FULL_TESTING', '') or os.environ.get('CI', ''))
+
+
+def _read_udhr_lines():
+    """Return an evenly spaced sample of the non-ASCII lines of udhr_combined.txt."""
+    lines = [line for line in _read_parity_lines('udhr_combined.txt')
+             if not (line.isascii() and line.isprintable())]
+    if not lines:
+        return []
+    count = UDHR_SAMPLE_FULL if _full_testing() else UDHR_SAMPLE_DEFAULT
+    return lines[::max(1, len(lines) // count)][:count]
+
+
+PARITY_CORPUS = (
+    _read_udhr_lines() +
+    _read_parity_sequences('emoji-zwj-sequences.txt') +
+    _read_parity_sequences('emoji-variation-sequences.txt') +
+    [
+        '', 'hello world', '中文字', 'コンニチハ、セカイ！', 'a\tb\tc',
+        '\x1b[31mred\x1b[0m plain', '\x1b[1mbold\x1b[m normal',
+        '\x1b[38;2;10;20;30mtruecolor\x1b[0m',
+        '\x1b[38:2::10:20:30mcolon form\x1b[0m',
+        '\x1b[31m\tb', 'é́combining', '\U0001f469\U0001f3fb‍\U0001f4bb x',
+        '\x1b]8;;http://example.com\x07link text\x1b]8;;\x07',
+        '\x1b]66;s=2;scaled\x07 after',
+        'over\rtype', 'back\x08space', 'csi\x1b[3Cforward', 'csi\x1b[2Dback',
+        'hpa\x1b[10Gabsolute', '\x1b[2Jclear screen', 'trailing esc \x1b',
+        'malformed \x1b[ unterminated', '\x1b(\ncharset',
+    ]
+)
+
+
+def assert_clip_parity(text, start, end, **kwargs):
+    """Clip() must equal the pure-Python path for this input."""
+    try:
+        expected = python_clip(text, start, end, **kwargs)
+    except ValueError:
+        with pytest.raises(ValueError):
+            clip(text, start, end, **kwargs)
+        return
+    actual = clip(text, start, end, **kwargs)
+    assert actual == expected, (
+        f"clip({text!r}, {start}, {end}, **{kwargs})\n"
+        f"  offloaded: {actual!r}\n"
+        f"  python   : {expected!r}")
+
+
+@pytestmark_parity
+@pytest.mark.parametrize('options', PARITY_OPTIONS)
+def test_clip_parity_corpus(options):
+    """Every corpus input clips identically through C and through Python."""
+    for text in PARITY_CORPUS:
+        for start, end in PARITY_WINDOWS:
+            assert_clip_parity(text, start, end, **options)
+
+
+@pytestmark_parity
+def test_clip_parity_lone_surrogate():
+    """A lone surrogate has no UTF-8 form; the C path must decline it."""
+    assert clip('a\ud800b', 0, 3) == python_clip('a\ud800b', 0, 3)
+
+
+@pytestmark_parity
+def test_clip_offload_is_actually_used():
+    """
+    The offload must fire for ordinary non-ASCII text.
+
+    Without this, an over-tightened gate would silently disable the C path while every parity
+    assertion above still trivially held.  Printable ASCII is excluded because clip() answers it
+    from the slicing fast path before the offload is reached, and never calls C at all.
+    """
+    calls = []
+    saved = _clip_module._c_clip
+
+    def _counting_clip(*args, **kwargs):
+        calls.append(args[0])
+        return saved(*args, **kwargs)
+
+    lines = _read_udhr_lines() or ['中文字']
+
+    _clip_module._c_clip = _counting_clip
+    try:
+        for line in lines:
+            _clip_module.clip(line, 0, 20)
+    finally:
+        _clip_module._c_clip = saved
+
+    assert len(calls) / len(lines) >= 0.95, (
+        f"offload fired for only {len(calls)}/{len(lines)} non-ASCII lines")
+
+
+@pytestmark_parity
+def test_clip_ascii_does_not_reach_offload():
+    """Printable ASCII is answered by the fast path, without calling C."""
+    calls = []
+    saved = _clip_module._c_clip
+
+    def _counting_clip(*args, **kwargs):
+        calls.append(args[0])
+        return saved(*args, **kwargs)
+
+    _clip_module._c_clip = _counting_clip
+    try:
+        for text in ('hello world', 'ab-cd', 'The quick brown fox ' * 10):
+            _clip_module.clip(text, 0, 20)
+    finally:
+        _clip_module._c_clip = saved
+
+    assert not calls
+
+
+# Includes every shape the offload accepts and every shape it must reject, so
+# both branches are exercised.
+_FUZZ_ALPHABET = (
+    list('abcdefghij klmnop') +
+    list('中文字日本語') +
+    ['\U0001f600', '\U0001f469\U0001f3fb‍\U0001f4bb', 'é', '́'] +
+    ['\t', '\x1b[31m', '\x1b[0m', '\x1b[1m', '\x1b[38;5;120m'] +
+    ['\x1b]8;;http://x\x07', '\x1b]8;;\x07', '\x1b]66;s=2;ab\x07'] +
+    ['\r', '\x08', '\x1b[3C', '\x1b[2D', '\x1b[5G', '\x1b[2J'] +
+    ['\x1b', '\x1b[', '\x1b(\n', '\x1b]8;']
+)
+
+# Every atom and every ordered pair of atoms is always tested: divergences
+# between the two implementations are adjacency bugs, and the one this suite was
+# written for -- a tab followed by an escape past the clip window -- is a pair.
+# Triples are enumerated in order and sampled one in N, N being coprime with the
+# alphabet size so that no atom is systematically skipped in any position.
+# Longer inputs are covered by the UDHR and emoji corpus above.
+FUZZ_TRIPLE_STRIDE_DEFAULT = 32
+FUZZ_TRIPLE_STRIDE_FULL = 2
+
+# Narrow windows matter more than long inputs here: a combination only reaches
+# the "past the clip window" branches when its columns exceed *end*, and three
+# atoms rarely exceed four columns.  Without (0, 1) and (0, 2), a tab followed
+# by an escape past the window -- the divergence this suite was written for --
+# goes undetected.
+FUZZ_WINDOWS = ((0, 1), (0, 2), (0, 4), (2, 6), (0, -1))
+
+
+def _fuzz_corpus():
+    """Atoms, every ordered pair, and a strided sample of ordered triples."""
+    stride = FUZZ_TRIPLE_STRIDE_FULL if _full_testing() else FUZZ_TRIPLE_STRIDE_DEFAULT
+    corpus = list(_FUZZ_ALPHABET)
+    corpus += [a + b for a in _FUZZ_ALPHABET for b in _FUZZ_ALPHABET]
+    corpus += [''.join(t) for i, t in enumerate(product(_FUZZ_ALPHABET, repeat=3))
+               if i % stride == 0]
+    return corpus
+
+
+@pytestmark_parity
+def test_clip_parity_fuzz():
+    """
+    Differential test over combinations of accepted and rejected shapes.
+
+    The corpus is enumerated, not sampled randomly, so it is the same on every
+    run and every machine, with no seed to record or reproduce.  A denser sample
+    runs under CI, or locally with ``FULL_TESTING=1``.
+    """
+    for text in _fuzz_corpus():
+        for start, end in FUZZ_WINDOWS:
+            assert_clip_parity(text, start, end)
+
+
+UNSUPPORTED_SEQUENCES = (
+    '\x1b[5C',
+    '\x1b[7D',
+    '\x1b[2G',
+    '\b\b\b',
+    '\r\r\r',
+    '\x1b]8;;http://e\x1b\\LNK\x1b]8;;\x1b\\',
+    '\x1b]66;w=2:A\x1b\\',
+    '\x1b(\n',
+    '',
+)
+UNSUPPORTED_PREFIXES = ('', '\x1b[31m', '中文', 'ab\t')
+UNSUPPORTED_SUFFIXES = ('', 'ZZZ', '\x1b[0m', '中')
+UNSUPPORTED_PADDING = (0, 1, 5, 20, 200)
+
+
+@pytestmark_parity
+@pytest.mark.parametrize('sequence', UNSUPPORTED_SEQUENCES)
+def test_clip_parity_unsupported_past_window(sequence):
+    """Sequences libwcwidth rejects stay rejected far past the clip window."""
+    for prefix, suffix in product(UNSUPPORTED_PREFIXES, UNSUPPORTED_SUFFIXES):
+        for pad in UNSUPPORTED_PADDING:
+            text = prefix + 'abcdef' + 'x' * pad + sequence + suffix
+            for start, end in FUZZ_WINDOWS:
+                assert_clip_parity(text, start, end)
+                assert_clip_parity(text, start, end, propagate_sgr=False)
+
+
+@pytestmark_parity
+@pytest.mark.parametrize('text', [
+    'abcdef\x1b[5Cgh',
+    'abcdef\x1b[3Dgh',
+    'abcdef\x1b[2Ggh',
+    'abcdef\bgh',
+    'abcdef\rgh',
+    'abcdefghijklmnop\x1b[3D',
+    'abcdefghijklmnop\b',
+    'ab\x1b]8;;http://e\x1b\\LNK\x1b]8;;\x1b\\',
+    'ab\x1b]66;w=2:A\x1b\\',
+])
+def test_c_clip_returns_none_for_unsupported(text):
+    assert _clip_module._c_clip(
+        text, 0, 3, fillchar=' ', tabsize=8, ambiguous_width=1,
+        propagate_sgr=True, control_codes='parse', term_program=False) is None
+
+
+@pytestmark_parity
+@pytest.mark.parametrize('text', ['abcdef', 'ab\x1b[31mcd\x1b[0m', 'ab\x1b]0;t\x07cd', '中文字'])
+def test_c_clip_accepts_supported(text):
+    assert _clip_module._c_clip(
+        text, 0, 3, fillchar=' ', tabsize=8, ambiguous_width=1,
+        propagate_sgr=True, control_codes='parse', term_program=False) is not None
+
+
+@pytestmark_parity
+def test_c_clip_declines_every_movement_python_resolves():
+    """Libwcwidth declines wherever Python's painter would resolve movement."""
+    # Its scan accepts any CSI parameter byte before a C/D/G final where Python's pattern
+    # accepts only digits, so it declines a superset.  The reverse would silently offload
+    # text whose movement Python resolves.
+    accepted = []
+    for text in _fuzz_corpus():
+        if _HORIZONTAL_CURSOR_MOVEMENT.search(text) is None:
+            continue
+        if _clip_module._c_clip(
+                text, 0, 3, fillchar=' ', tabsize=8, ambiguous_width=1,
+                propagate_sgr=True, control_codes='parse', term_program=False) is not None:
+            accepted.append(text)
+    assert not accepted[:10]
+
+
+# PARITY_OPTIONS sets overtyping= itself in one case, which these tests supply.
+PATH_PARITY_OPTIONS = tuple(o for o in PARITY_OPTIONS if 'overtyping' not in o)
+
+
+def _movement_free(corpus):
+    """Drop inputs whose answer is meant to differ between the two paths."""
+    return [t for t in corpus if not
+            ('\r' in t or '\x08' in t or _HORIZONTAL_CURSOR_MOVEMENT.search(t))]
+
+
+def assert_clip_path_parity(text, start, end, **kwargs):
+    """Both Python paths must clip *text* identically."""
+    try:
+        painter = python_clip(text, start, end, overtyping=True, **kwargs)
+    except ValueError:
+        with pytest.raises(ValueError):
+            python_clip(text, start, end, overtyping=False, **kwargs)
+        return
+    simple = python_clip(text, start, end, overtyping=False, **kwargs)
+    assert simple == painter, (
+        f"clip({text!r}, {start}, {end}, **{kwargs})\n"
+        f"  overtyping=False: {simple!r}\n  overtyping=True : {painter!r}")
+
+
+@pytest.mark.parametrize('options', PATH_PARITY_OPTIONS)
+def test_clip_paths_agree_corpus(options):
+    """Every movement-free corpus input clips identically through both paths."""
+    for text in _movement_free(PARITY_CORPUS):
+        for start, end in PARITY_WINDOWS:
+            assert_clip_path_parity(text, start, end, **options)
+
+
+def test_clip_paths_agree_fuzz():
+    """Differential test of the two Python paths over the fuzz corpus."""
+    for text in _movement_free(_fuzz_corpus()):
+        for start, end in FUZZ_WINDOWS:
+            assert_clip_path_parity(text, start, end)
+
+
+def test_clip_fast_path_is_dispatched():
+    """Movement-free text must reach _clip_simple(), not the painter."""
+    simple, offload = _clip_module._clip_simple, _clip_module._c_clip
+    calls = []
+
+    def _counting(**kwargs):
+        calls.append(kwargs['text'])
+        return simple(**kwargs)
+
+    movement_free = ['\u4e2d\u6587\u5b57', '\x1b[31mred\x1b[0m plain', 'a\tb\tc\xe9']
+    _clip_module._clip_simple, _clip_module._c_clip = _counting, None
+    try:
+        for text in movement_free + ['over\rtype', 'back\x08space', 'csi\x1b[2Dback']:
+            _clip_module.clip(text, 0, 20)
+    finally:
+        _clip_module._clip_simple, _clip_module._c_clip = simple, offload
+
+    assert calls == movement_free
+
+
+def test_clip_import_error_fallback():
+    """A missing extension at import time leaves clip() on the Python path."""
+    sys.modules['wcwidth._wcwidth_c'] = None
+    try:
+        importlib.reload(_clip_module)
+        assert _clip_module._c_clip is None
+        assert _clip_module.clip('\u4e2d\u6587\u5b57', 0, 3) == '\u4e2d '
+    finally:
+        del sys.modules['wcwidth._wcwidth_c']
+        importlib.reload(_clip_module)

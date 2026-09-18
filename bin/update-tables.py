@@ -577,6 +577,8 @@ def _project_version() -> str:
 
 def _version_parts(version: str) -> tuple[int, int, int]:
     """Return (major, minor, patch) from a version string, ignoring any pre-release suffix."""
+    # PEP 440 allows a pre-release suffix; the C macros are numeric, so they carry only
+    # the release segment, while WCWIDTH_VERSION keeps the full string.
     match = re.match(r'^(\d+)\.(\d+)\.(\d+)', version)
     if match is None:
         raise ValueError(f'expected a MAJOR.MINOR.PATCH version, got {version!r}')
@@ -1750,7 +1752,11 @@ def values_to_hex_ranges(values: set[int]) -> list[tuple[str, str, str]]:
 
 @functools.lru_cache(maxsize=1)
 def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
-    """Return (filename, canonical_name, yaml_document) for each ucs-detect data file."""
+    """
+    Return (filename, canonical_name, yaml_document) for each ucs-detect data file.
+
+    :raises FileNotFoundError: when the ucs-detect submodule is not checked out.
+    """
     yaml_paths = sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml')))
     if not yaml_paths:
         raise FileNotFoundError(

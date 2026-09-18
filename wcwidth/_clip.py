@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # std imports
+import os
 import sys
 import enum
 from itertools import islice
@@ -23,6 +24,18 @@ from .text_sizing import TextSizing, TextSizingParams
 from .escape_sequences import (_SEQUENCE_CLASSIFY,
                                _HORIZONTAL_CURSOR_MOVEMENT,
                                INDETERMINATE_EFFECT_SEQUENCE)
+
+_c_clip: Optional[Callable[..., Optional[str]]]  # pylint: disable=invalid-name
+if os.environ.get('WCWIDTH_PYTHON', ''):
+    _c_clip = None
+else:
+    try:
+        # local
+        from ._wcwidth_c import clip as _c_clip_impl
+    except ImportError:
+        _c_clip = None
+    else:
+        _c_clip = _c_clip_impl
 
 
 class _HyperlinkAction(enum.Enum):
@@ -208,7 +221,6 @@ def _clip_simple(
     term_program: bool | str,
     fillchar: str,
     tabsize: int,
-    strict: bool,
     control_codes: Literal['parse', 'strict', 'ignore'],
 ) -> tuple[str, Optional[_SGRState], Optional[_SGRState]]:
     """
@@ -220,21 +232,12 @@ def _clip_simple(
     # pylint: disable=too-many-nested-blocks
     # code length and complexity traded for performance, to allow this to be used as a "hot path"
 
+    strict = control_codes == 'strict'
+
     output: list[str] = []
     col = 0
     idx = 0
-    # captured_style is a frozen snapshot of current_style taken at the first
-    # visible character emitted within the clip window (start, end).  It stays
-    # None until that point.  current_style, by contrast, is continuously
-    # updated by SGR sequences throughout the scan.  The snapshot is what the
-    # caller uses to wrap the result in the correct SGR state.
-    #
-    # When propagate_sgr is False, current_style (and therefore captured_style)
-    # remain None, and SGR sequences pass through as literal text.
     captured_style: Optional[_SGRState] = None
-    # end_style is the state after the last SGR sequence emitted *within* the
-    # clip window; it decides the trailing reset.  None until such a sequence
-    # is emitted, meaning captured_style is still in effect at the end.
     end_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
 
@@ -487,11 +490,12 @@ def _clip_painter(
     term_program: bool | str,
     fillchar: str,
     tabsize: int,
-    strict: bool,
     control_codes: Literal['parse', 'strict', 'ignore'],
 ) -> tuple[str, Optional[_SGRState], Optional[_SGRState]]:
     """
-    Clip text with cursor movement (painter's algorithm path).
+    Clip text, painting cells so that cursor movement can overwrite them.
+
+    Text with no cursor movement to resolve is clipped by _clip_simple() instead.
 
     Returns ``(result, captured_style, end_style)``.  The caller applies SGR wrapping.
     """
@@ -499,6 +503,7 @@ def _clip_painter(
     # pylint: disable=too-many-statements,too-many-nested-blocks
     # code length and complexity traded for performance, to allow this to be used as a "hot path"
 
+    strict = control_codes == 'strict'
     cells: dict[int, tuple[str, int]] = {}
     hyperlink_cells: set[int] = set()
     sequences: list[tuple[int, int, str]] = []
@@ -874,6 +879,20 @@ def clip(
     if text.isascii() and text.isprintable():
         return text[start:end]
 
+    # Offload to libwcwidth, which reports an unsupported sequence rather than
+    # answering differently.  Only the options are tested here, never the text.
+    if (_c_clip is not None
+            and control_codes == 'parse'
+            and overtyping is not True
+            and tabsize > 0
+            and len(fillchar) == 1 and fillchar.isascii()):
+        result = _c_clip(
+            text, start, end, fillchar=fillchar, tabsize=tabsize,
+            ambiguous_width=ambiguous_width, propagate_sgr=propagate_sgr,
+            control_codes=control_codes, term_program=term_program)
+        if result is not None:
+            return result
+
     ambiguous_width = _clamp_ambiguous_width(ambiguous_width)
 
     # No escape sequences => no SGR tracking needed.
@@ -891,9 +910,21 @@ def clip(
         )
     elif overtyping and control_codes == 'ignore':
         overtyping = False  # control_codes='ignore' overrides
-    fn_clip = _clip_painter if overtyping else _clip_simple
 
-    return _apply_sgr_wrap(*fn_clip(
+    if overtyping:
+        return _apply_sgr_wrap(*_clip_painter(
+            text=text,
+            start=start,
+            end=end,
+            propagate_sgr=propagate_sgr,
+            ambiguous_width=ambiguous_width,
+            term_program=term_program,
+            fillchar=fillchar,
+            tabsize=tabsize,
+            control_codes=control_codes,
+        ))
+
+    return _apply_sgr_wrap(*_clip_simple(
         text=text,
         start=start,
         end=end,
@@ -902,6 +933,5 @@ def clip(
         term_program=term_program,
         fillchar=fillchar,
         tabsize=tabsize,
-        strict=(control_codes == 'strict'),
         control_codes=control_codes,
     ))

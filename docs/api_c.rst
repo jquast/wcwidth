@@ -901,15 +901,15 @@ same version number applies to both.
 
 .. c:macro:: WCWIDTH_VERSION_MINOR
 
-   Defined as ``8``.
+   Defined as ``9``.
 
 .. c:macro:: WCWIDTH_VERSION_PATCH
 
-   Defined as ``4``.
+   Defined as ``0``.
 
 .. c:macro:: WCWIDTH_VERSION
 
-   Defined as ``"0.8.4"``.
+   Defined as ``"0.9.0"``.
 
 .. c:macro:: WCWIDTH_UNICODE_VERSION
 
