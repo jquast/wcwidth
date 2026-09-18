@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 # One cibuildwheel line builds the whole matrix, see [tool.cibuildwheel] in
-# pyproject.toml. Keep the Action tag in step with requirements-wheels.in.
+# pyproject.toml.
 jobs:
   build_wheels:
     name: cp39-cp314 ${{ matrix.archs }} wheels on ${{ matrix.os }}
@@ -38,15 +38,15 @@ jobs:
             archs: ARM64
 
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
-      - uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084 # v3.4.1
+      - uses: pypa/cibuildwheel@v3
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
 
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@v5
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -55,10 +55,10 @@ jobs:
     name: Build pure-Python wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           submodules: true
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Build py3-none-any wheel
@@ -72,7 +72,7 @@ jobs:
         run: |
           python -Im pip install build
           python -Im build --wheel
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@v5
         with:
           name: pure-wheel
           path: dist/*-py3-none-any.whl
@@ -81,17 +81,17 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           submodules: true
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Build sdist
         run: |
           python -Im pip install build
           python -Im build --sdist
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@v5
         with:
           name: sdist
           path: dist/*.tar.gz
