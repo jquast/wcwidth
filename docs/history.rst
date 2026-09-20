@@ -1,6 +1,10 @@
 =======
 History
 =======
+
+0.8.5 *2026-09-20*
+  * **Bugfix** CJK hyphen break positions for `wrap()`_, `PR #262`_.
+
 0.8.4 *2026-09-17*
   * **Bugfix** `clip()`_ hangs with OSC 8 hyperlinks in some conditions, `PR #252`_.
   * **Bugfix** width of ITU T.416 colon-format SGR color parameters, `PR #243`_.
@@ -288,6 +292,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
 .. _`PR #253`: https://github.com/jquast/wcwidth/pull/253
 .. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
+.. _`PR #262`: https://github.com/jquast/wcwidth/pull/262
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

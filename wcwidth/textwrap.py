@@ -424,24 +424,23 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         if self.break_long_words:
             break_at_hyphen = False
             hyphen_end = 0
+            # End of the prefix that fits within space_left by display width.
+            prefix_end = self._find_break_position(chunk, space_left)
 
-            # Handle break_on_hyphens: find last hyphen within space_left
+            # Handle break_on_hyphens: find last hyphen in the portion that fits.
             if self.break_on_hyphens:
-                # Strip sequences to find hyphen in logical text
-                stripped = self._strip_sequences(chunk)
-                if len(stripped) > space_left:
-                    # Find last hyphen in the portion that fits
-                    hyphen_pos = stripped.rfind('-', 0, space_left)
-                    if hyphen_pos > 0 and any(c != '-' for c in stripped[:hyphen_pos]):
-                        # Map back to original position including sequences
-                        hyphen_end = self._map_stripped_pos_to_original(chunk, hyphen_pos + 1)
-                        break_at_hyphen = True
+                stripped = self._strip_sequences(chunk[:prefix_end])
+                hyphen_pos = stripped.rfind('-')
+                if hyphen_pos > 0 and any(c != '-' for c in stripped[:hyphen_pos]):
+                    # Map back to original position including sequences
+                    hyphen_end = self._map_stripped_pos_to_original(chunk, hyphen_pos + 1)
+                    break_at_hyphen = True
 
             # Break at grapheme boundaries to avoid splitting multi-codepoint characters
             if break_at_hyphen:
                 actual_end = hyphen_end
             else:
-                actual_end = self._find_break_position(chunk, space_left)
+                actual_end = prefix_end
                 # Include first visible unit when break would take only leading sequences.
                 if not cur_line and (
                         actual_end == 0
