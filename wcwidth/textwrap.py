@@ -424,11 +424,11 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         if self.break_long_words:
             break_at_hyphen = False
             hyphen_end = 0
+            # End of the prefix that fits within space_left by display width.
+            prefix_end = self._find_break_position(chunk, space_left)
 
-            # Handle break_on_hyphens: find last hyphen within space_left
+            # Handle break_on_hyphens: find last hyphen in the portion that fits.
             if self.break_on_hyphens:
-                # Find the last hyphen in the portion that fits by display width.
-                prefix_end = self._find_break_position(chunk, space_left)
                 stripped = self._strip_sequences(chunk[:prefix_end])
                 hyphen_pos = stripped.rfind('-')
                 if hyphen_pos > 0 and any(c != '-' for c in stripped[:hyphen_pos]):
@@ -440,7 +440,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             if break_at_hyphen:
                 actual_end = hyphen_end
             else:
-                actual_end = self._find_break_position(chunk, space_left)
+                actual_end = prefix_end
                 # Include first visible unit when break would take only leading sequences.
                 if not cur_line and (
                         actual_end == 0
