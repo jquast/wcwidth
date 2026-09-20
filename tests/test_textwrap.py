@@ -116,6 +116,16 @@ def test_wrap_long_words(text, w, break_long, expected):
     ('a---b', 2, True, True, ['a-', '--', 'b']),
     ('a-\x1b[31mb', 2, True, True, ['a-\x1b[31m\x1b[0m', '\x1b[31mb\x1b[0m']),
     ('a-\x1b[31mb', 2, True, False, ['a-\x1b[31m', 'b']),
+    ('古古-1abcdef', 3, True, True, ['古', '古-', '1ab', 'cde', 'f']),
+    ('古古-1abcdef', 4, True, True, ['古古', '-1ab', 'cdef']),
+    ('古古-1abcdef', 5, True, True, ['古古-', '1abcd', 'ef']),
+    ('e\u0301e\u0301-1abcdef', 4, True, True, ['e\u0301e\u0301-', '1abc', 'def']),
+    ('\U0001f469\U0001f469-1abc', 4, True, True, ['\U0001f469\U0001f469', '-1ab', 'c']),
+    ('\x1b[31m漢漢漢-é', 3, True, False, ['\x1b[31m漢', '漢', '漢-', 'é']),
+    ('\x1b[31m漢漢漢-é', 3, True, True,
+     ['\x1b[31m漢\x1b[0m', '\x1b[31m漢\x1b[0m', '\x1b[31m漢-\x1b[0m', '\x1b[31mé\x1b[0m']),
+    ('a-古古古', 6, True, False, ['a-', '古古古']),
+    ('a-古古古', 5, True, False, ['a-', '古古', '古']),
 ])
 def test_wrap_hyphen_long_words(text, w, break_hyphens, propagate, expected):
     assert wrap(text, w, break_on_hyphens=break_hyphens, propagate_sgr=propagate) == expected

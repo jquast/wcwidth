@@ -30,9 +30,9 @@ Some examples of **incorrect results**:
     >>> 'コンニチハ'.rjust(11, 'X')
     'XXXXXXコンニチハ'
 
-    >>> # result consumes 5 total cells, 6 expected,
-    >>> 'café'.center(6, 'X')
-    'caféX'
+    >>> # combining acute accent: result consumes 5 total cells, 6 expected,
+    >>> 'cafe\u0301'.center(6, 'X')
+    'caféX'
 
 Solution
 --------
