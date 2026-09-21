@@ -65,9 +65,10 @@ wcwidth = [ "py.typed", "*.pyi" ]
 # The optional C extension is declared in setup.py.
 
 [tool.cibuildwheel]
-# PyPy uses the sdist.  3.13's free-threaded build is omitted as experimental;
-# 3.14's (PEP 779) needs no flag.
-build = "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-* cp314t-*"
+# A cp310-abi3 wheel covers every GIL-enabled interpreter from 3.10 up, so only
+# cp310 is built for those.  The free-threaded cp314t build cannot use the
+# stable ABI until 3.15 and stays version specific.
+build = "cp310-* cp314t-*"
 skip = "cp314t-musllinux_*"
 # --import-mode=importlib stops pytest importing the source tree instead of the
 # wheel.  {project} is the repo, since tests/ is not in the wheel.
