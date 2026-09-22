@@ -12,6 +12,7 @@ import os
 import platform
 import re
 import sys
+import sysconfig
 
 import setuptools
 from setuptools import Extension, find_packages, setup
@@ -95,6 +96,17 @@ _EXT_SOURCES = [
     "libwcwidth/src/tables/table_gcb_class.c",
 ]
 
+# Stable ABI (abi3): one cp310 wheel covers every GIL-enabled interpreter from
+# 3.10 up.  A 3.9 interpreter installs the pure Python py3-none-any wheel.
+PY_LIMITED_API = "0x030A0000"
+ABI3_TAG = "cp310"
+
+# Only a 3.10 or newer build can compile against that API.  A free-threaded
+# build cannot use the stable ABI at all: Py_LIMITED_API below 3.13 drops the
+# Py_mod_gil declaration it requires.
+USE_LIMITED_API = (not sysconfig.get_config_var("Py_GIL_DISABLED")
+                   and sys.version_info >= (3, 10))
+
 # Build-time only, and distinct from the WCWIDTH_PYTHON runtime selector: that
 # one is read at import and works whether or not the extension exists, so it has
 # no business here.  Declaring no extension, rather than one that is skipped
@@ -108,8 +120,15 @@ else:
             "wcwidth._wcwidth_c",
             sources=_EXT_SOURCES,
             include_dirs=["libwcwidth/include"],
+            define_macros=[("Py_LIMITED_API", PY_LIMITED_API)] if USE_LIMITED_API else [],
+            py_limited_api=USE_LIMITED_API,
         ),
     ]
+
+# Claim the abi3 tag only when an extension is built; the WCWIDTH_NO_EXTENSION
+# wheel stays py3-none-any and a 3.9 build stays version specific.
+WHEEL_OPTIONS = ({"bdist_wheel": {"py_limited_api": ABI3_TAG}}
+                 if _EXT_MODULES and USE_LIMITED_API else {})
 
 
 class optional_build_ext(_build_ext):
@@ -142,5 +161,6 @@ class optional_build_ext(_build_ext):
 setup(
     cmdclass={"build_ext": optional_build_ext},
     ext_modules=_EXT_MODULES,
+    options=WHEEL_OPTIONS,
     **_FALLBACK_METADATA,
 )

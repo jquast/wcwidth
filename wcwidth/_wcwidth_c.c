@@ -16,6 +16,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* A free-threaded build needs Py_mod_gil, which Py_LIMITED_API below 3.13
+ * drops. */
+#if defined(Py_LIMITED_API) && defined(Py_GIL_DISABLED)
+#  error "Py_LIMITED_API must not be set for a free-threaded build"
+#endif
+
 #include "wcwidth/wcwidth.h"
 #include "wcwidth/width.h"
 #include "wcwidth/align.h"
@@ -24,30 +30,42 @@
 #include "wcwidth/sgr.h"
 #include "wcwidth/grapheme.h"
 
-static const uint32_t *
-unicode_codepoints(PyObject *text, Py_ssize_t *count, uint32_t **heap_buf)
+/* Return the codepoints of text in a new PyMem_Malloc'd buffer. */
+static uint32_t *
+unicode_codepoints(PyObject *text, Py_ssize_t *count)
 {
-    Py_ssize_t len = PyUnicode_GET_LENGTH(text);
-    int kind = PyUnicode_KIND(text);
+    Py_ssize_t len = PyUnicode_GetLength(text);
+    Py_UCS4 *buf;
 
-    if (kind == PyUnicode_4BYTE_KIND) {
-        *heap_buf = NULL;
-        *count = len;
-        return (const uint32_t *)PyUnicode_DATA(text);
-    }
-
-    uint32_t *buf = PyMem_Malloc((size_t)len * sizeof(uint32_t));
-    if (buf == NULL) {
-        PyErr_NoMemory();
+    if (len < 0) {
         return NULL;
     }
-    const void *data = PyUnicode_DATA(text);
-    for (Py_ssize_t i = 0; i < len; i++) {
-        buf[i] = PyUnicode_READ(kind, data, i);
+    buf = PyUnicode_AsUCS4Copy(text);
+    if (buf == NULL) {
+        return NULL;
     }
-    *heap_buf = buf;
     *count = len;
-    return buf;
+    return (uint32_t *)buf;
+}
+
+/* Return obj's type name as UTF-8, and a reference to it in *name_out.  The
+ * limited API does not expose tp_name, so read the type's __name__. */
+static const char *
+type_name_utf8(PyObject *obj, PyObject **name_out)
+{
+    PyObject *name = PyObject_GetAttrString((PyObject *)Py_TYPE(obj), "__name__");
+    const char *utf8;
+
+    if (name == NULL) {
+        return NULL;
+    }
+    utf8 = PyUnicode_AsUTF8AndSize(name, NULL);
+    if (utf8 == NULL) {
+        Py_DECREF(name);
+        return NULL;
+    }
+    *name_out = name;
+    return utf8;
 }
 
 static Py_ssize_t
@@ -196,7 +214,7 @@ term_program_cstr(PyObject *obj, int default_auto_detect)
         Py_ssize_t name_len = 0;
         const char *name;
 
-        if (PyUnicode_GET_LENGTH(obj) == 0) {
+        if (PyUnicode_GetLength(obj) == 0) {
             return NULL;
         }
         name = PyUnicode_AsUTF8AndSize(obj, &name_len);
@@ -210,8 +228,15 @@ term_program_cstr(PyObject *obj, int default_auto_detect)
         }
         return name;
     }
+    PyObject *type_name = NULL;
+    const char *name = type_name_utf8(obj, &type_name);
+
+    if (name == NULL) {
+        return NULL;
+    }
     PyErr_Format(PyExc_AttributeError,
-                 "'%s' object has no attribute 'strip'", Py_TYPE(obj)->tp_name);
+                 "'%s' object has no attribute 'strip'", name);
+    Py_DECREF(type_name);
     return NULL;
 }
 
@@ -272,12 +297,19 @@ wcwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     uint32_t ucs = 0;
     if (truthy) {
         if (!PyUnicode_Check(wc_obj)) {
+            PyObject *type_name = NULL;
+            const char *name = type_name_utf8(wc_obj, &type_name);
+
+            if (name == NULL) {
+                return NULL;
+            }
             PyErr_Format(PyExc_TypeError,
                          "ord() expected a character, but object of type '%s' found",
-                         Py_TYPE(wc_obj)->tp_name);
+                         name);
+            Py_DECREF(type_name);
             return NULL;
         }
-        Py_ssize_t char_count = PyUnicode_GET_LENGTH(wc_obj);
+        Py_ssize_t char_count = PyUnicode_GetLength(wc_obj);
         if (char_count != 1) {
             PyErr_Format(PyExc_TypeError,
                          "ord() expected a character, but string of length %zd found",
@@ -306,21 +338,20 @@ wcswidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    uint32_t *heap_buf = NULL;
     Py_ssize_t len;
-    const uint32_t *codepoints = unicode_codepoints(pwcs_obj, &len, &heap_buf);
+    uint32_t *codepoints = unicode_codepoints(pwcs_obj, &len);
     if (codepoints == NULL) {
         return NULL;
     }
 
     Py_ssize_t count = resolve_count(n_obj, len);
     if (count < 0) {
-        PyMem_Free(heap_buf);
+        PyMem_Free(codepoints);
         return NULL;
     }
 
     int result = wcswidth_u32(codepoints, (size_t)count, ambiguous_width);
-    PyMem_Free(heap_buf);
+    PyMem_Free(codepoints);
     return PyLong_FromLong(result);
 }
 
@@ -346,21 +377,20 @@ wcstwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    uint32_t *heap_buf = NULL;
     Py_ssize_t len;
-    const uint32_t *codepoints = unicode_codepoints(pwcs_obj, &len, &heap_buf);
+    uint32_t *codepoints = unicode_codepoints(pwcs_obj, &len);
     if (codepoints == NULL) {
         return NULL;
     }
 
     Py_ssize_t count = resolve_count(n_obj, len);
     if (count < 0) {
-        PyMem_Free(heap_buf);
+        PyMem_Free(codepoints);
         return NULL;
     }
 
     int result = wcstwidth_u32(codepoints, (size_t)count, ambiguous_width, term_program);
-    PyMem_Free(heap_buf);
+    PyMem_Free(codepoints);
     return PyLong_FromLong(result);
 }
 
@@ -380,10 +410,10 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
                                      convert_ambiguous_width, &ambiguous_width, &term_program_obj)) {
         return NULL;
     }
-    if (PyTuple_GET_SIZE(args) > 1) {
+    if (PyTuple_Size(args) > 1) {
         PyErr_Format(PyExc_TypeError,
                      "width() takes 1 positional argument but %zd were given",
-                     PyTuple_GET_SIZE(args));
+                     PyTuple_Size(args));
         return NULL;
     }
 
@@ -403,9 +433,8 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
         return call_python_function("wcwidth._width", "width", args, kwargs);
     }
 
-    uint32_t *heap_buf = NULL;
     Py_ssize_t len;
-    const uint32_t *codepoints = unicode_codepoints(text_obj, &len, &heap_buf);
+    uint32_t *codepoints = unicode_codepoints(text_obj, &len);
     if (codepoints == NULL) {
         return NULL;
     }
@@ -417,7 +446,7 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 
     int error = 0;
     int result = wcwidth_width_u32(codepoints, (size_t)len, (wcwidth_control_mode_t)mode, &opts, &error);
-    PyMem_Free(heap_buf);
+    PyMem_Free(codepoints);
 
     if (error) {
         PyErr_SetString(PyExc_ValueError, width_error_message(error));
@@ -444,10 +473,10 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
                                      &term_program_obj)) {
         return NULL;
     }
-    if (PyTuple_GET_SIZE(args) > 3) {
+    if (PyTuple_Size(args) > 3) {
         PyErr_Format(PyExc_TypeError,
                      "%s() takes 3 positional arguments but %zd were given",
-                     name, PyTuple_GET_SIZE(args));
+                     name, PyTuple_Size(args));
         return NULL;
     }
 
@@ -586,7 +615,11 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     if (fast == NULL) {
         return NULL;
     }
-    Py_ssize_t nlines = PySequence_Fast_GET_SIZE(fast);
+    /* PySequence_Fast() returns a list for a list input and a tuple for a tuple
+     * input, so both accessor families are needed.  PyList_GetItem() and
+     * PyTuple_GetItem() return borrowed references. */
+    int fast_is_list = PyList_Check(fast);
+    Py_ssize_t nlines = fast_is_list ? PyList_Size(fast) : PyTuple_Size(fast);
     if (nlines == 0) {
         Py_DECREF(fast);
         return PyList_New(0);
@@ -606,7 +639,7 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *result = NULL;
     Py_ssize_t i;
     for (i = 0; i < nlines; i++) {
-        PyObject *line = PySequence_Fast_GET_ITEM(fast, i);
+        PyObject *line = fast_is_list ? PyList_GetItem(fast, i) : PyTuple_GetItem(fast, i);
         const char *utf8;
         Py_ssize_t utf8_len;
         if (unicode_to_utf8(line, &utf8, &utf8_len) < 0) {
@@ -655,7 +688,12 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
                     result = NULL;
                     break;
                 }
-                PyList_SET_ITEM(result, i, line);
+                if (PyList_SetItem(result, i, line) < 0) {
+                    /* SetItem() steals the reference whether or not it fails */
+                    Py_DECREF(result);
+                    result = NULL;
+                    break;
+                }
             }
         }
     }
@@ -711,7 +749,7 @@ static int
 grapheme_iterator_traverse(PyObject *op, visitproc visit, void *arg)
 {
     grapheme_iterator *self = (grapheme_iterator *)op;
-    Py_VISIT(Py_TYPE(self));
+    Py_VISIT(Py_TYPE(op));
     Py_VISIT(self->utf8);
     return 0;
 }
@@ -727,10 +765,13 @@ static void
 grapheme_iterator_dealloc(PyObject *op)
 {
     PyTypeObject *type = Py_TYPE(op);
+    freefunc tp_free;
 
     PyObject_GC_UnTrack(op);
     grapheme_iterator_release((grapheme_iterator *)op);
-    type->tp_free(op);
+    /* tp_free is hidden by the limited API; PyType_GetSlot() reads it. */
+    tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
+    tp_free(op);
     /* instances of a heap type hold a reference to it */
     Py_DECREF(type);
 }
@@ -789,6 +830,7 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     module_state *state;
     grapheme_iterator *self;
     PyTypeObject *type;
+    allocfunc alloc_func;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO:iter_graphemes", keywords,
                                      &unistr, &start, &end)) {
@@ -819,14 +861,16 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     }
 
     type = state->grapheme_iterator_type;
-    self = (grapheme_iterator *)type->tp_alloc(type, 0);
+    /* tp_alloc is hidden by the limited API; PyType_GetSlot() reads it. */
+    alloc_func = (allocfunc)PyType_GetSlot(type, Py_tp_alloc);
+    self = (grapheme_iterator *)alloc_func(type, 0);
     if (self == NULL) {
         Py_DECREF(utf8);
         return NULL;
     }
 
-    self->iter = wcwidth_grapheme_iter_new(PyBytes_AS_STRING(utf8),
-                                           (size_t)PyBytes_GET_SIZE(utf8));
+    self->iter = wcwidth_grapheme_iter_new(PyBytes_AsString(utf8),
+                                           (size_t)PyBytes_Size(utf8));
     if (self->iter == NULL) {
         self->utf8 = NULL;
         Py_DECREF(self);
@@ -875,10 +919,10 @@ py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
                                      &term_program_obj)) {
         return NULL;
     }
-    if (PyTuple_GET_SIZE(args) > 3) {
+    if (PyTuple_Size(args) > 3) {
         PyErr_Format(PyExc_TypeError,
                      "clip() takes 3 positional arguments but %zd were given",
-                     PyTuple_GET_SIZE(args));
+                     PyTuple_Size(args));
         return NULL;
     }
     if (start < 0 || end < 0) {
@@ -1052,9 +1096,18 @@ module_free(void *module)
     (void)module_clear((PyObject *)module);
 }
 
+/* Py_mod_multiple_interpreters and Py_mod_gil are declared only from the
+ * limited API version that added them, so compare against Py_LIMITED_API when
+ * it is set. */
+#ifdef Py_LIMITED_API
+#  define WCWIDTH_API_LEVEL Py_LIMITED_API
+#else
+#  define WCWIDTH_API_LEVEL PY_VERSION_HEX
+#endif
+
 static PyModuleDef_Slot module_slots[] = {
     {Py_mod_exec, (void *)module_exec},
-#if PY_VERSION_HEX >= 0x030C0000
+#if WCWIDTH_API_LEVEL >= 0x030C0000
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
 #endif
 #ifdef Py_mod_gil
