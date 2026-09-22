@@ -47,22 +47,17 @@ from .table_ambiguous import AMBIGUOUS_EASTASIAN
 from .escape_sequences import iter_sequences, strip_sequences
 from .unicode_versions import list_versions
 
-# NOTE: this sort order is important for legacy import API compatibility before release 0.7.0
+# Import order matters for legacy API compatibility (releases before 0.7.0).
 #
-# On Python < 3.15 the legacy submodule is eagerly pre-imported for backward compatibility
-# (populates sys.modules['wcwidth.wcwidth']).  On 3.15+ __lazy_modules__ handles all submodules; the
-# legacy shim loads on-demand via file discovery when ``from wcwidth.wcwidth import ...`` is used.
+# The first release put every function in a single 'wcwidth.py' file, and while the top-level
+# 'from wcwidth import wcswidth' was always preferred, the deeper
+# 'from wcwidth.wcwidth import wcswidth' form was always possible too.  Both keep working.
+#
+# Below 3.15 the legacy submodule is pre-imported so sys.modules['wcwidth.wcwidth'] is populated
+# during package initialization; a later ``import wcwidth.wcwidth`` would otherwise trigger on-disk
+# file discovery and rebind that name from the function to the module object.  On 3.15+
+# __lazy_modules__ covers every submodule and the shim loads on demand.
 if __import__('sys').version_info < (3, 15):
-    # Pre-import the legacy submodule so that sys.modules['wcwidth.wcwidth'] is populated during
-    # package initialization.  Without this, a later downstream dependent ``import wcwidth.wcwidth``
-    # triggers on-disk file discovery which rebinds wcwidth.wcwidth from the function to the module
-    # object.
-    #
-    # this is just a lot of carefulness for the original release that contained all functions in a
-    # single 'wcwidth.py' file. Even though we always exposed our API at the top-level the preferred
-    # 'from wcwidth import wcswidth', it was always possible to import them more directly,
-    # 'from wcwidth.wcwidth import wcswidth'
-    # -- and we make a lot of effort to allow any such import statements to continue to function.
     from . import wcwidth as _wcwidth_module  # isort:skip
 from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 

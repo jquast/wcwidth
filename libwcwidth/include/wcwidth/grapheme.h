@@ -44,8 +44,8 @@ size_t wcwidth_grapheme_boundary_after(const char *utf8, size_t len, size_t pos)
  * where every position, offset and length is a codepoint index.
  */
 
-/* Iterate *codepoints*, which is borrowed, not copied, and must outlive the
- * iterator.  Returns NULL if allocation fails.
+/* Iterate *codepoints*, which the iterator borrows; the caller must keep it
+ * alive for the iterator's lifetime.  Returns NULL if allocation fails.
  */
 wcwidth_grapheme_iter_t *wcwidth_grapheme_iter_new_u32(const uint32_t *codepoints, size_t n);
 

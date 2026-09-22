@@ -7,8 +7,8 @@
  * docs/libwcwidth.rst.  In particular:
  *   - Word splitting is on ASCII space only (no wordsep_re rules), and there
  *     is no break_on_hyphens, fix_sentence_endings, or propagate_sgr: those
- *     Python options have no counterpart here, so wcwidth_wrap_opts_t does
- *     not offer them rather than accepting and ignoring them.
+ *     Python options have no counterpart here, so wcwidth_wrap_opts_t
+ *     omits them.
  *   - OSC 8 hyperlinks are not implemented; they are measured as generic
  *     zero-width OSCs and are not continued across wrapped lines.
  */

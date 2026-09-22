@@ -1,9 +1,9 @@
 /*
  * Text truncation with sequence awareness.
  *
- * This is a simplified C11 implementation.  It fails with
- * WCWIDTH_ERROR_UNSUPPORTED rather than answer differently from Python's
- * clip(); docs/libwcwidth.rst lists the sequences it does not support.
+ * This is a simplified C11 implementation.  It reports
+ * WCWIDTH_ERROR_UNSUPPORTED, keeping its answers consistent with Python's
+ * clip(); docs/libwcwidth.rst lists the unsupported sequences.
  */
 #include "wcwidth/clip.h"
 #include "wcwidth/escape.h"

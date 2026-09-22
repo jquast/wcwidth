@@ -44,9 +44,8 @@ ts_field_lookup(char key)
  * Parse a decimal integer from [s, end), returning bytes consumed (0 if
  * there is no integer there).
  *
- * strtol(3) cannot be used: it scans until a non-digit, so it reads past
- * meta + meta_len whenever the caller's buffer is exactly meta_len bytes --
- * a NUL terminator this function's contract never asked for.
+ * strtol(3) cannot be used: it scans until a non-digit and would read past
+ * meta + meta_len when the caller's buffer is exactly meta_len bytes.
  */
 static size_t
 ts_parse_int(const char *s, const char *end, long *out)
@@ -110,7 +109,7 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
             const char *eq = memchr(part, '=', part_len);
 
             if (eq == NULL) {
-                /* No '=' -- skip this part (ignore in parse mode). */
+                /* No '=': skip (ignored in parse mode). */
                 part_start = pos + 1;
                 continue;
             }
@@ -118,7 +117,7 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
             /* Look up field by single-char key. */
             field = ts_field_lookup(part[0]);
             if (field == NULL) {
-                /* Unknown field -- ignore. */
+                /* Unknown field: ignore. */
                 part_start = pos + 1;
                 continue;
             }
@@ -129,7 +128,7 @@ wcwidth_ts_parse_params(const char *meta, size_t meta_len, wcwidth_ts_params_t *
                 const char *part_end = meta + pos;
                 size_t consumed = ts_parse_int(eq + 1, part_end, &val);
                 if (consumed == 0 || eq + 1 + consumed != part_end) {
-                    /* Not a valid integer, or trailing junk -- use default. */
+                    /* Not a valid integer, or trailing junk: use the default. */
                     part_start = pos + 1;
                     continue;
                 }
@@ -181,7 +180,7 @@ wcwidth_ts_from_esc(const wcwidth_esc_result_t *esc, wcwidth_text_sizing_t *ts)
     ts->text_len = esc->ts_text_len;
     ts->terminator = esc->ts_terminator;
     if (esc->ts_meta_len > 0 && esc->ts_meta_len < sizeof(meta_buf)) {
-        /* NUL-terminate meta for strtol-based parsing. */
+        /* Copy meta into a NUL-terminated local buffer. */
         memcpy(meta_buf, esc->ts_meta, esc->ts_meta_len);
         meta_buf[esc->ts_meta_len] = '\0';
         wcwidth_ts_parse_params(meta_buf, esc->ts_meta_len, &ts->params);

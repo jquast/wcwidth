@@ -507,9 +507,9 @@ def _clip_painter(
     col = 0
     idx = 0
     # captured_style is a frozen snapshot of current_style taken at the first
-    # visible character emitted within the clip window (start, end).  It stays
-    # None until that point.  current_style, by contrast, is continuously
-    # updated by SGR sequences throughout the scan.
+    # visible character emitted within the clip window (start, end); it stays
+    # None until that point.  current_style is continuously updated by SGR
+    # sequences throughout the scan.
     #
     # When propagate_sgr is False, current_style (and therefore captured_style)
     # remain None, and SGR sequences pass through as literal text.
@@ -757,8 +757,8 @@ def clip(
     r"""
     Clip text to display columns (start, end) while preserving all terminal sequences.
 
-    This function extracts a substring based on visible column positions rather than character
-    indices. Terminal escape sequences are preserved in output. If a wide character (width of 2) is
+    This function extracts a substring using visible column positions. Terminal escape sequences
+    are preserved in output. If a wide character (width of 2) is
     split at a boundary, it is replaced with ``fillchar``.
 
     TAB characters (``\t``) are expanded to spaces up to the next tab stop, controlled by the

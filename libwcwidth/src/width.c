@@ -28,10 +28,10 @@
  * Scratch size for the strip passes in _width_ignore()/_width_ignore_u32().
  *
  * Both functions already fall back to malloc for longer input, so this only
- * decides where that fallback starts.  It is deliberately modest: two of
- * these live in one _width_ignore() frame, and musl's default thread stack
- * is 128 KiB -- the configuration most Python container images run on.  A
- * kilobyte still covers any realistic terminal line.
+ * decides where that fallback starts.  Two of these live in one
+ * _width_ignore() frame, and musl's default thread stack is 128 KiB, the
+ * configuration most Python container images run on.  A kilobyte covers any
+ * realistic terminal line.
  */
 #define WCWIDTH_STRIP_SCRATCH 1024
 #define WCWIDTH_STRIP_SCRATCH_U32 512
@@ -42,8 +42,8 @@
  * wide, zero-width, or ambiguous tables, and no terminal override set
  * touches that range.  Such text also contains no escape sequence, no
  * control code, and no grapheme cluster spanning more than one codepoint,
- * so its width is exactly the number of codepoints in every control mode
- * -- including WCWIDTH_STRICT, which has nothing to reject.
+ * so its width is exactly the number of codepoints in every control mode,
+ * including WCWIDTH_STRICT, which has nothing to reject.
  *
  * Both scans stop at the first byte/codepoint outside the range, so text
  * that does not qualify pays only for the prefix it shares with it. */
@@ -275,7 +275,7 @@ strip_controls(const char *text, size_t text_len, char *out, size_t out_cap, siz
 
     if (out_len != NULL) {
         /* On truncation the last byte holds the NUL, so only out_cap - 1
-         * bytes of text are usable -- as in wcwidth_escape_strip(). */
+         * bytes of text are usable, as in wcwidth_escape_strip(). */
         *out_len = (written < out_cap) ? written : (out_cap > 0 ? out_cap - 1 : 0);
     }
 
@@ -296,7 +296,7 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
     needed = wcwidth_escape_strip(text, n, stripped, sizeof(stripped), &stripped_len);
 
     if (needed >= sizeof(stripped)) {
-        /* Buffer too small -- strip in two passes. */
+        /* Buffer too small: strip in two passes. */
         char *buf = (char *) malloc(needed + 1);
         if (buf == NULL) {
             return -1;
@@ -369,9 +369,9 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
  *
  * These payloads may hold codepoints outside ASCII, so they cannot go through
  * the byte classifier over an encoded ASCII run.  Both the width parser and
- * the ignore-mode stripper call this, so the termination rule -- BEL, ST, or
- * a bare ESC ending the body unterminated, matching parse_osc() in escape.c
- * and the Python parser's [^\x07\x1b]* body -- exists once.
+ * the ignore-mode stripper call this, so the termination rule (BEL, ST, or a
+ * bare ESC ending the body unterminated, matching parse_osc() in escape.c
+ * and the Python parser's [^\x07\x1b]* body) exists once.
  *
  * Returns true when terminated, filling *term_start (first codepoint of the
  * terminator) and *term_end (one past it).
@@ -411,7 +411,7 @@ scan_osc_body_u32(const uint32_t *cp, size_t n, size_t start, size_t *term_start
  * ESC [" in one place.
  *
  * ESC ( / ESC ) designate a single character that may itself be non-ASCII, so
- * they are counted directly rather than through the ASCII run.
+ * they are counted directly.
  */
 static size_t
 escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
@@ -562,8 +562,8 @@ _width_ignore_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char 
  * Add to a column counter without overflowing.
  *
  * Cursor-forward parameters saturate at INT_MAX in escape.c, but once
- * current_col sits at INT_MAX any further advance -- a visible character, a
- * tab stop, an OSC 66 width -- is signed overflow, which is undefined
+ * current_col sits at INT_MAX any further advance (a visible character, a
+ * tab stop, an OSC 66 width) is signed overflow, which is undefined
  * behaviour and would defeat that clamp.  Every column advance goes through
  * here.
  */
@@ -774,7 +774,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                     current_col = 0;
                 }
             }
-            /* ZERO_WIDTH_CTRL: NUL(0), BEL(7), SO(0x0E), SI(0x0F) -- no column change. */
+            /* ZERO_WIDTH_CTRL: NUL(0), BEL(7), SO(0x0E), SI(0x0F): no column change. */
 
             if (current_col > max_extent) {
                 max_extent = current_col;
@@ -967,7 +967,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                             if (candidate_len < 32) {
                                 /* Two-phase: the candidate (cluster + current
                                  * char) matches clusters ending at this char;
-                                 * the cluster alone matches C+Mc overrides
+                                 * the cluster by itself matches C+Mc overrides
                                  * stored without the trailing Mc.  Only the
                                  * candidate match flushes; the cluster match
                                  * continues with the current char. */
@@ -1034,7 +1034,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                 }
                 else if (last_measured_idx >= 0
                          && wcwidth_bisearch(ucs, WCWIDTH_CATEGORY_MC, WCWIDTH_CATEGORY_MC_LEN)) {
-                    /* Spacing Combining Mark (Mc) -- extends cluster to width 2. */
+                    /* Spacing Combining Mark (Mc): extends the cluster to width 2. */
                     cluster_width = 2;
                     last_measured_idx = -2;
                     prev_was_virama = false;
@@ -1079,9 +1079,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
 }
 
 /*
- * Codepoint-array variant of _width_parse(): same semantics but operates on a
- * pre-decoded uint32_t array instead of raw UTF-8 bytes.  This avoids the
- * encode->decode round-trip that wcwidth_width_u32 otherwise imposes.
+ * Codepoint-array variant of _width_parse(): same semantics, operating on a
+ * pre-decoded uint32_t array.  The codepoints are measured directly.
  *
  * Escape sequences consist entirely of ASCII-range codepoints, so the region
  * around each ESC is encoded into a small stack buffer to reuse the byte-based
@@ -1175,8 +1174,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
             }
 
             /* OSC / APC / DCS / PM: payloads run until BEL or ST and may hold
-             * codepoints outside ASCII, so scan natively rather than through
-             * the ASCII-region classifier. */
+             * codepoints outside ASCII, so scan them natively over the
+             * codepoint array. */
             if (idx + 1 < n
                 && (cp[idx + 1] == ']' || cp[idx + 1] == '_' || cp[idx + 1] == 'P'
                     || cp[idx + 1] == '^')) {
@@ -1198,8 +1197,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                             term_start = pos;
                             term_end = pos + 2;
                         }
-                        /* Any other ESC ends the body unterminated -- the same
-                         * rule parse_osc() applies in escape.c, and the same
+                        /* Any other ESC ends the body unterminated, the same
+                         * rule parse_osc() applies in escape.c and the same
                          * [^\x07\x1b]* body the Python parser matches. */
                         break;
                     }
@@ -1312,7 +1311,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                     if (need_fallback) {
                         char *rest_buf = NULL;
                         size_t rest_len = 0;
-                        /* See above: refuse rather than wrap the size. */
+                        /* See above: refuse on overflow. */
                         size_t rest_cap = (n - idx > SIZE_MAX / 4) ? 0 : (n - idx) * 4;
                         rest_buf = rest_cap ? (char *) malloc(rest_cap) : NULL;
                         if (rest_buf != NULL) {
@@ -1748,8 +1747,8 @@ wcwidth_width_u8(const char *utf8, size_t n, wcwidth_control_mode_t mode,
     effective_mode = mode;
 
     /* Fast-path downgrade: in PARSE mode, if text has no cursor movement,
-     * downgrade to IGNORE for performance.  The threshold counts codepoints
-     * like the Python implementation's len(), not bytes. */
+     * downgrade to IGNORE for performance.  The threshold counts codepoints,
+     * matching the Python implementation's len(). */
     if (effective_mode == WCWIDTH_PARSE && utf8_char_count(utf8, n) > FAST_PATH_MIN_LEN) {
         if (!_needs_cursor_tracking(utf8, n)) {
             effective_mode = WCWIDTH_IGNORE;
