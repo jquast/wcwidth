@@ -141,7 +141,7 @@ TEST(boundary_prepend_gb9b)
 
 TEST(iterator_u32)
 {
-    /* "éok" -- one two-codepoint cluster then two single ones */
+    /* "éok": one two-codepoint cluster then two single ones */
     static const uint32_t cps[] = {0x65, 0x301, 0x6F, 0x6B};
     wcwidth_grapheme_iter_t *iter = wcwidth_grapheme_iter_new_u32(cps, 4);
     const uint32_t *g;
@@ -149,7 +149,7 @@ TEST(iterator_u32)
 
     ASSERT_NOT_NULL(iter);
     g = wcwidth_grapheme_next_u32(iter, &len);
-    ASSERT_TRUE(g == cps); /* borrowed, not copied */
+    ASSERT_TRUE(g == cps); /* borrowed pointer */
     ASSERT_EQ((int64_t) 2, (int64_t) len);
     g = wcwidth_grapheme_next_u32(iter, &len);
     ASSERT_TRUE(g == cps + 2);

@@ -33,11 +33,9 @@ parse_cursor_n(const char *params, size_t params_len)
         int digit = params[i] - '0';
 
         /*
-         * Saturate instead of overflowing.  These digits arrive in any
-         * terminal byte stream, so they are fully attacker-controlled, and
-         * signed overflow is undefined behaviour.  A movement of INT_MAX
-         * columns is already past any reachable column, so clamping loses
-         * nothing a caller could observe.
+         * Saturate on overflow: these digits are attacker controlled and
+         * signed overflow is undefined.  INT_MAX columns is past any
+         * reachable column, so the clamp is not observable.
          */
         if (n > (INT_MAX - digit) / 10) {
             n = INT_MAX;
@@ -120,7 +118,7 @@ parse_csi(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
 
     /* final byte: 0x40-0x7E */
     if (pos >= text_len) {
-        /* truncated -- consume just ESC '[' as a zero-width Fe sequence
+        /* truncated: consume just ESC '[' as a zero-width Fe sequence
          * ('[' is 0x5B, in the Fe range) */
         esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 2);
         return true;
@@ -128,7 +126,7 @@ parse_csi(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
 
     ch = (unsigned char) text[pos];
     if (ch < 0x40 || ch > 0x7E) {
-        /* malformed CSI -- consume ESC and '[' as a zero-width sequence */
+        /* malformed CSI: consume ESC and '[' as a zero-width sequence */
         esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset, 2);
         return true;
     }
@@ -220,19 +218,17 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
                 terminated = true;
             }
             /*
-             * Any other ESC ends the body without terminating the sequence.
-             * The Python parser's OSC body is [^\x07\x1b]*, so an embedded
-             * ESC means this is not an OSC at all; scanning past it to a
-             * later BEL would swallow visible text that Python keeps.
+             * Any other ESC ends the body unterminated.  The Python OSC body
+             * is [^\x07\x1b]*, so an embedded ESC means this is not an OSC;
+             * scanning past it would swallow text Python keeps visible.
              */
             break;
         }
         pos++;
     }
 
-    /* An unterminated OSC is not a recognized OSC; it still consumes the
-     * 2-byte ESC ] prefix, matching the Python reference (where \x1b] matches
-     * the zero-width Fe branch). */
+    /* An unterminated OSC consumes only the 2-byte ESC ] prefix, the same as
+     * the Python parser's zero-width Fe branch. */
     if (!terminated) {
         result->length = 2;
         return true;
@@ -243,7 +239,7 @@ parse_osc(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t
     /* classify OSC by prefix */
     if (result->length >= 5 && text[offset + 2] == '6' && text[offset + 3] == '6'
         && text[offset + 4] == ';') {
-        /* OSC 66 -- Text Sizing Protocol */
+        /* OSC 66: Text Sizing Protocol */
         size_t data_start = offset + 5;
         size_t term_len = 1;
         if (result->length >= 2 && text[offset + result->length - 2] == ESC) {
@@ -304,14 +300,14 @@ scan_until_terminator(const char *text, size_t text_len, size_t pos)
         }
         pos++;
     }
-    /* unterminated -- ran out of input */
+    /* unterminated: ran out of input */
     return 0;
 }
 
 /*
  * Parse a character set designation: ESC ( or ESC ) + one character.
- * The character may be multi-byte UTF-8, so its byte length is decoded
- * rather than assumed to be 1.
+ * The character may be multi-byte UTF-8, so its byte length is decoded from
+ * the input.
  */
 static bool
 parse_charset(const char *text, size_t text_len, size_t offset, wcwidth_esc_result_t *result)
@@ -390,11 +386,9 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
         case '^': /* PM */
         {
             /*
-             * Python's APC/DCS/PM bodies are [^\x1b\x07]*, so a body holding a
-             * bare ESC -- or one that never terminates -- is not one of these
-             * sequences at all.  Consume just the two-byte introducer and let
-             * the rest be measured as ordinary text, matching the Fe branch
-             * the Python parser falls through to.
+             * The Python APC/DCS/PM body is [^\x1b\x07]*, so a bare ESC or a
+             * missing terminator means this is not one of these sequences:
+             * consume the 2-byte introducer and measure the rest as text.
              */
             size_t end = scan_until_terminator(text, text_len, offset + 2);
             esc_result_init(result, WCWIDTH_ESC_OTHER, text + offset,
@@ -420,7 +414,7 @@ wcwidth_escape_classify(const char *text, size_t text_len, size_t offset,
         case 0x2D:
         case 0x2E:
         case 0x2F:
-            /* intermediate byte -- possibly start of nF */
+            /* intermediate byte: possibly the start of nF */
             return parse_nf(text, text_len, offset, result);
 
         default:
@@ -490,7 +484,7 @@ wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t out_ca
                 continue;
             }
         }
-        /* visible character -- copy */
+        /* visible character: copy */
         if (written < out_cap) {
             out[written] = text[src];
         }

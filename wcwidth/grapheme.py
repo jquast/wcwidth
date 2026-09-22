@@ -66,7 +66,7 @@ class GCB(IntEnum):
 
 # All lru_cache sizes in this file use maxsize=1024, chosen by benchmarking UDHR data (500+
 # languages) and considering typical process-long sessions: western scripts need ~64 unique
-# codepoints, but CJK could reach ~2000 -- but likely not.
+# codepoints, and CJK can reach ~2000.
 @lru_cache(maxsize=1024)
 def _grapheme_cluster_break(ucs: int) -> GCB:
     # pylint: disable=too-many-branches,too-complex

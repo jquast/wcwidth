@@ -6,8 +6,8 @@ A portable C11 library, mainly for CLI/TUI programs that carefully produce outpu
 
 This project is derived from the Python `wcwidth`_ project.
 
-The Python documentation_ closely matches this C library, except that the C API provides UTF-8 and
-codepoint array interfaces.
+The Python documentation_ closely matches this C library.  The C API adds UTF-8 and codepoint
+array interfaces.
 
 The lowest-level functions are derived from POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
 `wcswidth(3)`_, which this library implements as `wcwidth_u32()`_ and `wcswidth_u32()`_.  These
@@ -54,7 +54,7 @@ Example Programs
 
 Three small CLI utilities demonstrate use of this library.
 
-**textwrap** -- Unicode, CJK, emoji, and terminal sequence-aware text wrapping::
+**textwrap**: Unicode, CJK, emoji, and terminal sequence-aware text wrapping::
 
     $ textwrap 42 README.rst
     ==========
@@ -70,7 +70,7 @@ Three small CLI utilities demonstrate use of this library.
 Uses environment value, ``$COLUMNS``, if no width argument is given.  Use ``-v`` to append a red
 carriage-return marker.
 
-**width** -- report the display width of each line::
+**width**: report the display width of each line::
 
     $ width README.rst
     10
@@ -86,7 +86,7 @@ carriage-return marker.
     $ width -v <<< "café résumé"
     11:café résumé
 
-**align** -- demonstrate left, right, and center alignment::
+**align**: demonstrate left, right, and center alignment::
 
     $ echo "hello" | align 20
     hello                                hello         hello
@@ -101,8 +101,8 @@ corrections, and grapheme clustering are discussed in the Python documentation_.
 Memory ownership
 ~~~~~~~~~~~~~~~~
 
-The text transforms allocate their result and return ``NULL`` on failure, be certain to ``free()``
-on success:
+The text transforms allocate their result and return ``NULL`` on failure.  The caller must
+``free()`` a successful result:
 
 .. code-block:: c
 
@@ -117,8 +117,8 @@ on success:
     free(out);
 
 `wcwidth_encode_u32()`_ and `wcwidth_decode_u32()`_ instead return the caller's scratch buffer
-if the result fits, allocating only when it does not.  ``free()`` these with the condition that
-the result is at a new address:
+if the result fits, allocating only when it does not.  ``free()`` the result when it is at a new
+address:
 
 .. code-block:: c
 
@@ -141,16 +141,16 @@ Every string function takes an explicit length and reads exactly that many units
     count bytes.
 
 There is no NUL-terminated sentinel form; pass ``strlen(text)`` when the text is a C string.  The
-length is authoritative, so a NUL is an ordinary zero-width character rather than a terminator: it
-may appear anywhere, and survives into transform output, whose ``*out_len`` is the true length.
+length is authoritative: a NUL is an ordinary zero-width character that may appear anywhere, and
+it survives into transform output, whose ``*out_len`` is the true length.
 
 Alternate encodings
 ~~~~~~~~~~~~~~~~~~~
 
 Use ``_u8`` when your text is UTF-8 and ``_u32`` when you hold decoded codepoints; the two
-families mirror each other.  Auxiliary strings are UTF-8 in *both* families -- the ``fillchar``
-padding argument and the ``initial_indent``/``subsequent_indent``/``placeholder`` wrap options --
-since they are short constants, not the text being processed.
+families mirror each other.  Auxiliary strings are UTF-8 in *both* families (the ``fillchar``
+padding argument and the ``initial_indent``/``subsequent_indent``/``placeholder`` wrap options),
+because they are short constants.
 
 Other encodings (Latin-1, CP437, Shift-JIS, ...) are transcoded by the caller; the library carries
 no encoding tables.  Either transcode to UTF-8 once with iconv(3) or ICU and use the ``_u8`` forms
@@ -185,7 +185,7 @@ throughout, or use the ``_u32`` forms and re-encode the result.  `wcwidth_encode
     free(out);
 
 Re-encoding to a legacy charset is the caller's iconv(3) or ICU (``ucnv_*``) call; a byte cast
-works only when every codepoint fits the target, where iconv reports ``EILSEQ`` instead.
+works when every codepoint fits the target, and iconv reports ``EILSEQ`` when one does not.
 
 wcwidth_u32()
 ~~~~~~~~~~~~~
@@ -234,8 +234,8 @@ wcwidth_width_u32() and wcwidth_width_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Measure the visible width of text including terminal control sequences: colors, bold, tabstops,
-horizontal cursor movement, and OSC 66 Text Sizing.  `wcwidth_width_u32()`_ encodes
-its codepoints to UTF-8 and measures as `wcwidth_width_u8()`_:
+horizontal cursor movement, and OSC 66 Text Sizing.  `wcwidth_width_u32()`_ measures the
+codepoints directly:
 
 .. code-block:: c
 
@@ -313,7 +313,7 @@ graphemes with a fill string.  Returns a ``malloc``\ 'd NUL-terminated string th
     free(out);
 
 Leave ``opts.v_end`` at its ``SIZE_MAX`` default to clip from ``v_start`` through the final column
-of *text*, without measuring it first -- the counterpart of the ``-1`` default of Python's `clip()`_:
+of *text*, without measuring it first, matching the ``-1`` default of Python's `clip()`_:
 
 .. code-block:: c
 
@@ -326,9 +326,9 @@ of *text*, without measuring it first -- the counterpart of the ``-1`` default o
 Some sequences are unsupported, and `wcwidth_clip_u8()`_ returns ``NULL`` with ``*error`` set to
 ``WCWIDTH_ERROR_UNSUPPORTED``, these sequences are only supported in Python's `clip()`_:
 
-* **Horizontal cursor movement** -- BS, CR, and CSI ending in ``C`` (CUF), ``D`` (CUB) or ``G``
-  (HPA).  There is no counterpart to the ``overtyping`` option of Python's `clip()`_.
-* **OSC 8 hyperlinks** and **OSC 66 text sizing** are not supported.
+* **Horizontal cursor movement**: BS, CR, and CSI ending in ``C`` (CUF), ``D`` (CUB) or ``G``
+  (HPA).  Python's `clip()`_ additionally offers ``overtyping``.
+* **OSC 8 hyperlinks** and **OSC 66 text sizing**: Python's `clip()`_ covers these.
 
 .. code-block:: c
 
@@ -366,7 +366,7 @@ breaks.  Both emit a single ``malloc``\ 'd buffer of newline-separated lines:
     free(out);
 
 When the placeholder does not fit within the given width (``max_lines`` truncation),
-`wcwidth_wrap_u8()`_ returns ``-2`` rather than ``-1``, so callers can raise a tailored error.
+`wcwidth_wrap_u8()`_ returns ``-2``, so callers can raise a tailored error.
 `wcwidth_wrap_lines_u8()`_ additionally reports each line's start offset in the output buffer, which
 matters when a line contains ``'\n'`` from the placeholder itself:
 
@@ -408,8 +408,8 @@ Differences from the Python package
 `wcwidth_width_u32()`_ and `wcwidth_width_u8()`_ parse only the sequences that move the cursor
 within a line or change how much room text occupies: SGR, horizontal cursor movement (CUF, CUB,
 HPA), and OSC 66 text sizing.  Every other recognized sequence is zero-width.  Screen clears,
-scrolls and vertical movement are indeterminate -- their column effect depends on terminal state
-the text does not carry -- so ``WCWIDTH_STRICT`` reports them as an error and the other modes
+scrolls and vertical movement are indeterminate (their column effect depends on terminal state
+the text does not carry), so ``WCWIDTH_STRICT`` reports them as an error and the other modes
 count them as zero-width.
 
 ``wcswidth_*()`` and ``wcstwidth_*()`` take no ``wcwidth_control_mode_t`` and return -1 for any
@@ -419,8 +419,8 @@ and `wcwidth_center_u8()`_ match the Python functions exactly.
 The text transforms are simpler:
 
 * `wcwidth_clip_u8()`_ rejects the unsupported sequences described above; every other sequence but
-  SGR is zero-width, preserved where it appeared rather than clipped as a unit.  It otherwise
-  matches Python's `clip()`_, SGR included.
+  SGR is zero-width and preserved at its original position.  It otherwise matches Python's
+  `clip()`_, SGR included.
 * `wcwidth_wrap_u8()`_ treats an OSC 8 hyperlink as an ordinary zero-width OSC, so the link is not
   re-opened on each line; callers must re-emit the opener and terminator themselves.
 * `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where
@@ -432,7 +432,7 @@ Supported Terminals
 -------------------
 
 The ``term_program`` argument selects per-terminal corrections from generated override tables.
-The following canonical names are recognized; common ``TERM``/``TERM_PROGRAM`` aliases such as
+The following terminal names are recognized; common ``TERM``/``TERM_PROGRAM`` aliases such as
 ``vscode`` and ``xterm-kitty`` resolve to them:
 
 .. BEGIN_LIST_TERM_PROGRAMS
@@ -445,7 +445,8 @@ The following canonical names are recognized; common ``TERM``/``TERM_PROGRAM`` a
 .. END_LIST_TERM_PROGRAMS
 
 For the most accurate corrections, query the terminal's software version via XTVERSION_
-(``CSI > q``) and pass the canonical name.  See the Python Corrections_ documentation for details.
+(``CSI > q``) and pass the name from the list above.  See the Python Corrections_ documentation
+for details.
 
 Unicode Version
 ---------------

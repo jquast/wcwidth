@@ -42,17 +42,17 @@ extern const wcwidth_clip_opts_t WCWIDTH_CLIP_OPTS_DEFAULT;
 /*
  * Clip text to the visible column range [opts->v_start, opts->v_end).
  *
- * Returns a malloc'd string on success, NULL on error.  When NULL is
- * returned, *error (from width.h) is WCWIDTH_ERROR_UNSUPPORTED for a
- * terminal sequence this function does not support, another nonzero
- * wcwidth_error_t for a WCWIDTH_STRICT violation, and WCWIDTH_ERROR_NONE
- * for an allocation failure.  *error is always written on return.
+ * Returns a malloc'd string on success, NULL on error.  On success, *out_len
+ * receives the byte length of the result (excluding the NUL terminator, which
+ * is always present), and the caller must free the returned pointer with a
+ * single free() call.  When NULL is returned, *error (from width.h) is
+ * WCWIDTH_ERROR_UNSUPPORTED for a terminal sequence this function does not
+ * support, another nonzero wcwidth_error_t for a WCWIDTH_STRICT violation, and
+ * WCWIDTH_ERROR_NONE for an allocation failure.  *error is always written on
+ * return.
  *
  * Unsupported: horizontal cursor movement (BS, CR, CUF, CUB, HPA), OSC 8
  * hyperlinks and OSC 66 text sizing.
- * On success, *out_len receives the byte length of the result
- * (excluding NUL terminator, which is always present).
- * The caller must free the returned pointer with a single free() call.
  *
  *   text:     UTF-8 encoded input string, NOT NUL-terminated.
  *   text_len: length of text in bytes.

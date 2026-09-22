@@ -28,9 +28,8 @@ size_t wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out);
  * is undefined behavior.  Sets *count* and returns NULL on allocation
  * failure.
  *
- * The result is not const, so the `if (p != stack) free(p);` release is a
- * plain free() -- matching wcwidth_encode_u32() below.  Treat the contents as
- * read-only; the pointer is non-const only so ownership can be released.
+ * The result type allows a plain free() release, matching wcwidth_encode_u32()
+ * below.  Treat the contents as read-only.
  */
 uint32_t *wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap,
                              size_t *count);

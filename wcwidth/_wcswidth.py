@@ -46,8 +46,8 @@ def _scan_zwj_cluster_end(text: str, start: int, end: int) -> int:
         idx += 1
         # GB11: \p{ExtPict} Extend* ZWJ × \p{ExtPict}
         # Extend modifiers (VS16, Fitzpatrick skin tones, etc.) attach to
-        # the ExtPict *before* the ZWJ, not after it.  After ZWJ the next
-        # codepoint is always an ExtPict directly, no Extend skip needed.
+        # the ExtPict *before* the ZWJ.  After ZWJ the next codepoint is
+        # always an ExtPict directly, no Extend skip needed.
         if idx < end and ord(text[idx]) in _EMOJI_ZWJ_SET:
             idx += 1
             # Skip trailing Extend (VS16, etc.) after ExtPict before next ZWJ
@@ -292,8 +292,8 @@ def wcstwidth(
         ucs = ord(char)
 
         #
-        # Much of the logic below matches the logic in width(), but is repeated for improved
-        # performance, they are given matching index reference numbers (starting at #5).
+        # Much of the logic below matches width(); it is repeated here for performance, with
+        # matching index reference numbers (starting at #5).
         #
         # 5. ZWJ (U+200D): consumed without contributing width.
         # Virama codepoints are treated as zero-width combining marks (Mn). When a
