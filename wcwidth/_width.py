@@ -150,9 +150,8 @@ def width(
         1
     """
     # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks
-    # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead
-    # in consideration of this function a likely "hot path", they are inline, breaking many pylint
-    # complexity rules.
+    # This could be split into sub-functions (#1, #3 and #6 especially), but this function is a
+    # hot path, so the steps stay inline and the pylint complexity rules are disabled.
 
     # Fast path for ASCII printable (no tabs, escapes, or control chars)
     if text.isascii() and text.isprintable():
@@ -272,7 +271,7 @@ def width(
                     current_col -= n_backward
                     if current_col < 0:
                         current_col = 0
-                # 2d. OSC 66 Text Sizing — has positive display width
+                # 2d. OSC 66 Text Sizing: positive display width
                 elif (ts_meta := m.group('ts_meta')) is not None:
                     ts_text = m.group('ts_text') or ''
                     ts_term = m.group('ts_term')
@@ -281,7 +280,7 @@ def width(
                         TextSizingParams.from_params(ts_meta, control_codes=control_codes),
                         ts_text, ts_term)
                     current_col += text_size.display_width(ambiguous_width)
-                # 2e. SGR and other zero-width sequences -- no column advance
+                # 2e. SGR and other zero-width sequences: no column advance
                 idx = m.end()
             # Escape sequences break VS16 adjacency: reset last-measured state
             last_measured_idx = -2

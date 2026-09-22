@@ -31,7 +31,7 @@ wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
 
     /* Determine sequence length */
     if (c < 0xC0) {
-        /* Continuation byte at start -- invalid */
+        /* Continuation byte at start: invalid */
         *cp_out = 0xFFFD;
         return 1;
     }
@@ -55,7 +55,7 @@ wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
 
     if (expected > len) {
         *cp_out = 0xFFFD;
-        return len; /* Truncated -- consume remaining */
+        return len; /* Truncated: consume remaining */
     }
 
     for (i = 1; i < expected; i++) {

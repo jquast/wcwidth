@@ -119,8 +119,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         # Build a mapping from stripped text positions to original text positions.
         #
         # Track where each character ENDS so that sequences between characters
-        # attach to the following text (not preceding text). This ensures sequences
-        # aren't lost when whitespace is dropped.
+        # attach to the following text, keeping them when whitespace is dropped.
         #
         # char_end[i] = position in original text right after the i-th stripped char
         char_end: list[int] = []
@@ -197,15 +196,15 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         """
         Wrap chunks into lines using sequence-aware width.
 
-        Override TextWrapper._wrap_chunks to use _width instead of len. Follows stdlib's algorithm:
+        Override TextWrapper._wrap_chunks to measure with _width. Follows stdlib's algorithm:
         greedily fill lines, handle long words.  Also handle OSC hyperlink processing. When
         hyperlinks span multiple lines, each line gets complete open/close sequences with matching
         id parameters for hover underlining continuity per OSC 8 spec.
         """
         # pylint: disable=too-many-branches,too-many-statements,too-complex,too-many-locals
         # pylint: disable=too-many-nested-blocks
-        # the hyperlink code in particular really pushes the complexity rating of this method.
-        # preferring to keep it "all in one method" because of so much local state and manipulation.
+        # The hyperlink code pushes the complexity rating of this method.  It stays in one method
+        # because of the shared local state.
         if self.width <= 0:
             raise ValueError('invalid width %r (must be > 0)' % self.width)
         if not chunks:
@@ -250,7 +249,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # Drop leading whitespace (except at very start)
             # When dropping, transfer any sequences to the next chunk.
-            # Only drop if there's actual whitespace text, not if it's only sequences.
+            # Only drop when actual whitespace text is present.
             stripped = self._strip_sequences(chunks[-1])
             if self.drop_whitespace and lines and stripped and not stripped.strip():
                 sequences = self._extract_sequences(chunks[-1])
@@ -281,7 +280,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
             # Drop trailing whitespace
             # When dropping, transfer any sequences to the previous chunk.
-            # Only drop if there's actual whitespace text, not if it's only sequences.
+            # Only drop when actual whitespace text is present.
             stripped_last = self._strip_sequences(current_line[-1]) if current_line else ''
             if (self.drop_whitespace and current_line and
                     stripped_last and not stripped_last.strip()):
@@ -550,8 +549,8 @@ def wrap(text: str, width: int = 70, *,
     r"""
     Wrap text to fit within given width, returning a list of wrapped lines.
 
-    Like :func:`textwrap.wrap`, but measures width in display cells rather than
-    characters, correctly handling wide characters, combining marks, and terminal
+    Like :func:`textwrap.wrap`, but measures width in display cells, correctly
+    handling wide characters, combining marks, and terminal
     escape sequences.
 
     :param text: Text to wrap, may contain terminal sequences.

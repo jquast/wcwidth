@@ -11,7 +11,7 @@
 #include <limits.h>
 
 /* Stack capacity for collected SGR parameters; longer runs grow onto the
- * heap rather than being dropped. */
+ * heap. */
 #define WCWIDTH_SGR_MAX_PARAMS 64
 
 /*
@@ -119,7 +119,7 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
     const char *end = sgr_params + sgr_params_len;
     int i;
 
-    /* Empty params is equivalent to "0" (reset) -- \x1b[m. */
+    /* Empty params is equivalent to "0" (reset): \x1b[m. */
     if (sgr_params_len == 0) {
         *state = WCWIDTH_SGR_STATE_DEFAULT;
         return;
@@ -322,12 +322,9 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
 /*
  * Append a decimal integer at *offset*, never writing past *out_cap*.
  *
- * snprintf() returns the length it *would* have produced, so accumulating
- * that return value unclamped lets *offset* run past *out_cap*; the next
- * call then computes out_cap - offset, which wraps to a huge size_t, and
- * writes through out + offset -- outside the buffer.  Clamping to
- * out_cap - 1 on truncation keeps every later `offset < out_cap` guard
- * meaningful and leaves room for the terminator.
+ * snprintf() returns the length it would have produced, so an unclamped
+ * offset runs past out_cap, wraps out_cap - offset to a huge size_t, and
+ * writes outside the buffer.  Clamp to out_cap - 1 on truncation.
  */
 /*
  * ITU T.416 "38:2:<colour space>:R:G:B" carries an element the legacy

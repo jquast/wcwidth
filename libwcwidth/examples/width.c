@@ -1,5 +1,5 @@
 /*
- * width -- report display width of each line of UTF-8 text.
+ * width: report display width of each line of UTF-8 text.
  *
  * Usage:
  *   width [-v|--verbose] [file]

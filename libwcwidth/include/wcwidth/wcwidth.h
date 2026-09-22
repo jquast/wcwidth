@@ -18,9 +18,9 @@ extern "C" {
  *    1 = narrow (default), 2 = wide (CJK context).
  *
  * Returns:
- *   1 or 2  -- display cells occupied
- *   0       -- zero-width codepoint (combining marks, ZWJ, etc.)
- *  -1       -- non-printable control character
+ *   1 or 2: display cells occupied
+ *   0: zero-width codepoint (combining marks, ZWJ, etc.)
+ *  -1: non-printable control character
  */
 int wcwidth_u32(uint32_t codepoint, int ambiguous_width);
 
@@ -44,7 +44,7 @@ int wcswidth_u8(const char *utf8, size_t n, int ambiguous_width);
 /*
  * Terminal-aware variant of wcswidth_u32().
  *
- * *term_program*: canonical terminal name for override tables (e.g. "kitty",
+ * *term_program*: terminal name for override tables (e.g. "kitty",
  * "xterm", "ghostty"). Use NULL for no terminal overrides.
  */
 int wcstwidth_u32(const uint32_t *codepoints, size_t n, int ambiguous_width,

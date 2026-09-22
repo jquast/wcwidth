@@ -60,7 +60,7 @@ TEST(unbounded_end)
     cs_assert("\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97", 0, SIZE_MAX,
               "\xe4\xb8\xad\xe6\x96\x87\xe5\xad\x97");
     cs_assert("\x1b[1;34mHello world\x1b[0m", 6, SIZE_MAX, "\x1b[1;34mworld\x1b[0m");
-    /* a start past the clamp is an empty window, not a negative one */
+    /* a start past the clamp is an empty window */
     cs_assert("\xe4\xb8\xad\xe6\x96\x87", SIZE_MAX, SIZE_MAX, "");
 }
 
@@ -122,7 +122,7 @@ TEST(tab_captures_style)
     cs_assert("\x1b[31m\tx", 0, 9, "\x1b[31m        x\x1b[0m");
 }
 
-/* Unsupported sequences are reported, not answered differently. */
+/* Unsupported sequences set WCWIDTH_ERROR_UNSUPPORTED. */
 TEST(unsupported_cursor_movement)
 {
     cs_assert_unsupported("abcdef\x1b[5Cgh");

@@ -8,7 +8,7 @@
 int
 wcwidth_u32(uint32_t ucs, int ambiguous_width)
 {
-    /* printable ASCII -- fast path (~40% perf boost for mostly-ASCII text) */
+    /* printable ASCII: fast path (~40% faster for mostly-ASCII text) */
     if (ucs >= 32 && ucs < 0x7f) {
         return 1;
     }
@@ -28,7 +28,7 @@ wcwidth_u32(uint32_t ucs, int ambiguous_width)
         return 2;
     }
 
-    /* Ambiguous East Asian (A category) -- only wide in CJK context */
+    /* Ambiguous East Asian (A category): wide only in CJK context */
     if (ambiguous_width == 2
         && wcwidth_bisearch(ucs, WCWIDTH_AMBIGUOUS_EASTASIAN, WCWIDTH_AMBIGUOUS_EASTASIAN_LEN)) {
         return 2;
