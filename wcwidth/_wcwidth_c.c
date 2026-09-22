@@ -285,6 +285,8 @@ wcwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int ambiguous_width = 1;
     static char *kwlist[] = {"wc", "unicode_version", "ambiguous_width", NULL};
 
+    (void)self;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO&", kwlist,
                                      &wc_obj, &dummy_unicode_version, convert_ambiguous_width, &ambiguous_width)) {
         return NULL;
@@ -332,6 +334,8 @@ wcswidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int ambiguous_width = 1;
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width", NULL};
 
+    (void)self;
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&", kwlist,
                                      &pwcs_obj, &n_obj, &dummy_unicode_version,
                                      convert_ambiguous_width, &ambiguous_width)) {
@@ -365,6 +369,8 @@ wcstwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *term_program_obj = NULL;
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width",
                              "term_program", NULL};
+
+    (void)self;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&O", kwlist,
                                      &pwcs_obj, &n_obj, &dummy_unicode_version,
@@ -404,6 +410,8 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *term_program_obj = NULL;
     static char *kwlist[] = {"text", "control_codes", "tabsize", "ambiguous_width",
                              "term_program", NULL};
+
+    (void)self;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OiO&O", kwlist,
                                      &text_obj, &control_codes_obj, &tabsize,
@@ -555,18 +563,21 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
 static PyObject *
 ljust_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+    (void)self;
     return align_impl("ljust", args, kwargs);
 }
 
 static PyObject *
 rjust_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+    (void)self;
     return align_impl("rjust", args, kwargs);
 }
 
 static PyObject *
 center_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+    (void)self;
     return align_impl("center", args, kwargs);
 }
 
@@ -575,6 +586,8 @@ strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *text_obj;
     static char *kwlist[] = {"text", NULL};
+
+    (void)self;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U", kwlist, &text_obj)) {
         return NULL;
@@ -606,6 +619,8 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *lines_obj;
     static char *kwlist[] = {"lines", NULL};
+
+    (void)self;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwlist, &lines_obj)) {
         return NULL;
