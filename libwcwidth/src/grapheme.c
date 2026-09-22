@@ -381,7 +381,7 @@ grapheme_next_indices(wcwidth_grapheme_iter_t *iter, size_t *out_start, size_t *
         return false;
     }
 
-    /* Single codepoint input -- yield it immediately */
+    /* Single codepoint input: yield it immediately */
     if (iter->cp_count == 1) {
         iter->exhausted = true;
         *out_start = 0;
@@ -400,7 +400,7 @@ grapheme_next_indices(wcwidth_grapheme_iter_t *iter, size_t *out_start, size_t *
         int new_ri = iter->ri_count;
 
         if (should_break(iter->cp, iter->cp_idx, (gcb_t) iter->prev_gcb, curr_gcb, &new_ri)) {
-            /* Break before cp_idx -- yield current cluster */
+            /* Break before cp_idx: yield the current cluster */
             *out_start = iter->cluster_start_idx;
             *out_end = iter->cp_idx;
 
@@ -462,8 +462,8 @@ wcwidth_grapheme_next_u32(wcwidth_grapheme_iter_t *iter, size_t *out_len)
 
 /*
  * Codepoint index of the start of the cluster containing *cp_pos*.  Steps back
- * to a position that is certainly a cluster start -- ASCII or a CONTROL, at
- * most MAX_GRAPHEME_SCAN away -- then re-derives the boundaries forward.
+ * to a certain cluster start (ASCII or a CONTROL, at most MAX_GRAPHEME_SCAN
+ * away), then re-derives the boundaries forward.
  */
 static size_t
 cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
@@ -483,7 +483,7 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
     }
     target_cp = cp[cp_pos];
 
-    /* GB3: CR x LF -- LF after CR is part of same cluster */
+    /* GB3: CR x LF (LF after CR is part of the same cluster) */
     if (target_cp == 0x0A && cp[cp_pos - 1] == 0x0D) {
         return cp_pos - 1;
     }
@@ -493,9 +493,8 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
         if (target_cp >= 0x20) {
             uint32_t prev_cp_val = cp[cp_pos - 1];
 
-            /* GB9b: a PREPEND belongs to this cluster, so the start is where
-             * the PREPEND's own cluster begins -- its index, not the
-             * codepoint before it. */
+            /* GB9b: a PREPEND belongs to this cluster, so the start is the
+             * PREPEND's own cluster start. */
             if (prev_cp_val >= 0x80 && gcb_of(prev_cp_val) == GCB_PREPEND) {
                 return cluster_start_index(cp, cp_count, cp_pos - 1);
             }

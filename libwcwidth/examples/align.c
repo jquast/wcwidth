@@ -1,5 +1,5 @@
 /*
- * align -- demonstrate left/right/center alignment of UTF-8 text.
+ * align: demonstrate left/right/center alignment of UTF-8 text.
  *
  * Usage:
  *   align [width]

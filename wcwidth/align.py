@@ -22,8 +22,8 @@ def ljust(
     :param text: String to justify, may contain terminal sequences.
     :param dest_width: Total display width of result in terminal cells.
     :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
+        display width of 1. Unicode characters like ``'·'`` are acceptable.
+        The width is not validated.
     :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
@@ -72,8 +72,8 @@ def rjust(
     :param text: String to justify, may contain terminal sequences.
     :param dest_width: Total display width of result in terminal cells.
     :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
+        display width of 1. Unicode characters like ``'·'`` are acceptable.
+        The width is not validated.
     :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
@@ -122,8 +122,8 @@ def center(
     :param text: String to center, may contain terminal sequences.
     :param dest_width: Total display width of result in terminal cells.
     :param fillchar: Single character for padding (default space). Must have
-        display width of 1 (not wide, not zero-width, not combining). Unicode
-        characters like ``'·'`` are acceptable. The width is not validated.
+        display width of 1. Unicode characters like ``'·'`` are acceptable.
+        The width is not validated.
     :param control_codes: How to handle control sequences when measuring.
         Passed to :func:`width` for measurement.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)

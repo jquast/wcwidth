@@ -174,9 +174,9 @@ TEST(center_u32_basic)
 }
 
 /*
- * dest_width * fillchar_len must be refused, not silently wrapped, when it
- * exceeds SIZE_MAX -- for both the single-byte and multi-byte fillchar
- * paths (padding_cells * fillchar_len is the multiplication in question).
+ * dest_width * fillchar_len must be refused when it exceeds SIZE_MAX, for
+ * both the single-byte and multi-byte fillchar paths (padding_cells *
+ * fillchar_len is the multiplication in question).
  */
 TEST(ljust_huge_dest_width)
 {
@@ -208,7 +208,7 @@ TEST(center_huge_dest_width)
 
 /*
  * "\x01" (SOH) is an illegal C0 control character under
- * control_codes='strict' -- WCWIDTH_ERROR_ILLEGAL_CTRL.
+ * control_codes='strict': WCWIDTH_ERROR_ILLEGAL_CTRL.
  */
 TEST(align_control_codes_strict)
 {

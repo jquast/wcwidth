@@ -136,8 +136,8 @@ described in the Virama section header).
 
 - A ``Virama`` contributes 0 width.
 - Most viramas have category ``Mn``, but six have category ``Mc``
-  (`Spacing Combining Mark`_): these are recognised as viramas first,
-  not as ``Mc``, so they begin a conjunct rather than capping the cluster.
+  (`Spacing Combining Mark`_): these are recognised as viramas, so they begin
+  a conjunct.
 - A ``Consonant`` immediately following a ``Virama`` adds its width to the
   current grapheme cluster.
 - The cluster total is capped at 2 cells since 0.8.0, `PR #224`_.

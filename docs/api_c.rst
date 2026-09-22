@@ -20,9 +20,9 @@ Unicode character display width: wcwidth, wcswidth, wcstwidth.
    Return the display width of a single Unicode codepoint.
 
    Returns:
-   1 or 2  -- display cells occupied
-   0       -- zero-width codepoint (combining marks, ZWJ, etc.)
-   -1       -- non-printable control character
+   1 or 2: display cells occupied
+   0: zero-width codepoint (combining marks, ZWJ, etc.)
+   -1: non-printable control character
 
    :param ambiguous_width: width for East Asian Ambiguous (A) characters. 1 = narrow (default), 2 = wide (CJK context).
 
@@ -47,7 +47,7 @@ Unicode character display width: wcwidth, wcswidth, wcstwidth.
 
    Terminal-aware variant of wcswidth_u32().
 
-   :param term_program: canonical terminal name for override tables (e.g. "kitty", "xterm", "ghostty"). Use NULL for no terminal overrides.
+   :param term_program: terminal name for override tables (e.g. "kitty", "xterm", "ghostty"). Use NULL for no terminal overrides.
 
 .. c:function:: int wcstwidth_u8(const char *utf8, size_t n, int ambiguous_width, const char *term_program)
 
@@ -83,9 +83,9 @@ Main entry-points for string display width: wcwidth_width_u32 / wcwidth_width_u8
    wcwidth_width_u8(), and of the string transforms in clip.h and align.h.
    Distinct codes let callers distinguish the failure cause.
 
-   Every out-param is int rather than wcwidth_error_t: the underlying type of
-   an enum is implementation-defined, so int keeps the ABI stable across
-   compilers.  Compare against these constants directly.
+   Every out-param is int, whose size is fixed.  The underlying type of an enum
+   is implementation-defined, so int keeps the ABI stable across compilers.
+   Compare against these constants directly.
 
    .. c:enumerator:: WCWIDTH_ERROR_NONE
 
@@ -144,7 +144,7 @@ Main entry-points for string display width: wcwidth_width_u32 / wcwidth_width_u8
 
    Measure the visible width of text, including terminal control sequences such
    as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.
-   wcwidth_width_u32() encodes its codepoints to UTF-8 and measures as wcwidth_width_u8().
+   wcwidth_width_u32() measures the codepoints directly.
 
    Returns the width in display cells, or -1 on error.
 
@@ -404,17 +404,17 @@ Clip text to a visible column range [v_start, v_end).
 
    Clip text to the visible column range [opts->v_start, opts->v_end).
 
-   Returns a malloc'd string on success, NULL on error.  When NULL is
-   returned, \*error (from width.h) is WCWIDTH_ERROR_UNSUPPORTED for a
-   terminal sequence this function does not support, another nonzero
-   wcwidth_error_t for a WCWIDTH_STRICT violation, and WCWIDTH_ERROR_NONE
-   for an allocation failure.  \*error is always written on return.
+   Returns a malloc'd string on success, NULL on error.  On success, \*out_len
+   receives the byte length of the result (excluding the NUL terminator, which
+   is always present), and the caller must free the returned pointer with a
+   single free() call.  When NULL is returned, \*error (from width.h) is
+   WCWIDTH_ERROR_UNSUPPORTED for a terminal sequence this function does not
+   support, another nonzero wcwidth_error_t for a WCWIDTH_STRICT violation, and
+   WCWIDTH_ERROR_NONE for an allocation failure.  \*error is always written on
+   return.
 
    Unsupported: horizontal cursor movement (BS, CR, CUF, CUB, HPA), OSC 8
    hyperlinks and OSC 66 text sizing.
-   On success, \*out_len receives the byte length of the result
-   (excluding NUL terminator, which is always present).
-   The caller must free the returned pointer with a single free() call.
 
    :param text: UTF-8 encoded input string, NOT NUL-terminated.
    :param text_len: length of text in bytes.
@@ -596,9 +596,8 @@ UTF-8 decoding and encoding.
    is undefined behavior.  Sets \*count\* and returns NULL on allocation
    failure.
 
-   The result is not const, so the `if (p != stack) free(p);` release is a
-   plain free() -- matching wcwidth_encode_u32() below.  Treat the contents as
-   read-only; the pointer is non-const only so ownership can be released.
+   The result type allows a plain free() release, matching wcwidth_encode_u32()
+   below.  Treat the contents as read-only.
 
 
 .. c:function:: uint32_t *wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
@@ -663,8 +662,8 @@ Grapheme cluster segmentation for UTF-8 text.
 
 .. c:function:: wcwidth_grapheme_iter_t *wcwidth_grapheme_iter_new_u32(const uint32_t *codepoints, size_t n)
 
-   Iterate \*codepoints\*, which is borrowed, not copied, and must outlive the
-   iterator.  Returns NULL if allocation fails.
+   Iterate \*codepoints\*, which the iterator borrows; the caller must keep it
+   alive for the iterator's lifetime.  Returns NULL if allocation fails.
 
 
 .. c:function:: const uint32_t *wcwidth_grapheme_next_u32(wcwidth_grapheme_iter_t *iter, size_t *out_len)
@@ -936,8 +935,8 @@ table_types.h
 Table data model: the interval type, the terminal-override record layouts,
 and the binary search over them.
 
-Hand-written.  The tables themselves -- every WCWIDTH_* interval array, the
-terminal override and alias arrays, and their entry counts -- are declared
+Hand-written.  The tables themselves (every WCWIDTH_* interval array, the
+terminal override and alias arrays, and their entry counts) are declared
 in tables.h, which update-tables.py generates.
 
 .. c:struct:: wcwidth_interval_t

@@ -79,7 +79,7 @@ class Hyperlink(typing.NamedTuple):
         close_end)`` or ``(-1, -1)`` if not found.
 
         Per the OSC 8 specification, terminal emulators treat hyperlinks as a
-        state attribute, not as nested HTML anchors.  A close sequence closes
+        state attribute.  A close sequence closes
         the current hyperlink regardless of how many open sequences preceded it.
         """
         m = HYPERLINK_CLOSE_RE.search(text, open_end)

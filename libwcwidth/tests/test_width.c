@@ -86,8 +86,8 @@ TEST(u32_ignore)
 
 /*
  * wcwidth_width_u8() and wcwidth_width_u32() must agree on identical text, in every control
- * mode.  They are separate implementations -- the codepoint path exists to
- * avoid an encode round-trip -- so nothing but a test keeps them in step.
+ * mode.  They are separate implementations (the codepoint path exists to
+ * avoid an encode round-trip), so nothing but a test keeps them in step.
  */
 TEST(u8_u32_agree)
 {
@@ -159,7 +159,7 @@ TEST(u8_u32_agree)
 
 /*
  * A CSI cursor-movement parameter far larger than any real column must
- * saturate rather than overflow.
+ * saturate at INT_MAX.
  */
 TEST(csi_huge_param_saturates)
 {

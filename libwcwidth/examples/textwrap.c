@@ -1,5 +1,5 @@
 /*
- * textwrap -- wrap UTF-8 text to a given display width.
+ * textwrap: wrap UTF-8 text to a given display width.
  *
  * Usage:
  *   textwrap [-v] [width] [file]

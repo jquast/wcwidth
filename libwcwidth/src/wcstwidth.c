@@ -218,8 +218,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
                     bool flushed = false;
                     if (has_graphemes && cluster_start >= 0) {
                         /* Two-phase: the candidate (cluster + current char)
-                         * matches clusters ending at this char; the cluster
-                         * alone matches C+Mc overrides stored without the
+                         * matches clusters ending at this char; the cluster by
+                         * itself matches C+Mc overrides stored without the
                          * trailing Mc.  Only the candidate match flushes; the
                          * cluster match continues with the current char. */
                         int override_w = wcwidth_grapheme_override_lookup(

@@ -23,9 +23,9 @@ typedef enum
  * wcwidth_width_u8(), and of the string transforms in clip.h and align.h.
  * Distinct codes let callers distinguish the failure cause.
  *
- * Every out-param is int rather than wcwidth_error_t: the underlying type of
- * an enum is implementation-defined, so int keeps the ABI stable across
- * compilers.  Compare against these constants directly. */
+ * Every out-param is int, whose size is fixed.  The underlying type of an enum
+ * is implementation-defined, so int keeps the ABI stable across compilers.
+ * Compare against these constants directly. */
 typedef enum
 {
     WCWIDTH_ERROR_NONE = 0,             /* no error */
@@ -52,7 +52,7 @@ extern const wcwidth_width_opts_t WCWIDTH_WIDTH_OPTS_DEFAULT;
 /*
  * Measure the visible width of text, including terminal control sequences such
  * as colors, bold, tabstops, cursor movement, and OSC 66 Text Sizing.
- * wcwidth_width_u32() encodes its codepoints to UTF-8 and measures as wcwidth_width_u8().
+ * wcwidth_width_u32() measures the codepoints directly.
  *
  * mode:  how control characters and sequences are treated (WCWIDTH_PARSE,
  *        WCWIDTH_STRICT, or WCWIDTH_IGNORE).
