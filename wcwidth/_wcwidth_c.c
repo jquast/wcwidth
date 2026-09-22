@@ -1096,9 +1096,9 @@ module_free(void *module)
     (void)module_clear((PyObject *)module);
 }
 
-/* Py_mod_multiple_interpreters and Py_mod_gil are declared only from the
- * limited API version that added them, so compare against Py_LIMITED_API when
- * it is set. */
+/* Slot value constants follow the limited API version that added them, so
+ * compare against Py_LIMITED_API when it is set.  From 3.15 Py_mod_gil is
+ * defined for every build, so the GIL slot is gated on its value constant. */
 #ifdef Py_LIMITED_API
 #  define WCWIDTH_API_LEVEL Py_LIMITED_API
 #else
@@ -1110,7 +1110,7 @@ static PyModuleDef_Slot module_slots[] = {
 #if WCWIDTH_API_LEVEL >= 0x030C0000
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
 #endif
-#ifdef Py_mod_gil
+#if defined(Py_mod_gil) && defined(Py_MOD_GIL_NOT_USED)
     {Py_mod_gil, Py_MOD_GIL_NOT_USED},
 #endif
     {0, NULL},
