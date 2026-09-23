@@ -10,16 +10,20 @@ The Python documentation_ closely matches this C library.  The C API adds UTF-8 
 array interfaces.
 
 The lowest-level functions are derived from POSIX.1-2001 and POSIX.1-2008 `wcwidth(3)`_ and
-`wcswidth(3)`_, which this library implements as `wcwidth_u32()`_ and `wcswidth_u32()`_.  These
-functions return -1 when C0 and C1 control codes other than NUL are present; NUL measures as
-zero-width.  They do not parse terminal escape sequences: any escape sequence contains control
-codes, so these functions return -1 for it.
+`wcswidth(3)`_, which this library implements as :ref:`wcwidth_u32() <libwcwidth-wcwidth>` and
+:ref:`wcswidth_u32() <libwcwidth-wcswidth>`.  These functions return -1 when C0 and C1 control
+codes other than NUL are present; NUL measures as zero-width.
+:ref:`wcstwidth_u8() <libwcwidth-wcstwidth>` applies corrections for a specific terminal program,
+as described in the Python Corrections_ documentation.
 
-`wcwidth_width_u8()`_ is a higher-level wrapper of `wcswidth_u8()`_ that also measures terminal
-control sequences, like colors, bold, tabstops, and horizontal cursor movement.
+:ref:`wcwidth_width_u8() <libwcwidth-width>` is a higher-level wrapper of
+:ref:`wcswidth_u8() <libwcwidth-wcswidth>` that also measures terminal control sequences, like
+colors, bold, tabstops, and horizontal cursor movement.
 
-`wcstwidth_u8()`_ applies corrections for a specific terminal program and version, as described
-in the Python Corrections_ documentation.
+The text transforms have their own sections:
+:ref:`wcwidth_ljust_u8() <libwcwidth-align>` with ``rjust`` and ``center``,
+:ref:`wcwidth_clip_u8() <libwcwidth-clip>`, :ref:`wcwidth_wrap_u8() <libwcwidth-wrap>`, and
+:ref:`wcwidth_escape_strip() <libwcwidth-escape-strip>`.
 
 Quick Start
 -----------
@@ -187,6 +191,8 @@ throughout, or use the ``_u32`` forms and re-encode the result.  `wcwidth_encode
 Re-encoding to a legacy charset is the caller's iconv(3) or ICU (``ucnv_*``) call; a byte cast
 works when every codepoint fits the target, and iconv reports ``EILSEQ`` when one does not.
 
+.. _libwcwidth-wcwidth:
+
 wcwidth_u32()
 ~~~~~~~~~~~~~
 
@@ -206,6 +212,8 @@ U+2640 above is Ambiguous, so it answers to the second argument, while U+2630 is
 2 under either setting.  A single codepoint needs no ``_u8`` variant; use `wcswidth_u8()`_ to
 measure text.
 
+.. _libwcwidth-wcswidth:
+
 wcswidth_u32() and wcswidth_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -219,6 +227,8 @@ when any control code other than NUL is present:
     wcswidth_u32(family, 5, 1)   /* man ZWJ woman ZWJ girl */  2
     wcswidth_u8("café", 5, 1)                                  4
 
+.. _libwcwidth-wcstwidth:
+
 wcstwidth_u32() and wcstwidth_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -229,6 +239,8 @@ argument applies terminal-specific corrections:
 
     wcswidth_u8("☰", 3, 1)               /* U+2630, wide */  2
     wcstwidth_u8("☰", 3, 1, "vte")                            1
+
+.. _libwcwidth-width:
 
 wcwidth_width_u32() and wcwidth_width_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,6 +273,8 @@ codes:
         /* err is WCWIDTH_ERROR_VERTICAL_CTRL */
     }
 
+.. _libwcwidth-align:
+
 wcwidth_ljust_u8(), wcwidth_rjust_u8(), and wcwidth_center_u8()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -287,6 +301,8 @@ returns a ``malloc``\ 'd NUL-terminated string the caller must ``free``:
     out = wcwidth_center_u8("cafe\xcc\x81", 6, WCWIDTH_PARSE, &opts, NULL, NULL);
     /* "*café*" */
     free(out);
+
+.. _libwcwidth-clip:
 
 wcwidth_clip_u8()
 ~~~~~~~~~~~~~~~~~
@@ -344,6 +360,8 @@ Movement is reported wherever it appears; the OSC sequences only where the clip 
 `wcwidth_clip_u32()`_ is the codepoint-array form, returning a ``malloc``\ 'd array of ``*out_len``
 codepoints.
 
+.. _libwcwidth-wrap:
+
 wcwidth_wrap_u8() and wcwidth_wrap_u8_text()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -382,6 +400,8 @@ OSC 66 text sizing is atomic to the word splitter: a sequence and its display te
 unbreakable unit, so a line is never broken inside one, even at a space or hyphen in the display
 text.  Python's `wrap()`_ behaves the same way.  `wcwidth_wrap_u32()`_ and `wcwidth_wrap_u32_text()`_ are the
 codepoint-array forms.
+
+.. _libwcwidth-escape-strip:
 
 wcwidth_escape_strip()
 ~~~~~~~~~~~~~~~~~~~~~~
