@@ -601,10 +601,9 @@ def test_prepended_concatenation_mark_width(codepoint, name):
 def test_legacy_module():
     """Verify legacy ``wcwidth.wcwidth`` module's public items are importable."""
     # pylint: disable=import-outside-toplevel
-    if sys.version_info < (3, 15):
-        # The package pre-imports the legacy submodule so that a later import
-        # cannot rebind 'wcwidth.wcwidth' from the function to the module.
-        assert 'wcwidth.wcwidth' in sys.modules
+    # The package pre-imports the legacy submodule so that a later import
+    # cannot rebind 'wcwidth.wcwidth' from the function to the module.
+    assert 'wcwidth.wcwidth' in sys.modules
 
     _legacy = __import__('wcwidth.wcwidth', fromlist=['wcwidth'])
     assert callable(wcwidth.wcwidth), (

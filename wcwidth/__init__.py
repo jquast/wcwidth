@@ -63,14 +63,12 @@ if not os.environ.get('WCWIDTH_PYTHON', ''):
 # while the top-level function importing, 'from wcwidth import wcwidth' was always preferred, the
 # deeper 'from wcwidth.wcwidth import wcwidth' was always possible.
 #
-# Below 3.15 the legacy submodule is pre-imported so sys.modules['wcwidth.wcwidth'] is populated
-# during package initialization; a later ``import wcwidth.wcwidth`` would otherwise trigger on-disk
-# file discovery and rebind that name from the function to the module object.  It must run before
-# the 'wcwidth' binding below, because 'from . import wcwidth' only loads the submodule while the
-# package attribute is still unset.  On 3.15+ __lazy_modules__ covers every submodule and the shim
-# loads on demand.
-if __import__('sys').version_info < (3, 15):
-    from . import wcwidth as _wcwidth_module  # isort:skip
+# Pre-import the legacy submodule so sys.modules['wcwidth.wcwidth'] is populated during package
+# initialization: without it, a later ``import wcwidth.wcwidth`` discovers the file on disk and
+# rebinds that name from the function to the module object.  It must run before the 'wcwidth'
+# binding below, because 'from . import wcwidth' loads the submodule while the package attribute
+# is still unset.  The shim's own __lazy_modules__ defers its imports, so this costs one module.
+from . import wcwidth as _wcwidth_module  # isort:skip
 
 if HAS_C_EXTENSION:
     # local
