@@ -68,7 +68,7 @@ if not os.environ.get('WCWIDTH_PYTHON', ''):
 # rebinds that name from the function to the module object.  It must run before the 'wcwidth'
 # binding below, because 'from . import wcwidth' loads the submodule while the package attribute
 # is still unset.  The shim's own __lazy_modules__ defers its imports, so this costs one module.
-from . import wcwidth as _wcwidth_module  # isort:skip
+from . import wcwidth as _wcwidth_module  # isort:skip pylint: disable=wrong-import-position
 
 if HAS_C_EXTENSION:
     # local
