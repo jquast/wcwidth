@@ -70,10 +70,11 @@ wcwidth = [ "py.typed", "*.pyi" ]
 # stable ABI until 3.15 and stays version specific.
 build = "cp310-* cp314t-*"
 skip = "cp314t-musllinux_*"
-# --import-mode=importlib stops pytest importing the source tree instead of the
-# wheel.  {project} is the repo, since tests/ is not in the wheel.
+# --import-mode=importlib stops pytest importing the source tree instead of the wheel.  {project} is
+# the repo, since tests/ is not in the wheel.  --no-cov cancels 'addopts' from tox.ini section
+# '[pytest]', which has no support on win_arm64 and fails due to 'filterwarnings=error'.
 test-requires = "pytest pytest-cov"
-test-command = "python -m pytest {project}/tests --verbose --durations=10 --import-mode=importlib"
+test-command = "python -m pytest {project}/tests --verbose --durations=10 --import-mode=importlib --no-cov"
 
 [tool.cibuildwheel.linux]
 archs = [ "x86_64", "i686", "aarch64" ]
