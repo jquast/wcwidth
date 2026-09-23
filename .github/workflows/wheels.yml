@@ -38,7 +38,7 @@ jobs:
             archs: ARM64
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
@@ -46,7 +46,7 @@ jobs:
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -55,10 +55,10 @@ jobs:
     name: Build pure-Python wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
       - name: Build py3-none-any wheel
@@ -72,7 +72,7 @@ jobs:
         run: |
           python -Im pip install build
           python -Im build --wheel
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: pure-wheel
           path: dist/*-py3-none-any.whl
@@ -81,17 +81,17 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
       - name: Build sdist
         run: |
           python -Im pip install build
           python -Im build --sdist
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist/*.tar.gz
