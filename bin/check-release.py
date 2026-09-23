@@ -110,8 +110,9 @@ def expected_wheels() -> typing.Optional[list[tuple[str, str]]]:
             fail(f'cannot list {platform} build identifiers; is cibuildwheel installed?')
             return None
         for identifier in proc.stdout.split():
-            abi, _, plat = identifier.partition('-')
-            expected.append((abi, plat))
+            # cibuildwheel prints '{python tag}-{platform}', e.g. 'cp310-manylinux_x86_64'.
+            python_tag, _, plat = identifier.partition('-')
+            expected.append((python_tag, plat))
     ok(f'{len(expected)} binary wheels expected by [tool.cibuildwheel]')
     return expected
 
@@ -157,13 +158,24 @@ def obtain_artifacts(tag: typing.Optional[str], dest: str) -> None:
         ok(f'artifacts downloaded to {dest}')
 
 
+def wheel_tags(name: str) -> tuple[str, str]:
+    """
+    Return the (python tag, platform tag) of a wheel filename.
+
+    The last three fields are the python, ABI and platform tags (PEP 427); the ABI tag is skipped
+    because an abi3 wheel carries 'abi3' there, a value no cibuildwheel identifier repeats.
+    """
+    fields = name[:-len('.whl')].split('-')
+    return fields[-3], fields[-1]
+
+
 def satisfied(identifier: tuple[str, str], have: set[tuple[str, str]]) -> bool:
-    abi, plat = identifier
+    python_tag, plat = identifier
     family, _, arch = plat.partition('_')
-    for got_abi, got_plat in have:
-        if got_abi == abi and (got_plat == plat or
-                               (not plat.startswith('win') and
-                                got_plat.startswith(family) and got_plat.endswith(arch))):
+    for got_python, got_plat in have:
+        if got_python == python_tag and (got_plat == plat or
+                                         (not plat.startswith('win') and
+                                          got_plat.startswith(family) and got_plat.endswith(arch))):
             return True
     return False
 
@@ -194,7 +206,7 @@ def check_artifacts(dest: str, version: str,
 
     if expected is None:
         return
-    have = {tuple(name[:-4].split('-')[-2:]) for name in wheels if name not in pure}
+    have = {wheel_tags(name) for name in wheels if name not in pure}
     missing = [ident for ident in expected if not satisfied(ident, have)]
     if missing:
         fail(f'{len(missing)} expected wheels missing, e.g. {missing[:4]}')
