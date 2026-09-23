@@ -561,7 +561,7 @@ def main(api_only: bool = False, check: bool = False) -> int:
     if api_only:
         # api_c.rst is parsed from the C headers, but everything below reads the
         # Unicode sources under data/, which only `tox -e fetch` downloads.
-        return int(stale)
+        return int(check and stale)
     write_if_changed(os.path.join(PATH_DOCS, 'unicode_version.rst'),
                      unicode_version_page(), 'docs/unicode_version.rst', check)
     report('docs/libwcwidth.rst: canonical terminal names',
@@ -570,7 +570,7 @@ def main(api_only: bool = False, check: bool = False) -> int:
            update_libwcwidth_unicode_version())
     report('README.rst: list_term_programs() example',
            update_readme_term_programs())
-    return int(stale)
+    return int(check and stale)
 
 
 if __name__ == '__main__':

@@ -14,6 +14,8 @@ wheelhouse
 *.so
 dist
 docs/_build
+# generated from the C headers by bin/update-docs.py, not committed
+docs/api_c.rst
 htmlcov
 htmlcov-c
 coverage-c.lcov
