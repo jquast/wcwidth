@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.1 *2026-09-23*
+  * **Bugfix** `width()`_ mis-measured a CSI sequence longer than 64 bytes, a regression in 0.9.0
+    from the CPython extension. `PR #271`
+
 0.9.0 *2026-09-23*
   * **New** Optional CPython extension using libwcwidth_, improving performance 10-58x `PR #248`_.
   * **Drop Support** for Python 3.8, `PR #248`_.

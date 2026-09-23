@@ -98,4 +98,4 @@ __all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_
            'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')
 
 # Version is stamped by code generation (bin/update-tables.py) from pyproject.toml.
-__version__ = '0.9.0'
+__version__ = '0.9.1'

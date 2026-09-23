@@ -156,6 +156,10 @@ TEST(u8_u32_agree)
         "a\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz"
         "\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz"
         "\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz\xe0\xa5\x8dz",
+        /* SGR longer than the 64-byte span buffer, then a wide character */
+        "\x1b[1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;m\xe4\xb8\xad",
+        /* truncated CSI ending exactly at the 16-byte first copy */
+        "\x1b[11111111111111",
     };
     const size_t count = sizeof(corpus) / sizeof(corpus[0]);
     const wcwidth_control_mode_t modes[] = {WCWIDTH_PARSE, WCWIDTH_IGNORE, WCWIDTH_STRICT};
