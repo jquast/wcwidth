@@ -899,15 +899,15 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
 /*
  * clip(), bound for the gated fast path in wcwidth/_clip.py.
  *
- * Named py_clip_impl to avoid confusion with the file-static clip_impl() in
- * libwcwidth/src/clip.c (no link clash, but the collision reads badly).
+ * Named py_clip_impl to avoid confusion with the file-static clip_impl() in libwcwidth/src/clip.c
+ * (no link clash, but the collision reads badly).
  *
- * Unlike ljust()/rjust()/center(), this is NOT a drop-in for the Python
- * clip(): libwcwidth's clip is simplified, and wcwidth/_clip.py calls here
- * only after its inline conditional has proven the input and options fall in
- * the subset where the two agree.  'start' and 'end' arrive already
- * normalized to non-negative column numbers -- the ValueError for a negative
- * 'end' other than -1 stays in Python, where its message lives.
+ * Unlike ljust()/rjust()/center(), this is NOT a drop-in for the Python clip(): libwcwidth's clip
+ * is simplified and wcwidth/_clip.py calls when prerequisite conditions are met, 'start' and 'end'
+ * arrive already normalized to non-negative column numbers.
+ * 
+ * Returns Py_RETURN_NONE to indicate "this is not supported in C11", for lone surrogates, and
+ * complex terminal sequences like OSC 66 or cursor movement.
  */
 static PyObject *
 py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
@@ -964,9 +964,7 @@ py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
         if (PyErr_Occurred()) {
             return NULL;
         }
-        /* A lone surrogate has no UTF-8 form.  Returning None rather than
-         * re-dispatching keeps clip() a single function in Python: its caller
-         * falls through to the code directly below the offload. */
+        /* A lone surrogate has no UTF-8 form. */
         Py_RETURN_NONE;
     }
     const char *fillchar;
@@ -996,9 +994,7 @@ py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
                                 &opts, &out_len, &error);
     if (out == NULL) {
         if (error == WCWIDTH_ERROR_UNSUPPORTED) {
-            /* The second reason for None, alongside the lone surrogate above:
-             * the text holds a sequence libwcwidth does not support, and
-             * clip() in Python takes over from here. */
+            /* contains sequence libwcwidth does not support, E.g. OSC 66 or cursor movement. */
             Py_RETURN_NONE;
         }
         if (error != WCWIDTH_ERROR_NONE) {
