@@ -81,21 +81,144 @@ resolve_count(PyObject *n_obj, Py_ssize_t len)
     return n < 0 ? 0 : n < len ? n : len;
 }
 
+/* The argument stack of a METH_FASTCALL method: nargs positional values,
+ * followed by the keyword values whose names are in kwnames. */
+typedef struct {
+    PyObject *const *args;
+    Py_ssize_t nargs;
+    PyObject *kwnames;
+} fastcall_stack;
+
+/* Build the (args, kwargs) pair that PyArg_ParseTupleAndKeywords() and a Python
+ * function take, from a fastcall stack. */
+static PyObject *
+fastcall_varargs(const fastcall_stack *st, PyObject **kwargs_out)
+{
+    PyObject *args_tuple = PyTuple_New(st->nargs);
+    PyObject *kwargs = NULL;
+    Py_ssize_t nkw = st->kwnames == NULL ? 0 : PyTuple_Size(st->kwnames);
+    Py_ssize_t i;
+
+    if (args_tuple == NULL) {
+        return NULL;
+    }
+    for (i = 0; i < st->nargs; i++) {
+        Py_INCREF(st->args[i]);
+        PyTuple_SetItem(args_tuple, i, st->args[i]);
+    }
+    if (nkw > 0) {
+        kwargs = PyDict_New();
+        if (kwargs == NULL) {
+            Py_DECREF(args_tuple);
+            return NULL;
+        }
+        for (i = 0; i < nkw; i++) {
+            if (PyDict_SetItem(kwargs, PyTuple_GetItem(st->kwnames, i),
+                               st->args[st->nargs + i]) < 0) {
+                Py_DECREF(args_tuple);
+                Py_DECREF(kwargs);
+                return NULL;
+            }
+        }
+    }
+    *kwargs_out = kwargs;
+    return args_tuple;
+}
+
+/* Index of keyword in a NULL-terminated parameter name list, or -1 when the
+ * name is not a parameter of the method.  Names are compared by length first,
+ * so the cost does not grow with the keyword's position in the list. */
+static Py_ssize_t
+keyword_index(PyObject *keyword, char *const *names)
+{
+    Py_ssize_t name_len = PyUnicode_GetLength(keyword);
+    Py_ssize_t i;
+
+    if (name_len < 0) {
+        return -1;
+    }
+    for (i = 0; names[i] != NULL; i++) {
+        if ((Py_ssize_t)strlen(names[i]) == name_len
+                && PyUnicode_CompareWithASCIIString(keyword, names[i]) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Parse the "i" format: an int, and nothing else. */
+static int
+py_long_as_int(PyObject *value, int *out)
+{
+    int overflow = 0;
+    long result = PyLong_AsLongAndOverflow(value, &overflow);
+
+    if ((result == -1 && PyErr_Occurred()) || overflow != 0) {
+        return -1;
+    }
+    *out = (int)result;
+    return 0;
+}
+
+/* Parse the "n" format: a Py_ssize_t. */
+static int
+py_long_as_ssize(PyObject *value, Py_ssize_t *out)
+{
+    Py_ssize_t result = PyLong_AsSsize_t(value);
+
+    if (result == -1 && PyErr_Occurred()) {
+        return -1;
+    }
+    *out = result;
+    return 0;
+}
+
+/* Parse the "p" format: a truth value. */
+static int
+py_object_as_bool(PyObject *value, int *out)
+{
+    int truth = PyObject_IsTrue(value);
+
+    if (truth < 0) {
+        return -1;
+    }
+    *out = truth;
+    return 0;
+}
+
+/* Call the Python implementation with the arguments this call received.  The
+ * (args, kwargs) pair is built only here, on the paths that hand work back to
+ * Python, so the parsed fast path never builds it. */
 static PyObject *
 call_python_function(const char *module_name, const char *function_name,
-                   PyObject *args, PyObject *kwargs)
+                     const fastcall_stack *st)
 {
-    PyObject *module = PyImport_ImportModule(module_name);
-    if (module == NULL) {
+    PyObject *kwargs = NULL;
+    PyObject *args = fastcall_varargs(st, &kwargs);
+    PyObject *module;
+    PyObject *function;
+    PyObject *result;
+
+    if (args == NULL) {
         return NULL;
     }
-    PyObject *function = PyObject_GetAttrString(module, function_name);
+    module = PyImport_ImportModule(module_name);
+    if (module == NULL) {
+        Py_DECREF(args);
+        Py_XDECREF(kwargs);
+        return NULL;
+    }
+    function = PyObject_GetAttrString(module, function_name);
     Py_DECREF(module);
     if (function == NULL) {
+        Py_DECREF(args);
+        Py_XDECREF(kwargs);
         return NULL;
     }
-    PyObject *result = PyObject_Call(function, args, kwargs);
+    result = PyObject_Call(function, args, kwargs);
     Py_DECREF(function);
+    Py_DECREF(args);
+    Py_XDECREF(kwargs);
     return result;
 }
 
@@ -278,18 +401,52 @@ convert_ambiguous_width(PyObject *obj, void *addr)
 }
 
 static PyObject *
-wcwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
+wcwidth_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *wc_obj;
+    PyObject *wc_obj = NULL;
     PyObject *dummy_unicode_version = NULL;
     int ambiguous_width = 1;
     static char *kwlist[] = {"wc", "unicode_version", "ambiguous_width", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO&", kwlist,
-                                     &wc_obj, &dummy_unicode_version, convert_ambiguous_width, &ambiguous_width)) {
-        return NULL;
+    if (nargs > 3) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        wc_obj = args[0];
+    }
+    if (nargs > 1) {
+        dummy_unicode_version = args[1];
+    }
+    if (nargs > 2 && !convert_ambiguous_width(args[2], &ambiguous_width)) {
+        goto reject;
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* wc */
+            if (nargs > 0) {
+                goto reject;
+            }
+            wc_obj = value;
+            break;
+        case 1:  /* unicode_version */
+            dummy_unicode_version = value;
+            break;
+        case 2:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (wc_obj == NULL) {
+        goto reject;
     }
 
     int truthy = PyObject_IsTrue(wc_obj);
@@ -323,23 +480,82 @@ wcwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
 
     int result = wcwidth_u32(ucs, ambiguous_width);
     return PyLong_FromLong(result);
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "O|OO&", kwlist,
+                                              &wc_obj, &dummy_unicode_version,
+                                              convert_ambiguous_width, &ambiguous_width);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyObject *
-wcswidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
+wcswidth_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *pwcs_obj;
+    PyObject *pwcs_obj = NULL;
     PyObject *n_obj = NULL;
     PyObject *dummy_unicode_version = NULL;
     int ambiguous_width = 1;
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&", kwlist,
-                                     &pwcs_obj, &n_obj, &dummy_unicode_version,
-                                     convert_ambiguous_width, &ambiguous_width)) {
-        return NULL;
+    if (nargs > 4) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        pwcs_obj = args[0];
+    }
+    if (nargs > 1) {
+        n_obj = args[1];
+    }
+    if (nargs > 2) {
+        dummy_unicode_version = args[2];
+    }
+    if (nargs > 3 && !convert_ambiguous_width(args[3], &ambiguous_width)) {
+        goto reject;
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* pwcs */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            pwcs_obj = value;
+            break;
+        case 1:  /* n */
+            n_obj = value;
+            break;
+        case 2:  /* unicode_version */
+            dummy_unicode_version = value;
+            break;
+        case 3:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (pwcs_obj == NULL) {
+        goto reject;
     }
 
     Py_ssize_t len;
@@ -357,25 +573,90 @@ wcswidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int result = wcswidth_u32(codepoints, (size_t)count, ambiguous_width);
     PyMem_Free(codepoints);
     return PyLong_FromLong(result);
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "U|OOO&", kwlist,
+                                              &pwcs_obj, &n_obj, &dummy_unicode_version,
+                                              convert_ambiguous_width, &ambiguous_width);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyObject *
-wcstwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
+wcstwidth_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *pwcs_obj;
+    PyObject *pwcs_obj = NULL;
     PyObject *n_obj = NULL;
     PyObject *dummy_unicode_version = NULL;
     int ambiguous_width = 1;
     PyObject *term_program_obj = NULL;
     static char *kwlist[] = {"pwcs", "n", "unicode_version", "ambiguous_width",
                              "term_program", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OOO&O", kwlist,
-                                     &pwcs_obj, &n_obj, &dummy_unicode_version,
-                                     convert_ambiguous_width, &ambiguous_width, &term_program_obj)) {
-        return NULL;
+    if (nargs > 5) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        pwcs_obj = args[0];
+    }
+    if (nargs > 1) {
+        n_obj = args[1];
+    }
+    if (nargs > 2) {
+        dummy_unicode_version = args[2];
+    }
+    if (nargs > 3 && !convert_ambiguous_width(args[3], &ambiguous_width)) {
+        goto reject;
+    }
+    if (nargs > 4) {
+        term_program_obj = args[4];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* pwcs */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            pwcs_obj = value;
+            break;
+        case 1:  /* n */
+            n_obj = value;
+            break;
+        case 2:  /* unicode_version */
+            dummy_unicode_version = value;
+            break;
+        case 3:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        case 4:  /* term_program */
+            term_program_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (pwcs_obj == NULL) {
+        goto reject;
     }
 
     const char *term_program = term_program_cstr(term_program_obj, 1);
@@ -398,31 +679,81 @@ wcstwidth_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     int result = wcstwidth_u32(codepoints, (size_t)count, ambiguous_width, term_program);
     PyMem_Free(codepoints);
     return PyLong_FromLong(result);
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "U|OOO&O", kwlist,
+                                              &pwcs_obj, &n_obj, &dummy_unicode_version,
+                                              convert_ambiguous_width, &ambiguous_width,
+                                              &term_program_obj);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyObject *
-width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
+width_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *text_obj;
+    PyObject *text_obj = NULL;
     PyObject *control_codes_obj = NULL;
     int tabsize = 8;
     int ambiguous_width = 1;
     PyObject *term_program_obj = NULL;
     static char *kwlist[] = {"text", "control_codes", "tabsize", "ambiguous_width",
                              "term_program", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|OiO&O", kwlist,
-                                     &text_obj, &control_codes_obj, &tabsize,
-                                     convert_ambiguous_width, &ambiguous_width, &term_program_obj)) {
-        return NULL;
+    if (nargs > 1) {
+        goto reject;
     }
-    if (PyTuple_Size(args) > 1) {
-        PyErr_Format(PyExc_TypeError,
-                     "width() takes 1 positional argument but %zd were given",
-                     PyTuple_Size(args));
-        return NULL;
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        text_obj = args[0];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* text */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            text_obj = value;
+            break;
+        case 1:  /* control_codes */
+            control_codes_obj = value;
+            break;
+        case 2:  /* tabsize */
+            if (py_long_as_int(value, &tabsize) < 0) {
+                goto reject;
+            }
+            break;
+        case 3:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        case 4:  /* term_program */
+            term_program_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (text_obj == NULL) {
+        goto reject;
     }
 
     const char *term_program = term_program_cstr(term_program_obj, 0);
@@ -438,7 +769,7 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
      * reproduce the ValueError messages for invalid text-sizing parameters,
      * which embed the offending value. */
     if (mode == WCWIDTH_STRICT) {
-        return call_python_function("wcwidth._width", "width", args, kwargs);
+        return call_python_function("wcwidth._width", "width", &st);
     }
 
     Py_ssize_t len;
@@ -461,31 +792,100 @@ width_impl(PyObject *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     return PyLong_FromLong(result);
+
+reject:
+    {
+        /* The format accepts more positional arguments than the API does, so a
+         * parse that succeeds here becomes the positional-count error. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            if (PyArg_ParseTupleAndKeywords(callargs, kwargs, "U|OiO&O", kwlist,
+                                            &text_obj, &control_codes_obj, &tabsize,
+                                            convert_ambiguous_width, &ambiguous_width,
+                                            &term_program_obj)) {
+                PyErr_Format(PyExc_TypeError,
+                             "width() takes 1 positional argument but %zd were given",
+                             nargs);
+            }
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyObject *
-align_impl(const char *name, PyObject *args, PyObject *kwargs)
+align_impl(const char *name, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *text_obj;
-    Py_ssize_t dest_width;
+    PyObject *text_obj = NULL;
+    Py_ssize_t dest_width = 0;
+    int have_dest_width = 0;
     PyObject *fillchar_obj = NULL;
     PyObject *control_codes_obj = NULL;
     int ambiguous_width = 1;
     PyObject *term_program_obj = NULL;
     static char *kwlist[] = {"text", "dest_width", "fillchar", "control_codes",
                              "ambiguous_width", "term_program", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Un|OOO&O", kwlist,
-                                     &text_obj, &dest_width, &fillchar_obj,
-                                     &control_codes_obj, convert_ambiguous_width, &ambiguous_width,
-                                     &term_program_obj)) {
-        return NULL;
+    if (nargs > 3) {
+        goto reject;
     }
-    if (PyTuple_Size(args) > 3) {
-        PyErr_Format(PyExc_TypeError,
-                     "%s() takes 3 positional arguments but %zd were given",
-                     name, PyTuple_Size(args));
-        return NULL;
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        text_obj = args[0];
+    }
+    if (nargs > 1) {
+        if (py_long_as_ssize(args[1], &dest_width) < 0) {
+            goto reject;
+        }
+        have_dest_width = 1;
+    }
+    if (nargs > 2) {
+        fillchar_obj = args[2];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* text */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            text_obj = value;
+            break;
+        case 1:  /* dest_width */
+            if (py_long_as_ssize(value, &dest_width) < 0) {
+                goto reject;
+            }
+            have_dest_width = 1;
+            break;
+        case 2:  /* fillchar */
+            fillchar_obj = value;
+            break;
+        case 3:  /* control_codes */
+            control_codes_obj = value;
+            break;
+        case 4:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        case 5:  /* term_program */
+            term_program_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (text_obj == NULL || !have_dest_width) {
+        goto reject;
     }
 
     const char *term_program = term_program_cstr(term_program_obj, 0);
@@ -502,7 +902,7 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
      * text-sizing value.  Without this, a strict violation inside ljust() /
      * rjust() / center() is padded and returned instead of raised. */
     if (mode == WCWIDTH_STRICT) {
-        return call_python_function("wcwidth.align", name, args, kwargs);
+        return call_python_function("wcwidth.align", name, &st);
     }
 
     size_t padded_width = dest_width > 0 ? (size_t)dest_width : 0;
@@ -516,7 +916,7 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
         if (PyErr_Occurred()) {
             return NULL;
         }
-        return call_python_function("wcwidth.align", name, args, kwargs);
+        return call_python_function("wcwidth.align", name, &st);
     }
     const char *fillchar;
     size_t fillchar_len;
@@ -524,7 +924,7 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
         if (PyErr_Occurred()) {
             return NULL;
         }
-        return call_python_function("wcwidth.align", name, args, kwargs);
+        return call_python_function("wcwidth.align", name, &st);
     }
 
     wcwidth_align_opts_t opts = WCWIDTH_ALIGN_OPTS_DEFAULT;
@@ -558,39 +958,83 @@ align_impl(const char *name, PyObject *args, PyObject *kwargs)
     PyObject *result = PyUnicode_FromStringAndSize(out, (Py_ssize_t)out_len);
     free(out);
     return result;
-}
 
-static PyObject *
-ljust_impl(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-    (void)self;
-    return align_impl("ljust", args, kwargs);
-}
+reject:
+    {
+        /* The format accepts more positional arguments than the API does, so a
+         * parse that succeeds here becomes the positional-count error. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
 
-static PyObject *
-rjust_impl(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-    (void)self;
-    return align_impl("rjust", args, kwargs);
-}
-
-static PyObject *
-center_impl(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-    (void)self;
-    return align_impl("center", args, kwargs);
-}
-
-static PyObject *
-strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-    PyObject *text_obj;
-    static char *kwlist[] = {"text", NULL};
-
-    (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U", kwlist, &text_obj)) {
+        if (callargs != NULL) {
+            PyErr_Clear();
+            if (PyArg_ParseTupleAndKeywords(callargs, kwargs, "Un|OOO&O", kwlist,
+                                            &text_obj, &dest_width, &fillchar_obj,
+                                            &control_codes_obj, convert_ambiguous_width,
+                                            &ambiguous_width, &term_program_obj)) {
+                PyErr_Format(PyExc_TypeError,
+                             "%s() takes 3 positional arguments but %zd were given",
+                             name, nargs);
+            }
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
         return NULL;
+    }
+}
+
+static PyObject *
+ljust_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    return align_impl("ljust", args, nargs, kwnames);
+}
+
+static PyObject *
+rjust_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    return align_impl("rjust", args, nargs, kwnames);
+}
+
+static PyObject *
+center_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    return align_impl("center", args, nargs, kwnames);
+}
+
+static PyObject *
+strip_sequences_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *text_obj = NULL;
+    static char *kwlist[] = {"text", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
+
+    (void)self;
+    if (nargs > 1) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        text_obj = args[0];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* text */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            text_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (text_obj == NULL) {
+        goto reject;
     }
 
     const char *text;
@@ -599,7 +1043,7 @@ strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
         if (PyErr_Occurred()) {
             return NULL;
         }
-        return call_python_function("wcwidth.escape_sequences", "strip_sequences", args, kwargs);
+        return call_python_function("wcwidth.escape_sequences", "strip_sequences", &st);
     }
 
     size_t out_len = 0;
@@ -612,18 +1056,54 @@ strip_sequences_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *result = PyUnicode_FromStringAndSize(out, (Py_ssize_t)out_len);
     PyMem_Free(out);
     return result;
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "U", kwlist, &text_obj);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyObject *
-propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
+propagate_sgr_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *lines_obj;
+    PyObject *lines_obj = NULL;
     static char *kwlist[] = {"lines", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)self;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwlist, &lines_obj)) {
-        return NULL;
+    if (nargs > 1) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        lines_obj = args[0];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* lines */
+            if (nargs > 0) {
+                goto reject;
+            }
+            lines_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (lines_obj == NULL) {
+        goto reject;
     }
 
     PyObject *fast = PySequence_Fast(lines_obj, "lines must be an iterable of strings");
@@ -652,7 +1132,6 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     }
 
     PyObject *result = NULL;
-    Py_ssize_t i;
     for (i = 0; i < nlines; i++) {
         PyObject *line = fast_is_list ? PyList_GetItem(fast, i) : PyTuple_GetItem(fast, i);
         const char *utf8;
@@ -668,7 +1147,7 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
             if (PyErr_Occurred()) {
                 return NULL;
             }
-            return call_python_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
+            return call_python_function("wcwidth.sgr_state", "propagate_sgr", &st);
         }
         char *buf = PyMem_Malloc((size_t)utf8_len + WCWIDTH_SGR_PROPAGATE_SPARE + 1);
         if (buf == NULL) {
@@ -691,7 +1170,7 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
      * prefix space; fall back to the Python implementation in that case. */
     if (wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines) < 0) {
         PyErr_Clear();
-        result = call_python_function("wcwidth.sgr_state", "propagate_sgr", args, kwargs);
+        result = call_python_function("wcwidth.sgr_state", "propagate_sgr", &st);
     } else {
         result = PyList_New(nlines);
         if (result != NULL) {
@@ -721,6 +1200,21 @@ propagate_sgr_impl(PyObject *self, PyObject *args, PyObject *kwargs)
     PyMem_Free(c_out_lens);
     Py_DECREF(fast);
     return result;
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "O", kwlist, &lines_obj);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 /*
@@ -835,7 +1329,8 @@ static PyType_Spec grapheme_iterator_spec = {
 };
 
 static PyObject *
-iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
+iter_graphemes_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
+                    PyObject *kwnames)
 {
     static char *keywords[] = {"unistr", "start", "end", NULL};
     PyObject *unistr = NULL;
@@ -846,10 +1341,43 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     grapheme_iterator *self;
     PyTypeObject *type;
     allocfunc alloc_func;
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OO:iter_graphemes", keywords,
-                                     &unistr, &start, &end)) {
-        return NULL;
+    if (nargs > 3) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        unistr = args[0];
+    }
+    if (nargs > 1) {
+        start = args[1];
+    }
+    if (nargs > 2) {
+        end = args[2];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), keywords)) {
+        case 0:  /* unistr */
+            if (nargs > 0) {
+                goto reject;
+            }
+            unistr = value;
+            break;
+        case 1:  /* start */
+            start = value;
+            break;
+        case 2:  /* end */
+            end = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (unistr == NULL) {
+        goto reject;
     }
 
     /*
@@ -858,14 +1386,14 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
      * those calls go to the Python implementation.
      */
     if (start != NULL || end != NULL || !PyUnicode_Check(unistr)) {
-        return call_python_function("wcwidth.grapheme", "iter_graphemes", args, kwargs);
+        return call_python_function("wcwidth.grapheme", "iter_graphemes", &st);
     }
 
     utf8 = PyUnicode_AsUTF8String(unistr);
     if (utf8 == NULL) {
         /* lone surrogates have no UTF-8 form; Python segments them fine */
         PyErr_Clear();
-        return call_python_function("wcwidth.grapheme", "iter_graphemes", args, kwargs);
+        return call_python_function("wcwidth.grapheme", "iter_graphemes", &st);
     }
 
     state = (module_state *)PyModule_GetState(module);
@@ -894,6 +1422,22 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     }
     self->utf8 = utf8;  /* steals the reference */
     return (PyObject *)self;
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "O|OO:iter_graphemes",
+                                              keywords, &unistr, &start, &end);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 /*
@@ -910,9 +1454,9 @@ iter_graphemes_impl(PyObject *module, PyObject *args, PyObject *kwargs)
  * complex terminal sequences like OSC 66 or cursor movement.
  */
 static PyObject *
-py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
+py_clip_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    PyObject *text_obj;
+    PyObject *text_obj = NULL;
     Py_ssize_t start = 0;
     Py_ssize_t end = -1;
     PyObject *fillchar_obj = NULL;
@@ -924,21 +1468,75 @@ py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     static char *kwlist[] = {"text", "start", "end", "fillchar", "tabsize",
                              "ambiguous_width", "propagate_sgr", "control_codes",
                              "term_program", NULL};
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
 
     (void)module;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "U|nn$OiO&pOO", kwlist,
-                                     &text_obj, &start, &end, &fillchar_obj, &tabsize,
-                                     convert_ambiguous_width, &ambiguous_width,
-                                     &propagate_sgr, &control_codes_obj,
-                                     &term_program_obj)) {
-        return NULL;
+    if (nargs > 3) {
+        goto reject;
     }
-    if (PyTuple_Size(args) > 3) {
-        PyErr_Format(PyExc_TypeError,
-                     "clip() takes 3 positional arguments but %zd were given",
-                     PyTuple_Size(args));
-        return NULL;
+    if (nargs > 0) {
+        if (!PyUnicode_Check(args[0])) {
+            goto reject;
+        }
+        text_obj = args[0];
+    }
+    if (nargs > 1 && py_long_as_ssize(args[1], &start) < 0) {
+        goto reject;
+    }
+    if (nargs > 2 && py_long_as_ssize(args[2], &end) < 0) {
+        goto reject;
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), kwlist)) {
+        case 0:  /* text */
+            if (nargs > 0 || !PyUnicode_Check(value)) {
+                goto reject;
+            }
+            text_obj = value;
+            break;
+        case 1:  /* start */
+            if (py_long_as_ssize(value, &start) < 0) {
+                goto reject;
+            }
+            break;
+        case 2:  /* end */
+            if (py_long_as_ssize(value, &end) < 0) {
+                goto reject;
+            }
+            break;
+        case 3:  /* fillchar */
+            fillchar_obj = value;
+            break;
+        case 4:  /* tabsize */
+            if (py_long_as_int(value, &tabsize) < 0) {
+                goto reject;
+            }
+            break;
+        case 5:  /* ambiguous_width */
+            if (!convert_ambiguous_width(value, &ambiguous_width)) {
+                goto reject;
+            }
+            break;
+        case 6:  /* propagate_sgr */
+            if (py_object_as_bool(value, &propagate_sgr) < 0) {
+                goto reject;
+            }
+            break;
+        case 7:  /* control_codes */
+            control_codes_obj = value;
+            break;
+        case 8:  /* term_program */
+            term_program_obj = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (text_obj == NULL) {
+        goto reject;
     }
     if (start < 0 || end < 0) {
         PyErr_SetString(PyExc_ValueError,
@@ -1007,40 +1605,59 @@ py_clip_impl(PyObject *module, PyObject *args, PyObject *kwargs)
     PyObject *result = PyUnicode_FromStringAndSize(out, (Py_ssize_t)out_len);
     free(out);
     return result;
+
+reject:
+    {
+        /* Not a valid call: the parser below reports it. */
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "U|nn$OiO&pOO", kwlist,
+                                              &text_obj, &start, &end, &fillchar_obj,
+                                              &tabsize, convert_ambiguous_width,
+                                              &ambiguous_width, &propagate_sgr,
+                                              &control_codes_obj, &term_program_obj);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
 }
 
 static PyMethodDef module_methods[] = {
-    {"wcwidth", (PyCFunction)wcwidth_impl, METH_VARARGS | METH_KEYWORDS,
+    {"wcwidth", (PyCFunction)wcwidth_impl, METH_FASTCALL | METH_KEYWORDS,
      "wcwidth(wc, unicode_version='auto', ambiguous_width=1) -> int\n\n"
      "Return the printable width of a single Unicode character in terminal cells."},
-    {"wcswidth", (PyCFunction)wcswidth_impl, METH_VARARGS | METH_KEYWORDS,
+    {"wcswidth", (PyCFunction)wcswidth_impl, METH_FASTCALL | METH_KEYWORDS,
      "wcswidth(pwcs, n=None, unicode_version='auto', ambiguous_width=1) -> int\n\n"
      "Return the printable width of a Unicode string in terminal cells."},
-    {"wcstwidth", (PyCFunction)wcstwidth_impl, METH_VARARGS | METH_KEYWORDS,
+    {"wcstwidth", (PyCFunction)wcstwidth_impl, METH_FASTCALL | METH_KEYWORDS,
      "wcstwidth(pwcs, n=None, unicode_version='auto', ambiguous_width=1, term_program=True) -> int\n\n"
      "Return the printable width of a Unicode string on the terminal given by term_program."},
-    {"width", (PyCFunction)width_impl, METH_VARARGS | METH_KEYWORDS,
+    {"width", (PyCFunction)width_impl, METH_FASTCALL | METH_KEYWORDS,
      "width(text, *, control_codes='parse', tabsize=8, ambiguous_width=1, term_program=False) -> int\n\n"
      "Return the maximum cursor extent of text containing control codes and sequences."},
-    {"ljust", (PyCFunction)ljust_impl, METH_VARARGS | METH_KEYWORDS,
+    {"ljust", (PyCFunction)ljust_impl, METH_FASTCALL | METH_KEYWORDS,
      "ljust(text, dest_width, fillchar=' ', *, ...) -> str"},
-    {"rjust", (PyCFunction)rjust_impl, METH_VARARGS | METH_KEYWORDS,
+    {"rjust", (PyCFunction)rjust_impl, METH_FASTCALL | METH_KEYWORDS,
      "rjust(text, dest_width, fillchar=' ', *, ...) -> str"},
-    {"center", (PyCFunction)center_impl, METH_VARARGS | METH_KEYWORDS,
+    {"center", (PyCFunction)center_impl, METH_FASTCALL | METH_KEYWORDS,
      "center(text, dest_width, fillchar=' ', *, ...) -> str"},
-    {"clip", (PyCFunction)py_clip_impl, METH_VARARGS | METH_KEYWORDS,
+    {"clip", (PyCFunction)py_clip_impl, METH_FASTCALL | METH_KEYWORDS,
      "clip(text, start, end, *, ...) -> str | None\n\n"
      "Clip text to a visible column range, or None when the input has no UTF-8\n"
      "form.  Simplified relative to Python's clip(); start and end must already\n"
      "be non-negative.  Call only through wcwidth._clip.clip(), which gates on\n"
      "the subset where the two agree."},
-    {"strip_sequences", (PyCFunction)strip_sequences_impl, METH_VARARGS | METH_KEYWORDS,
+    {"strip_sequences", (PyCFunction)strip_sequences_impl, METH_FASTCALL | METH_KEYWORDS,
      "strip_sequences(text) -> str\n\n"
      "Return text with all terminal escape sequences removed."},
-    {"propagate_sgr", (PyCFunction)propagate_sgr_impl, METH_VARARGS | METH_KEYWORDS,
+    {"propagate_sgr", (PyCFunction)propagate_sgr_impl, METH_FASTCALL | METH_KEYWORDS,
      "propagate_sgr(lines) -> list[str]\n\n"
      "Propagate SGR styles across a list of lines."},
-    {"iter_graphemes", (PyCFunction)iter_graphemes_impl, METH_VARARGS | METH_KEYWORDS,
+    {"iter_graphemes", (PyCFunction)iter_graphemes_impl, METH_FASTCALL | METH_KEYWORDS,
      "iter_graphemes(unistr, start=0, end=None) -> Iterator[str]\n\n"
      "Iterate over grapheme clusters by UAX #29 extended grapheme cluster rules."},
     {NULL, NULL, 0, NULL},
