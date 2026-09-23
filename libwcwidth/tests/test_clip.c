@@ -143,6 +143,42 @@ TEST(unsupported_osc)
     cs_assert("ab\x1b]0;t\x07xy", 0, 3, "ab\x1b]0;t\x07x");
 }
 
+TEST(null_opts_and_tabsize_zero)
+{
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    char *s;
+
+    s = wcwidth_clip_u8("a\tb", 3, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_NOT_NULL(s);
+    free(s);
+
+    opts.tabsize = 0;
+    s = wcwidth_clip_u8("a\tb", 3, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_STREQ("a\tb", s);
+    free(s);
+}
+
+TEST(u32_null_opts_and_past_end)
+{
+    uint32_t cps[] = {'h', 'i'};
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    uint32_t *u;
+
+    u = wcwidth_clip_u32(cps, 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_NOT_NULL(u);
+    free(u);
+
+    opts.v_start = 5;
+    opts.v_end = 9;
+    u = wcwidth_clip_u32(cps, 2, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(u);
+    free(u);
+}
+
 int
 main(void)
 {
@@ -154,5 +190,7 @@ main(void)
     RUN_TEST(tab_captures_style);
     RUN_TEST(unsupported_cursor_movement);
     RUN_TEST(unsupported_osc);
+    RUN_TEST(null_opts_and_tabsize_zero);
+    RUN_TEST(u32_null_opts_and_past_end);
     return test_summary();
 }

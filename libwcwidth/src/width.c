@@ -90,12 +90,6 @@ is_illegal_ctrl(uint32_t ucs)
     if (ucs >= 28 && ucs <= 31) {
         return true; /* FS, GS, RS, US */
     }
-    if (ucs == 0x7F) {
-        return true; /* DEL */
-    }
-    if (ucs >= 0x80 && ucs <= 0x9F) {
-        return true; /* C1 control characters */
-    }
     return false;
 }
 

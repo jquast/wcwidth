@@ -240,6 +240,55 @@ TEST(wrap_lone_continuation_bytes)
     }
 }
 
+TEST(wrap_max_lines_placeholder)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa bb [...]"};
+
+    o.width = 11;
+    o.max_lines = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bb cccccccc", 14, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 4;
+    o.max_lines = 1;
+    ASSERT_EQ(-2, wcwidth_wrap_u8("aaaa bbbb", 9, &o, &out, &len));
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 6;
+    o.max_lines = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bbbb", 7, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 6;
+    o.max_lines = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bb cc dd ee", 14, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 11;
+    o.max_lines = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bb ccccccccc dd", 18, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 3;
+    o.expand_tabs = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 2;
+    o.break_long_words = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("abcdef", 6, &o, &out, &len));
+    free(out);
+}
+
 int
 main(void)
 {
@@ -251,5 +300,6 @@ main(void)
     RUN_TEST(wrap_lines_u8);
     RUN_TEST(wrap_tabsize_zero);
     RUN_TEST(wrap_lone_continuation_bytes);
+    RUN_TEST(wrap_max_lines_placeholder);
     return test_summary();
 }

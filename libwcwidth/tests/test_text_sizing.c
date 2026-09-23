@@ -40,10 +40,23 @@ TEST(display_width_basic)
     ASSERT_EQ(3, wcwidth_ts_display_width(&ts, 1));
 }
 
+TEST(parse_invalid_and_clamped)
+{
+    wcwidth_ts_params_t params;
+
+    ASSERT_TRUE(wcwidth_ts_parse_params("z=1", 3, &params));  /* unknown key */
+    ASSERT_TRUE(wcwidth_ts_parse_params("s=-5", 4, &params)); /* clamped low */
+    ASSERT_TRUE(wcwidth_ts_parse_params("s=", 2, &params));   /* no digits */
+    ASSERT_TRUE(wcwidth_ts_parse_params("s=2x", 4, &params)); /* trailing junk */
+    ASSERT_TRUE(wcwidth_ts_parse_params("s=99999999999999999999", 22, &params));
+    ASSERT_TRUE(params.scale >= 1); /* saturated, then clamped high */
+}
+
 int
 main(void)
 {
     RUN_TEST(parse_basic);
     RUN_TEST(display_width_basic);
+    RUN_TEST(parse_invalid_and_clamped);
     return test_summary();
 }

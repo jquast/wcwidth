@@ -50,9 +50,27 @@ TEST(encode_roundtrip)
     }
 }
 
+TEST(decode_malformed)
+{
+    static const char *const bad[] = {
+        "\xf8",     "\xff",         "\xe2\x82",     "\xe2\x28\xa1",
+        "\xc0\xaf", "\xe0\x80\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80"};
+    size_t i;
+    uint32_t cp = 0;
+
+    ASSERT_EQ(0, wcwidth_utf8_decode_single("", 0, &cp));
+    for (i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        size_t used = wcwidth_utf8_decode_single(bad[i], strlen(bad[i]), &cp);
+
+        ASSERT_EQ(0xFFFD, cp);
+        ASSERT_TRUE(used >= 1 && used <= strlen(bad[i]));
+    }
+}
+
 int
 main(void)
 {
     RUN_TEST(encode_roundtrip);
+    RUN_TEST(decode_malformed);
     return test_summary();
 }
