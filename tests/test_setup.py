@@ -7,7 +7,10 @@ from unittest import mock
 
 # 3rd party
 import pytest
-import setuptools
+
+# cibuildwheel creates its wheel-test virtualenv with --no-setuptools, and this module tests the
+# packaging source rather than the wheel built there, so it is skipped in that lane.
+setuptools = pytest.importorskip('setuptools')
 
 _SETUP_PY = Path(__file__).resolve().parent.parent / 'setup.py'
 _EXTENSION = setuptools.Extension('wcwidth._wcwidth_c', sources=['wcwidth/_wcwidth_c.c'])
