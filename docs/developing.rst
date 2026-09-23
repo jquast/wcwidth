@@ -12,7 +12,7 @@ Execute all code generation, autoformatters, linters and unit tests using tox::
 
 Or execute individual tasks, see ``tox -lv`` for all available targets::
 
-   tox -e pylint,py39,py314
+   tox -e format,lint,py39,py314
 
 To run tests with detailed coverage reporting showing missing lines::
 
@@ -68,7 +68,9 @@ The output will be in ``docs/_build/html/``, to review::
 Updating Requirements
 ---------------------
 
-This project is using `pip-tools`_ to manage requirements.
+This project is using `pip-tools`_ to manage requirements. Note that this project requires
+dependencies only for code generation and testing, the python wcwidth library published does not
+have 3rd party dependencies.
 
 To upgrade requirements for updating unicode tables, run::
 
