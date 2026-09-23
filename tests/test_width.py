@@ -309,6 +309,11 @@ def test_cursor_left_out_of_bounds_parse_no_raise():
     assert wcwidth.width('abc\x1b[99Ddef') == 3  # 99D clamped to col 0, then b,c,d overwritten
 
 
+def test_csi_longer_than_span_buffer_is_zero_width():
+    """A CSI longer than the 64-byte C span buffer is measured as zero width."""
+    assert wcwidth.width('\x1b[' + '1;' * 32 + 'mx') == 1
+
+
 def test_cursor_left_out_of_bounds_ignore_mode():
     """Cursor-left beyond string start is zero-width in ignore mode."""
     assert wcwidth.width('a\x1b[5Da', control_codes='ignore') == 2

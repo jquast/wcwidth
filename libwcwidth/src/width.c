@@ -411,7 +411,9 @@ static size_t
 escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
 {
     char buf[64];
+    char *heap = NULL;
     size_t cap = 16;
+    size_t span = 1;
     wcwidth_esc_result_t result;
 
     if (idx + 1 < n && (cp[idx + 1] == '(' || cp[idx + 1] == ')')) {
@@ -422,26 +424,56 @@ escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
     }
 
     /*
-     * Copy 16 first: nearly every sequence is shorter, and copying 64 each
-     * time dominates on SGR-dense text.  The classifier misreads a truncated
-     * run as an unterminated sequence, so widen and retry before classifying.
+     * Widen before classifying: the classifier reads a truncated run as
+     * unterminated.  Stop once a byte has ended the sequence, or the copy would
+     * run on into the text that follows, and only a CSI with no final byte
+     * takes a heap copy.
      */
     for (;;) {
+        char *out = (heap != NULL) ? heap : buf;
+        bool open = true; /* the sequence has no final byte yet */
         size_t j = 0;
 
         while (j < cap && idx + j < n && cp[idx + j] < 0x80) {
-            buf[j] = (char) cp[idx + j];
+            uint32_t b = cp[idx + j];
+
+            if (j > 1 && (b < 0x20 || b > 0x3F)) {
+                open = false;
+            }
+            out[j] = (char) b;
             j++;
         }
-        if (j == cap && idx + j < n && cp[idx + j] < 0x80 && cap < sizeof(buf)) {
-            cap = sizeof(buf);
-            continue;
+        if (open && j == cap && idx + j < n && cp[idx + j] < 0x80) {
+            if (cap < sizeof(buf)) {
+                cap = sizeof(buf);
+                continue;
+            }
+            if (heap == NULL && cp[idx + 1] == '[') {
+                size_t run = cap;
+
+                while (idx + run < n && cp[idx + run] < 0x80) {
+                    run++;
+                }
+                heap = (char *) malloc(run);
+                if (heap == NULL) {
+                    return 1;
+                }
+                cap = run;
+                continue;
+            }
         }
-        if (j == 0 || !wcwidth_escape_classify(buf, j, 0, &result) || result.length == 0) {
-            return 1;
+        if (j == 0 || !wcwidth_escape_classify(out, j, 0, &result) || result.length == 0) {
+            span = 1;
         }
-        return result.length;
+        else {
+            span = result.length;
+        }
+        break;
     }
+    if (heap != NULL) {
+        free(heap);
+    }
+    return span;
 }
 
 /*
