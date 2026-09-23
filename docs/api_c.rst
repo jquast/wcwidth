@@ -904,11 +904,11 @@ same version number applies to both.
 
 .. c:macro:: WCWIDTH_VERSION_PATCH
 
-   Defined as ``0``.
+   Defined as ``1``.
 
 .. c:macro:: WCWIDTH_VERSION
 
-   Defined as ``"0.9.0"``.
+   Defined as ``"0.9.1"``.
 
 .. c:macro:: WCWIDTH_UNICODE_VERSION
 

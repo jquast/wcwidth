@@ -6,7 +6,9 @@ from __future__ import annotations
 # std imports
 import os
 import re
+import sys
 import glob
+import argparse
 import textwrap
 import importlib.util
 
@@ -21,7 +23,7 @@ import jinja2
 # docs/unicode_version.rst, docs/libwcwidth.rst, and the list_term_programs()
 # example in README.rst.
 
-PATH_UP = os.path.relpath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+PATH_UP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.join(PATH_UP, 'code_templates')),
     keep_trailing_newline=True,
@@ -458,21 +460,29 @@ def report(label: str, changed: bool) -> None:
     print(f'{label}: {"updated" if changed else "up-to-date"}')
 
 
-def write_if_changed(path: str, content: str, label: str) -> None:
-    """Write *content* to *path* only if it differs, reporting the result."""
+def write_if_changed(path: str, content: str, label: str, check: bool = False) -> bool:
+    """
+    Write *content* to *path* only if it differs, reporting and returning whether it did.
+
+    With *check*, report the difference without writing, so a stale file fails the run.
+    """
     try:
         with open(path, encoding='utf-8') as fin:
             original = fin.read()
     except FileNotFoundError:
         original = ''
-    if content != original:
-        new_path = path + '.new'
-        with open(new_path, 'w', encoding='utf-8', newline='\n') as fout:
-            fout.write(content)
-        os.replace(new_path, path)
-        print(f'{label}: updated')
-    else:
+    if content == original:
         print(f'{label}: up-to-date')
+        return False
+    if check:
+        print(f'{label}: out of date, run bin/update-docs.py')
+        return True
+    new_path = path + '.new'
+    with open(new_path, 'w', encoding='utf-8', newline='\n') as fout:
+        fout.write(content)
+    os.replace(new_path, path)
+    print(f'{label}: updated')
+    return True
 
 
 def update_libwcwidth_term_programs() -> bool:
@@ -545,18 +555,31 @@ def unicode_version_page() -> str:
         source_headers=unicode_source_headers())
 
 
-def main() -> None:
-    """Regenerate all generated documentation files."""
-    write_if_changed(API_C_OUTPUT, render_api_doc(), 'docs/api_c.rst')
+def main(api_only: bool = False, check: bool = False) -> int:
+    """Regenerate all generated documentation files, or only docs/api_c.rst."""
+    stale = write_if_changed(API_C_OUTPUT, render_api_doc(), 'docs/api_c.rst', check)
+    if api_only:
+        # api_c.rst is parsed from the C headers, but everything below reads the
+        # Unicode sources under data/, which only `tox -e fetch` downloads.
+        return int(stale)
     write_if_changed(os.path.join(PATH_DOCS, 'unicode_version.rst'),
-                     unicode_version_page(), 'docs/unicode_version.rst')
+                     unicode_version_page(), 'docs/unicode_version.rst', check)
     report('docs/libwcwidth.rst: canonical terminal names',
            update_libwcwidth_term_programs())
     report('docs/libwcwidth.rst: Unicode version',
            update_libwcwidth_unicode_version())
     report('README.rst: list_term_programs() example',
            update_readme_term_programs())
+    return int(stale)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--api-only', action='store_true',
+                        help='regenerate docs/api_c.rst only, which needs no Unicode data')
+    parser.add_argument('--check', action='store_true',
+                        help='report stale output instead of writing it, for CI')
+    args = parser.parse_args()
+    if args.check and not args.api_only:
+        parser.error('--check needs --api-only: the other outputs read the fetched Unicode data')
+    sys.exit(main(api_only=args.api_only, check=args.check))
