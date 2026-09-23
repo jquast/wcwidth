@@ -117,6 +117,11 @@ def test_width_ascii(benchmark):
     benchmark(wcwidth.width, 'hello world')
 
 
+def test_width_ascii_default_corrections(benchmark):
+    """Benchmark width() with the default corrections passed explicitly."""
+    benchmark(wcwidth.width, 'hello world', ambiguous_width=1, term_program=False)
+
+
 def test_width_with_ansi_codes(benchmark):
     """Benchmark width() with ANSI escape sequences."""
     text = '\x1b[31mred text\x1b[0m'
@@ -179,6 +184,11 @@ def test_iter_graphemes_reverse_long(benchmark):
 def test_ljust_ascii(benchmark):
     """Benchmark ljust() with ASCII string."""
     benchmark(wcwidth.ljust, 'hello', 20)
+
+
+def test_ljust_ascii_default_corrections(benchmark):
+    """Benchmark ljust() with the default corrections passed explicitly."""
+    benchmark(wcwidth.ljust, 'hello', 20, ambiguous_width=1, term_program=False)
 
 
 def test_ljust_japanese(benchmark):
