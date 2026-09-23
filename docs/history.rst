@@ -2,7 +2,7 @@
 History
 =======
 
-0.9.0 *unreleased* ('jq/libwcwidth-shim-wheels' branch)
+0.9.0 *2026-09-23*
   * **New** Optional CPython extension using libwcwidth_, improving performance 10-58x `PR #248`_.
   * **Drop Support** for Python 3.8, `PR #248`_.
 
