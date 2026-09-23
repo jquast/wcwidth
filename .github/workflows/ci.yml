@@ -280,10 +280,39 @@ jobs:
       - name: Run C tests under valgrind
         run: make -C libwcwidth valgrind
 
+  # Instrumented C coverage.  The C11 and Python coverage are merged into a single gcov report and
+  # uploaded for a combined Codecov total.
+  libwcwidth-coverage:
+    name: libwcwidth coverage (C11)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: pip
+
+      - name: Install tox
+        run: python -Im pip install tox
+
+      - name: Measure libwcwidth coverage
+        run: python -Im tox -e c_coverage
+
+      - name: Upload C coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-c
+          path: coverage-c.lcov
+          if-no-files-found: error
+
   coverage:
     name: Combine & check coverage.
     runs-on: ubuntu-latest
-    needs: [tests, tests-python]
+    needs: [tests, tests-python, libwcwidth-coverage]
 
     steps:
       - uses: actions/checkout@v7
@@ -307,6 +336,11 @@ jobs:
         with:
           name: coverage-data
 
+      - name: Download C coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-c
+
       - name: Combine coverage data
         run: |
           python -Im pip install coverage[toml]
@@ -322,6 +356,8 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          # coverage.py (Python) and gcovr (C, libwcwidth) merge into one total.
+          files: ./coverage.xml,./coverage-c.lcov
           fail_ci_if_error: true
           verbose: true
 

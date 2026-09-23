@@ -18,6 +18,12 @@ To run tests with detailed coverage reporting showing missing lines::
 
    tox -epy314 -- --cov-report=term-missing
 
+The C11 library's coverage is measured separately, since coverage.py cannot see compiled
+code.  This merges two instrumented runs, the C11 test suite and the Python suite driving
+the C extension, and writes ``coverage-c.lcov`` and ``htmlcov-c/index.html``::
+
+   tox -e c_coverage
+
 Updating Unicode Version
 ------------------------
 
