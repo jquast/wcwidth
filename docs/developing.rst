@@ -43,18 +43,16 @@ Bump for the next version in ``pyproject.toml`` and "stamp" version into python 
 
     tox -e update,format
 
-When these changes land in 'master', tag it::
-
-   git tag 0.9.0 && git push --tags
-
-The GitHub wheels_ workflow reacts to a new tag and builds all wheels using cibuildwheel_.  Once CI
-builds finish successfully, download and check them for release::
+Then, apply a ``git tag`` of the same version on master. The wheels.yml_ workflow reacts to a new
+tag and builds all wheels using cibuildwheel_.  Once CI builds finish successfully, download and
+check them for release::
 
    tox -e check_release
 
 This script exits 0 and reports success of pre-release checks, use twine to release to PyPI::
 
-   twine upload dist/*
+   shopt -s globstar
+   twine upload dist/**/*.whl dist/**/*.tar.gz
 
 Building Documentation
 ----------------------
@@ -88,5 +86,5 @@ To upgrade requirements for building documentation, run::
 .. _`sphinx`: https://www.sphinx-doc.org/
 
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
-.. _wheels: https://github.com/jquast/wcwidth/blob/master/.github/workflows/wheels.yml
+.. _wheels.yml: https://github.com/jquast/wcwidth/blob/master/.github/workflows/wheels.yml
 .. _cibuildwheel: https://cibuildwheel.pypa.io/
