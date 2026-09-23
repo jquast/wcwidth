@@ -1,0 +1,167 @@
+"""
+Optional CPython extension for wcwidth.
+
+This setup.py file is required to allow continuing a build even when the extension cannot be
+compiled (no compiler, PyPy, Pyodite, who knows), and the pure-python implementation is used.
+
+WCWIDTH_NO_EXTENSION=1 builds the extension-free wheel.  CIBUILDWHEEL=1, which cibuildwheel
+sets, makes a compiled extension mandatory.
+"""
+from __future__ import annotations
+
+import os
+import platform
+import re
+import sys
+import sysconfig
+
+import setuptools
+from setuptools import Extension, find_packages, setup
+from setuptools.command.build_ext import build_ext as _build_ext
+
+try:
+    from setuptools.errors import CCompilerError, CompileError, LinkError
+except ImportError:
+    # compatibility for setuptools < 59
+    from distutils.errors import (  # pylint: disable=deprecated-module
+        CCompilerError,
+        CompileError,
+        LinkError,
+    )
+from distutils.errors import (  # pylint: disable=deprecated-module
+    DistutilsExecError,
+    DistutilsPlatformError,
+)
+
+_PEP621_SETUPTOOLS = (61, 0)
+_setuptools_version = tuple(int(part) for part in
+                            re.findall(r'\d+', setuptools.__version__)[:2])
+
+
+def _version_from_source() -> str:
+    """Read __version__ from wcwidth/__init__.py."""
+    init = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wcwidth', '__init__.py')
+    with open(init, encoding='utf-8') as fp:
+        match = re.search(r"^__version__ = '([^']+)'", fp.read(), re.M)
+    if match is None:
+        raise SystemExit('cannot determine version from wcwidth/__init__.py')
+    return match.group(1)
+
+
+# setuptools<61 ignores [project] and would build package "UNKNOWN 0.0.0";
+if _setuptools_version < _PEP621_SETUPTOOLS:
+    _FALLBACK_METADATA = {
+        'name': 'wcwidth',
+        'version': _version_from_source(),
+        'packages': find_packages(include=['wcwidth', 'wcwidth.*']),
+        'package_data': {'wcwidth': ['py.typed', '*.pyi']},
+        'python_requires': '>=3.9',
+    }
+else:
+    _FALLBACK_METADATA = {}
+
+# C11 needs an explicit standard flag on both MSVC and POSIX compilers.
+if sys.platform == "win32":
+    _C_STANDARD_FLAG = "/std:c11"
+else:
+    _C_STANDARD_FLAG = "-std=c11"
+
+_EXT_SOURCES = [
+    "wcwidth/_wcwidth_c.c",
+    # Keep all files below in parity with LIBWCWIDTH_SOURCES in libwcwidth/CMakeLists.txt.
+    "libwcwidth/src/bisearch.c",
+    "libwcwidth/src/wcwidth.c",
+    "libwcwidth/src/wcswidth.c",
+    "libwcwidth/src/wcstwidth.c",
+    "libwcwidth/src/width.c",
+    "libwcwidth/src/textwrap.c",
+    "libwcwidth/src/clip.c",
+    "libwcwidth/src/align.c",
+    "libwcwidth/src/grapheme.c",
+    "libwcwidth/src/escape.c",
+    "libwcwidth/src/sgr.c",
+    "libwcwidth/src/text_sizing.c",
+    "libwcwidth/src/terminal_override.c",
+    "libwcwidth/src/utf8.c",
+    "libwcwidth/src/tables/table_wide.c",
+    "libwcwidth/src/tables/table_zero.c",
+    "libwcwidth/src/tables/table_ambiguous.c",
+    "libwcwidth/src/tables/table_grapheme.c",
+    "libwcwidth/src/tables/table_mc.c",
+    "libwcwidth/src/tables/table_vs15.c",
+    "libwcwidth/src/tables/table_vs16.c",
+    "libwcwidth/src/tables/table_terminal_overrides.c",
+    "libwcwidth/src/tables/table_term_programs.c",
+    "libwcwidth/src/tables/table_gcb_class.c",
+]
+
+# Stable ABI (abi3): one cp310 wheel covers every GIL-enabled interpreter from
+# 3.10 up.  A 3.9 interpreter installs the pure Python py3-none-any wheel.
+PY_LIMITED_API = "0x030A0000"
+ABI3_TAG = "cp310"
+
+# Only a 3.10 or newer build can compile against that API.  A free-threaded
+# build also cannot use the stable ABI: Py_LIMITED_API below 3.13 drops the
+# Py_mod_gil declaration it requires.
+USE_LIMITED_API = (not sysconfig.get_config_var("Py_GIL_DISABLED")
+                   and sys.version_info >= (3, 10))
+
+# setuptools reads purity from ext_modules, and bdist_wheel tags a pure wheel py3-none-any.
+if os.environ.get("WCWIDTH_NO_EXTENSION", ""):
+    _EXT_MODULES: list[Extension] = []
+else:
+    _EXT_MODULES = [
+        Extension(
+            "wcwidth._wcwidth_c",
+            sources=_EXT_SOURCES,
+            include_dirs=["libwcwidth/include"],
+            define_macros=[("Py_LIMITED_API", PY_LIMITED_API)] if USE_LIMITED_API else [],
+            py_limited_api=USE_LIMITED_API,
+        ),
+    ]
+
+# The abi3 tag applies when an extension is built; a 3.9 build stays version specific.
+WHEEL_OPTIONS = ({"bdist_wheel": {"py_limited_api": ABI3_TAG}}
+                 if _EXT_MODULES and USE_LIMITED_API else {})
+
+# A failed compile would still publish an abi3 wheel with nothing in it: WHEEL_OPTIONS claims
+# that tag from _EXT_MODULES alone.
+_RELEASE_BUILD = bool(os.environ.get("CIBUILDWHEEL"))
+
+
+class optional_build_ext(_build_ext):
+    """build_ext that warns and continues when the C extension will not build."""
+
+    def finalize_options(self) -> None:
+        super().finalize_options()
+        for ext in self.extensions:
+            ext.extra_compile_args = (ext.extra_compile_args or []) + [_C_STANDARD_FLAG]
+
+    def run(self) -> None:
+        if not self.extensions:
+            return
+        if platform.python_implementation() != "CPython":
+            self.fall_back_to_python(f"it cannot be built on {platform.python_implementation()}")
+            return
+        try:
+            super().run()
+        except (CompileError, LinkError, CCompilerError,
+                DistutilsExecError, DistutilsPlatformError, OSError) as exc:
+            self.fall_back_to_python(f"it could not be built: {exc}")
+
+    def fall_back_to_python(self, why: str) -> None:
+        """Fall back to the Python implementation, or fail a release wheel build."""
+        if _RELEASE_BUILD:
+            raise DistutilsPlatformError(
+                "the C extension 'wcwidth._wcwidth_c' is required because CIBUILDWHEEL "
+                f"is set, but {why}")
+        self.warn(f"Skipping optional C extension 'wcwidth._wcwidth_c' because {why}; "
+                  "the Python implementation is used.")
+
+
+setup(
+    cmdclass={"build_ext": optional_build_ext},
+    ext_modules=_EXT_MODULES,
+    options=WHEEL_OPTIONS,
+    **_FALLBACK_METADATA,
+)

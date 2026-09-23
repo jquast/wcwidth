@@ -420,7 +420,8 @@ The text transforms are simpler:
 
 * `wcwidth_clip_u8()`_ rejects the unsupported sequences described above; every other sequence but
   SGR is zero-width and preserved at its original position.  It otherwise matches Python's
-  `clip()`_, SGR included.
+  `clip()`_, SGR included, and Python's `clip()`_ depends on that: it calls here first and runs its
+  own implementation only on ``WCWIDTH_ERROR_UNSUPPORTED``.
 * `wcwidth_wrap_u8()`_ treats an OSC 8 hyperlink as an ordinary zero-width OSC, so the link is not
   re-opened on each line; callers must re-emit the opener and terminator themselves.
 * `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where

@@ -4,9 +4,8 @@
 Introduction
 ============
 
-This Python library is mainly for CLI/TUI programs that carefully produce output for Terminals.
-
-See page libwcwidth_ about the portable C11 library.
+This Python and C11 library is mainly for CLI/TUI programs that carefully produce output for
+Terminals.  This page is about the Python library, see libwcwidth_ for the portable C11 library.
 
 Installation
 ------------

@@ -4,10 +4,6 @@ Python 'wcwidth' module.
 https://github.com/jquast/wcwidth
 """
 
-# re-export common and outermost functions & definitions, even a few private
-# ones, some for convenience, others for legacy, only the items in __all__ are
-# documented as public API
-
 __lazy_modules__ = [
     "wcwidth._clip",
     "wcwidth._wcswidth",
@@ -28,38 +24,69 @@ __lazy_modules__ = [
     "wcwidth.unicode_versions",
 ]
 
+# std imports
+import os
+from functools import lru_cache
+
 # local
 from ._clip import clip
-from .align import ljust, rjust, center
-from ._width import width
+# re-export common and outermost functions & definitions, even a few private ones. Some are for
+# convenience and others for legacy, only the items in '__all__' are documented as public API
 from .bisearch import bisearch as _bisearch
-from .grapheme import iter_graphemes, iter_graphemes_reverse, grapheme_boundary_before
+from .grapheme import iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
-from ._wcswidth import wcswidth, wcstwidth
 from .hyperlink import Hyperlink, HyperlinkParams
-from .sgr_state import propagate_sgr
 from ._constants import list_term_programs
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
 from .table_zero import ZERO_WIDTH
 from .text_sizing import TextSizing, TextSizingParams
 from .table_ambiguous import AMBIGUOUS_EASTASIAN
-from .escape_sequences import iter_sequences, strip_sequences
+from .escape_sequences import iter_sequences
 from .unicode_versions import list_versions
+
+# Optional C extension 'wcwidth._wcwidth_c', wrapping the C11 libwcwidth
+# library; the Python implementations below are used when it is unavailable.
+HAS_C_EXTENSION = False
+if not os.environ.get('WCWIDTH_PYTHON', ''):
+    try:
+        # local
+        import wcwidth._wcwidth_c as _wcwidth_c  # noqa: F401  pylint:disable=unused-import,consider-using-from-import
+    except ImportError:
+        pass
+    else:
+        HAS_C_EXTENSION = True
 
 # Import order matters for legacy API compatibility (releases before 0.7.0).
 #
-# The first release put every function in a single 'wcwidth.py' file, and while the top-level
-# 'from wcwidth import wcswidth' was always preferred, the deeper
-# 'from wcwidth.wcwidth import wcswidth' form was always possible too.  Both keep working.
+# The first release (0.1) put _bisearch, wcwidth, and wcswidth in a single 'wcwidth.py' file, and
+# while the top-level function importing, 'from wcwidth import wcwidth' was always preferred, the
+# deeper 'from wcwidth.wcwidth import wcwidth' was always possible.
 #
-# Below 3.15 the legacy submodule is pre-imported so sys.modules['wcwidth.wcwidth'] is populated
-# during package initialization; a later ``import wcwidth.wcwidth`` would otherwise trigger on-disk
-# file discovery and rebind that name from the function to the module object.  On 3.15+
-# __lazy_modules__ covers every submodule and the shim loads on demand.
-if __import__('sys').version_info < (3, 15):
-    from . import wcwidth as _wcwidth_module  # isort:skip
-from ._wcwidth import wcwidth, _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
+# Pre-import the legacy submodule so sys.modules['wcwidth.wcwidth'] is populated during package
+# initialization: without it, a later ``import wcwidth.wcwidth`` discovers the file on disk and
+# rebinds that name from the function to the module object.  It must run before the 'wcwidth'
+# binding below, because 'from . import wcwidth' loads the submodule while the package attribute
+# is still unset.  The shim's own __lazy_modules__ defers its imports, so this costs one module.
+from . import wcwidth as _wcwidth_module  # isort:skip pylint: disable=wrong-import-position
+
+if HAS_C_EXTENSION:
+    # local
+    from ._wcwidth_c import ljust, rjust, width, center
+    from ._wcwidth_c import wcwidth as _c_wcwidth
+    from ._wcwidth_c import wcswidth, wcstwidth, propagate_sgr, iter_graphemes, strip_sequences
+    wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
+else:
+    # local
+    from .align import ljust, rjust, center
+    from ._width import width
+    from ._wcwidth import wcwidth
+    from .grapheme import iter_graphemes
+    from ._wcswidth import wcswidth, wcstwidth
+    from .sgr_state import propagate_sgr
+    from .escape_sequences import strip_sequences
+
+from ._wcwidth import _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 
 
 # The __all__ attribute defines the items exported from statement,
@@ -71,4 +98,4 @@ __all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_
            'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')
 
 # Version is stamped by code generation (bin/update-tables.py) from pyproject.toml.
-__version__ = '0.8.5'
+__version__ = '0.9.0'

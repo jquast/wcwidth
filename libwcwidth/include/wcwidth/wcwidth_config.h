@@ -17,9 +17,9 @@ extern "C" {
 #endif
 
 #define WCWIDTH_VERSION_MAJOR 0
-#define WCWIDTH_VERSION_MINOR 8
-#define WCWIDTH_VERSION_PATCH 5
-#define WCWIDTH_VERSION "0.8.5"
+#define WCWIDTH_VERSION_MINOR 9
+#define WCWIDTH_VERSION_PATCH 0
+#define WCWIDTH_VERSION "0.9.0"
 
 /* Unicode version the library tables were generated from. */
 #define WCWIDTH_UNICODE_VERSION "18.0.0"

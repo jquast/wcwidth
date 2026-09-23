@@ -12,7 +12,7 @@ Execute all code generation, autoformatters, linters and unit tests using tox::
 
 Or execute individual tasks, see ``tox -lv`` for all available targets::
 
-   tox -e pylint,py39,py314
+   tox -e format,lint,py39,py314
 
 To run tests with detailed coverage reporting showing missing lines::
 
@@ -36,6 +36,24 @@ is not distributed in the sdist because of its size.  Fetch it first::
 
    git submodule update --init ucs-detect
 
+Release
+-------
+
+Bump for the next version in ``pyproject.toml`` and "stamp" version into python and C11 project::
+
+    tox -e update,format
+
+Then, apply a ``git tag`` of the same version on master. The wheels.yml_ workflow reacts to a new
+tag and builds all wheels using cibuildwheel_.  Once CI builds finish successfully, download and
+check them for release::
+
+   tox -e check_release
+
+This script exits 0 and reports success of pre-release checks, use twine to release to PyPI::
+
+   shopt -s globstar
+   twine upload dist/**/*.whl dist/**/*.tar.gz
+
 Building Documentation
 ----------------------
 
@@ -50,15 +68,17 @@ The output will be in ``docs/_build/html/``, to review::
 Updating Requirements
 ---------------------
 
-This project is using `pip-tools`_ to manage requirements.
+This project is using `pip-tools`_ to manage requirements. Note that this project requires
+dependencies only for code generation and testing, the python wcwidth library published does not
+have 3rd party dependencies.
 
 To upgrade requirements for updating unicode tables, run::
 
    tox -e update_requirements_update
 
-To upgrade requirements for testing, run::
+To upgrade testing requirements, run::
 
-   tox -e update_requirements38,update_requirements39
+   tox -e update_requirements39
 
 To upgrade requirements for building documentation, run::
 
@@ -68,4 +88,5 @@ To upgrade requirements for building documentation, run::
 .. _`sphinx`: https://www.sphinx-doc.org/
 
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
-
+.. _wheels.yml: https://github.com/jquast/wcwidth/blob/master/.github/workflows/wheels.yml
+.. _cibuildwheel: https://cibuildwheel.pypa.io/

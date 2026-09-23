@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.0 *unreleased* ('jq/libwcwidth-shim-wheels' branch)
+  * **New** Optional CPython extension using libwcwidth_, improving performance 10-58x `PR #248`_.
+  * **Drop Support** for Python 3.8, `PR #248`_.
+
 0.8.5 *2026-09-23*
   * **Bugfix** CJK hyphen break positions for `wrap()`_, `PR #262`_.
 
@@ -288,6 +292,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #238`: https://github.com/jquast/wcwidth/pull/238
 .. _`PR #243`: https://github.com/jquast/wcwidth/pull/243
 .. _`PR #246`: https://github.com/jquast/wcwidth/pull/246
+.. _`PR #247`: https://github.com/jquast/wcwidth/pull/247
+.. _`PR #248`: https://github.com/jquast/wcwidth/pull/248
 .. _`PR #250`: https://github.com/jquast/wcwidth/pull/250
 .. _`PR #252`: https://github.com/jquast/wcwidth/pull/252
 .. _`PR #253`: https://github.com/jquast/wcwidth/pull/253

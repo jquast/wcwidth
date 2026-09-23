@@ -1,0 +1,3 @@
+# One cibuildwheel line covers cp39-cp314; the manylinux image pin in
+# pyproject.toml keeps the glibc 2.17 floor that 3.x would otherwise raise.
+cibuildwheel==3.*

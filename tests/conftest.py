@@ -11,6 +11,23 @@ from wcwidth._constants import resolve_terminal
 
 
 @pytest.fixture(autouse=True)
+def _verify_extension_mode():
+    """
+    Assert the loaded implementation matches the WCWIDTH_PYTHON env var.
+
+    In extension mode the C extension must be active; in Python mode it must not be, so a silently-
+    failed C build is caught in CI.
+    """
+    # local
+    import wcwidth
+
+    if os.environ.get('WCWIDTH_PYTHON', ''):
+        assert not wcwidth.HAS_C_EXTENSION, "C extension loaded in Python mode"
+    else:
+        assert wcwidth.HAS_C_EXTENSION, "C extension not loaded in extension mode"
+
+
+@pytest.fixture(autouse=True)
 def _clear_resolve_terminal_cache():
     """Clear resolve_terminal cache and unset TERM/TERM_PROGRAM before each test."""
     saved_term = os.environ.pop('TERM', None)
