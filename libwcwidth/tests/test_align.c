@@ -234,6 +234,34 @@ TEST(align_control_codes_strict)
     ASSERT_EQ(WCWIDTH_ERROR_ILLEGAL_CTRL, error);
 }
 
+TEST(null_opts_defaults)
+{
+    uint32_t cps[] = {'h', 'i'};
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    char *s;
+    uint32_t *u;
+
+    s = wcwidth_ljust_u8("hi", 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(s);
+    s = wcwidth_rjust_u8("hi", 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(s);
+    s = wcwidth_center_u8("hi", 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(s);
+    u = wcwidth_ljust_u32(cps, 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(u);
+    u = wcwidth_rjust_u32(cps, 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(u);
+    u = wcwidth_center_u32(cps, 2, WCWIDTH_PARSE, NULL, &len, &error);
+    ASSERT_EQ(2, len);
+    free(u);
+}
+
 int
 main(void)
 {
@@ -247,5 +275,6 @@ main(void)
     RUN_TEST(rjust_huge_dest_width_multibyte_fill);
     RUN_TEST(center_huge_dest_width);
     RUN_TEST(align_control_codes_strict);
+    RUN_TEST(null_opts_defaults);
     return test_summary();
 }

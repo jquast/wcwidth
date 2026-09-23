@@ -162,6 +162,55 @@ TEST(to_escape_colon_form)
     ASSERT_STREQ("\x1b[38;2;10;20;30m", buf);
 }
 
+TEST(attribute_and_color_codes)
+{
+    static const char *const active[] = {"2",  "3",  "5",  "6",  "7",  "8",      "9",
+                                         "21", "30", "37", "40", "47", "48;5;9", "48;2;1;2;3"};
+    size_t i;
+    wcwidth_sgr_state_t s;
+
+    for (i = 0; i < sizeof(active) / sizeof(active[0]); i++) {
+        s = WCWIDTH_SGR_STATE_DEFAULT;
+        wcwidth_sgr_update(&s, active[i], strlen(active[i]));
+        ASSERT_TRUE(wcwidth_sgr_is_active(&s));
+    }
+
+    s = WCWIDTH_SGR_STATE_DEFAULT;
+    wcwidth_sgr_update(&s, "31;41", 5);
+    ASSERT_TRUE(wcwidth_sgr_is_active(&s));
+    wcwidth_sgr_update(&s, "39", 2);
+    ASSERT_TRUE(wcwidth_sgr_is_active(&s));
+    wcwidth_sgr_update(&s, "49", 2);
+    ASSERT_FALSE(wcwidth_sgr_is_active(&s));
+
+    s = WCWIDTH_SGR_STATE_DEFAULT;
+    wcwidth_sgr_update(&s, "1;2;3;4;5;6;7;8;9;21", 20);
+    ASSERT_TRUE(wcwidth_sgr_is_active(&s));
+    wcwidth_sgr_update(&s, "22;23;24;25;27;28;29", 20);
+    ASSERT_FALSE(wcwidth_sgr_is_active(&s));
+
+    s = WCWIDTH_SGR_STATE_DEFAULT;
+    wcwidth_sgr_update(&s, "38;5;99999999999999", 19);
+    ASSERT_TRUE(wcwidth_sgr_is_active(&s));
+
+    {
+        char many[512];
+        size_t p;
+
+        for (p = 0; p < sizeof(many) - 1; p++) {
+            many[p] = (p % 2 == 0) ? '1' : ';';
+        }
+        many[p] = '\0';
+        s = WCWIDTH_SGR_STATE_DEFAULT;
+        wcwidth_sgr_update(&s, many, p);
+        ASSERT_TRUE(s.bold);
+
+        s = WCWIDTH_SGR_STATE_DEFAULT;
+        wcwidth_sgr_update(&s, ";;1", 3);
+        ASSERT_TRUE(s.bold);
+    }
+}
+
 int
 main(void)
 {
@@ -171,5 +220,6 @@ main(void)
     RUN_TEST(to_escape_bounded);
     RUN_TEST(to_escape_colon_form);
     RUN_TEST(propagate_basic);
+    RUN_TEST(attribute_and_color_codes);
     return test_summary();
 }

@@ -88,6 +88,12 @@ TEST(wcstwidth_terminal_overrides)
     ASSERT_EQ(2, wcstwidth_u32(family, 5, 1, "kitty"));
 }
 
+TEST(null_input)
+{
+    ASSERT_EQ(0, wcswidth_u8(NULL, 0, 1));
+    ASSERT_EQ(0, wcstwidth_u8(NULL, 0, 1, "kitty"));
+}
+
 int
 main(void)
 {
@@ -97,5 +103,6 @@ main(void)
     RUN_TEST(wcstwidth_u8_basic);
     RUN_TEST(wcstwidth_u8_long);
     RUN_TEST(wcstwidth_terminal_overrides);
+    RUN_TEST(null_input);
     return test_summary();
 }

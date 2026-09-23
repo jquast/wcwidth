@@ -359,6 +359,12 @@ def test_align_term_program_vte(func, text, dest_width, expected):
     assert func(text, dest_width, term_program='VTE') == expected
 
 
+def test_align_term_program_alacritty_zwj():
+    """Align() resolves a ZWJ grapheme override through the byte path."""
+    family = '\U0001F468\u200D\U0001F466'
+    assert wcwidth.ljust(family, 6, term_program='alacritty') == family + '  '
+
+
 def test_clip_term_program_vte():
     """Clip() passes term_program through to width()."""
     result = wcwidth.clip('\u2630\u2631', 0, 1, term_program='VTE')
