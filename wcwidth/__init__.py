@@ -30,9 +30,8 @@ from functools import lru_cache
 
 # local
 from ._clip import clip
-# re-export common and outermost functions & definitions, even a few private
-# ones, some for convenience, others for legacy, only the items in __all__ are
-# documented as public API
+# re-export common and outermost functions & definitions, even a few private ones. Some are for
+# convenience and others for legacy, only the items in '__all__' are documented as public API
 from .bisearch import bisearch as _bisearch
 from .grapheme import iter_graphemes_reverse, grapheme_boundary_before
 from .textwrap import SequenceTextWrapper, wrap
@@ -58,6 +57,21 @@ if not os.environ.get('WCWIDTH_PYTHON', ''):
     else:
         HAS_C_EXTENSION = True
 
+# Import order matters for legacy API compatibility (releases before 0.7.0).
+#
+# The first release (0.1) put _bisearch, wcwidth, and wcswidth in a single 'wcwidth.py' file, and
+# while the top-level function importing, 'from wcwidth import wcwidth' was always preferred, the
+# deeper 'from wcwidth.wcwidth import wcwidth' was always possible.
+#
+# Below 3.15 the legacy submodule is pre-imported so sys.modules['wcwidth.wcwidth'] is populated
+# during package initialization; a later ``import wcwidth.wcwidth`` would otherwise trigger on-disk
+# file discovery and rebind that name from the function to the module object.  It must run before
+# the 'wcwidth' binding below, because 'from . import wcwidth' only loads the submodule while the
+# package attribute is still unset.  On 3.15+ __lazy_modules__ covers every submodule and the shim
+# loads on demand.
+if __import__('sys').version_info < (3, 15):
+    from . import wcwidth as _wcwidth_module  # isort:skip
+
 if HAS_C_EXTENSION:
     # local
     from ._wcwidth_c import ljust, rjust, width, center
@@ -73,19 +87,6 @@ else:
     from ._wcswidth import wcswidth, wcstwidth
     from .sgr_state import propagate_sgr
     from .escape_sequences import strip_sequences
-
-# Import order matters for legacy API compatibility (releases before 0.7.0).
-#
-# The first release put every function in a single 'wcwidth.py' file, and while the top-level
-# 'from wcwidth import wcswidth' was always preferred, the deeper
-# 'from wcwidth.wcwidth import wcswidth' form was always possible too.  Both keep working.
-#
-# Below 3.15 the legacy submodule is pre-imported so sys.modules['wcwidth.wcwidth'] is populated
-# during package initialization; a later ``import wcwidth.wcwidth`` would otherwise trigger on-disk
-# file discovery and rebind that name from the function to the module object.  On 3.15+
-# __lazy_modules__ covers every submodule and the shim loads on demand.
-if __import__('sys').version_info < (3, 15):
-    from . import wcwidth as _wcwidth_module  # isort:skip
 
 from ._wcwidth import _wcmatch_version, _wcversion_value  # isort:skip  # pylint: disable=wrong-import-position
 

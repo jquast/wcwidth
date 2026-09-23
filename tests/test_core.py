@@ -601,11 +601,14 @@ def test_prepended_concatenation_mark_width(codepoint, name):
 def test_legacy_module():
     """Verify legacy ``wcwidth.wcwidth`` module's public items are importable."""
     # pylint: disable=import-outside-toplevel
-    # Save and restore wcwidth.wcwidth because importing the submodule
-    # rebinds the package attribute from the function to the module.
-    _wcwidth_func = wcwidth.wcwidth
+    if sys.version_info < (3, 15):
+        # The package pre-imports the legacy submodule so that a later import
+        # cannot rebind 'wcwidth.wcwidth' from the function to the module.
+        assert 'wcwidth.wcwidth' in sys.modules
+
     _legacy = __import__('wcwidth.wcwidth', fromlist=['wcwidth'])
-    wcwidth.wcwidth = _wcwidth_func
+    assert callable(wcwidth.wcwidth), (
+        'importing wcwidth.wcwidth rebound the package attribute to a module')
 
     for name in _legacy.__all__:
         attr = getattr(_legacy, name)
@@ -613,9 +616,9 @@ def test_legacy_module():
 
     # Verify that individual imports from the legacy path also work,
     # e.g. 'from wcwidth.wcwidth import wcswidth'
-    for name in _legacy.__all__:
-        obj = getattr(_legacy, name)
-        assert obj is not None, f"could not import {name} from wcwidth.wcwidth"
+    # local
+    from wcwidth.wcwidth import wcswidth as legacy_wcswidth
+    assert legacy_wcswidth('ab') == 2
 
 
 @pytest.mark.parametrize('pwcs,n', [
