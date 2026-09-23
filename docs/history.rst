@@ -6,7 +6,7 @@ History
   * **New** Optional CPython extension using libwcwidth_, improving performance 10-58x `PR #248`_.
   * **Drop Support** for Python 3.8, `PR #248`_.
 
-0.8.5 *2026-09-20*
+0.8.5 *2026-09-23*
   * **Bugfix** CJK hyphen break positions for `wrap()`_, `PR #262`_.
 
 0.8.4 *2026-09-17*
