@@ -42,7 +42,7 @@ jobs:
         with:
           submodules: true
 
-      - uses: pypa/cibuildwheel@v3
+      - uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
 
