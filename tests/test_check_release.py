@@ -26,12 +26,12 @@ def _dist_with(tmp_path, wheel):
 @pytest.mark.parametrize('name,expected', [
     ('wcwidth-0.9.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl',
      ('cp310', 'manylinux_2_17_x86_64.manylinux2014_x86_64')),
-    ('wcwidth-0.9.0-cp314t-cp314t-win_amd64.whl', ('cp314t', 'win_amd64')),
+    ('wcwidth-0.9.0-cp314-cp314t-win_amd64.whl', ('cp314t', 'win_amd64')),
     # a PEP 427 build tag sits between the version and the python tag
     ('wcwidth-0.9.0-1-cp310-abi3-win32.whl', ('cp310', 'win32')),
 ])
 def test_wheel_tags(name, expected):
-    """The python tag is read from the third-from-last field."""
+    """The python tag is the third-from-last field, or the ABI tag when free-threaded."""
     assert check_release.wheel_tags(name) == expected
 
 
@@ -42,7 +42,7 @@ def test_wheel_tags(name, expected):
     (('cp310', 'macosx_arm64'), 'wcwidth-0.9.0-cp310-abi3-macosx_11_0_arm64.whl'),
     (('cp310', 'win_amd64'), 'wcwidth-0.9.0-cp310-abi3-win_amd64.whl'),
     (('cp314t', 'manylinux_x86_64'),
-     'wcwidth-0.9.0-cp314t-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl'),
+     'wcwidth-0.9.0-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl'),
 ])
 def test_check_artifacts_accepts_abi3_wheels(identifier, wheel, tmp_path):
     """An abi3 wheel satisfies its cibuildwheel identifier."""

@@ -164,9 +164,14 @@ def wheel_tags(name: str) -> tuple[str, str]:
 
     The last three fields are the python, ABI and platform tags (PEP 427); the ABI tag is skipped
     because an abi3 wheel carries 'abi3' there, a value no cibuildwheel identifier repeats.
+
+    A free-threaded wheel reads 'cp314-cp314t', and cibuildwheel prints 'cp314t' for it.
     """
     fields = name[:-len('.whl')].split('-')
-    return fields[-3], fields[-1]
+    python_tag, abi_tag = fields[-3], fields[-2]
+    if abi_tag == f'{python_tag}t':
+        python_tag = abi_tag
+    return python_tag, fields[-1]
 
 
 def satisfied(identifier: tuple[str, str], have: set[tuple[str, str]]) -> bool:
