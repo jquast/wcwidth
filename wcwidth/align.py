@@ -47,6 +47,8 @@ def ljust(
         '\x1b[31mhi\x1b[0m   '
         >>> ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '👨‍👩‍👧    '
+        >>> ljust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6, term_program='VTE')
+        '👨\u200d👩\u200d👧'
     """
     if text.isascii() and text.isprintable():
         text_width = len(text)
@@ -97,6 +99,8 @@ def rjust(
         '   \x1b[31mhi\x1b[0m'
         >>> rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '    👨‍👩‍👧'
+        >>> rjust('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6, term_program='VTE')
+        '👨\u200d👩\u200d👧'
     """
     if text.isascii() and text.isprintable():
         text_width = len(text)
@@ -152,6 +156,8 @@ def center(
         '  \x1b[31mhi\x1b[0m  '
         >>> center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6)
         '  👨‍👩‍👧  '
+        >>> center('\U0001F468\u200D\U0001F469\u200D\U0001F467', 6, term_program='VTE')
+        '👨\u200d👩\u200d👧'
     """
     if text.isascii() and text.isprintable():
         text_width = len(text)
