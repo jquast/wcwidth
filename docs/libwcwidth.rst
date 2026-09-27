@@ -302,6 +302,11 @@ returns a ``malloc``\ 'd NUL-terminated string the caller must ``free``:
     /* "*café*" */
     free(out);
 
+Tabs are measured as though text begins at column 0.  ``wcwidth_rjust_u8()`` and
+``wcwidth_center_u8()``  insert padding to the left of the ``text`` which move tabstops and return
+an incorrect result, always expand tabs or call `wcwidth_clip_u8()`_ to ``opts->dest_width`` first,
+which expands tabs before using these alignment functions.
+
 .. _libwcwidth-clip:
 
 wcwidth_clip_u8()

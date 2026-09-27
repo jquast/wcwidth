@@ -20,7 +20,9 @@ def ljust(
     Return text left-justified in a string of given display width.
 
     :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
+    :param dest_width: Desired displayed width of result in terminal cells, which
+        can be exceeded by ``text``, use :func:`wcwidth.clip` to ensure ``text`` does not exceed
+        ``dest_width``.
     :param fillchar: Single character for padding (default space). Must have
         display width of 1. Unicode characters like ``'·'`` are acceptable.
         The width is not validated.
@@ -36,6 +38,9 @@ def ljust(
 
         .. versionadded:: 0.8.0
     :returns: Text padded on the right to reach ``dest_width``.
+
+    Tabs are measured as though ``text`` begins at column 0. It is suggested to first use
+    :func:`str.expandtabs` or :func:`wcwidth.clip` to expands tabs before applying text alignment.
 
     .. versionadded:: 0.3.0
 
@@ -72,7 +77,8 @@ def rjust(
     Return text right-justified in a string of given display width.
 
     :param text: String to justify, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
+    :param dest_width: Desired displayed width of result in terminal cells, which can be exceeded by
+        ``text``, use :func:`wcwidth.clip` to ensure ``text`` does not exceed ``dest_width``.
     :param fillchar: Single character for padding (default space). Must have
         display width of 1. Unicode characters like ``'·'`` are acceptable.
         The width is not validated.
@@ -88,6 +94,16 @@ def rjust(
 
         .. versionadded:: 0.8.0
     :returns: Text padded on the left to reach ``dest_width``.
+
+    Tabs are measured as though ``text`` begins at column 0. The ``fillchar`` placed before a tab by
+    right-adjusted text is likely to move the displayed text will move tab stops and return an
+    incorrect alignment result. It is suggested never to align text containing tab, calling
+    :func:`str.expandtabs` or :func:`wcwidth.clip` (which also expands tabs) if necessary::
+
+        >>> rjust('a\tbc', 12)
+        '  a\tbc'         # when displayed, becomes width of 10, wrong
+        >>> rjust('a\tbc'.expandtabs(), 12)
+        '  a       bc'    # properly displayed as width of 12
 
     .. versionadded:: 0.3.0
 
@@ -124,7 +140,9 @@ def center(
     Return text centered in a string of given display width.
 
     :param text: String to center, may contain terminal sequences.
-    :param dest_width: Total display width of result in terminal cells.
+    :param dest_width: Desired displayed width of result in terminal cells, which
+        can be exceeded by ``text``, use :func:`wcwidth.clip` to ensure ``text`` does not exceed
+        ``dest_width``.
     :param fillchar: Single character for padding (default space). Must have
         display width of 1. Unicode characters like ``'·'`` are acceptable.
         The width is not validated.
@@ -145,6 +163,16 @@ def center(
     Python's :meth:`str.center` behavior (the left side when ``dest_width`` is
     odd, the right side when ``dest_width`` is even).
     See `the eccentric str.center <https://jazcap53.github.io/pythons-eccentric-strcenter.html>`_.
+
+    Tabs are measured as though ``text`` begins at column 0. The ``fillchar`` placed before a tab by
+    right-adjusted text is likely to move the displayed text will move tab stops and return an
+    incorrect alignment result. It is suggested never to align text containing tab, calling
+    :func:`str.expandtabs` or :func:`wcwidth.clip` (which also expands tabs) if necessary::
+
+        >>> center('a\tbc', 12)
+        ' a\tbc '         # when displayed, becomes width of 11, wrong
+        >>> center('a\tbc'.expandtabs(), 12)
+        '  a       bc'    # properly displayed as width of 12
 
     .. versionadded:: 0.3.0
 

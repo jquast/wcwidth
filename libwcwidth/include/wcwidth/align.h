@@ -48,6 +48,11 @@ extern const wcwidth_align_opts_t WCWIDTH_ALIGN_OPTS_DEFAULT;
  *   opts:     alignment options, or NULL for defaults.
  *   out_len:  output: byte length of result (excluding NUL); may be NULL.
  *   error:    output: wcwidth_error_t, WCWIDTH_ERROR_NONE on success.
+ *
+ * Tabs are measured as though text begins at column 0.  'rjust' and 'center' operations insert
+ * padding to the left of the ``text`` which move tabstops and return an incorrect result, always
+ * expand tabs or clip to ``opts->dest_width``, which expands tabs before using those alignment
+ * functions.
  */
 char *wcwidth_ljust_u8(const char *text, size_t text_len, wcwidth_control_mode_t mode,
                        const wcwidth_align_opts_t *opts, size_t *out_len, int *error);
