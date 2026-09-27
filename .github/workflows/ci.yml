@@ -121,6 +121,12 @@ jobs:
         run: |
           python -Im tox -e ${{ env.TOX_PYTHON }} --installpkg dist/wcwidth-*.whl
 
+      - name: Run tests (Python-only implementation, w/fetched data)
+        if: matrix.python-version == '3.14' && matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          python -Im tox -e py314-python --installpkg dist/wcwidth-*.whl
+
       - name: Rename coverage data
         shell: bash
         run: |
