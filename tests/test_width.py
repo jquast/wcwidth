@@ -177,6 +177,11 @@ EDGE_CASES = [
     ('\tA\u0CBE\rB\u0CBE\x01', 10, 'illegal_ctrl_flush_below_max_extent'),
     ('\tA\u0CBE\rB\u0CBE\n', 10, 'vertical_ctrl_flush_below_max_extent'),
     ('\u4e2d\u0bcd\u4e2d\u0bcd\u4e2d\u0bcd\u4e2d', 2, 'glitch_virama_chain_capped'),
+    # Grapheme width is capped at 2 cells (0.8.0, PR #224).  Font engines draw these conjuncts
+    # unrestricted at 3 cells (Tamil) and 5 cells (Devanagari); the wider widths are intentionally
+    # not implemented.
+    ('\u0b95\u0bcd\u0b95\u0bcd\u0b95', 2, 'tamil_conjunct_capped'),
+    ('\u0930\u094d\u0924\u094d\u0938\u094d\u0928\u094d\u092f', 2, 'devanagari_conjunct_capped'),
 ]
 
 

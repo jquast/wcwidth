@@ -109,6 +109,21 @@ def test_clip_cjk_width_consistency(text, start, end, expected_width):
     assert width(clip(text, start, end)) == expected_width
 
 
+# Tamil, Kannada and Sinhala: clip() charges one cell per UAX #29 grapheme cluster while width()
+# joins a virama conjunct into a single 2-cell cluster, so the clipped prefix falls short of its
+# budget.  A conjunct-aware clip() gives 2, 4, 6, 8 for the ends below; we intentionally do not
+# implement it, see the note in clip().
+@pytest.mark.parametrize('text', [
+    '\u0b95\u0bcd\u0b95\u0bcd\u0b95',  # Tamil, க்க்க
+    '\u0c95\u0ccd\u0c95\u0ccd\u0c95',  # Kannada, ಕ್ಕ್ಕ
+    '\u0d9a\u0dca\u0d9a\u0dca\u0d9a',  # Sinhala, ක්ක්ක
+])
+def test_clip_virama_conjunct_known_limitation(text):
+    """Known limitation: clip() under-fills on Tamil, Kannada and Sinhala virama conjuncts."""
+    s = text * 4
+    assert [width(clip(s, 0, n)) for n in (2, 4, 6, 8)] == [2, 3, 4, 6]
+
+
 def test_clip_sequences_preserve_sgr():
     result = clip('\x1b[31mred\x1b[0m', 0, 3)
     assert result == '\x1b[31mred\x1b[0m'

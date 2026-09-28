@@ -19,10 +19,15 @@ its docstring and specifications of related control codes, `XTerm Control Sequen
 Text Sizing Protocol`_.
 
 Each string yielded by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth` to
-accurately measure the width of a grapheme. Although :func:`wcwidth.iter_graphemes` matches
-behavior of Python 3.15 `uncodedata.iter_graphemes()`_ it differs in its return value,
-:func:`wcwidth.iter_graphemes` yields only strings, while :func:`unicodedata.iter_graphemes` yields
-``unicodedata.Segment`` class objects.
+accurately measure the width of a grapheme.  :func:`wcwidth.iter_graphemes` implements the `Unicode
+Standard Annex #29`_ rules of Unicode 18.0, the version of this library's tables, while
+`uncodedata.iter_graphemes()`_, new in Python 3.15, implements Unicode 17.0.  They also differ in
+return value: :func:`wcwidth.iter_graphemes` yields only strings, while
+:func:`unicodedata.iter_graphemes` yields ``unicodedata.Segment`` class objects.
+
+Tamil, Kannada and Sinhala text is measured differently than it is segmented, so
+:func:`wcwidth.clip` and :func:`wcwidth.wrap` do not measure these scripts correctly.  See `Virama
+Conjunct Formation`_.
 
 Width of -1
 -----------
