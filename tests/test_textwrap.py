@@ -664,3 +664,17 @@ def test_wrap_unterminated_osc():
     assert wcwidth.wrap('a\x1b]66;', 30) == ['a\x1b]66;']
     assert wcwidth.wrap('\x1b]66;', 30) == ['\x1b]66;']
     assert wcwidth.wrap('a\x1b]0;title', 30) == ['a\x1b]0;title']
+
+
+# Tamil, Kannada and Sinhala: wrap() breaks mid-conjunct because it charges one cell per UAX #29
+# grapheme cluster while width() joins a virama conjunct into a single 2-cell cluster.  A
+# conjunct-aware wrap() gives two full 4-cell lines; we intentionally do not implement it, see the
+# note in wrap().
+@pytest.mark.parametrize('text', [
+    '\u0b95\u0bcd\u0b95\u0bcd\u0b95',  # Tamil, க்க்க
+    '\u0c95\u0ccd\u0c95\u0ccd\u0c95',  # Kannada, ಕ್ಕ್ಕ
+    '\u0d9a\u0dca\u0d9a\u0dca\u0d9a',  # Sinhala, ක්ක්ක
+])
+def test_wrap_virama_conjunct_known_limitation(text):
+    """Known limitation: wrap() breaks mid-conjunct on Tamil, Kannada and Sinhala text."""
+    assert [wcwidth.width(line) for line in wrap(text * 4, width=4)] == [3, 4, 3]

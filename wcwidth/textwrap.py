@@ -611,6 +611,13 @@ def wrap(text: str, width: int = 70, *,
         ...  for line in (wrap(para, 40) if para else [''])]
         ['First line.', 'Second line.']
 
+    .. note::
+
+       Segmentation follows UAX #29 grapheme clusters. Tamil, Kannada and Sinhala may break in the
+       middle of a conjunct and fall short of ``width``. Correct rendering of these languages is
+       not specified by unicode.org standards, and no terminal emulator or editor handles them
+       legibly, so this library function makes no attempt at accommodating them.
+
     .. seealso::
 
        :func:`textwrap.wrap`, :class:`textwrap.TextWrapper`
