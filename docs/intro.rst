@@ -123,7 +123,7 @@ anywhere in the string.
 wcstwidth()
 -----------
 
-Same behavior as `wcswidth()`_ with automatic terminal-specific Corrections_, reading
+`wcstwidth()`_ is a variant of `wcswidth()`_ that provides terminal-specific Corrections_, reading
 ``TERM_PROGRAM`` or ``TERM`` when ``True`` (default), or caller can provide terminal query
 XTVERSION_ or ENQ_ response:
 
