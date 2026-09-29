@@ -519,7 +519,7 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
 .. _`str.center()`: https://docs.python.org/3/library/stdtypes.html#str.center
 .. _`str.expandtabs()`: https://docs.python.org/3/library/stdtypes.html#str.expandtabs
-.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html#tabulated-results
+.. _`General Tabulated Summary`: https://ucs-detect.readthedocs.io/results.html#general-tabulated-summary
 .. _`wcwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcwidth
 .. _`wcswidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcswidth
 .. _`wcstwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcstwidth
