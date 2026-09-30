@@ -146,24 +146,7 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
 uint32_t *
 wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
 {
-    uint32_t stack[128];
-    uint32_t *decoded = wcwidth_decode_u32(utf8, n, stack, 128, count);
-    uint32_t *heap;
-
-    if (decoded == NULL) {
-        return NULL;
-    }
-    if (decoded == stack) {
-        heap = (uint32_t *) malloc(*count * sizeof(uint32_t));
-        if (heap == NULL) {
-            return NULL;
-        }
-        memcpy(heap, decoded, *count * sizeof(uint32_t));
-    }
-    else {
-        heap = decoded; /* already heap-allocated; transfer ownership */
-    }
-    return heap;
+    return wcwidth_decode_u32(utf8, n, NULL, 0, count);
 }
 
 /*
