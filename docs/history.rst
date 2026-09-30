@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.2 *unreleased*
+  * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
+    change. `PR #281`.
+
 0.9.1 *2026-09-23*
   * **Bugfix** `width()`_ in Python and libwcwidth mis-measured CSI sequences over 64 bytes, a 0.9.0
     release regression! `PR #271`_.
@@ -307,6 +311,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #262`: https://github.com/jquast/wcwidth/pull/262
 .. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
+.. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

@@ -67,10 +67,21 @@ TEST(decode_malformed)
     }
 }
 
+TEST(decode_u32_heap_empty)
+{
+    size_t count = 1;
+    uint32_t *out = wcwidth_decode_u32_heap("", 0, &count);
+
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ((int64_t) 0, (int64_t) count);
+    free(out);
+}
+
 int
 main(void)
 {
     RUN_TEST(encode_roundtrip);
     RUN_TEST(decode_malformed);
+    RUN_TEST(decode_u32_heap_empty);
     return test_summary();
 }
