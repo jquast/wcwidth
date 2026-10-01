@@ -5,7 +5,7 @@ History
 0.9.2 *unreleased*
   * **Bugfix** `clip()`_ with ``tabsize=0`` kept a tab whose column sits outside the half-open
     range ``[start, end)``. Zero-width graphemes were already limited to that range, and
-    libwcwidth already drops the tab.
+    libwcwidth already drops the tab. `PR #283`_.
   * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
     change. `PR #281`.
 
@@ -315,6 +315,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
+.. _`PR #283`: https://github.com/jquast/wcwidth/pull/283
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
