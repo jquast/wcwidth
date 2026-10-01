@@ -3,6 +3,9 @@ History
 =======
 
 0.9.2 *unreleased*
+  * **Bugfix** `clip()`_ with ``tabsize=0`` kept a tab whose column sits outside the half-open
+    range ``[start, end)``. Zero-width graphemes were already limited to that range, and
+    libwcwidth already drops the tab.
   * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
     change. `PR #281`.
 

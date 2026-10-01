@@ -465,6 +465,24 @@ def test_clip_tab_expansion(text, start, end, tabsize, expected):
     assert clip(text, start, end, tabsize=tabsize) == expected
 
 
+# tabsize=0 does not advance the column. A tab outside [start, end) is not
+# part of the clip. The same strings with the tab inside the window stay in
+# CLIP_TAB_CASES.
+CLIP_TABSIZE_ZERO_WINDOW = [
+    ('a\tb', 2, 10, ''),
+    ('ab\tc', 0, 2, 'ab'),
+    ('\txyz', 1, 3, 'yz'),
+    ('hello\tworld', 0, 5, 'hello'),
+    ('hello\tworld', 5, 8, '\twor'),
+]
+
+
+@pytest.mark.parametrize('text,start,end,expected', CLIP_TABSIZE_ZERO_WINDOW)
+@pytest.mark.parametrize('overtyping', [False, True])
+def test_clip_tabsize_zero_respects_window(text, start, end, expected, overtyping):
+    assert clip(text, start, end, tabsize=0, overtyping=overtyping) == expected
+
+
 def test_clip_tab_with_sequences():
     assert clip('\x1b[31mab\tc\x1b[0m', 0, 12, tabsize=4) == '\x1b[31mab  c\x1b[0m'
 

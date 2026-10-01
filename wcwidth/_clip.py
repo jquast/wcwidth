@@ -365,7 +365,8 @@ def _clip_simple(
                             captured_style = current_style
                     col += 1
             else:
-                output.append('\t')
+                if start <= col < end:
+                    output.append('\t')
             idx += 1
             continue
 
@@ -717,8 +718,9 @@ def _clip_painter(
                     _write_cells(' ', 1, fill_col)
                 col = next_tab
             else:
-                sequences.append((col, seq_order, '\t'))
-                seq_order += 1
+                if start <= col < end:
+                    sequences.append((col, seq_order, '\t'))
+                    seq_order += 1
             idx += 1
             continue
 
