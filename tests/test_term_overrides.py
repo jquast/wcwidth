@@ -335,6 +335,32 @@ def test_xterm_overrides_applied(func, text, expected_default, expected_xterm):
     assert func(text, term_program='xterm') == expected_xterm
 
 
+@pytest.mark.parametrize('func', [wcwidth.wcstwidth, wcwidth.width])
+@pytest.mark.parametrize('term_program,expected', [
+    ('xterm', 2),
+    ('vte', 2),
+    ('wezterm', 2),
+    ('kitty', 2),
+    ('bobcat', 4),
+])
+def test_regional_indicator_pair_term_program(func, term_program, expected):
+    """A flag is two cells when indicators are narrowed or ligated, four when non-ligating."""
+    assert func('\U0001F1FA\U0001F1F8', term_program=term_program) == expected
+
+
+@pytest.mark.parametrize('func', [wcwidth.wcstwidth, wcwidth.width])
+@pytest.mark.parametrize('text,expected', [
+    ('\U0001F1E6', 1),
+    ('\U0001F1E6\U0001F1E7', 2),
+    ('a\U0001F1FA\U0001F1F8', 3),
+    ('\U0001F1E6\U0001F1E7\U0001F1E8', 3),
+    ('\U0001F1E6\U0001F1E7\U0001F1E8\U0001F1E9', 4),
+])
+def test_regional_indicator_runs_narrowed_terminal(func, text, expected):
+    """A narrowed terminal draws each indicator one cell, pairing them into flags."""
+    assert func(text, term_program='xterm') == expected
+
+
 @pytest.mark.parametrize('func', [wcwidth.wcswidth, wcwidth.width])
 def test_zwj_fallthrough_resets_base_for_vs16(func):
     """VS16 after ZWJ-skipped char does not connect to stale base (before fix, VS16 narrowed the

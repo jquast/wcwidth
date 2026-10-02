@@ -3,6 +3,9 @@ History
 =======
 
 0.9.2 *unreleased*
+  * **Bugfix** regional-indicator pairs (flags) when corrected for terminals that show lone regional
+    indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR
+    #284`.
   * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
     change. `PR #281`.
 
@@ -312,6 +315,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
+.. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
