@@ -158,6 +158,19 @@ TEST(null_opts_and_tabsize_zero)
     s = wcwidth_clip_u8("a\tb", 3, WCWIDTH_PARSE, &opts, &len, &error);
     ASSERT_STREQ("a\tb", s);
     free(s);
+
+    /* a zero-width tab is kept only inside [v_start, v_end) */
+    opts.v_start = 2;
+    opts.v_end = 10;
+    s = wcwidth_clip_u8("a\tb", 3, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_STREQ("", s);
+    free(s);
+
+    opts.v_start = 5;
+    opts.v_end = 8;
+    s = wcwidth_clip_u8("hello\tworld", 11, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_STREQ("\twor", s);
+    free(s);
 }
 
 TEST(u32_null_opts_and_past_end)

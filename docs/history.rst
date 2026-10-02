@@ -3,15 +3,11 @@ History
 =======
 
 0.9.2 *unreleased*
-<<<<<<< HEAD
-  * **Bugfix** `clip()`_ with ``tabsize=0`` kept a tab whose column sits outside the half-open
-    range ``[start, end)``. Zero-width graphemes were already limited to that range, and
-    libwcwidth already drops the tab. `PR #283`_.
-=======
+  * **Bugfix** `clip()`_ when using non-default ``tabsize=0`` argument with default
+    ``control_codes='parse'``, `PR #283`_.
   * **Bugfix** regional-indicator pairs (flags) when corrected for terminals that show lone regional
     indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR
     #284`.
->>>>>>> origin/master
   * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
     change. `PR #281`.
 
