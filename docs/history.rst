@@ -2,13 +2,11 @@
 History
 =======
 
-0.9.2 *unreleased*
+0.9.2 *2026-10-02*
   * **Bugfix** `clip()`_ when using non-default argument, ``tabsize=0``, `PR #288`_.
   * **Bugfix** regional-indicator pairs (flags) when corrected for terminals that show lone regional
     indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR
     #284`.
-  * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
-    change. `PR #281`.
 
 0.9.1 *2026-09-23*
   * **Bugfix** `width()`_ in Python and libwcwidth mis-measured CSI sequences over 64 bytes, a 0.9.0
