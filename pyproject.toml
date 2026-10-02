@@ -66,10 +66,9 @@ wcwidth = [ "py.typed", "*.pyi" ]
 
 [tool.cibuildwheel]
 # A cp310-abi3 wheel covers every GIL-enabled interpreter from 3.10 up, so only
-# cp310 is built for those.  The free-threaded cp314t build cannot use the
-# stable ABI until 3.15 and stays version specific.
-build = "cp310-* cp314t-*"
-skip = "cp314t-musllinux_*"
+# cp310 is built for those.  The free-threaded builds stay version specific.
+build = "cp310-* cp314t-* cp315t-*"
+skip = "cp314t-musllinux_* cp315t-musllinux_*"
 # --import-mode=importlib stops pytest importing the source tree instead of the wheel.  {project} is
 # the repo, since tests/ is not in the wheel.  --no-cov cancels 'addopts' from tox.ini section
 # '[pytest]', which has no support on win_arm64 and fails due to 'filterwarnings=error'.

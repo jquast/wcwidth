@@ -15,7 +15,7 @@ permissions:
 # pyproject.toml.
 jobs:
   build_wheels:
-    name: cp39-cp314 ${{ matrix.archs }} wheels on ${{ matrix.os }}
+    name: cp310-abi3 cp314t cp315t ${{ matrix.archs }} wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -42,7 +42,7 @@ jobs:
         with:
           submodules: true
 
-      - uses: pypa/cibuildwheel@v3.4.1
+      - uses: pypa/cibuildwheel@v4.2.1
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
 

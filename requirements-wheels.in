@@ -1,3 +1,4 @@
-# One cibuildwheel line covers cp39-cp314; the manylinux image pin in
-# pyproject.toml keeps the glibc 2.17 floor that 3.x would otherwise raise.
-cibuildwheel==3.*
+# The wheel matrix is [tool.cibuildwheel] in pyproject.toml; the manylinux
+# image pin there keeps the glibc 2.17 floor.  Keep the Action tag in
+# .github/workflows/wheels.yml in sync with this pin by hand.
+cibuildwheel==4.*

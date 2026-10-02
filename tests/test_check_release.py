@@ -36,7 +36,7 @@ def test_wheel_tags(name, expected):
 
 
 @pytest.mark.parametrize('identifier,wheel', [
-    # identifier shapes cibuildwheel prints for [tool.cibuildwheel] build = "cp310-* cp314t-*"
+    # identifier shapes cibuildwheel prints for [tool.cibuildwheel] build = "cp310-* cp314t-* cp315t-*"
     (('cp310', 'manylinux_x86_64'),
      'wcwidth-0.9.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl'),
     (('cp310', 'macosx_arm64'), 'wcwidth-0.9.0-cp310-abi3-macosx_11_0_arm64.whl'),
