@@ -140,6 +140,10 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
         }
         out[used++] = ucs;
         pos += consumed;
+
+        if (ucs == 0x0000) {
+            break;
+        }
     }
 
     *count = used;
@@ -232,6 +236,10 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
         }
         memcpy(out + used, tmp, enc_len);
         used += enc_len;
+
+        if (codepoints[i] = 0x0000) {
+            break;
+        }
     }
 
     *out_len = used;
