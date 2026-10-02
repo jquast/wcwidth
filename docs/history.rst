@@ -3,8 +3,7 @@ History
 =======
 
 0.9.2 *unreleased*
-  * **Bugfix** `clip()`_ when using non-default ``tabsize=0`` argument with default
-    ``control_codes='parse'``, `PR #283`_.
+  * **Bugfix** `clip()`_ when using non-default argument, ``tabsize=0``, `PR #288`_.
   * **Bugfix** regional-indicator pairs (flags) when corrected for terminals that show lone regional
     indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR
     #284`.
@@ -317,8 +316,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
-.. _`PR #283`: https://github.com/jquast/wcwidth/pull/283
 .. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
+.. _`PR #288`: https://github.com/jquast/wcwidth/pull/288
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
