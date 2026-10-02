@@ -25,5 +25,5 @@ six==1.17.0
     # via python-dateutil
 typing-extensions==4.15.0
     # via -r requirements-update.in
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
