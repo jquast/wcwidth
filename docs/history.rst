@@ -317,11 +317,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
-<<<<<<< HEAD
 .. _`PR #283`: https://github.com/jquast/wcwidth/pull/283
-=======
 .. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
->>>>>>> origin/master
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
