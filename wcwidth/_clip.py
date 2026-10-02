@@ -364,9 +364,8 @@ def _clip_simple(
                         if propagate_sgr and captured_style is None:
                             captured_style = current_style
                     col += 1
-            else:
-                if start <= col < end:
-                    output.append('\t')
+            elif start <= col < end:
+                output.append('\t')
             idx += 1
             continue
 
@@ -717,10 +716,9 @@ def _clip_painter(
                 for fill_col in range(max(col, start), min(next_tab, end)):
                     _write_cells(' ', 1, fill_col)
                 col = next_tab
-            else:
-                if start <= col < end:
-                    sequences.append((col, seq_order, '\t'))
-                    seq_order += 1
+            elif start <= col < end:
+                sequences.append((col, seq_order, '\t'))
+                seq_order += 1
             idx += 1
             continue
 
