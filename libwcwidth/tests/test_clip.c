@@ -159,7 +159,7 @@ TEST(null_opts_and_tabsize_zero)
     ASSERT_STREQ("a\tb", s);
     free(s);
 
-    /* a zero-width tab is kept only inside [v_start, v_end) */
+    /* a zero-width tab is kept only inside (v_start, v_end) */
     opts.v_start = 2;
     opts.v_end = 10;
     s = wcwidth_clip_u8("a\tb", 3, WCWIDTH_PARSE, &opts, &len, &error);

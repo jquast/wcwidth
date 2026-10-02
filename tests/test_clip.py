@@ -474,7 +474,7 @@ def test_clip_tab_expansion(text, start, end, tabsize, expected):
 ])
 @pytest.mark.parametrize('overtyping', [False, True])
 def test_clip_tabsize_zero_respects_window(text, start, end, expected, overtyping):
-    """With tabsize=0 a tab occupies no columns and appears only inside [start, end)."""
+    """With tabsize=0 a tab occupies no columns and appears only inside (start, end)."""
     assert clip(text, start, end, tabsize=0, overtyping=overtyping) == expected
 
 
