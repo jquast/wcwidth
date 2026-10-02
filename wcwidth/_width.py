@@ -426,7 +426,7 @@ def width(
                 while j >= 0 and ord(text[j]) in _REGIONAL_INDICATOR_SET:
                     ri_before += 1
                     j -= 1
-                if ri_before % 2 == 1:
+                if ri_before % 2 == 1 and not (_narrower and _bisearch(ucs, _narrower)):
                     last_measured_ucs = ucs
                     idx += 1
                     continue

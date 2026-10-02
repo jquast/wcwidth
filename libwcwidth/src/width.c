@@ -929,8 +929,9 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
             if (ucs > 0xFFFF) {
                 if (wcwidth_is_regional_indicator(ucs)) {
-                    /* Count consecutive preceding Regional Indicators; an odd
-                     * count pairs this one with the previous (zero-width). */
+                    /* Count consecutive preceding Regional Indicators.  An odd
+                     * count pairs this one with the previous; the pair adds
+                     * width only when the terminal narrows lone indicators. */
                     int ri_before = 0;
                     size_t j = idx;
                     for (;;) {
@@ -941,7 +942,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                         }
                         ri_before++;
                     }
-                    if (ri_before % 2 == 1) {
+                    if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                         last_measured_ucs = ucs;
                         idx += consumed;
                         continue;
@@ -1583,7 +1584,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                     }
                     ri_before++;
                 }
-                if (ri_before % 2 == 1) {
+                if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                     last_measured_ucs = ucs;
                     idx++;
                     continue;

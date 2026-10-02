@@ -174,7 +174,7 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
                         break;
                     }
                 }
-                if (ri_before % 2 == 1) {
+                if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                     last_measured_ucs = ucs;
                     idx += 1;
                     continue;
