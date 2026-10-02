@@ -137,16 +137,15 @@ address:
 String length conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every string function takes an explicit length and reads exactly that many units:
+Every string function reads exactly the length you pass:
 
 ``_u32`` functions
     count codepoints in the array,
 ``_u8`` functions
     count bytes.
 
-There is no NUL-terminated sentinel form; pass ``strlen(text)`` when the text is a C string.  The
-length is authoritative: a NUL is an ordinary zero-width character that may appear anywhere, and
-it survives into transform output, whose ``*out_len`` is the true length.
+Pass ``strlen(text)`` when the text is a C string.  A NUL counts as an ordinary zero-width character
+in any position.  Transform functions copy it through and report the full length in ``*out_len``.
 
 Alternate encodings
 ~~~~~~~~~~~~~~~~~~~
