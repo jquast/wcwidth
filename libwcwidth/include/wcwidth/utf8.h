@@ -30,6 +30,9 @@ size_t wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out);
  *
  * The result type allows a plain free() release, matching wcwidth_encode_u32()
  * below.  Treat the contents as read-only.
+ *
+ * Decoding reads exactly *n* bytes.  A NUL byte counts as an ordinary
+ * zero-width codepoint in any position; pass strlen(utf8) for a C string.
  */
 uint32_t *wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap,
                              size_t *count);
@@ -37,6 +40,8 @@ uint32_t *wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t
 /*
  * Decode *utf8* into a malloc'd codepoint array (one free()).  Returns the
  * array and sets *count*, or NULL on allocation failure.
+ *
+ * Follows the length and NUL semantics of wcwidth_decode_u32().
  */
 uint32_t *wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count);
 
@@ -48,8 +53,10 @@ uint32_t *wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count);
  * is undefined behavior.  Sets *out_len* and returns NULL on allocation
  * failure.
  *
- * The result is not NUL-terminated.  Invalid codepoints (lone surrogates and
- * values above U+10FFFF) are encoded as U+FFFD.
+ * Encoding writes exactly *n* codepoints: a U+0000 becomes a NUL byte, so the
+ * output can contain embedded NUL bytes.  The result is not NUL-terminated.
+ * Invalid codepoints (lone surrogates and values above U+10FFFF) are encoded
+ * as U+FFFD.
  */
 char *wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t stack_cap,
                          size_t *out_len);
