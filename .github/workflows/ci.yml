@@ -329,18 +329,11 @@ jobs:
           python-version-file: .python-version-default
           cache: pip
 
-      - name: Merge coverage data artifacts
-        uses: actions/upload-artifact/merge@v7
-        with:
-          name: coverage-data
-          pattern: coverage-data.*
-          include-hidden-files: true
-          delete-merged: true
-
       - name: Download coverage data
         uses: actions/download-artifact@v8
         with:
-          name: coverage-data
+          pattern: coverage-data.*
+          merge-multiple: true
 
       - name: Download C coverage
         uses: actions/download-artifact@v8
@@ -359,6 +352,9 @@ jobs:
           python -Im coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage to Codecov
+        # Dependabot runs read the separate Dependabot secret store, where
+        # CODECOV_TOKEN is unset, so the upload cannot authenticate thre.
+        if: ${{ github.actor != 'dependabot[bot]' }}
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
