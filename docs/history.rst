@@ -4,7 +4,8 @@ History
 
 0.9.2 *unreleased*
   * **Bugfix** regional-indicator pairs (flags) when corrected for terminals that show lone regional
-    indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR #284`.
+    indicators as narrow (xterm, wezterm, VTE, and others) in `wcstwidth()`_ and `width()`_, `PR
+    #284`.
   * **Improved** code size of libwcwidth's ``wcwidth_decode_u32_heap()`` with no user-visible
     change. `PR #281`.
 
