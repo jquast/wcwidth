@@ -806,6 +806,16 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                     lc.len = rstrip_len(lc.data, lc.len);
                     if (lc.data != NULL)
                         lc.data[lc.len] = '\0';
+                    if (lc.len == 0) {
+                        /*
+                         * The line held only whitespace, which dropping has now emptied.  Skip
+                         * it and leave `first` unchanged so initial_indent still applies to the
+                         * first line with content, as stdlib textwrap and wcwidth.textwrap do.
+                         */
+                        sbuf_free(&lc);
+                        cl_free(&cur);
+                        continue;
+                    }
                 }
                 sbuf_t fl;
                 sbuf_init(&fl);
