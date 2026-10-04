@@ -353,6 +353,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     # (matches CPython #140627 fix behavior)
                     if self.drop_whitespace:
                         line_content = line_content.rstrip()
+                        if not line_content:
+                            continue
                     lines.append(indent + line_content)
                     is_first_line = False
                 else:
