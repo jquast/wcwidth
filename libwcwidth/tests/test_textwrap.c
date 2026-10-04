@@ -289,6 +289,26 @@ TEST(wrap_max_lines_placeholder)
     free(out);
 }
 
+TEST(wrap_drops_leading_whitespace_only_line)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"h", "e", "l", "l", "o"};
+    const char *exp_ws[] = {" ", "h", "e", "l", "l", "o"};
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8(" hello", 6, &o, &out, &len));
+    check_lines(out, len, exp, 5);
+    free(out);
+
+    o.width = 1;
+    o.drop_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8(" hello", 6, &o, &out, &len));
+    check_lines(out, len, exp_ws, 6);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -301,5 +321,6 @@ main(void)
     RUN_TEST(wrap_tabsize_zero);
     RUN_TEST(wrap_lone_continuation_bytes);
     RUN_TEST(wrap_max_lines_placeholder);
+    RUN_TEST(wrap_drops_leading_whitespace_only_line);
     return test_summary();
 }

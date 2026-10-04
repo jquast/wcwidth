@@ -678,3 +678,10 @@ def test_wrap_unterminated_osc():
 def test_wrap_virama_conjunct_known_limitation(text):
     """Known limitation: wrap() breaks mid-conjunct on Tamil, Kannada and Sinhala text."""
     assert [wcwidth.width(line) for line in wrap(text * 4, width=4)] == [3, 4, 3]
+
+
+@pytest.mark.parametrize('text', [' hello', '  hello', '    hello'])
+def test_wrap_drops_leading_whitespace_only_lines(text):
+    """Discard all-whitespace first lines rather than emitting empty lines."""
+    assert wrap(text, width=1) == list('hello')
+    assert wrap(text, width=1, drop_whitespace=False) == list(text)
