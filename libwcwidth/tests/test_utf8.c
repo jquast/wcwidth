@@ -74,6 +74,66 @@ TEST(decode_u32_heap_empty)
 
     ASSERT_NOT_NULL(out);
     ASSERT_EQ((int64_t) 0, (int64_t) count);
+    ASSERT_EQ((int64_t) 0, (int64_t) out[0]);
+    free(out);
+}
+
+TEST(decode_single_null_out)
+{
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_utf8_decode_single("\xe4\xb8\xad", 3, NULL));
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_utf8_decode_single("abc", 3, NULL));
+}
+
+TEST(decode_u32_null_stack)
+{
+    uint32_t *out;
+    size_t count = 0;
+
+    out = wcwidth_decode_u32("a", 1, NULL, 8, &count);
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ((int64_t) 1, (int64_t) count);
+    ASSERT_EQ((int64_t) 'a', (int64_t) out[0]);
+    free(out);
+}
+
+TEST(encode_u32_empty_heap)
+{
+    const uint32_t cps[] = {0};
+    char *out;
+    size_t len = 1;
+
+    out = wcwidth_encode_u32(cps, 0, NULL, 0, &len);
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    ASSERT_EQ((int64_t) 0, (int64_t) out[0]);
+    free(out);
+}
+
+TEST(encode_u32_null_stack)
+{
+    const uint32_t cps[] = {'a', 'b'};
+    char *out;
+    size_t len = 0;
+
+    out = wcwidth_encode_u32(cps, 2, NULL, 8, &len);
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+}
+
+TEST(decode_u32_stack_overflow)
+{
+    uint32_t stack[2];
+    uint32_t *out;
+    size_t count = 0;
+
+    out = wcwidth_decode_u32("abcdef", 6, stack, 2, &count);
+    ASSERT_NOT_NULL(out);
+    ASSERT_TRUE(out != stack);
+    ASSERT_EQ((int64_t) 6, (int64_t) count);
+    ASSERT_EQ((int64_t) 'a', (int64_t) out[0]);
+    ASSERT_EQ((int64_t) 'f', (int64_t) out[5]);
     free(out);
 }
 
@@ -83,5 +143,10 @@ main(void)
     RUN_TEST(encode_roundtrip);
     RUN_TEST(decode_malformed);
     RUN_TEST(decode_u32_heap_empty);
+    RUN_TEST(decode_single_null_out);
+    RUN_TEST(decode_u32_null_stack);
+    RUN_TEST(encode_u32_empty_heap);
+    RUN_TEST(encode_u32_null_stack);
+    RUN_TEST(decode_u32_stack_overflow);
     return test_summary();
 }

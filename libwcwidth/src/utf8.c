@@ -20,7 +20,7 @@ wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
         cp_out = &cp;
     }
 
-    if (s == NULL || len == 0) {
+    if (len == 0) {
         *cp_out = 0xFFFD;
         return 0;
     }
@@ -105,13 +105,6 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
     size_t used = 0;
     size_t pos = 0;
 
-    if (count == NULL) {
-        count = &used;
-    }
-    if (utf8 == NULL) {
-        n = 0;
-    }
-
     while (pos < n) {
         uint32_t ucs;
         size_t consumed = wcwidth_utf8_decode_single(utf8 + pos, n - pos, &ucs);
@@ -155,7 +148,7 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
 
     if (n == 0 && stack == NULL) {
         *count = 0;
-        return (uint32_t *) malloc(sizeof(uint32_t)); /* freeable empty result */
+        return (uint32_t *) calloc(1, sizeof(uint32_t)); /* freeable empty result */
     }
 
     *count = used;
@@ -211,13 +204,6 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
     size_t used = 0;
     size_t i;
 
-    if (out_len == NULL) {
-        out_len = &used;
-    }
-    if (codepoints == NULL) {
-        n = 0;
-    }
-
     for (i = 0; i < n; i++) {
         char tmp[4];
         size_t enc_len = encode_single(codepoints[i], tmp);
@@ -258,7 +244,7 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
 
     if (n == 0 && stack == NULL) {
         *out_len = 0;
-        return (char *) malloc(1); /* freeable empty result */
+        return (char *) calloc(1, 1); /* freeable empty result */
     }
 
     *out_len = used;

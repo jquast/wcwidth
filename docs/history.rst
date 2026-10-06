@@ -2,6 +2,11 @@
 History
 =======
 
+0.9.3 *2026-10-06*
+  * **Bugfix** libwcwidth ``wcwidth_decode_u32()`` and ``wcwidth_encode_u32()`` no longer write
+    through a NULL ``stack``, empty input returns a freeable buffer, and the non-null caller
+    contract is documented, `PR #293`_.
+
 0.9.2 *2026-10-04*
   * **Bugfix** `wrap()`_ should omit an empty line as output, like `textwrap.wrap()`_ `PR #291`_.
   * **Bugfix** `clip()`_ when using non-default argument, ``tabsize=0``, `PR #288`_.
@@ -318,6 +323,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
 .. _`PR #288`: https://github.com/jquast/wcwidth/pull/288
 .. _`PR #291`: https://github.com/jquast/wcwidth/pull/291
+.. _`PR #293`: https://github.com/jquast/wcwidth/pull/293
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
