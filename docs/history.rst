@@ -3,9 +3,8 @@ History
 =======
 
 0.9.3 *2026-10-06*
-  * **Bugfix** libwcwidth ``wcwidth_decode_u32()`` and ``wcwidth_encode_u32()`` no longer write
-    through a NULL ``stack``, empty input returns a freeable buffer, and the non-null caller
-    contract is documented, `PR #293`_.
+  * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
+    alignment functions, `PR #293`_.
 
 0.9.2 *2026-10-04*
   * **Bugfix** `wrap()`_ should omit an empty line as output, like `textwrap.wrap()`_ `PR #291`_.

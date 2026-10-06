@@ -13,8 +13,8 @@ CFLAGS  ?= -std=c11 -Wall -Wextra -O2 -g
 INCLUDE  = -Iinclude
 BUILD    = build
 
-ASAN_CFLAGS  = -std=c11 -Wall -Wextra -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer
-UBSAN_CFLAGS = -std=c11 -Wall -Wextra -O2 -g -fsanitize=undefined -fno-omit-frame-pointer
+ASAN_CFLAGS  = -std=c11 -Wall -Wextra -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer
+UBSAN_CFLAGS = -std=c11 -Wall -Wextra -O2 -g -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer
 
 LIB_SRCS  = $(wildcard src/*.c) $(wildcard src/tables/*.c)
 LIB_OBJS  = $(patsubst %.c,$(BUILD)/%.o,$(LIB_SRCS))

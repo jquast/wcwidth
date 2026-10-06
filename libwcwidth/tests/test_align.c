@@ -262,6 +262,41 @@ TEST(null_opts_defaults)
     free(u);
 }
 
+TEST(align_null_and_empty_input)
+{
+    wcwidth_align_opts_t opts = WCWIDTH_ALIGN_OPTS_DEFAULT;
+    size_t len = 1;
+    int error = WCWIDTH_ERROR_NONE;
+    char *s;
+
+    s = wcwidth_ljust_u8(NULL, 0, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(0, len);
+    ASSERT_STREQ("", s);
+    free(s);
+
+    s = wcwidth_rjust_u8(NULL, 0, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(0, len);
+    ASSERT_STREQ("", s);
+    free(s);
+
+    s = wcwidth_center_u8(NULL, 0, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(0, len);
+    ASSERT_STREQ("", s);
+    free(s);
+
+    opts.dest_width = 5;
+    opts.fillchar = NULL;
+    opts.fillchar_len = 0;
+    s = wcwidth_ljust_u8("x", 1, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(1, len);
+    ASSERT_STREQ("x", s);
+    free(s);
+}
+
 int
 main(void)
 {
@@ -276,5 +311,6 @@ main(void)
     RUN_TEST(center_huge_dest_width);
     RUN_TEST(align_control_codes_strict);
     RUN_TEST(null_opts_defaults);
+    RUN_TEST(align_null_and_empty_input);
     return test_summary();
 }
