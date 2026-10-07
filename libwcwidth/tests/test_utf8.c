@@ -122,6 +122,29 @@ TEST(encode_u32_null_stack)
     free(out);
 }
 
+TEST(decode_u32_empty_stack)
+{
+    uint32_t stack[4];
+    uint32_t *out;
+    size_t count = 1;
+
+    out = wcwidth_decode_u32("", 0, stack, 4, &count);
+    ASSERT_TRUE(out == stack);
+    ASSERT_EQ((int64_t) 0, (int64_t) count);
+}
+
+TEST(encode_u32_empty_stack)
+{
+    const uint32_t cps[] = {0};
+    char stack[8];
+    char *out;
+    size_t len = 1;
+
+    out = wcwidth_encode_u32(cps, 0, stack, 8, &len);
+    ASSERT_TRUE(out == stack);
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+}
+
 TEST(decode_u32_stack_overflow)
 {
     uint32_t stack[2];
@@ -147,6 +170,8 @@ main(void)
     RUN_TEST(decode_u32_null_stack);
     RUN_TEST(encode_u32_empty_heap);
     RUN_TEST(encode_u32_null_stack);
+    RUN_TEST(decode_u32_empty_stack);
+    RUN_TEST(encode_u32_empty_stack);
     RUN_TEST(decode_u32_stack_overflow);
     return test_summary();
 }
