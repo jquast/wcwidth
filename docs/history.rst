@@ -15,7 +15,7 @@ History
 
 0.9.1 *2026-09-23*
   * **Bugfix** `width()`_ in Python and libwcwidth mis-measured CSI sequences over 64 bytes, a 0.9.0
-    release regression! `PR #271`_.
+    release regression! `PR #272`_.
   * **Performance** improvement of ~15% for many Python API functions when using default arguments
     like ``ambiguous_width`` and ``term_program``. `PR #273`_
 
@@ -316,7 +316,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #253`: https://github.com/jquast/wcwidth/pull/253
 .. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
 .. _`PR #262`: https://github.com/jquast/wcwidth/pull/262
-.. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
+.. _`PR #272`: https://github.com/jquast/wcwidth/pull/272
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
 .. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
