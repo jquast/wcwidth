@@ -286,6 +286,9 @@ jobs:
       - name: Run C tests under valgrind
         run: make -C libwcwidth valgrind
 
+      - name: Run C tests under UBSan
+        run: make -C libwcwidth ubsan
+
   # Instrumented C coverage.  The C11 and Python coverage are merged into a single gcov report and
   # uploaded for a combined Codecov total.
   libwcwidth-coverage:

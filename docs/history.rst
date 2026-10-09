@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.3 *2026-10-06*
+  * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
+    alignment functions, `PR #293`_, `PR #294`_.
+
 0.9.2 *2026-10-04*
   * **Bugfix** `wrap()`_ should omit an empty line as output, like `textwrap.wrap()`_ `PR #291`_.
   * **Bugfix** `clip()`_ when using non-default argument, ``tabsize=0``, `PR #288`_.
@@ -11,7 +15,7 @@ History
 
 0.9.1 *2026-09-23*
   * **Bugfix** `width()`_ in Python and libwcwidth mis-measured CSI sequences over 64 bytes, a 0.9.0
-    release regression! `PR #271`_.
+    release regression! `PR #272`_.
   * **Performance** improvement of ~15% for many Python API functions when using default arguments
     like ``ambiguous_width`` and ``term_program``. `PR #273`_
 
@@ -312,12 +316,14 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #253`: https://github.com/jquast/wcwidth/pull/253
 .. _`PR #259`: https://github.com/jquast/wcwidth/pull/259
 .. _`PR #262`: https://github.com/jquast/wcwidth/pull/262
-.. _`PR #271`: https://github.com/jquast/wcwidth/pull/271
+.. _`PR #272`: https://github.com/jquast/wcwidth/pull/272
 .. _`PR #273`: https://github.com/jquast/wcwidth/pull/273
 .. _`PR #281`: https://github.com/jquast/wcwidth/pull/281
 .. _`PR #284`: https://github.com/jquast/wcwidth/pull/284
 .. _`PR #288`: https://github.com/jquast/wcwidth/pull/288
 .. _`PR #291`: https://github.com/jquast/wcwidth/pull/291
+.. _`PR #293`: https://github.com/jquast/wcwidth/pull/293
+.. _`PR #294`: https://github.com/jquast/wcwidth/pull/294
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

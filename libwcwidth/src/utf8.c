@@ -16,6 +16,10 @@ wcwidth_utf8_decode_single(const char *s, size_t len, uint32_t *cp_out)
     size_t expected;
     size_t i;
 
+    if (cp_out == NULL) {
+        cp_out = &cp;
+    }
+
     if (len == 0) {
         *cp_out = 0xFFFD;
         return 0;
@@ -97,7 +101,7 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
 {
     uint32_t *heap = NULL;
     uint32_t *out = stack;
-    size_t cap = stack_cap;
+    size_t cap = (stack != NULL) ? stack_cap : 0;
     size_t used = 0;
     size_t pos = 0;
 
@@ -142,17 +146,18 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
         pos += consumed;
     }
 
+    if (n == 0 && stack == NULL) {
+        *count = 0;
+        return (uint32_t *) calloc(1, sizeof(uint32_t)); /* freeable empty result */
+    }
+
     *count = used;
-    return (heap != NULL) ? heap : stack;
+    return out;
 }
 
 uint32_t *
 wcwidth_decode_u32_heap(const char *utf8, size_t n, size_t *count)
 {
-    if (n == 0) {
-        *count = 0;
-        return (uint32_t *) malloc(sizeof(uint32_t)); /* freeable empty result */
-    }
     return wcwidth_decode_u32(utf8, n, NULL, 0, count);
 }
 
@@ -195,7 +200,7 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
 {
     char *heap = NULL;
     char *out = stack;
-    size_t cap = stack_cap;
+    size_t cap = (stack != NULL) ? stack_cap : 0;
     size_t used = 0;
     size_t i;
 
@@ -216,7 +221,10 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
                     *out_len = 0;
                     return NULL;
                 }
-                memcpy(nd, stack, used);
+                if (used > 0) {
+                    /* stack may be NULL when stack_cap is 0 */
+                    memcpy(nd, stack, used);
+                }
             }
             else {
                 nd = (char *) realloc(heap, new_cap);
@@ -234,6 +242,11 @@ wcwidth_encode_u32(const uint32_t *codepoints, size_t n, char *stack, size_t sta
         used += enc_len;
     }
 
+    if (n == 0 && stack == NULL) {
+        *out_len = 0;
+        return (char *) calloc(1, 1); /* freeable empty result */
+    }
+
     *out_len = used;
-    return (heap != NULL) ? heap : stack;
+    return out;
 }

@@ -87,6 +87,10 @@ fill_repeat(char *dst, const char *fillchar, size_t fillchar_len, size_t count)
 {
     size_t i;
 
+    if (fillchar_len == 0) {
+        return dst;
+    }
+
     for (i = 0; i < count; i++) {
         memcpy(dst, fillchar, fillchar_len);
         dst += fillchar_len;
@@ -133,7 +137,9 @@ ljust_impl(const char *text, size_t text_len, size_t dest_width, const char *fil
         return NULL;
     }
 
-    memcpy(result, text, text_len);
+    if (text_len > 0) {
+        memcpy(result, text, text_len);
+    }
     fill_repeat(result + text_len, fillchar, fillchar_len, padding);
     result[total] = '\0';
 
@@ -184,7 +190,9 @@ rjust_impl(const char *text, size_t text_len, size_t dest_width, const char *fil
 
     fill_repeat(result, fillchar, fillchar_len, padding);
     /* add_fill_bytes() above already proved this product cannot wrap. */
-    memcpy(result + padding * fillchar_len, text, text_len);
+    if (text_len > 0) {
+        memcpy(result + padding * fillchar_len, text, text_len);
+    }
     result[total] = '\0';
 
     if (out_len != NULL) {
@@ -246,7 +254,9 @@ center_impl(const char *text, size_t text_len, size_t dest_width, const char *fi
 
     {
         char *dst = fill_repeat(result, fillchar, fillchar_len, left_pad);
-        memcpy(dst, text, text_len);
+        if (text_len > 0) {
+            memcpy(dst, text, text_len);
+        }
         fill_repeat(dst + text_len, fillchar, fillchar_len, right_pad);
     }
     result[total] = '\0';
