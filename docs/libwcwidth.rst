@@ -147,6 +147,14 @@ Every string function reads exactly the length you pass:
 Pass ``strlen(text)`` when the text is a C string.  A NUL counts as an ordinary zero-width character
 in any position.  Transform functions copy it through and report the full length in ``*out_len``.
 
+Pointer contract
+~~~~~~~~~~~~~~~~
+
+Input pointers and the ``count`` / ``out_len`` out-length pointers must not be NULL.
+
+``stack`` accepts NULL to select the heap path.  ``wcwidth_utf8_decode_single()`` accepts
+NULL as ``cp_out``, reporting the length of the next character.
+
 Alternate encodings
 ~~~~~~~~~~~~~~~~~~~
 
