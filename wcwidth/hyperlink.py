@@ -44,7 +44,7 @@ class HyperlinkParams(typing.NamedTuple):
             >>> HyperlinkParams.parse('\x1b]8;;http://example.com\x07')
             HyperlinkParams(url='http://example.com', params='', terminator='\x07')
         """
-        m = HYPERLINK_OPEN_RE.match(seq)
+        m = HYPERLINK_OPEN_RE.fullmatch(seq)
         if m is None:
             return None
         return cls(url=m.group(2), params=m.group(1), terminator=m.group(3))
