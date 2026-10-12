@@ -26,18 +26,16 @@ def test_hyperlinkparams_parse_valid(seq, url, params, term):
     'not an escape',
     '\x1b[31m',
     '',
+    '\x1b]8;;https://example.com\x07text',
+    '\x1b]8;;https://example.com\x07\n',
+    '\x1b]8;;https://example.com\x07\x1b[31m',
+    '\x1b]8;;https://example.com\x1b\\text',
+    '\x1b]8;;https://example.com\x1b\\\n',
+    '\x1b]8;;https://example.com\x1b\\\x1b[31m',
 ])
 def test_hyperlinkparams_parse_invalid(seq):
     """Parse an invalid/non-OSC-8 sequence returns None."""
     assert HyperlinkParams.parse(seq) is None
-
-
-@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
-@pytest.mark.parametrize('suffix', ['text', '\n', '\x1b[31m'])
-def test_hyperlinkparams_rejects_trailing_content(terminator, suffix):
-    """An open sequence parser rejects additional text or escape sequences."""
-    sequence = '\x1b]8;;https://example.com' + terminator
-    assert HyperlinkParams.parse(sequence + suffix) is None
 
 
 def test_hyperlinkparams_make_open():

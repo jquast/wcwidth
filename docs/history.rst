@@ -5,6 +5,7 @@ History
 0.9.3 *2026-10-06*
   * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
     alignment functions, `PR #293`_, `PR #294`_.
+  * **Changed** `HyperlinkParams.parse()`_ now rejects trailing text, `PR #296`_.
 
 0.9.2 *2026-10-04*
   * **Bugfix** `wrap()`_ should omit an empty line as output, like `textwrap.wrap()`_ `PR #291`_.
@@ -324,6 +325,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #291`: https://github.com/jquast/wcwidth/pull/291
 .. _`PR #293`: https://github.com/jquast/wcwidth/pull/293
 .. _`PR #294`: https://github.com/jquast/wcwidth/pull/294
+.. _`PR #296`: https://github.com/jquast/wcwidth/pull/296
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
@@ -349,6 +351,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`iter_sequences()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_sequences
 .. _`list_versions()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_versions
 .. _`list_term_programs()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.list_term_programs
+.. _`HyperlinkParams.parse()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.HyperlinkParams
 .. _`parity padding`: https://jazcap53.github.io/pythons-eccentric-strcenter.html
 .. _`kitty text sizing protocol`: https://sw.kovidgoyal.net/kitty/text-sizing-protocol/
 .. _Corrections: https://wcwidth.readthedocs.io/en/latest/intro.html#corrections
