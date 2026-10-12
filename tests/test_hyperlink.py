@@ -32,6 +32,14 @@ def test_hyperlinkparams_parse_invalid(seq):
     assert HyperlinkParams.parse(seq) is None
 
 
+@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
+@pytest.mark.parametrize('suffix', ['text', '\n', '\x1b[31m'])
+def test_hyperlinkparams_rejects_trailing_content(terminator, suffix):
+    """An open sequence parser rejects additional text or escape sequences."""
+    sequence = '\x1b]8;;https://example.com' + terminator
+    assert HyperlinkParams.parse(sequence + suffix) is None
+
+
 def test_hyperlinkparams_make_open():
     assert HyperlinkParams(url='http://example.com', params='id=a', terminator='\x07').make_open() == '\x1b]8;id=a;http://example.com\x07'
 
