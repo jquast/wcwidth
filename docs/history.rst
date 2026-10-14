@@ -2,7 +2,7 @@
 History
 =======
 
-0.9.3 *2026-10-06*
+0.9.3 *unreleased*
   * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
     alignment functions, `PR #293`_, `PR #294`_.
   * **Changed** `HyperlinkParams.parse()`_ now rejects trailing text, `PR #296`_.
