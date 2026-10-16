@@ -527,6 +527,28 @@ def test_wrap_hyperlink_word_boundary(text, w, expected):
     assert result == expected
 
 
+@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
+@pytest.mark.parametrize('second_params,expected_params', [
+    ('id=second', 'id=second'),
+    ('foo=bar:id=second', 'foo=bar:id=second'),
+    ('foo=bar', 'id=00000001:foo=bar'),
+    ('', 'id=00000001'),
+])
+def test_wrap_hyperlink_switch_preserves_params(terminator, second_params, expected_params):
+    """A new link must not inherit the preceding link's continuation parameters."""
+    first = wcwidth.HyperlinkParams('https://a', 'id=first', terminator)
+    second = wcwidth.HyperlinkParams('https://b', second_params, terminator)
+    text = (first.make_open() + 'aa bb' + first.make_close() + ' ' +
+            second.make_open() + 'cc dd ee' + second.make_close())
+
+    lines = wrap(text, 5)
+
+    expected = wcwidth.HyperlinkParams('https://b', expected_params, terminator)
+    assert len(lines) == 3
+    assert lines[-1] == expected.make_open() + 'ee' + expected.make_close()
+    assert expected.make_open() + 'cc dd' + expected.make_close() in lines[-2]
+
+
 @pytest.mark.parametrize('text,kwargs', [
     ('The quick brown fox jumps over the lazy dog',
      {'width': 10, 'max_lines': 3, 'placeholder': '...'}),
