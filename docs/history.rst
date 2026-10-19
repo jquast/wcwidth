@@ -6,6 +6,7 @@ History
   * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
     alignment functions, `PR #293`_, `PR #294`_.
   * **Changed** `HyperlinkParams.parse()`_ now rejects trailing text, `PR #296`_.
+  * **Bugfix** `wrap()`_ should keep a link's own OSC 8 params across a line break, `PR #299`_.
 
 0.9.2 *2026-10-04*
   * **Bugfix** `wrap()`_ should omit an empty line as output, like `textwrap.wrap()`_ `PR #291`_.
@@ -326,6 +327,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #293`: https://github.com/jquast/wcwidth/pull/293
 .. _`PR #294`: https://github.com/jquast/wcwidth/pull/294
 .. _`PR #296`: https://github.com/jquast/wcwidth/pull/296
+.. _`PR #299`: https://github.com/jquast/wcwidth/pull/299
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211

@@ -224,8 +224,6 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         is_first_line = True
 
         hyperlink_state: Optional[HyperlinkParams] = None
-        # Track the id we're using for the current hyperlink continuation
-        current_hyperlink_id: Optional[str] = None
 
         # Arrange in reverse order so items can be efficiently popped
         chunks = list(reversed(chunks))
@@ -312,17 +310,16 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
                     # If we end inside a hyperlink, append close sequence
                     if new_state is not None:
-                        # Ensure we have an id for continuation
-                        if current_hyperlink_id is None:
-                            if 'id=' in new_state.params:
-                                current_hyperlink_id = new_state.params
-                            elif new_state.params:
-                                # Prepend id to existing params. Per OSC 8 spec, params can have
-                                # multiple key=value pairs separated by ':'.
-                                current_hyperlink_id = (
-                                    f'id={self._next_hyperlink_id()}:{new_state.params}')
-                            else:
-                                current_hyperlink_id = f'id={self._next_hyperlink_id()}'
+                        # Use the active link's params; wrapper state can leak a prior link's id.
+                        if 'id=' in new_state.params:
+                            continuation_params = new_state.params
+                        elif new_state.params:
+                            # Prepend id to existing params. Per OSC 8 spec, params can have
+                            # multiple key=value pairs separated by ':'.
+                            continuation_params = (
+                                f'id={self._next_hyperlink_id()}:{new_state.params}')
+                        else:
+                            continuation_params = f'id={self._next_hyperlink_id()}'
                         line_content += HyperlinkParams(
                             terminator=new_state.terminator, url='').make_close()
 
@@ -337,17 +334,16 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                             ).make_open()
                             new_open = HyperlinkParams(
                                 url=new_state.url,
-                                params=current_hyperlink_id,
+                                params=continuation_params,
                                 terminator=new_state.terminator,
                             ).make_open()
                             line_content = line_content.replace(old_open, new_open, 1)
 
-                        # Update state for next line, using computed id
+                        # Update state for next line, using computed params
                         hyperlink_state = HyperlinkParams(
-                            new_state.url, current_hyperlink_id, new_state.terminator)
+                            new_state.url, continuation_params, new_state.terminator)
                     else:
                         hyperlink_state = None
-                        current_hyperlink_id = None  # Reset id when hyperlink closes
 
                     # Strip trailing whitespace when drop_whitespace is enabled
                     # (matches CPython #140627 fix behavior)
