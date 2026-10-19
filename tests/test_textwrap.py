@@ -486,6 +486,17 @@ OSC_END_BEL = '\x1b]8;;\x07'
             '\x1b]8;id=00000002;http://example.com\x07gh\x1b]8;;\x07',
         ],
     ),
+    (   # a link opened after a preceding link
+        '\x1b]8;id=first;https://a\x07aa bb\x1b]8;;\x07 '
+        '\x1b]8;id=second;https://b\x07cc dd ee\x1b]8;;\x07',
+        5,
+        [
+            '\x1b]8;id=first;https://a\x07aa bb\x1b]8;;\x07',
+            '\x1b]8;id=first;https://a\x07\x1b]8;;\x07'
+            '\x1b]8;id=second;https://b\x07cc dd\x1b]8;;\x07',
+            '\x1b]8;id=second;https://b\x07ee\x1b]8;;\x07',
+        ],
+    ),
     (   # long word inside hyperlink forces character-level breaking
         f'{OSC_START_ST}abcdefgh{OSC_END_ST}',
         3,
