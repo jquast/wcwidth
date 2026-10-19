@@ -492,8 +492,8 @@ OSC_END_BEL = '\x1b]8;;\x07'
         5,
         [
             '\x1b]8;id=first;https://a\x07aa bb\x1b]8;;\x07',
-            '\x1b]8;id=first;https://a\x07\x1b]8;;\x07'
-            '\x1b]8;id=second;https://b\x07cc dd\x1b]8;;\x07',
+            ('\x1b]8;id=first;https://a\x07\x1b]8;;\x07' +
+             '\x1b]8;id=second;https://b\x07cc dd\x1b]8;;\x07'),
             '\x1b]8;id=second;https://b\x07ee\x1b]8;;\x07',
         ],
     ),
