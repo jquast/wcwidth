@@ -91,7 +91,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
           cache: pip
         if: '! matrix.container'
 
@@ -160,7 +159,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
           cache: pip
 
       - name: Prepare tox
