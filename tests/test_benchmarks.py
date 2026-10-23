@@ -62,6 +62,30 @@ def test_wcswidth_emoji_sequence(benchmark):
     benchmark(wcwidth.wcswidth, text)
 
 
+def test_wcswidth_latin1(benchmark):
+    """Benchmark wcswidth() with Latin-1 text."""
+    text = 'café résumé naïve' * 10
+    benchmark(wcwidth.wcswidth, text)
+
+
+def test_wcswidth_vs15(benchmark):
+    """Benchmark wcswidth() with VS15 text presentation selectors."""
+    text = '\u2764\uFE0E' * 100
+    benchmark(wcwidth.wcswidth, text)
+
+
+def test_wcswidth_indic(benchmark):
+    """Benchmark wcswidth() with Devanagari conjuncts."""
+    text = 'हिन्दी' * 10
+    benchmark(wcwidth.wcswidth, text)
+
+
+def test_wcswidth_ambiguous_latin1(benchmark):
+    """Benchmark wcswidth() with ambiguous-width Latin-1 text."""
+    text = 'café résumé naïve' * 10
+    benchmark(wcwidth.wcswidth, text, ambiguous_width=2)
+
+
 # Regional Indicator benchmarks - paired flags and unpaired RI
 RI_FLAGS_PAIRED = '🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵' * 100
 RI_FLAGS_UNPAIRED = '🇺🇸🇬🇧🇫' * 100
@@ -151,6 +175,42 @@ def test_iter_graphemes_combining(benchmark):
     benchmark(lambda: list(wcwidth.iter_graphemes(text)))
 
 
+def test_iter_graphemes_latin1(benchmark):
+    """Benchmark iter_graphemes() with Latin-1 text."""
+    text = 'café résumé naïve ' * 10
+    benchmark(lambda: list(wcwidth.iter_graphemes(text)))
+
+
+def test_iter_graphemes_cjk(benchmark):
+    """Benchmark iter_graphemes() with CJK text."""
+    text = '日本語のテキスト' * 10
+    benchmark(lambda: list(wcwidth.iter_graphemes(text)))
+
+
+def test_iter_graphemes_flags(benchmark):
+    """Benchmark iter_graphemes() with regional indicator pairs."""
+    text = '🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵' * 10
+    benchmark(lambda: list(wcwidth.iter_graphemes(text)))
+
+
+def test_iter_graphemes_zwj_family(benchmark):
+    """Benchmark iter_graphemes() with a ZWJ family sequence."""
+    text = '👨\u200d👩\u200d👧\u200d👦' * 10
+    benchmark(lambda: list(wcwidth.iter_graphemes(text)))
+
+
+def test_iter_graphemes_indic(benchmark):
+    """Benchmark iter_graphemes() with Devanagari conjuncts."""
+    text = 'हिन्दी' * 10
+    benchmark(lambda: list(wcwidth.iter_graphemes(text)))
+
+
+def test_iter_graphemes_start_long(benchmark):
+    """Benchmark iter_graphemes() starting deep in a long line."""
+    text = 'the quick brown fox ' * 500
+    benchmark(lambda: next(wcwidth.iter_graphemes(text, start=5000)))
+
+
 def test_grapheme_boundary_before_short(benchmark):
     """Benchmark grapheme_boundary_before() near start of short string."""
     text = 'Hello 👋🏻!'
@@ -179,6 +239,36 @@ def test_iter_graphemes_reverse_long(benchmark):
     """Benchmark iter_graphemes_reverse() with long string."""
     text = 'The quick brown 🦊 jumps over the lazy 🐕. ' * 5
     benchmark(lambda: list(wcwidth.iter_graphemes_reverse(text)))
+
+
+def test_grapheme_boundary_before_ascii(benchmark):
+    """Benchmark grapheme_boundary_before() with ASCII text."""
+    benchmark(wcwidth.grapheme_boundary_before, 'hello world', 8)
+
+
+def test_grapheme_boundary_before_latin1(benchmark):
+    """Benchmark grapheme_boundary_before() with Latin-1 text."""
+    benchmark(wcwidth.grapheme_boundary_before, 'café résumé', 8)
+
+
+def test_grapheme_boundary_before_cjk(benchmark):
+    """Benchmark grapheme_boundary_before() with CJK text."""
+    benchmark(wcwidth.grapheme_boundary_before, '日本語のテキスト', 4)
+
+
+def test_iter_graphemes_reverse_ascii(benchmark):
+    """Benchmark iter_graphemes_reverse() with ASCII text."""
+    benchmark(lambda: list(wcwidth.iter_graphemes_reverse('hello world')))
+
+
+def test_iter_graphemes_reverse_latin1(benchmark):
+    """Benchmark iter_graphemes_reverse() with Latin-1 text."""
+    benchmark(lambda: list(wcwidth.iter_graphemes_reverse('café résumé')))
+
+
+def test_iter_graphemes_reverse_cjk(benchmark):
+    """Benchmark iter_graphemes_reverse() with CJK text."""
+    benchmark(lambda: list(wcwidth.iter_graphemes_reverse('日本語のテキスト')))
 
 
 def test_ljust_ascii(benchmark):
