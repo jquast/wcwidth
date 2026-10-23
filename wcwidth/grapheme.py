@@ -147,7 +147,8 @@ def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
 
     # GB4: (Control|CR|LF) ÷
     if prev_gcb in (GCB.CONTROL, GCB.CR, GCB.LF):
-        return BreakResult(should_break=True, ri_count=0)
+        return BreakResult(should_break=True,
+                           ri_count=1 if curr_gcb == GCB.REGIONAL_INDICATOR else 0)
 
     # GB5: ÷ (Control|CR|LF)
     if curr_gcb in (GCB.CONTROL, GCB.CR, GCB.LF):
@@ -175,7 +176,8 @@ def _simple_break_check(prev_gcb: GCB, curr_gcb: GCB) -> Optional[BreakResult]:
 
     # GB9b: Prepend x
     if prev_gcb == GCB.PREPEND:
-        return BreakResult(should_break=False, ri_count=0)
+        return BreakResult(should_break=False,
+                           ri_count=1 if curr_gcb == GCB.REGIONAL_INDICATOR else 0)
 
     # GB9c and GB11 need lookback - return None to signal complex check needed
     # GB12/13 (RI pairs) need ri_count state - also handled in main function

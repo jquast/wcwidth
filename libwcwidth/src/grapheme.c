@@ -166,7 +166,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
 
     /* GB4: (Control|CR|LF) / */
     if (prev_gcb == GCB_CONTROL || prev_gcb == GCB_CR || prev_gcb == GCB_LF) {
-        *ri_count_out = 0;
+        *ri_count_out = (curr_gcb == GCB_REGIONAL_INDICATOR) ? 1 : 0;
         return true;
     }
 
@@ -213,7 +213,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
 
     /* GB9b: Prepend x */
     if (prev_gcb == GCB_PREPEND) {
-        *ri_count_out = 0;
+        *ri_count_out = (curr_gcb == GCB_REGIONAL_INDICATOR) ? 1 : 0;
         return false;
     }
 
