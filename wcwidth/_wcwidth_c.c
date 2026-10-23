@@ -1220,28 +1220,44 @@ reject:
 /*
  * Grapheme cluster iteration.
  *
- * libwcwidth segments UTF-8 buffers, so the input string is encoded once and
- * each cluster is decoded back into a str as it is yielded.  The iterator owns
- * the bytes object: wcwidth_grapheme_next() returns pointers into that buffer,
- * so it must outlive the iteration.
- *
- * Laziness is preserved -- the Python implementation is a generator, and code
- * that breaks out early (a clip that stops at a column, say) must not pay to
- * segment the whole string.
+ * The input str is copied into a uint32_t window with PyUnicode_ReadChar(),
+ * and libwcwidth segments that window in place.  The window grows on demand,
+ * so a caller that reads one cluster (clip advances with start=idx) copies a
+ * chunk rather than the whole string.  Each yielded cluster is a
+ * PyUnicode_Substring() of the original str, so there is no per-cluster UTF-8
+ * decode and no offset table.
  */
+#define GRAPHEME_WINDOW 64
+
 typedef struct {
     PyObject_HEAD
-    PyObject *utf8;
+    PyObject *text;
+    uint32_t *codepoints;
+    size_t base;
+    size_t filled;
+    size_t capacity;
+    size_t end;
+    size_t next;
     wcwidth_grapheme_iter_t *iter;
 } grapheme_iterator;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *text;
+    uint32_t *codepoints;
+    size_t cp_count;
+    size_t start;
+    size_t pos;
+} grapheme_reverse_iterator;
+
 /*
- * The iterator is a heap type, so it lives in per-module state rather than as
- * a static type: static types are shared between subinterpreters, which would
- * contradict Py_MOD_PER_INTERPRETER_GIL_SUPPORTED below.
+ * The iterators are heap types, so they live in per-module state rather than
+ * as static types: static types are shared between subinterpreters, which
+ * would contradict Py_MOD_PER_INTERPRETER_GIL_SUPPORTED below.
  */
 typedef struct {
     PyTypeObject *grapheme_iterator_type;
+    PyTypeObject *grapheme_reverse_iterator_type;
 } module_state;
 
 static void
@@ -1251,7 +1267,16 @@ grapheme_iterator_release(grapheme_iterator *self)
         wcwidth_grapheme_iter_free(self->iter);
         self->iter = NULL;
     }
-    Py_CLEAR(self->utf8);
+    if (self->codepoints != NULL) {
+        PyMem_Free(self->codepoints);
+        self->codepoints = NULL;
+    }
+    self->base = 0;
+    self->filled = 0;
+    self->capacity = 0;
+    self->end = 0;
+    self->next = 0;
+    Py_CLEAR(self->text);
 }
 
 static int
@@ -1259,7 +1284,7 @@ grapheme_iterator_traverse(PyObject *op, visitproc visit, void *arg)
 {
     grapheme_iterator *self = (grapheme_iterator *)op;
     Py_VISIT(Py_TYPE(op));
-    Py_VISIT(self->utf8);
+    Py_VISIT(self->text);
     return 0;
 }
 
@@ -1285,23 +1310,165 @@ grapheme_iterator_dealloc(PyObject *op)
     Py_DECREF(type);
 }
 
+static int
+grapheme_iterator_fill(grapheme_iterator *self)
+{
+    size_t want = self->capacity * 2;
+    uint32_t *grown;
+    size_t i;
+
+    if (self->base + self->filled >= self->end) {
+        return 0;
+    }
+    if (want <= self->capacity) {
+        want = self->end - self->base;
+    }
+    if (want > self->end - self->base) {
+        want = self->end - self->base;
+    }
+    grown = PyMem_Realloc(self->codepoints, want * sizeof(uint32_t));
+    if (grown == NULL) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    self->codepoints = grown;
+    self->capacity = want;
+    for (i = self->filled; i < want; i++) {
+        Py_UCS4 ch = PyUnicode_ReadChar(self->text, (Py_ssize_t)(self->base + i));
+
+        if (ch == (Py_UCS4)-1 && PyErr_Occurred()) {
+            return -1;
+        }
+        self->codepoints[i] = (uint32_t)ch;
+    }
+    self->filled = want;
+    return 0;
+}
+
 static PyObject *
 grapheme_iterator_next(PyObject *op)
 {
     grapheme_iterator *self = (grapheme_iterator *)op;
-    const char *cluster;
-    size_t cluster_len = 0;
 
-    if (self->iter == NULL) {
+    while (self->next < self->end) {
+        const uint32_t *cluster;
+        size_t cluster_len = 0;
+        size_t start;
+        size_t stop;
+
+        if (self->iter == NULL) {
+            size_t rel = self->next - self->base;
+
+            if (rel >= self->filled) {
+                if (grapheme_iterator_fill(self) < 0) {
+                    grapheme_iterator_release(self);
+                    return NULL;
+                }
+                continue;
+            }
+            self->iter = wcwidth_grapheme_iter_new_u32(self->codepoints + rel,
+                                                       self->filled - rel);
+            if (self->iter == NULL) {
+                grapheme_iterator_release(self);
+                return PyErr_NoMemory();
+            }
+        }
+        cluster = wcwidth_grapheme_next_u32(self->iter, &cluster_len);
+        if (cluster == NULL) {
+            wcwidth_grapheme_iter_free(self->iter);
+            self->iter = NULL;
+            if (self->base + self->filled < self->end) {
+                if (grapheme_iterator_fill(self) < 0) {
+                    grapheme_iterator_release(self);
+                    return NULL;
+                }
+                continue;
+            }
+            grapheme_iterator_release(self);
+            return NULL;
+        }
+        start = self->base + (size_t)(cluster - self->codepoints);
+        stop = start + cluster_len;
+        if (stop == self->base + self->filled && stop < self->end) {
+            wcwidth_grapheme_iter_free(self->iter);
+            self->iter = NULL;
+            if (grapheme_iterator_fill(self) < 0) {
+                grapheme_iterator_release(self);
+                return NULL;
+            }
+            self->next = start;
+            continue;
+        }
+        self->next = stop;
+        return PyUnicode_Substring(self->text, (Py_ssize_t)start, (Py_ssize_t)stop);
+    }
+    grapheme_iterator_release(self);
+    return NULL;
+}
+
+static void
+grapheme_reverse_iterator_release(grapheme_reverse_iterator *self)
+{
+    if (self->codepoints != NULL) {
+        PyMem_Free(self->codepoints);
+        self->codepoints = NULL;
+    }
+    Py_CLEAR(self->text);
+}
+
+static int
+grapheme_reverse_iterator_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    grapheme_reverse_iterator *self = (grapheme_reverse_iterator *)op;
+    Py_VISIT(Py_TYPE(op));
+    Py_VISIT(self->text);
+    return 0;
+}
+
+static int
+grapheme_reverse_iterator_clear(PyObject *op)
+{
+    grapheme_reverse_iterator_release((grapheme_reverse_iterator *)op);
+    return 0;
+}
+
+static void
+grapheme_reverse_iterator_dealloc(PyObject *op)
+{
+    PyTypeObject *type = Py_TYPE(op);
+    freefunc tp_free;
+
+    PyObject_GC_UnTrack(op);
+    grapheme_reverse_iterator_release((grapheme_reverse_iterator *)op);
+    tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
+    tp_free(op);
+    Py_DECREF(type);
+}
+
+static PyObject *
+grapheme_reverse_iterator_next(PyObject *op)
+{
+    grapheme_reverse_iterator *self = (grapheme_reverse_iterator *)op;
+    size_t cluster_start;
+    PyObject *result;
+
+    if (self->codepoints == NULL || self->pos <= self->start) {
+        grapheme_reverse_iterator_release(self);
         return NULL;
     }
-    cluster = wcwidth_grapheme_next(self->iter, &cluster_len);
-    if (cluster == NULL) {
-        /* exhausted: drop the buffer now rather than at dealloc */
-        grapheme_iterator_release(self);
+    cluster_start = wcwidth_grapheme_boundary_before_u32(self->codepoints, self->cp_count,
+                                                        self->pos);
+    if (cluster_start < self->start) {
+        grapheme_reverse_iterator_release(self);
         return NULL;
     }
-    return PyUnicode_DecodeUTF8(cluster, (Py_ssize_t)cluster_len, NULL);
+    result = PyUnicode_Substring(self->text, (Py_ssize_t)cluster_start,
+                                 (Py_ssize_t)self->pos);
+    if (result == NULL) {
+        return NULL;
+    }
+    self->pos = cluster_start;
+    return result;
 }
 
 static PyType_Slot grapheme_iterator_slots[] = {
@@ -1328,6 +1495,24 @@ static PyType_Spec grapheme_iterator_spec = {
     grapheme_iterator_slots,
 };
 
+static PyType_Slot grapheme_reverse_iterator_slots[] = {
+    {Py_tp_dealloc, (void *)grapheme_reverse_iterator_dealloc},
+    {Py_tp_traverse, (void *)grapheme_reverse_iterator_traverse},
+    {Py_tp_clear, (void *)grapheme_reverse_iterator_clear},
+    {Py_tp_iter, (void *)PyObject_SelfIter},
+    {Py_tp_iternext, (void *)grapheme_reverse_iterator_next},
+    {Py_tp_doc, (void *)"Reverse iterator over grapheme clusters, backed by libwcwidth."},
+    {0, NULL},
+};
+
+static PyType_Spec grapheme_reverse_iterator_spec = {
+    "wcwidth._wcwidth_c._grapheme_reverse_iterator",
+    sizeof(grapheme_reverse_iterator),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | WCWIDTH_ITERATOR_FLAGS,
+    grapheme_reverse_iterator_slots,
+};
+
 static PyObject *
 iter_graphemes_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
                     PyObject *kwnames)
@@ -1336,7 +1521,8 @@ iter_graphemes_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
     PyObject *unistr = NULL;
     PyObject *start = NULL;
     PyObject *end = NULL;
-    PyObject *utf8;
+    Py_ssize_t start_idx = 0;
+    Py_ssize_t end_idx = -1;
     module_state *state;
     grapheme_iterator *self;
     PyTypeObject *type;
@@ -1380,27 +1566,45 @@ iter_graphemes_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
         goto reject;
     }
 
-    /*
-     * 'start' and 'end' are codepoint indices, while the C library segments a
-     * whole buffer; rather than re-deriving the Python slicing semantics here,
-     * those calls go to the Python implementation.
-     */
-    if (start != NULL || end != NULL || !PyUnicode_Check(unistr)) {
+    if (unistr == NULL || !PyUnicode_Check(unistr)) {
         return call_python_function("wcwidth.grapheme", "iter_graphemes", &st);
     }
 
-    utf8 = PyUnicode_AsUTF8String(unistr);
-    if (utf8 == NULL) {
-        /* lone surrogates have no UTF-8 form; Python segments them fine */
-        PyErr_Clear();
-        return call_python_function("wcwidth.grapheme", "iter_graphemes", &st);
+    if (start != NULL && py_long_as_ssize(start, &start_idx) < 0) {
+        return NULL;
+    }
+    if (end != NULL && end != Py_None && py_long_as_ssize(end, &end_idx) < 0) {
+        return NULL;
     }
 
     state = (module_state *)PyModule_GetState(module);
     if (state == NULL || state->grapheme_iterator_type == NULL) {
-        Py_DECREF(utf8);
         PyErr_SetString(PyExc_SystemError, "wcwidth._wcwidth_c module state is missing");
         return NULL;
+    }
+
+    Py_ssize_t len = PyUnicode_GetLength(unistr);
+
+    if (len < 0) {
+        return NULL;
+    }
+    if (start_idx < 0) {
+        start_idx = 0;
+    }
+    if (start_idx > len) {
+        start_idx = len;
+    }
+    if (end == NULL || end == Py_None) {
+        end_idx = len;
+    }
+    else if (end_idx < 0) {
+        end_idx = 0;
+    }
+    else if (end_idx > len) {
+        end_idx = len;
+    }
+    if (end_idx < start_idx) {
+        end_idx = start_idx;
     }
 
     type = state->grapheme_iterator_type;
@@ -1408,19 +1612,47 @@ iter_graphemes_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
     alloc_func = (allocfunc)PyType_GetSlot(type, Py_tp_alloc);
     self = (grapheme_iterator *)alloc_func(type, 0);
     if (self == NULL) {
-        Py_DECREF(utf8);
         return NULL;
     }
+    self->text = NULL;
+    self->codepoints = NULL;
+    self->base = 0;
+    self->filled = 0;
+    self->capacity = 0;
+    self->end = (size_t)end_idx;
+    self->next = (size_t)start_idx;
+    self->iter = NULL;
 
-    self->iter = wcwidth_grapheme_iter_new(PyBytes_AsString(utf8),
-                                           (size_t)PyBytes_Size(utf8));
-    if (self->iter == NULL) {
-        self->utf8 = NULL;
-        Py_DECREF(self);
-        Py_DECREF(utf8);
-        return PyErr_NoMemory();
+    if (start_idx < end_idx) {
+        size_t initial = (size_t)(end_idx - start_idx);
+        uint32_t *window;
+        size_t i;
+
+        if (initial > GRAPHEME_WINDOW) {
+            initial = GRAPHEME_WINDOW;
+        }
+        window = PyMem_Malloc(initial * sizeof(uint32_t));
+        if (window == NULL) {
+            Py_DECREF(self);
+            return PyErr_NoMemory();
+        }
+        for (i = 0; i < initial; i++) {
+            Py_UCS4 ch = PyUnicode_ReadChar(unistr, start_idx + (Py_ssize_t)i);
+
+            if (ch == (Py_UCS4)-1 && PyErr_Occurred()) {
+                PyMem_Free(window);
+                Py_DECREF(self);
+                return NULL;
+            }
+            window[i] = (uint32_t)ch;
+        }
+        Py_INCREF(unistr);
+        self->text = unistr;
+        self->codepoints = window;
+        self->base = (size_t)start_idx;
+        self->filled = initial;
+        self->capacity = initial;
     }
-    self->utf8 = utf8;  /* steals the reference */
     return (PyObject *)self;
 
 reject:
@@ -1433,6 +1665,231 @@ reject:
             PyErr_Clear();
             (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "O|OO:iter_graphemes",
                                               keywords, &unistr, &start, &end);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
+}
+
+/*
+ * Reverse grapheme iteration and single boundary lookup.
+ *
+ * Both use the codepoint array and the boundary-before helper from libwcwidth,
+ * so the original str is copied once and every yielded cluster is a substring
+ * of it.
+ */
+static PyObject *
+iter_graphemes_reverse_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
+                            PyObject *kwnames)
+{
+    static char *keywords[] = {"unistr", "start", "end", NULL};
+    PyObject *unistr = NULL;
+    PyObject *start = NULL;
+    PyObject *end = NULL;
+    Py_ssize_t start_idx = 0;
+    Py_ssize_t end_idx = -1;
+    module_state *state;
+    grapheme_reverse_iterator *self;
+    PyTypeObject *type;
+    allocfunc alloc_func;
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
+
+    (void)module;
+    if (nargs > 3) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        unistr = args[0];
+    }
+    if (nargs > 1) {
+        start = args[1];
+    }
+    if (nargs > 2) {
+        end = args[2];
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), keywords)) {
+        case 0:  /* unistr */
+            if (nargs > 0) {
+                goto reject;
+            }
+            unistr = value;
+            break;
+        case 1:  /* start */
+            start = value;
+            break;
+        case 2:  /* end */
+            end = value;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (unistr == NULL) {
+        goto reject;
+    }
+    if (!PyUnicode_Check(unistr)) {
+        return call_python_function("wcwidth.grapheme", "iter_graphemes_reverse", &st);
+    }
+    if (start != NULL && py_long_as_ssize(start, &start_idx) < 0) {
+        return NULL;
+    }
+    if (end != NULL && end != Py_None && py_long_as_ssize(end, &end_idx) < 0) {
+        return NULL;
+    }
+
+    state = (module_state *)PyModule_GetState(module);
+    if (state == NULL || state->grapheme_reverse_iterator_type == NULL) {
+        PyErr_SetString(PyExc_SystemError, "wcwidth._wcwidth_c module state is missing");
+        return NULL;
+    }
+
+    Py_ssize_t len;
+    uint32_t *codepoints = unicode_codepoints(unistr, &len);
+    if (codepoints == NULL) {
+        return NULL;
+    }
+    if (start_idx < 0) {
+        start_idx = 0;
+    }
+    if (start_idx > len) {
+        start_idx = len;
+    }
+    if (end == NULL || end == Py_None) {
+        end_idx = len;
+    }
+    else if (end_idx < 0) {
+        end_idx = 0;
+    }
+    else if (end_idx > len) {
+        end_idx = len;
+    }
+    if (end_idx < start_idx) {
+        end_idx = start_idx;
+    }
+
+    type = state->grapheme_reverse_iterator_type;
+    alloc_func = (allocfunc)PyType_GetSlot(type, Py_tp_alloc);
+    self = (grapheme_reverse_iterator *)alloc_func(type, 0);
+    if (self == NULL) {
+        PyMem_Free(codepoints);
+        return NULL;
+    }
+    self->text = NULL;
+    self->codepoints = NULL;
+    self->cp_count = 0;
+    self->start = 0;
+    self->pos = 0;
+
+    if (start_idx < end_idx && start_idx < len) {
+        Py_INCREF(unistr);
+        self->text = unistr;
+        self->codepoints = codepoints;
+        self->cp_count = (size_t)len;
+        self->start = (size_t)start_idx;
+        self->pos = (size_t)end_idx;
+    }
+    else {
+        PyMem_Free(codepoints);
+    }
+    return (PyObject *)self;
+
+reject:
+    {
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "O|OO:iter_graphemes_reverse",
+                                              keywords, &unistr, &start, &end);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
+}
+
+static PyObject *
+grapheme_boundary_before_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs,
+                              PyObject *kwnames)
+{
+    static char *keywords[] = {"unistr", "pos", NULL};
+    PyObject *unistr = NULL;
+    Py_ssize_t pos = 0;
+    int have_pos = 0;
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t i, nkw;
+
+    (void)module;
+    if (nargs > 2) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        unistr = args[0];
+    }
+    if (nargs > 1) {
+        if (py_long_as_ssize(args[1], &pos) < 0) {
+            goto reject;
+        }
+        have_pos = 1;
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (i = 0; i < nkw; i++) {
+        PyObject *value = args[nargs + i];
+        switch (keyword_index(PyTuple_GetItem(kwnames, i), keywords)) {
+        case 0:  /* unistr */
+            if (nargs > 0) {
+                goto reject;
+            }
+            unistr = value;
+            break;
+        case 1:  /* pos */
+            if (py_long_as_ssize(value, &pos) < 0) {
+                goto reject;
+            }
+            have_pos = 1;
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (unistr == NULL || !have_pos) {
+        goto reject;
+    }
+    if (!PyUnicode_Check(unistr)) {
+        return call_python_function("wcwidth.grapheme", "grapheme_boundary_before", &st);
+    }
+
+    Py_ssize_t len;
+    uint32_t *codepoints = unicode_codepoints(unistr, &len);
+    size_t result = 0;
+
+    if (codepoints == NULL) {
+        return NULL;
+    }
+    if (pos > 0 && len > 0) {
+        if (pos > len) {
+            pos = len;
+        }
+        result = wcwidth_grapheme_boundary_before_u32(codepoints, (size_t)len, (size_t)pos);
+    }
+    PyMem_Free(codepoints);
+    return PyLong_FromSize_t(result);
+
+reject:
+    {
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "Un:grapheme_boundary_before",
+                                              keywords, &unistr, &pos);
             Py_DECREF(callargs);
             Py_XDECREF(kwargs);
         }
@@ -1660,6 +2117,14 @@ static PyMethodDef module_methods[] = {
     {"iter_graphemes", (PyCFunction)iter_graphemes_impl, METH_FASTCALL | METH_KEYWORDS,
      "iter_graphemes(unistr, start=0, end=None) -> Iterator[str]\n\n"
      "Iterate over grapheme clusters by UAX #29 extended grapheme cluster rules."},
+    {"iter_graphemes_reverse", (PyCFunction)iter_graphemes_reverse_impl,
+     METH_FASTCALL | METH_KEYWORDS,
+     "iter_graphemes_reverse(unistr, start=0, end=None) -> Iterator[str]\n\n"
+     "Iterate over grapheme clusters in reverse order."},
+    {"grapheme_boundary_before", (PyCFunction)grapheme_boundary_before_impl,
+     METH_FASTCALL | METH_KEYWORDS,
+     "grapheme_boundary_before(unistr, pos) -> int\n\n"
+     "Return the start index of the grapheme cluster containing pos - 1."},
     {NULL, NULL, 0, NULL},
 };
 
@@ -1685,14 +2150,21 @@ static int
 module_exec(PyObject *module)
 {
     module_state *state = (module_state *)PyModule_GetState(module);
-    PyObject *type = PyType_FromModuleAndSpec(module, &grapheme_iterator_spec, NULL);
+    PyObject *iter_type = PyType_FromModuleAndSpec(module, &grapheme_iterator_spec, NULL);
+    PyObject *reverse_type;
 
-    if (type == NULL) {
+    if (iter_type == NULL) {
         return -1;
     }
-    /* deliberately not added to the module dict: the type is an implementation
-     * detail, only reachable by iterating */
-    state->grapheme_iterator_type = (PyTypeObject *)type;
+    reverse_type = PyType_FromModuleAndSpec(module, &grapheme_reverse_iterator_spec, NULL);
+    if (reverse_type == NULL) {
+        Py_DECREF(iter_type);
+        return -1;
+    }
+    /* deliberately not added to the module dict: the types are implementation
+     * details, only reachable by iterating */
+    state->grapheme_iterator_type = (PyTypeObject *)iter_type;
+    state->grapheme_reverse_iterator_type = (PyTypeObject *)reverse_type;
     return 0;
 }
 
@@ -1703,6 +2175,7 @@ module_traverse(PyObject *module, visitproc visit, void *arg)
 
     if (state != NULL) {
         Py_VISIT(state->grapheme_iterator_type);
+        Py_VISIT(state->grapheme_reverse_iterator_type);
     }
     return 0;
 }
@@ -1714,6 +2187,7 @@ module_clear(PyObject *module)
 
     if (state != NULL) {
         Py_CLEAR(state->grapheme_iterator_type);
+        Py_CLEAR(state->grapheme_reverse_iterator_type);
     }
     return 0;
 }

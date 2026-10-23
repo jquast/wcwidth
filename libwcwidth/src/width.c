@@ -6,6 +6,7 @@
 #include "wcwidth/text_sizing.h"
 #include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
+#include "wcwidth/bitset_tables.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 #include "wcwidth/wcwidth.h"
@@ -899,8 +900,10 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             /* 6. VS16 (U+FE0F): converts preceding narrow character to wide. */
             if (ucs == 0xFE0F && last_measured_idx >= 0) {
                 if (!wcwidth_bisearch(last_measured_ucs, vs16_narrower, vs16_narrower_len)
-                    && wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE,
-                                        WCWIDTH_VS16_NARROW_TO_WIDE_LEN)) {
+                    && wcwidth_bitset_get(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE_MIN,
+                                          WCWIDTH_VS16_NARROW_TO_WIDE_MAX,
+                                          WCWIDTH_VS16_NARROW_TO_WIDE_INDEX,
+                                          WCWIDTH_VS16_NARROW_TO_WIDE_POOL)) {
                     cluster_width = 2;
                 }
                 last_measured_idx = -2;
@@ -909,9 +912,11 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             }
 
             if (ucs == 0xFE0E && last_measured_idx >= 0) {
-                bool vs15_narrow = wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
-                                                    WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
-                                   != 0;
+                bool vs15_narrow =
+                    wcwidth_bitset_get(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW_MIN,
+                                       WCWIDTH_VS15_WIDE_TO_NARROW_MAX,
+                                       WCWIDTH_VS15_WIDE_TO_NARROW_INDEX,
+                                       WCWIDTH_VS15_WIDE_TO_NARROW_POOL);
                 if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                     vs15_narrow = false;
                 }
@@ -1060,7 +1065,10 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                     prev_was_virama = true;
                 }
                 else if (last_measured_idx >= 0
-                         && wcwidth_bisearch(ucs, WCWIDTH_CATEGORY_MC, WCWIDTH_CATEGORY_MC_LEN)) {
+                         && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN,
+                                               WCWIDTH_CATEGORY_MC_MAX,
+                                               WCWIDTH_CATEGORY_MC_INDEX,
+                                               WCWIDTH_CATEGORY_MC_POOL)) {
                     /* Spacing Combining Mark (Mc): extends the cluster to width 2. */
                     cluster_width = 2;
                     last_measured_idx = -2;
@@ -1548,8 +1556,10 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         /* 6. VS16 (U+FE0F): converts preceding narrow character to wide. */
         if (ucs == 0xFE0F && last_measured_idx >= 0) {
             if (!wcwidth_bisearch(last_measured_ucs, vs16_narrower, vs16_narrower_len)
-                && wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE,
-                                    WCWIDTH_VS16_NARROW_TO_WIDE_LEN)) {
+                && wcwidth_bitset_get(last_measured_ucs, WCWIDTH_VS16_NARROW_TO_WIDE_MIN,
+                                      WCWIDTH_VS16_NARROW_TO_WIDE_MAX,
+                                      WCWIDTH_VS16_NARROW_TO_WIDE_INDEX,
+                                      WCWIDTH_VS16_NARROW_TO_WIDE_POOL)) {
                 cluster_width = 2;
             }
             last_measured_idx = -2;
@@ -1558,9 +1568,11 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         }
 
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
-            bool vs15_narrow = wcwidth_bisearch(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW,
-                                                WCWIDTH_VS15_WIDE_TO_NARROW_LEN)
-                               != 0;
+            bool vs15_narrow =
+                wcwidth_bitset_get(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW_MIN,
+                                   WCWIDTH_VS15_WIDE_TO_NARROW_MAX,
+                                   WCWIDTH_VS15_WIDE_TO_NARROW_INDEX,
+                                   WCWIDTH_VS15_WIDE_TO_NARROW_POOL);
             if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                 vs15_narrow = false;
             }
@@ -1694,7 +1706,10 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                 prev_was_virama = true;
             }
             else if (last_measured_idx >= 0
-                     && wcwidth_bisearch(ucs, WCWIDTH_CATEGORY_MC, WCWIDTH_CATEGORY_MC_LEN)) {
+                     && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN,
+                                           WCWIDTH_CATEGORY_MC_MAX,
+                                           WCWIDTH_CATEGORY_MC_INDEX,
+                                           WCWIDTH_CATEGORY_MC_POOL)) {
                 cluster_width = 2;
                 last_measured_idx = -2;
                 prev_was_virama = false;
