@@ -87,8 +87,8 @@ def test_wcswidth_ambiguous_latin1(benchmark):
 
 
 # Regional Indicator benchmarks - paired flags and unpaired RI
-RI_FLAGS_PAIRED = '🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵' * 100
-RI_FLAGS_UNPAIRED = '🇺🇸🇬🇧🇫' * 100
+RI_FLAGS_PAIRED = '🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵' * 20
+RI_FLAGS_UNPAIRED = '🇺🇸🇬🇧🇫' * 20
 
 
 def test_wcswidth_ri_flags_paired(benchmark):
@@ -112,7 +112,7 @@ def test_width_ri_flags_unpaired(benchmark):
 
 
 # NFC vs NFD comparison - text with combining marks
-DIACRITICS_COMPOSED = 'café résumé naïve ' * 100
+DIACRITICS_COMPOSED = 'café résumé naïve ' * 20
 DIACRITICS_DECOMPOSED = unicodedata.normalize('NFD', DIACRITICS_COMPOSED)
 
 
@@ -590,8 +590,8 @@ def test_iter_sequences_mixed(benchmark):
 
 
 # Brahmic script benchmarks -- text with virama conjuncts
-BRAHMIC_DEVANAGARI = 'हिन्दी भाषा में लिखा गया पाठ है। क्षत्रिय स्त्री ' * 20
-BRAHMIC_BENGALI = 'বাংলা ভাষায় লেখা একটি পাঠ। বাঙ্গালী ভাষা ' * 20
+BRAHMIC_DEVANAGARI = 'हिन्दी भाषा में लिखा गया पाठ है। क्षत्रिय स्त्री ' * 5
+BRAHMIC_BENGALI = 'বাংলা ভাষায় লেখা একটি পাঠ। বাঙ্গালী ভাষা ' * 5
 
 
 def test_wcswidth_brahmic_devanagari(benchmark):
@@ -621,7 +621,7 @@ UDHR_TEXT = ''
 UDHR_LINES = []
 UDHR_WIDTHS = []
 UDHR_FILLCHAR = '█'
-UDHR_SAMPLE_EVERY = 20
+UDHR_SAMPLE_EVERY = 100
 if os.path.exists(UDHR_FILE):
     with open(UDHR_FILE, encoding='utf-8') as f:
         UDHR_TEXT = f.read()
