@@ -40,6 +40,10 @@ TEST(u8_parse_basic)
     ASSERT_EQ(2, wcwidth_width_u8(
                      "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA7",
                      (size_t) 18, WCWIDTH_PARSE, &opts, &error));
+    /* Variation selectors with no preceding character, and after a base they do not widen. */
+    ASSERT_EQ(0, w_parse("\xEF\xB8\x8F"));
+    ASSERT_EQ(1, w_parse("A\xEF\xB8\x8F"));
+    ASSERT_EQ(0, w_parse("\xEF\xB8\x8E"));
 }
 
 TEST(u8_ignore)

@@ -1,13 +1,16 @@
 """Tests for sequence-aware text wrapping functions."""
 
 # std imports
+import sys
 import textwrap
+import importlib
 
 # 3rd party
 import pytest
 
 # local
 import wcwidth
+import wcwidth.textwrap as _textwrap_module
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 
@@ -696,3 +699,14 @@ def test_wrap_drops_leading_whitespace_only_lines(text):
     """Discard all-whitespace first lines rather than emitting empty lines."""
     assert wrap(text, width=1) == list('hello')
     assert wrap(text, width=1, drop_whitespace=False) == list(text)
+
+
+def test_iter_graphemes_import_error_fallback():
+    """A missing extension at import time leaves textwrap on the Python iterator."""
+    sys.modules['wcwidth._wcwidth_c'] = None
+    try:
+        importlib.reload(_textwrap_module)
+        assert _textwrap_module.iter_graphemes.__module__ == 'wcwidth.grapheme'
+    finally:
+        del sys.modules['wcwidth._wcwidth_c']
+        importlib.reload(_textwrap_module)

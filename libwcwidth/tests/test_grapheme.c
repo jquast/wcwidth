@@ -82,6 +82,7 @@ TEST(boundary_before_basic)
     ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_before("abc", 3, 3));
     ASSERT_EQ((int64_t) 4, (int64_t) wcwidth_grapheme_boundary_before(text, 7, 7));
     ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_before("", 0, 0));
+    ASSERT_EQ((int64_t) 2, (int64_t) wcwidth_grapheme_boundary_before("a\n\xCC\x81", 4, 4));
 }
 
 TEST(indic_conjunct_unicode18)

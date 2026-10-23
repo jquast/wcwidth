@@ -280,6 +280,7 @@ MULTI_COMBINE = 'e\u0301\u0300'
     (PREPEND_CHAR + '\n', 2, 1),  # '\n' separate at 1
     # C1 control (NEL, 0x85) stops backward scan in _find_cluster_start (GB4)
     ('X\x85\u0301', 3, 2),
+    ('a\n\u0301', 3, 2),
     (LONG_CLUSTER, len(LONG_CLUSTER), 0),
     ('ab' + LONG_CLUSTER, 2 + len(LONG_CLUSTER), 2),
 ])

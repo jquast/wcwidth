@@ -180,7 +180,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
 {
     /* Below U+0300 the only joining rule is CR x LF.  This avoids every table
      * lookup for ASCII and Latin-1, which is the common case. */
-    if (cp_idx > 0 && cp[cp_idx] < 0x300 && cp[cp_idx - 1] < 0x300) {
+    if (cp[cp_idx] < 0x300 && cp[cp_idx - 1] < 0x300) {
         *ri_count_out = 0;
         return !(cp[cp_idx - 1] == 0x0D && cp[cp_idx] == 0x0A);
     }
@@ -250,7 +250,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
      * Unicode 18.0.0 (UAX #29 revision 48) drops the leading
      * \p{InCB=Consonant} requirement.
      */
-    if (cp_idx > 0 && is_incb_consonant(cp[cp_idx])) {
+    if (is_incb_consonant(cp[cp_idx])) {
         size_t i = cp_idx;
 
         while (i > 0 && is_incb_extend(cp[i - 1])) {
@@ -263,7 +263,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
     }
 
     /* GB11: ExtPict Extend* ZWJ x ExtPict */
-    if (prev_gcb == GCB_ZWJ && cp_idx > 0) {
+    if (prev_gcb == GCB_ZWJ) {
         uint32_t curr_ucs = cp[cp_idx];
 
         if (wcwidth_is_extended_pictographic(curr_ucs)) {
