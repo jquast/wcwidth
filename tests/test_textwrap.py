@@ -10,7 +10,6 @@ import pytest
 
 # local
 import wcwidth
-import wcwidth.textwrap as _textwrap_module
 from wcwidth.textwrap import SequenceTextWrapper, wrap
 
 
@@ -703,10 +702,11 @@ def test_wrap_drops_leading_whitespace_only_lines(text):
 
 def test_iter_graphemes_import_error_fallback():
     """A missing extension at import time leaves textwrap on the Python iterator."""
+    module = importlib.import_module('wcwidth.textwrap')
     sys.modules['wcwidth._wcwidth_c'] = None
     try:
-        importlib.reload(_textwrap_module)
-        assert _textwrap_module.iter_graphemes.__module__ == 'wcwidth.grapheme'
+        importlib.reload(module)
+        assert module.iter_graphemes.__module__ == 'wcwidth.grapheme'
     finally:
         del sys.modules['wcwidth._wcwidth_c']
-        importlib.reload(_textwrap_module)
+        importlib.reload(module)
