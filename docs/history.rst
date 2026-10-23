@@ -3,8 +3,12 @@ History
 =======
 
 0.9.4 *unreleased*
+
   * **Bugfix** Flag emojis were split by grapheme breaks when following control characters, like
     newline or tab, `PR #301`_.
+  * **Improved** performance of .. by ...  XXX DRAFT XXX, `PR #303`.
+  * **Improved** `grapheme_boundary_before()`_ and `iter_graphemes_reverse()`_ can now break very
+    long grapheme clusters `PR #303`.
 
 0.9.3 *2026-10-20*
   * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
@@ -333,6 +337,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #296`: https://github.com/jquast/wcwidth/pull/296
 .. _`PR #299`: https://github.com/jquast/wcwidth/pull/299
 .. _`PR #301`: https://github.com/jquast/wcwidth/pull/301
+.. _`PR #303`: https://github.com/jquast/wcwidth/pull/303
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
