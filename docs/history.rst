@@ -2,8 +2,7 @@
 History
 =======
 
-0.9.4 *unreleased*
-
+0.9.4 *2026-10-24*
   * **Bugfix** Flag emojis were split by grapheme breaks when following control characters, like
     newline or tab, `PR #301`_.
   * **Improved** performance of most general functions by +64% `PR #303`.
