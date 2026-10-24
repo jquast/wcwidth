@@ -4,7 +4,6 @@
 #
 #    pip-compile --allow-unsafe --no-emit-index-url --output-file=requirements-tests39.txt --strip-extras requirements-tests39.in
 #
-
 cffi==1.17.1
     # via -r requirements-tests39.in
 coverage==7.10.7
@@ -52,7 +51,7 @@ tomli==2.2.1
     #   -r requirements-tests39.in
     #   coverage
     #   pytest
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via exceptiongroup
 zipp==3.23.0
     # via
