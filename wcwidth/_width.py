@@ -218,6 +218,7 @@ def width(
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
+    ri_unpaired = False
     _max_extent_before = 0
     cluster_start = -1
     col_before_cluster = 0
@@ -229,6 +230,8 @@ def width(
 
     while idx < text_len:
         char = text[idx]
+        ri_unpaired_before = ri_unpaired
+        ri_unpaired = False
 
         # 1. ESC sequences
         if char == '\x1b':
@@ -421,12 +424,8 @@ def width(
         # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
-                ri_before = 0
-                j = idx - 1
-                while j >= 0 and ord(text[j]) in _REGIONAL_INDICATOR_SET:
-                    ri_before += 1
-                    j -= 1
-                if ri_before % 2 == 1 and not (_narrower and _bisearch(ucs, _narrower)):
+                ri_unpaired = not ri_unpaired_before
+                if ri_unpaired_before and not (_narrower and _bisearch(ucs, _narrower)):
                     last_measured_ucs = ucs
                     idx += 1
                     continue

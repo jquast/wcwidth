@@ -23,6 +23,7 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
     uint32_t last_measured_ucs;
     int last_measured_w;
     bool prev_was_virama;
+    bool ri_unpaired;
 
     /* Empty input */
     if (n == 0 || cp == NULL) {
@@ -51,9 +52,12 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
     last_measured_ucs = 0;
     last_measured_w = 0;
     prev_was_virama = false;
+    ri_unpaired = false;
 
     while (idx < n) {
         uint32_t ucs = cp[idx];
+        bool ri_unpaired_before = ri_unpaired;
+        ri_unpaired = false;
 
         /* 5. ZWJ (U+200D): consumed without contributing width. */
         if (ucs == 0x200D) {
@@ -101,18 +105,8 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
         /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
         if (ucs > 0xFFFF) {
             if (wcwidth_is_regional_indicator(ucs)) {
-                int ri_before = 0;
-                size_t j = idx;
-                while (j > 0) {
-                    j--;
-                    if (wcwidth_is_regional_indicator(cp[j])) {
-                        ri_before++;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                if (ri_before % 2 == 1) {
+                ri_unpaired = !ri_unpaired_before;
+                if (ri_unpaired_before) {
                     last_measured_ucs = ucs;
                     idx += 1;
                     continue;

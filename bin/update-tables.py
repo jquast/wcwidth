@@ -461,7 +461,8 @@ class GcbClassTable:
         seen = {zero: 0}
         index = []
         for offset in range(0, len(payload), page_bytes):
-            page = bytes(payload[offset:offset + page_bytes]).ljust(page_bytes, b'\x00')
+            page = bytes(payload[offset:offset + page_bytes])
+            page += bytes(page_bytes - len(page))
             number = seen.get(page)
             if number is None:
                 number = len(pool)

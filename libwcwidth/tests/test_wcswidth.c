@@ -21,6 +21,28 @@ TEST(wcswidth_u8_basic)
     ASSERT_EQ(2, wcswidth_u8("a\0b", 3, 1));         /* embedded NUL */
 }
 
+TEST(wcswidth_u32_ri_runs)
+{
+    uint32_t one[] = {0x1F1E6};
+    uint32_t five[] = {0x1F1E6, 0x1F1E7, 0x1F1E8, 0x1F1E9, 0x1F1EA};
+    uint32_t broken[] = {0x1F1E6, 'a', 0x1F1E7};
+
+    ASSERT_EQ(2, wcswidth_u32(one, 1, 1));
+    ASSERT_EQ(2, wcswidth_u32(five, 2, 1));
+    ASSERT_EQ(4, wcswidth_u32(five, 3, 1));
+    ASSERT_EQ(4, wcswidth_u32(five, 4, 1));
+    ASSERT_EQ(6, wcswidth_u32(five, 5, 1));
+    ASSERT_EQ(5, wcswidth_u32(broken, 3, 1));
+}
+
+TEST(wcstwidth_u32_ri_runs)
+{
+    uint32_t five[] = {0x1F1E6, 0x1F1E7, 0x1F1E8, 0x1F1E9, 0x1F1EA};
+
+    ASSERT_EQ(4, wcstwidth_u32(five, 3, 1, NULL));
+    ASSERT_EQ(6, wcstwidth_u32(five, 5, 1, NULL));
+}
+
 TEST(wcstwidth_u32_basic)
 {
     uint32_t ascii[] = {'h', 'i'};
@@ -99,7 +121,9 @@ main(void)
 {
     RUN_TEST(wcswidth_u32_basic);
     RUN_TEST(wcswidth_u8_basic);
+    RUN_TEST(wcswidth_u32_ri_runs);
     RUN_TEST(wcstwidth_u32_basic);
+    RUN_TEST(wcstwidth_u32_ri_runs);
     RUN_TEST(wcstwidth_u8_basic);
     RUN_TEST(wcstwidth_u8_long);
     RUN_TEST(wcstwidth_terminal_overrides);
