@@ -193,29 +193,26 @@ def test_recommended_variation_16_sequences(benchmark):
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
-def test_regional_indicator_single():
+def test_regional_indicator_single_width():
     """Single Regional Indicator symbol is width 2."""
     assert wcwidth.wcwidth('\U0001F1FA') == 2
-    assert wcwidth.wcswidth('\U0001F1FA') == 2
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
-def test_regional_indicator_pair():
-    """Flag pair (two Regional Indicators) is width 2, not 4."""
-    assert wcwidth.wcswidth('\U0001F1FA\U0001F1F8') == 2
-
-
-@pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
-def test_regional_indicator_three():
-    """Three Regional Indicators: one pair (2) + one single (2) = 4."""
-    assert wcwidth.wcswidth('\U0001F1FA\U0001F1F8\U0001F1E6') == 4
-
-
-@pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")
-def test_regional_indicator_four():
-    """Four Regional Indicators: two pairs = 2 + 2 = 4."""
-    assert wcwidth.wcswidth(
-        '\U0001F1FA\U0001F1F8\U0001F1E6\U0001F1FA') == 4
+@pytest.mark.parametrize('text,expected', [
+    ('\U0001F1FA', 2),
+    ('\U0001F1FA\U0001F1F8', 2),
+    ('\U0001F1FA\U0001F1F8\U0001F1E6', 4),
+    ('\U0001F1FA\U0001F1F8\U0001F1E6\U0001F1FA', 4),
+    ('\U0001F1FA\U0001F1F8\U0001F1E6\U0001F1FA\U0001F1E7', 6),
+    ('\U0001F1E6a\U0001F1E7', 5),
+    ('\U0001F1E6\uFE0F\U0001F1E7', 4),
+    ('\U0001F1E6\uFE0E\U0001F1E7', 4),
+    ('\U0001F1E6\u0903\U0001F1E7', 4),
+])
+def test_regional_indicator_runs(text, expected):
+    """Regional indicators pair from the end; unpaired ones measure wide."""
+    assert wcwidth.wcswidth(text) == expected
 
 
 @pytest.mark.skipif(NARROW_ONLY, reason="Test cannot verify on python 'narrow' builds")

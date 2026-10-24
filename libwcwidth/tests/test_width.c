@@ -46,6 +46,18 @@ TEST(u8_parse_basic)
     ASSERT_EQ(0, w_parse("\xEF\xB8\x8E"));
 }
 
+TEST(u8_parse_ri_runs)
+{
+    ASSERT_EQ(2, w_parse("\xF0\x9F\x87\xA6"));
+    ASSERT_EQ(2, w_parse("\xF0\x9F\x87\xA6\xF0\x9F\x87\xA7"));
+    ASSERT_EQ(4, w_parse("\xF0\x9F\x87\xA6\xF0\x9F\x87\xA7\xF0\x9F\x87\xA8"));
+    ASSERT_EQ(6, w_parse("\xF0\x9F\x87\xA6\xF0\x9F\x87\xA7\xF0\x9F\x87\xA8"
+                         "\xF0\x9F\x87\xA9\xF0\x9F\x87\xAA"));
+    ASSERT_EQ(5, w_parse("\xF0\x9F\x87\xA6"
+                         "a"
+                         "\xF0\x9F\x87\xA7"));
+}
+
 TEST(u8_ignore)
 {
     ASSERT_EQ(3, w_ignore("\x1b[31mred\x1b[0m"));
@@ -252,6 +264,7 @@ int
 main(void)
 {
     RUN_TEST(u8_parse_basic);
+    RUN_TEST(u8_parse_ri_runs);
     RUN_TEST(u8_ignore);
     RUN_TEST(u8_ignore_long);
     RUN_TEST(u8_strict);

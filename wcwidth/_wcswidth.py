@@ -109,6 +109,7 @@ def wcswidth(
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
+    ri_unpaired = False
     cluster_width = 0
     vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']
     vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']
@@ -117,6 +118,8 @@ def wcswidth(
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
+        ri_unpaired_before = ri_unpaired
+        ri_unpaired = False
 
         # 5. ZWJ (U+200D): consumed without contributing width.
         # Virama codepoints are treated as zero-width combining marks (Mn). When a
@@ -154,12 +157,8 @@ def wcswidth(
         # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
-                ri_before = 0
-                j = idx - 1
-                while j >= 0 and ord(pwcs[j]) in _REGIONAL_INDICATOR_SET:
-                    ri_before += 1
-                    j -= 1
-                if ri_before % 2 == 1:
+                ri_unpaired = not ri_unpaired_before
+                if ri_unpaired_before:
                     last_measured_ucs = ucs
                     idx += 1
                     continue
@@ -280,6 +279,7 @@ def wcstwidth(
     last_measured_ucs = -1
     last_measured_w = 0
     prev_was_virama = False
+    ri_unpaired = False
     cluster_start = -1
     total_before_cluster = 0
     cluster_width = 0
@@ -290,6 +290,8 @@ def wcstwidth(
     while idx < end:
         char = pwcs[idx]
         ucs = ord(char)
+        ri_unpaired_before = ri_unpaired
+        ri_unpaired = False
 
         #
         # Much of the logic below matches width(); it is repeated here for performance, with
@@ -356,12 +358,8 @@ def wcstwidth(
         # 7. Regional Indicator & Fitzpatrick (both above BMP)
         if ucs > 0xFFFF:
             if ucs in _REGIONAL_INDICATOR_SET:
-                ri_before = 0
-                j = idx - 1
-                while j >= 0 and ord(pwcs[j]) in _REGIONAL_INDICATOR_SET:
-                    ri_before += 1
-                    j -= 1
-                if ri_before % 2 == 1 and not (_narrower and _bisearch(ucs, _narrower)):
+                ri_unpaired = not ri_unpaired_before
+                if ri_unpaired_before and not (_narrower and _bisearch(ucs, _narrower)):
                     last_measured_ucs = ucs
                     idx += 1
                     continue

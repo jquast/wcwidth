@@ -42,6 +42,7 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
     uint32_t last_measured_ucs;
     int last_measured_w;
     bool prev_was_virama;
+    bool ri_unpaired;
     int cluster_start;
     int total_before_cluster;
 
@@ -90,11 +91,14 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
     last_measured_ucs = 0;
     last_measured_w = 0;
     prev_was_virama = false;
+    ri_unpaired = false;
     cluster_start = -1;
     total_before_cluster = 0;
 
     while (idx < n) {
         uint32_t ucs = cp[idx];
+        bool ri_unpaired_before = ri_unpaired;
+        ri_unpaired = false;
 
         /* 5. ZWJ (U+200D): consumed without contributing width. */
         if (ucs == 0x200D) {
@@ -168,18 +172,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
         /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
         if (ucs > 0xFFFF) {
             if (wcwidth_is_regional_indicator(ucs)) {
-                int ri_before = 0;
-                size_t j = idx;
-                while (j > 0) {
-                    j--;
-                    if (wcwidth_is_regional_indicator(cp[j])) {
-                        ri_before++;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
+                ri_unpaired = !ri_unpaired_before;
+                if (ri_unpaired_before && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                     last_measured_ucs = ucs;
                     idx += 1;
                     continue;

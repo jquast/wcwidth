@@ -106,24 +106,6 @@ is_horizontal_ctrl(uint32_t ucs)
     return ucs == 0x08 || ucs == 0x09 || ucs == 0x0D;
 }
 
-/*
- * Decode the codepoint immediately preceding byte position pos.  Returns its
- * starting offset, or (size_t) -1 at the start of the string.
- */
-static size_t
-prev_codepoint(const char *text, size_t pos, uint32_t *cp_out)
-{
-    size_t j = pos;
-    if (j == 0) {
-        return (size_t) -1;
-    }
-    do {
-        j--;
-    } while (j > 0 && ((unsigned char) text[j] & 0xC0) == 0x80);
-    wcwidth_utf8_decode_single(text + j, pos - j, cp_out);
-    return j;
-}
-
 static size_t
 utf8_encode_single(uint32_t ucs, char *out)
 {
@@ -635,6 +617,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
     uint32_t last_measured_ucs;
     int last_measured_w;
     bool prev_was_virama;
+    bool ri_unpaired;
     const wcwidth_terminal_override_t *term;
     const wcwidth_interval_t *narrower = NULL;
     size_t narrower_len = 0;
@@ -681,11 +664,14 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
     last_measured_ucs = 0;
     last_measured_w = 0;
     prev_was_virama = false;
+    ri_unpaired = false;
     cluster_start = -1;
     col_before_cluster = 0;
 
     while (idx < n) {
         unsigned char b = (unsigned char) text[idx];
+        bool ri_unpaired_before = ri_unpaired;
+        ri_unpaired = false;
 
         if (b == ESC) {
             flush_cluster(&current_col, &max_extent, &cluster_width);
@@ -934,20 +920,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
             if (ucs > 0xFFFF) {
                 if (wcwidth_is_regional_indicator(ucs)) {
-                    /* Count consecutive preceding Regional Indicators.  An odd
-                     * count pairs this one with the previous; the pair adds
-                     * width only when the terminal narrows lone indicators. */
-                    int ri_before = 0;
-                    size_t j = idx;
-                    for (;;) {
-                        uint32_t prev_ucs;
-                        j = prev_codepoint(text, j, &prev_ucs);
-                        if (j == (size_t) -1 || !wcwidth_is_regional_indicator(prev_ucs)) {
-                            break;
-                        }
-                        ri_before++;
-                    }
-                    if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
+                    ri_unpaired = !ri_unpaired_before;
+                    if (ri_unpaired_before && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                         last_measured_ucs = ucs;
                         idx += consumed;
                         continue;
@@ -1133,6 +1107,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
     uint32_t last_measured_ucs;
     int last_measured_w;
     bool prev_was_virama;
+    bool ri_unpaired;
     const wcwidth_terminal_override_t *term;
     const wcwidth_interval_t *narrower = NULL;
     size_t narrower_len = 0;
@@ -1179,11 +1154,14 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
     last_measured_ucs = 0;
     last_measured_w = 0;
     prev_was_virama = false;
+    ri_unpaired = false;
     cluster_start = -1;
     col_before_cluster = 0;
 
     while (idx < n) {
         uint32_t ucs = cp[idx];
+        bool ri_unpaired_before = ri_unpaired;
+        ri_unpaired = false;
 
         /* Lone surrogates (U+D800-U+DFFF) are not valid Unicode and cannot
          * be encoded in UTF-8.  The old wcwidth_width_u32 path normalized them to
@@ -1587,16 +1565,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         /* 7. Regional Indicator & Fitzpatrick (both above BMP) */
         if (ucs > 0xFFFF) {
             if (wcwidth_is_regional_indicator(ucs)) {
-                int ri_before = 0;
-                size_t j = idx;
-                while (j > 0) {
-                    j--;
-                    if (!wcwidth_is_regional_indicator(cp[j])) {
-                        break;
-                    }
-                    ri_before++;
-                }
-                if (ri_before % 2 == 1 && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
+                ri_unpaired = !ri_unpaired_before;
+                if (ri_unpaired_before && !wcwidth_bisearch(ucs, narrower, narrower_len)) {
                     last_measured_ucs = ucs;
                     idx++;
                     continue;

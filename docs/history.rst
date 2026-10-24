@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.5 *unreleased*
+  * **Improved** measurement of long runs of flag emojis, which previously became slower with each
+    additional flag.
+
 0.9.4 *2026-10-24*
   * **Bugfix** Flag emojis were split by grapheme breaks when following control characters, like
     newline or tab, `PR #301`_.
