@@ -45,6 +45,7 @@ set(LIBWCWIDTH_SOURCES
     src/tables/table_terminal_overrides.c
     src/tables/table_term_programs.c
     src/tables/table_gcb_class.c
+    src/tables/bitset_tables.c
 )
 
 add_library(wcwidth ${LIBWCWIDTH_SOURCES})

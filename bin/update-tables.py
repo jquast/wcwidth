@@ -569,6 +569,118 @@ class CGcbClassRenderDef(RenderDefinition):
         return {'gcb': self.render_context.gcb}
 
 
+@dataclass(frozen=True)
+class BitsetTable:
+    """One interval table packed as a two level bitset."""
+
+    c_name: str
+    lo: int
+    hi: int
+    index_rows: tuple[str, ...]
+    pool_rows: tuple[str, ...]
+    index_len: int
+    pool_len: int
+
+    @property
+    def min_hex(self) -> str:
+        return f'{self.lo:05X}'
+
+    @property
+    def max_hex(self) -> str:
+        return f'{self.hi:05X}'
+
+    @property
+    def index_text(self) -> str:
+        return '\n'.join(self.index_rows)
+
+    @property
+    def pool_text(self) -> str:
+        return '\n'.join(self.pool_rows)
+
+    @classmethod
+    def build(cls, c_name: str, ranges: Sequence[tuple[int, int]]) -> Self:
+        """Pack ranges into 256 codepoint pages and verify every entry."""
+        lo, hi = ranges[0][0], ranges[-1][1]
+        members: set[int] = set()
+        payload = bytearray((hi - lo + 8) // 8)
+        for start, end in ranges:
+            for ucs in range(start, end + 1):
+                members.add(ucs)
+                offset = ucs - lo
+                payload[offset >> 3] |= 1 << (offset & 7)
+        index, pool = GcbClassTable._paginate(bytes(payload), 32)
+        if len(pool) > 0x100:
+            raise ValueError(f'{c_name} page pool of {len(pool)} does not fit a uint8_t index')
+        for ucs in range(lo, hi + 1):
+            offset = ucs - lo
+            got = bool(pool[index[offset >> 8]][(offset & 0xFF) >> 3]
+                       & (1 << (offset & 7)))
+            if got != (ucs in members):
+                raise ValueError(f'{c_name} bitset mismatch at U+{ucs:04X}')
+        print(f'  {c_name}: {lo:#06x}..{hi:#06x}, {len(index)} pages, '
+              f'{len(pool)} pooled pages')
+        return cls(
+            c_name=c_name,
+            lo=lo,
+            hi=hi,
+            index_rows=GcbClassTable._rows(index),
+            pool_rows=GcbClassTable._rows(b''.join(pool)),
+            index_len=len(index),
+            pool_len=len(pool) * 32,
+        )
+
+
+@dataclass(frozen=True)
+class BitsetTablesRenderCtx(RenderContext):
+    tables: tuple[BitsetTable, ...]
+
+
+@dataclass
+class BitsetTablesRenderDef(RenderDefinition):
+    render_context: BitsetTablesRenderCtx
+
+    @classmethod
+    def new(cls, jinja_filename: str, output_filename: str,
+            context: BitsetTablesRenderCtx) -> Self:
+        return cls(
+            jinja_filename=jinja_filename,
+            output_filename=output_filename,
+            render_context=context,
+        )
+
+
+# Source contexts and C names for the converted tables.  The interval arrays stay
+# exported from wcwidth/tables.h; these bitsets are the internal hot lookups.
+BITSET_TABLES = (
+    ('ZERO_WIDTH', 'WCWIDTH_ZERO_WIDTH'),
+    ('WIDE_EASTASIAN', 'WCWIDTH_WIDE_EASTASIAN'),
+    ('AMBIGUOUS_EASTASIAN', 'WCWIDTH_AMBIGUOUS_EASTASIAN'),
+    ('CATEGORY_MC', 'WCWIDTH_CATEGORY_MC'),
+    ('VS16_NARROW_TO_WIDE', 'WCWIDTH_VS16_NARROW_TO_WIDE'),
+    ('VS15_WIDE_TO_NARROW', 'WCWIDTH_VS15_WIDE_TO_NARROW'),
+)
+BITSET_GRAPHEME_TABLES = (
+    ('EXTENDED_PICTOGRAPHIC', 'WCWIDTH_EXTENDED_PICTOGRAPHIC'),
+    ('INCB_CONSONANT', 'WCWIDTH_INCB_CONSONANT'),
+    ('INCB_EXTEND', 'WCWIDTH_INCB_EXTEND'),
+)
+
+
+def build_bitset_tables(
+        table_contexts: Mapping[str, UnicodeTableRenderCtx],
+        grapheme_context: GraphemeTableRenderCtx) -> BitsetTablesRenderCtx:
+    """Build every converted bitset from the fetched table definitions."""
+    tables = []
+    for variable_name, c_name in BITSET_TABLES:
+        context = table_contexts[variable_name]
+        latest = sorted(context.table)[-1]
+        tables.append(BitsetTable.build(c_name, context.table[latest].as_value_ranges()))
+    for variable_name, c_name in BITSET_GRAPHEME_TABLES:
+        tables.append(BitsetTable.build(
+            c_name, grapheme_context.tables[variable_name].as_value_ranges()))
+    return BitsetTablesRenderCtx(tuple(tables))
+
+
 def _project_version() -> str:
     """Return the version from pyproject.toml, the source of truth."""
     with open(os.path.join(PATH_UP, 'pyproject.toml'), 'rb') as fin:
@@ -2498,11 +2610,25 @@ def python_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
 
 def c_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
     """Render definitions for the C11 tables, class table, config header, and terminal tables."""
+    table_contexts: dict[str, UnicodeTableRenderCtx] = {}
     for name, fetch in TABLE_FETCHES:
-        yield UnicodeTableRenderDef.new(f'{name}.c', fetch())
+        context = fetch()
+        table_contexts[context.variable_name] = context
+        yield UnicodeTableRenderDef.new(f'{name}.c', context)
     grapheme_context = fetch_table_grapheme_data()
     yield GraphemeTableRenderDef.new('table_grapheme.c', grapheme_context)
     yield CGcbClassRenderDef.new(grapheme_context.tables)
+    bitset_context = build_bitset_tables(table_contexts, grapheme_context)
+    yield BitsetTablesRenderDef.new(
+        'c_bitset_tables.c.j2',
+        os.path.join(PATH_UP, LANGUAGES['.c']['dir'], 'bitset_tables.c'),
+        bitset_context,
+    )
+    yield BitsetTablesRenderDef.new(
+        'bitset_tables.h.j2',
+        os.path.join(PATH_UP, 'libwcwidth', 'include', 'wcwidth', 'bitset_tables.h'),
+        bitset_context,
+    )
     yield WcwidthConfigRenderDef.new(_project_version(), str(latest_version))
     yield CTerminalOverrideRenderDef.new()
     yield CTermProgramRenderDef.new()

@@ -7,6 +7,7 @@
 #include "wcwidth/grapheme.h"
 #include "wcwidth/table_types.h"
 #include "wcwidth/tables.h"
+#include "wcwidth/bitset_tables.h"
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 
@@ -50,7 +51,7 @@ _Static_assert(GCB_T == WCWIDTH_GCB_T, "gcb_t drifted from generated classes");
 _Static_assert(GCB_LV == WCWIDTH_GCB_LV, "gcb_t drifted from generated classes");
 _Static_assert(GCB_LVT == WCWIDTH_GCB_LVT, "gcb_t drifted from generated classes");
 
-#define MAX_GRAPHEME_SCAN 32
+#define MAX_GRAPHEME_SCAN 16
 
 struct wcwidth_grapheme_iter_t
 {
@@ -123,6 +124,23 @@ predecode(const char *text, size_t len, uint32_t **cp_out, size_t **offsets_out,
 static gcb_t
 gcb_of(uint32_t ucs)
 {
+    /* Below U+0300 no Extend, ZWJ, Prepend, SpacingMark, Hangul or RI exists,
+     * so the class is one of four values and no table lookup is needed. */
+    if (ucs < 0x300) {
+        if (ucs == 0x0D) {
+            return GCB_CR;
+        }
+        if (ucs == 0x0A) {
+            return GCB_LF;
+        }
+        if (ucs == 0x00AD) { /* SOFT HYPHEN, the only Control in U+00A0..U+02FF */
+            return GCB_CONTROL;
+        }
+        if (ucs < 0x20 || (ucs >= 0x7F && ucs < 0xA0)) {
+            return GCB_CONTROL;
+        }
+        return GCB_OTHER;
+    }
     return (gcb_t) wcwidth_gcb_class(ucs);
 }
 
@@ -135,13 +153,15 @@ is_incb_linker(uint32_t ucs)
 static bool
 is_incb_consonant(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_INCB_CONSONANT, WCWIDTH_INCB_CONSONANT_LEN) != 0;
+    return wcwidth_bitset_get(ucs, WCWIDTH_INCB_CONSONANT_MIN, WCWIDTH_INCB_CONSONANT_MAX,
+                              WCWIDTH_INCB_CONSONANT_INDEX, WCWIDTH_INCB_CONSONANT_POOL);
 }
 
 static bool
 is_incb_extend(uint32_t ucs)
 {
-    return wcwidth_bisearch(ucs, WCWIDTH_INCB_EXTEND, WCWIDTH_INCB_EXTEND_LEN) != 0;
+    return wcwidth_bitset_get(ucs, WCWIDTH_INCB_EXTEND_MIN, WCWIDTH_INCB_EXTEND_MAX,
+                              WCWIDTH_INCB_EXTEND_INDEX, WCWIDTH_INCB_EXTEND_POOL);
 }
 
 /*
@@ -158,6 +178,13 @@ is_incb_extend(uint32_t ucs)
 static bool
 should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, int *ri_count_out)
 {
+    /* Below U+0300 the only joining rule is CR x LF.  This avoids every table
+     * lookup for ASCII and Latin-1, which is the common case. */
+    if (cp[cp_idx] < 0x300 && cp[cp_idx - 1] < 0x300) {
+        *ri_count_out = 0;
+        return !(cp[cp_idx - 1] == 0x0D && cp[cp_idx] == 0x0A);
+    }
+
     /* GB3: CR x LF */
     if (prev_gcb == GCB_CR && curr_gcb == GCB_LF) {
         *ri_count_out = 0;
@@ -223,7 +250,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
      * Unicode 18.0.0 (UAX #29 revision 48) drops the leading
      * \p{InCB=Consonant} requirement.
      */
-    if (cp_idx > 0 && is_incb_consonant(cp[cp_idx])) {
+    if (is_incb_consonant(cp[cp_idx])) {
         size_t i = cp_idx;
 
         while (i > 0 && is_incb_extend(cp[i - 1])) {
@@ -236,7 +263,7 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
     }
 
     /* GB11: ExtPict Extend* ZWJ x ExtPict */
-    if (prev_gcb == GCB_ZWJ && cp_idx > 0) {
+    if (prev_gcb == GCB_ZWJ) {
         uint32_t curr_ucs = cp[cp_idx];
 
         if (wcwidth_is_extended_pictographic(curr_ucs)) {
@@ -504,12 +531,18 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
 
     /* Scan backward from cp_pos to find a safe starting point */
     safe_start = cp_pos;
-    while (safe_start > 0 && (cp_pos - safe_start) < MAX_GRAPHEME_SCAN) {
+    while (safe_start > 0) {
         uint32_t scp = cp[safe_start];
         if (0x20 <= scp && scp < 0x80) { /* ASCII always starts a cluster */
             break;
         }
         if (gcb_of(scp) == GCB_CONTROL) { /* GB4 */
+            break;
+        }
+        if (cp_pos - safe_start >= MAX_GRAPHEME_SCAN) {
+            /* Bound exceeded without a certain start: fall back to the full scan
+             * rather than verifying forward from a truncated one. */
+            safe_start = 0;
             break;
         }
         safe_start--;

@@ -666,8 +666,6 @@ def test_wrap_lone_surrogate_escaped_bytes(text):
 def test_python_functions_stay_python():
     """Functions without C support always bind the Python implementation."""
     python = {
-        'iter_graphemes_reverse': 'wcwidth.grapheme',
-        'grapheme_boundary_before': 'wcwidth.grapheme',
         'iter_sequences': 'wcwidth.escape_sequences',
     }
     for name, module in python.items():

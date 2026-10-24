@@ -93,6 +93,7 @@ _EXT_SOURCES = [
     "libwcwidth/src/tables/table_terminal_overrides.c",
     "libwcwidth/src/tables/table_term_programs.c",
     "libwcwidth/src/tables/table_gcb_class.c",
+    "libwcwidth/src/tables/bitset_tables.c",
 ]
 
 # Stable ABI (abi3): one cp310 wheel covers every GIL-enabled interpreter from
