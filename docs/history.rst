@@ -3,12 +3,12 @@ History
 =======
 
 0.9.5 *unreleased*
-  * **Improved** performance of flag emojis by ~5.6x, `PR #304`.
+  * **Improved** performance of flag emojis by ~5.6x, `PR #304`_.
 
 0.9.4 *2026-10-24*
   * **Bugfix** Flag emojis were split by grapheme breaks when following control characters, like
     newline or tab, `PR #301`_.
-  * **Improved** performance of most general functions by +64% `PR #303`.
+  * **Improved** performance of most general functions by +64% `PR #303`_.
 
 0.9.3 *2026-10-20*
   * **Bugfix** libwcwidth no longer has undefined behavior on NULL or empty input in the UTF-8 and
