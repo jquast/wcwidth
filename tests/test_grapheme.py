@@ -389,3 +389,22 @@ def test_iter_graphemes_reverse_non_str():
 def test_iter_graphemes_window_extension(input_str, start, expected):
     """A cluster longer than the iterator's copy window stays whole."""
     assert list(iter_graphemes(input_str, start=start)) == expected
+
+
+@pytest.mark.parametrize('cluster', [
+    '\u0600a\u0301',
+    '\u0600\u0600a\u0301',
+    '\u0600a\u0301\u0308',
+])
+def test_reverse_prepend_ascii_with_extenders(cluster):
+    """Keep prepends with ASCII bases and trailing extenders."""
+    text = 'x' + cluster
+    assert list(iter_graphemes_reverse(text)) == [cluster, 'x']
+    assert grapheme_boundary_before(text, len(text)) == 1
+
+
+def test_reverse_prepend_before_delete_control():
+    """The DELETE control must break even after a prepend character."""
+    text = '\u0600\x7f'
+    assert list(iter_graphemes_reverse(text)) == ['\x7f', '\u0600']
+    assert grapheme_boundary_before(text, 2) == 1
