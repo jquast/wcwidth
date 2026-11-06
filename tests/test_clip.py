@@ -376,6 +376,23 @@ def test_clip_hyperlink_painter_cases(text, control_codes, start, end, expected)
     assert repr(clip(text, start, end, control_codes=control_codes)) == repr(expected)
 
 
+@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
+@pytest.mark.parametrize('prefix,inner,start,end,expected', [
+    ('a', '\tb', 0, 20, 'a       b'),
+    ('a', '\tb', 1, 9, '       b'),
+    ('a', '\tb', 0, 2, 'a '),
+    ('ab', '\rc', 0, 20, 'cb'),
+    ('ab', '\rc', 1, 9, 'b'),
+    ('ab', '\rc', 0, 2, 'cb'),
+])
+def test_clip_redundant_hyperlink_close_preserves_cursor(
+        terminator, prefix, inner, start, end, expected):
+    """A close without an open must not reset the cursor for the following text."""
+    close = f'\x1b]8;;{terminator}'
+    text = prefix + close + inner + close
+    assert strip_sequences(clip(text, start, end)) == expected
+
+
 def test_clip_sequences_cjk_with_sequences():
     assert clip('\x1b[31m中文\x1b[0m', 0, 3) == '\x1b[31m中 \x1b[0m'
 
