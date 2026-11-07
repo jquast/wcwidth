@@ -710,3 +710,12 @@ def test_iter_graphemes_import_error_fallback():
     finally:
         del sys.modules['wcwidth._wcwidth_c']
         importlib.reload(module)
+
+
+@pytest.mark.parametrize('suffix', ['\u0301', '\u200d', '\u0301\u0327'])
+@pytest.mark.parametrize('prefix', ['', SGR_RED])
+def test_wrap_hyphen_combining_cluster(suffix, prefix):
+    """Keep a hyphen's combining characters on the same line as the hyphen."""
+    text = prefix + 'ab-' + suffix + 'cdef'
+    lines = wrap(text, 4)
+    assert [_strip(line) for line in lines] == ['ab-' + suffix, 'cdef']
