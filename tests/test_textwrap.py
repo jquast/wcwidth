@@ -754,3 +754,12 @@ def test_wrap_drops_styled_blank_line_at_wider_widths(width):
         SGR_RED + text[:width] + SGR_RESET,
         SGR_RED + text[width:] + SGR_RESET,
     ]
+
+
+@pytest.mark.parametrize('suffix', ['\u0301', '\u200d', '\u0301\u0327'])
+@pytest.mark.parametrize('prefix', ['', SGR_RED])
+def test_wrap_hyphen_combining_cluster(suffix, prefix):
+    """Keep a hyphen's combining characters on the same line as the hyphen."""
+    text = prefix + 'ab-' + suffix + 'cdef'
+    lines = wrap(text, 4)
+    assert [_strip(line) for line in lines] == ['ab-' + suffix, 'cdef']

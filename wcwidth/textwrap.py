@@ -450,8 +450,10 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 stripped = self._strip_sequences(chunk[:prefix_end])
                 hyphen_pos = stripped.rfind('-')
                 if hyphen_pos > 0 and any(c != '-' for c in stripped[:hyphen_pos]):
-                    # Map back to original position including sequences
-                    hyphen_end = self._map_stripped_pos_to_original(chunk, hyphen_pos + 1)
+                    # Include the hyphen's entire grapheme, including combining marks.
+                    hyphen_grapheme = next(iter_graphemes(stripped, start=hyphen_pos))
+                    hyphen_end = self._map_stripped_pos_to_original(
+                        chunk, hyphen_pos + len(hyphen_grapheme))
                     break_at_hyphen = True
 
             # Break at grapheme boundaries to avoid splitting multi-codepoint characters
