@@ -710,3 +710,29 @@ def test_iter_graphemes_import_error_fallback():
     finally:
         del sys.modules['wcwidth._wcwidth_c']
         importlib.reload(module)
+
+
+@pytest.mark.parametrize('text', [
+    f'{SGR_RED} a{SGR_RESET}',
+    f'{SGR_RED} a-b{SGR_RESET}',
+    f' {SGR_RED}a-b{SGR_RESET}',
+])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_wrap_preserves_color_after_dropped_leading_space(text, propagate_sgr):
+    """Dropping a whitespace-only line must retain the active color."""
+    chars = list(_strip(text).strip())
+    if propagate_sgr:
+        expected = [f'{SGR_RED}{char}{SGR_RESET}' for char in chars]
+    else:
+        expected = chars
+        expected[0] = SGR_RED + expected[0]
+        expected[-1] += SGR_RESET
+    assert wrap(text, width=1, propagate_sgr=propagate_sgr) == expected
+    preserved = wrap(text, width=1, drop_whitespace=False, propagate_sgr=propagate_sgr)
+    assert [_strip(line) for line in preserved] == list(_strip(text))
+
+
+def test_wrap_dropped_styled_space_keeps_initial_indent():
+    """The first visible line retains initial indentation."""
+    result = wrap(f'{SGR_RED} a-b{SGR_RESET}', width=2, initial_indent='>')
+    assert [_strip(line) for line in result] == ['>a', '-b']
