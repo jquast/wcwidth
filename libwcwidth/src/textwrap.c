@@ -718,6 +718,7 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
     while (chunks->count > 0) {
         chunklist_t cur;
         int cur_w = 0;
+        bool dropped_whitespace = false;
         const char *indent = first ? opts->initial_indent : opts->subsequent_indent;
         int indent_w = str_width(indent, opts);
         int line_w = opts->width - indent_w;
@@ -769,10 +770,13 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             split_seqs(c->data, c->len, &st, &sq);
             bool ws = (st.len > 0 && is_all_ws(st.data, st.len));
             if (ws) {
+                dropped_whitespace = true;
                 cur_w -= chunk_width(c->data, c->len, opts);
                 cl_pop(&cur);
                 if (sq.len > 0 && cur.count > 0)
                     cl_append_last(&cur, sq.data, sq.len);
+                else if (sq.len > 0 && chunks->count > 0)
+                    cl_prepend_last(chunks, sq.data, sq.len);
             }
             sbuf_free(&st);
             sbuf_free(&sq);
@@ -804,6 +808,21 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             if (opts->max_lines <= 0 || lines->count + 1 < (size_t) opts->max_lines
                 || (no_more && cur_w <= line_w)) {
                 if (opts->drop_whitespace) {
+                    if (memchr(lc.data, ESC, lc.len) != NULL) {
+                        sbuf_t st, sq;
+                        split_seqs(lc.data, lc.len, &st, &sq);
+                        bool ws = (st.len > 0 && is_all_ws(st.data, st.len))
+                                  || (st.len == 0 && dropped_whitespace);
+                        if (ws && sq.len > 0 && chunks->count > 0)
+                            cl_prepend_last(chunks, sq.data, sq.len);
+                        sbuf_free(&st);
+                        sbuf_free(&sq);
+                        if (ws) {
+                            sbuf_free(&lc);
+                            cl_free(&cur);
+                            continue;
+                        }
+                    }
                     lc.len = rstrip_len(lc.data, lc.len);
                     if (lc.data != NULL)
                         lc.data[lc.len] = '\0';
