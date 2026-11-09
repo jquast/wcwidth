@@ -153,11 +153,9 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
 
         /* VS15 (U+FE0E): text variation selector, requests narrow presentation. */
         if (ucs == 0xFE0E && last_measured_idx >= 0) {
-            bool vs15_narrow =
-                wcwidth_bitset_get(last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW_MIN,
-                                   WCWIDTH_VS15_WIDE_TO_NARROW_MAX,
-                                   WCWIDTH_VS15_WIDE_TO_NARROW_INDEX,
-                                   WCWIDTH_VS15_WIDE_TO_NARROW_POOL);
+            bool vs15_narrow = wcwidth_bitset_get(
+                last_measured_ucs, WCWIDTH_VS15_WIDE_TO_NARROW_MIN, WCWIDTH_VS15_WIDE_TO_NARROW_MAX,
+                WCWIDTH_VS15_WIDE_TO_NARROW_INDEX, WCWIDTH_VS15_WIDE_TO_NARROW_POOL);
             if (wcwidth_bisearch(last_measured_ucs, vs15_wider, vs15_wider_len)) {
                 vs15_narrow = false;
             }
@@ -262,10 +260,8 @@ wcstwidth_u32(const uint32_t *cp, size_t n, int ambiguous_width, const char *ter
                 prev_was_virama = true;
             }
             else if (last_measured_idx >= 0
-                     && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN,
-                                           WCWIDTH_CATEGORY_MC_MAX,
-                                           WCWIDTH_CATEGORY_MC_INDEX,
-                                           WCWIDTH_CATEGORY_MC_POOL)) {
+                     && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN, WCWIDTH_CATEGORY_MC_MAX,
+                                           WCWIDTH_CATEGORY_MC_INDEX, WCWIDTH_CATEGORY_MC_POOL)) {
                 /* Spacing Combining Mark (Mc) following a base character. */
                 cluster_width = 2;
                 last_measured_idx = -2;

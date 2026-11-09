@@ -145,10 +145,8 @@ wcswidth_u32(const uint32_t *cp, size_t n, int ambiguous_width)
                 prev_was_virama = true;
             }
             else if (last_measured_idx >= 0
-                     && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN,
-                                           WCWIDTH_CATEGORY_MC_MAX,
-                                           WCWIDTH_CATEGORY_MC_INDEX,
-                                           WCWIDTH_CATEGORY_MC_POOL)) {
+                     && wcwidth_bitset_get(ucs, WCWIDTH_CATEGORY_MC_MIN, WCWIDTH_CATEGORY_MC_MAX,
+                                           WCWIDTH_CATEGORY_MC_INDEX, WCWIDTH_CATEGORY_MC_POOL)) {
                 cluster_width = 2;
                 last_measured_idx = -2;
                 prev_was_virama = false;
