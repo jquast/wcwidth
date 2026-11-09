@@ -501,6 +501,39 @@ def test_clip_long_cjk_overtype(benchmark):
     benchmark(wcwidth.clip, text, 0, 50, overtyping=True)
 
 
+def test_clip_overtyping_styled_overwrite(benchmark):
+    """Benchmark clip() repainting a styled line after carriage return."""
+    text = ('\x1b[31m' + 'x' * 80 + '\x1b[0m\r'
+            '\x1b[32m' + 'y' * 80 + '\x1b[0m')
+    benchmark(wcwidth.clip, text, 0, 80, overtyping=True)
+
+
+def test_clip_overtyping_many_styles(benchmark):
+    """Benchmark clip() with a style sequence before nearly every cell."""
+    palette = ['\x1b[31m', '\x1b[32m', '\x1b[1m', '\x1b[44m', '\x1b[0m']
+    text = ''.join(f'{palette[i % 5]}{chr(97 + i % 26)}' for i in range(200))
+    text += '\x1b[0m\r' + 'X' * 200
+    benchmark(wcwidth.clip, text, 0, 120, overtyping=True)
+
+
+def test_clip_overtyping_style_churn(benchmark):
+    """Benchmark clip() where the foreground colour changes on every cell."""
+    text = ''.join(f'\x1b[{31 + i % 7}m{chr(97 + i % 26)}' for i in range(200))
+    benchmark(wcwidth.clip, text, 0, 120, overtyping=True)
+
+
+def test_clip_overtyping_plain_overwrite(benchmark):
+    """Benchmark clip() repainting a plain line after carriage return."""
+    text = 'x' * 400 + '\r' + 'X' * 400
+    benchmark(wcwidth.clip, text, 0, 200, overtyping=True)
+
+
+def test_propagate_sgr_repeated_styles(benchmark):
+    """Benchmark propagate_sgr() over many lines sharing one style."""
+    lines = [f'\x1b[1;3;38;5;208mline {i}\x1b[0m' for i in range(20)]
+    benchmark(wcwidth.propagate_sgr, lines)
+
+
 def test_width_dense_ansi_control_codes_ignore(benchmark):
     """Benchmark width() with dense ANSI and control_codes='ignore'."""
     text = '\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m \x1b[33myellow\x1b[0m ' * 50
