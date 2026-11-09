@@ -196,9 +196,8 @@ def _reconstruct_painter(
         """Emit text, applying pre-parsed SGR parameters or SGR tracking (if any)."""
         nonlocal current_style
         parts.append(sequence)
-        if sgr_params is not None:
-            if current_style is not None:
-                current_style = _sgr_state_apply(current_style, sgr_params)
+        if sgr_params is not None and current_style is not None:
+            current_style = _sgr_state_apply(current_style, sgr_params)
         elif current_style is not None and '\x1b' in sequence:
             for match in _SGR_PATTERN.finditer(sequence):
                 current_style = _sgr_state_update(current_style, match.group())
