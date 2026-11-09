@@ -365,6 +365,24 @@ def test_wrap_hyperlink_mixed(benchmark):
     benchmark(wcwidth.wrap, text, 40)
 
 
+def test_wrap_long_hyphenated_word(benchmark):
+    """Benchmark wrap() with one very long hyphenated word."""
+    text = 'state-of-the-art-' * 120
+    benchmark(wcwidth.wrap, text, 20)
+
+
+def test_wrap_long_hyphenated_word_narrow(benchmark):
+    """Benchmark wrap() of a long hyphenated word at a narrow width."""
+    text = 'ab-cd-ef-gh-' * 150
+    benchmark(wcwidth.wrap, text, 4)
+
+
+def test_wrap_long_hyphenated_word_combining(benchmark):
+    """Benchmark wrap() of a long hyphenated word with combining characters."""
+    text = 'ab-\u0301cdef-' * 120
+    benchmark(wcwidth.wrap, text, 10)
+
+
 def test_clip_ascii(benchmark):
     """Benchmark clip() with ASCII string."""
     benchmark(wcwidth.clip, 'hello world', 0, 5)
