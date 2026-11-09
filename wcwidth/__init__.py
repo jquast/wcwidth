@@ -45,39 +45,51 @@ from .escape_sequences import iter_sequences
 from .unicode_versions import list_versions
 
 # Optional C extension 'wcwidth._wcwidth_c', wrapping the C11 libwcwidth
-# library; the Python implementations below are used when it is unavailable.
+# library; the Python implementation is used when it is unavailable.
 HAS_C_EXTENSION = False
 if not os.environ.get('WCWIDTH_PYTHON', ''):
     try:
         # local
-        from ._wcwidth_c import ljust, rjust, width, center
-        from ._wcwidth_c import wcwidth as _c_wcwidth
-        from ._wcwidth_c import (wcswidth,
-                                 wcstwidth,
-                                 propagate_sgr,
-                                 iter_graphemes,
-                                 strip_sequences,
-                                 iter_graphemes_reverse,
-                                 grapheme_boundary_before)
+        import wcwidth._wcwidth_c as _wcwidth_c  # pylint: disable=consider-using-from-import
     except ImportError:
         pass
     else:
-        HAS_C_EXTENSION = True
+        # checks every imported name, safety of a "stale extension", this is rare, like in
+        # development environments or special events like when filesystem library is upgraded while
+        # process was running
+        HAS_C_EXTENSION = all(hasattr(_wcwidth_c, name) for name in (
+            'ljust', 'rjust', 'width', 'center', 'wcwidth', 'wcswidth', 'wcstwidth',
+            'propagate_sgr', 'iter_graphemes', 'strip_sequences',
+            'iter_graphemes_reverse', 'grapheme_boundary_before'))
 
 # Import order matters for legacy API compatibility (releases before 0.7.0).
 #
 # The first release (0.1) put _bisearch, wcwidth, and wcswidth in a single 'wcwidth.py' file, and
-# while the top-level function importing, 'from wcwidth import wcwidth' was always preferred, the
-# deeper 'from wcwidth.wcwidth import wcwidth' was always possible.
+# while the top-level function import statement, 'from wcwidth import wcwidth' is preferred, the
+# deeper 'from wcwidth.wcwidth import wcwidth' statement was always possible.
 #
 # Pre-import the legacy submodule so sys.modules['wcwidth.wcwidth'] is populated during package
 # initialization: without it, a later ``import wcwidth.wcwidth`` discovers the file on disk and
 # rebinds that name from the function to the module object.  It must run before the 'wcwidth'
 # binding below, because 'from . import wcwidth' loads the submodule while the package attribute
-# is still unset.  The shim's own __lazy_modules__ defers its imports, so this costs one module.
+# is still unset.  The shim's own __lazy_modules__ defers its imports.
+#
+# This is done to prevent a "nuclear" or "major" version bump (1.0 release), it's a bit "yuck", but
+# we strive to always support published API in perpetuity, and sub-module import paths cannot be
+# refused by strict compliance of SEMVER.
 from . import wcwidth as _wcwidth_module  # isort:skip pylint: disable=wrong-import-position
 
 if HAS_C_EXTENSION:
+    # local
+    from ._wcwidth_c import ljust, rjust, width, center
+    from ._wcwidth_c import wcwidth as _c_wcwidth
+    from ._wcwidth_c import (wcswidth,
+                             wcstwidth,
+                             propagate_sgr,
+                             iter_graphemes,
+                             strip_sequences,
+                             iter_graphemes_reverse,
+                             grapheme_boundary_before)
     wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
 else:
     # local
