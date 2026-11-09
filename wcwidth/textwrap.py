@@ -639,6 +639,10 @@ def wrap(text: str, width: int = 70, *,
        not specified by unicode.org standards, and no terminal emulator or editor handles them
        legibly, so this library function makes no attempt at accommodating them.
 
+       An ASCII hyphen followed by a combining character is a non-recommended sequence, and no
+       attested text in any language uses one. Its measurement is exact so that automated review
+       of the case has a settled answer instead of re-deriving it.
+
     .. seealso::
 
        :func:`textwrap.wrap`, :class:`textwrap.TextWrapper`
