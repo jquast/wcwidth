@@ -293,3 +293,17 @@ def test_clip_overtyping_preserves_cell_styles(
     """Reordering painted cells must preserve their original SGR attributes."""
     result = clip(text, start, end, overtyping=overtyping, control_codes=control_codes)
     assert _styled_characters(result) == _styled_characters(expected)
+
+
+@pytest.mark.parametrize('text,start,end,kwargs,expected', [
+    # A wide character split at the boundary keeps its style on the replacement cell.
+    ('\x1b[31m中', 0, 1, {}, '\x1b[31m \x1b[0m'),
+    ('\x1b[31m中', 1, 2, {}, '\x1b[31m \x1b[0m'),
+    # A gap opened by cursor movement is filled in the style in effect at that point.
+    ('\x1b[31ma\x1b[3Gb', 0, 3, {'overtyping': True}, '\x1b[31ma b\x1b[0m'),
+    ('\x1b[31ma\x1b[32m\x1b[3Gb', 0, 3, {'overtyping': True},
+     '\x1b[31ma\x1b[32m b\x1b[0m'),
+])
+def test_clip_fillchar_uses_ambient_style(text, start, end, kwargs, expected):
+    """fillchar cells inherit the SGR state in effect at their position."""
+    assert clip(text, start, end, **kwargs) == expected
