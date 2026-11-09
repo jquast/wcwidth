@@ -2,7 +2,6 @@
 # std imports
 import re
 import sys
-import types
 import importlib
 import importlib.metadata
 from pathlib import Path
@@ -697,15 +696,18 @@ def test_import_error_fallback():
         importlib.reload(wcwidth)
 
 
+@pytest.mark.skipif(not wcwidth.HAS_C_EXTENSION, reason='C extension not loaded')
 def test_partial_extension_fallback():
     """An extension missing an expected name falls back to the Python implementation."""
-    sys.modules['wcwidth._wcwidth_c'] = types.ModuleType('wcwidth._wcwidth_c')
+    extension = wcwidth._wcwidth_c
+    missing = extension.iter_graphemes_reverse
+    del extension.iter_graphemes_reverse
     try:
         importlib.reload(wcwidth)
         assert not wcwidth.HAS_C_EXTENSION
         assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
     finally:
-        del sys.modules['wcwidth._wcwidth_c']
+        extension.iter_graphemes_reverse = missing
         importlib.reload(wcwidth)
 
 
