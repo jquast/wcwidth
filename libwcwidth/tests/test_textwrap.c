@@ -309,9 +309,27 @@ TEST(wrap_drops_leading_whitespace_only_line)
     free(out);
 }
 
+TEST(wrap_preserves_color_after_dropped_leading_space)
+{
+    const char *inputs[] = {"\x1b[31m a\x1b[0m", "\x1b[31m a-b\x1b[0m", " \x1b[31ma-b\x1b[0m"};
+    const char *one[] = {"\x1b[31ma\x1b[0m"};
+    const char *three[] = {"\x1b[31ma", "-", "b\x1b[0m"};
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    size_t i;
+    o.width = 1;
+    for (i = 0; i < 3; i++) {
+        char *out;
+        size_t len;
+        ASSERT_EQ(0, wcwidth_wrap_u8(inputs[i], strlen(inputs[i]), &o, &out, &len));
+        check_lines(out, len, i == 0 ? one : three, i == 0 ? 1 : 3);
+        free(out);
+    }
+}
+
 int
 main(void)
 {
+    RUN_TEST(wrap_preserves_color_after_dropped_leading_space);
     RUN_TEST(wrap_basic);
     RUN_TEST(wrap_text_basic);
     RUN_TEST(wrap_embedded_nul);

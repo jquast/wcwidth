@@ -664,13 +664,14 @@ lines_push(lines_t *ll, const char *s, size_t n)
     if (ll->count >= ll->cap) {
         size_t nc = ll->cap ? ll->cap * 2 : 16;
         char **nd = realloc(ll->data, nc * sizeof(char *));
-        size_t *nl = (nd != NULL) ? realloc(ll->lens, nc * sizeof(size_t)) : NULL;
-        if (nd == NULL || nl == NULL) {
-            free(nd);
-            free(nl);
+        size_t *nl;
+
+        if (nd == NULL)
             return false;
-        }
         ll->data = nd;
+        nl = realloc(ll->lens, nc * sizeof(size_t));
+        if (nl == NULL)
+            return false;
         ll->lens = nl;
         ll->cap = nc;
     }
@@ -717,6 +718,7 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
     while (chunks->count > 0) {
         chunklist_t cur;
         int cur_w = 0;
+        bool dropped_whitespace = false;
         const char *indent = first ? opts->initial_indent : opts->subsequent_indent;
         int indent_w = str_width(indent, opts);
         int line_w = opts->width - indent_w;
@@ -768,10 +770,13 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             split_seqs(c->data, c->len, &st, &sq);
             bool ws = (st.len > 0 && is_all_ws(st.data, st.len));
             if (ws) {
+                dropped_whitespace = true;
                 cur_w -= chunk_width(c->data, c->len, opts);
                 cl_pop(&cur);
                 if (sq.len > 0 && cur.count > 0)
                     cl_append_last(&cur, sq.data, sq.len);
+                else if (sq.len > 0 && chunks->count > 0)
+                    cl_prepend_last(chunks, sq.data, sq.len);
             }
             sbuf_free(&st);
             sbuf_free(&sq);
@@ -803,6 +808,21 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             if (opts->max_lines <= 0 || lines->count + 1 < (size_t) opts->max_lines
                 || (no_more && cur_w <= line_w)) {
                 if (opts->drop_whitespace) {
+                    if (memchr(lc.data, ESC, lc.len) != NULL) {
+                        sbuf_t st, sq;
+                        split_seqs(lc.data, lc.len, &st, &sq);
+                        bool ws = (st.len > 0 && is_all_ws(st.data, st.len))
+                                  || (st.len == 0 && dropped_whitespace);
+                        if (ws && sq.len > 0 && chunks->count > 0)
+                            cl_prepend_last(chunks, sq.data, sq.len);
+                        sbuf_free(&st);
+                        sbuf_free(&sq);
+                        if (ws) {
+                            sbuf_free(&lc);
+                            cl_free(&cur);
+                            continue;
+                        }
+                    }
                     lc.len = rstrip_len(lc.data, lc.len);
                     if (lc.data != NULL)
                         lc.data[lc.len] = '\0';
@@ -991,6 +1011,7 @@ _wrap_to_buffer(const char *text, size_t text_len, const wcwidth_wrap_opts_t *op
         *offsets = malloc(lines.count * sizeof(size_t));
         if (*offsets == NULL) {
             free(*out);
+            *out = NULL;
             lines_free(&lines);
             return -1;
         }
