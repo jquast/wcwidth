@@ -16,6 +16,7 @@ import pytest
 
 # local
 from wcwidth import clip
+from wcwidth.sgr_state import _SGR_PATTERN, _SGR_STATE_DEFAULT, _sgr_state_update
 
 
 @pytest.mark.parametrize("text,start,end,kwargs,expected", [
@@ -245,3 +246,50 @@ def test_clip_zero_width_text_sizing_survives_following_cell(propagate_sgr):
 def test_clip_sequence_past_window_without_captured_sgr(text, start, end, expected):
     """Scanning continues to a sequence past the window when no SGR was captured."""
     assert clip(text, start, end, overtyping=True, propagate_sgr=False) == expected
+
+
+def _styled_characters(text):
+    """Read the styles of a movement-free result, including its final reset state."""
+    state = _SGR_STATE_DEFAULT
+    characters = []
+    pos = 0
+    for match in _SGR_PATTERN.finditer(text):
+        characters.extend((char, state) for char in text[pos:match.start()])
+        state = _sgr_state_update(state, match.group())
+        pos = match.end()
+    characters.extend((char, state) for char in text[pos:])
+    return characters, state
+
+
+@pytest.mark.parametrize('overtyping', [None, True])
+@pytest.mark.parametrize('control_codes', ['parse', 'strict'])
+@pytest.mark.parametrize('text,start,end,expected', [
+    # A reset beyond the right boundary still applies to a subsequent overwrite.
+    ('\x1b[31mabc\x1b[0m\bX', 0, 3, '\x1b[31mab\x1b[0mX'),
+    ('\x1b[31mabc\x1b[0m\bX', 2, 3, 'X'),
+    # Repainting the first or middle cell must retain the untouched cells' styles.
+    ('\x1b[31mabc\x1b[0m\rX', 0, 3, 'X\x1b[31mbc\x1b[0m'),
+    ('\x1b[31mabc\x1b[0m\x1b[2DX', 0, 3,
+     '\x1b[31ma\x1b[0mX\x1b[31mc\x1b[0m'),
+    ('\x1b[31mabc\x1b[0m\x1b[2GX', 1, 3, 'X\x1b[31mc\x1b[0m'),
+    ('abc\r\x1b[31mX', 0, 3, '\x1b[31mX\x1b[0mbc'),
+    ('\x1b[31mabc\x1b[32m\rX', 0, 3, '\x1b[32mX\x1b[31mbc\x1b[0m'),
+    # Attributes, background colors, and truecolor belong to cells as well.
+    ('\x1b[1;31mabc\x1b[22;39m\bX', 0, 3, '\x1b[1;31mab\x1b[0mX'),
+    ('\x1b[44mabc\x1b[49m\x1b[2DX', 0, 3,
+     '\x1b[44ma\x1b[0mX\x1b[44mc\x1b[0m'),
+    ('\x1b[38;2;1;2;3mabc\x1b[0m\rX', 0, 3,
+     'X\x1b[38;2;1;2;3mbc\x1b[0m'),
+    ('\x1b[31ma\u0301bc\x1b[0m\bX', 0, 3, '\x1b[31ma\u0301b\x1b[0mX'),
+    ('\x1b[31m中ab\x1b[0m\bX', 0, 4, '\x1b[31m中a\x1b[0mX'),
+    ('\x1b[31m👩\u200d💻ab\x1b[0m\bX', 0, 4, '\x1b[31m👩\u200d💻a\x1b[0mX'),
+    ('\x1b[31mabc\x1b[0m\bX', 1, -1, '\x1b[31mb\x1b[0mX'),
+    # All original cells can disappear, or a cursor can move without repainting.
+    ('\x1b[31mab\x1b[0m\rXY', 0, 2, 'XY'),
+    ('\x1b[31mabc\x1b[0m\r', 0, 3, '\x1b[31mabc\x1b[0m'),
+])
+def test_clip_overtyping_preserves_cell_styles(
+        text, start, end, expected, *, overtyping, control_codes):
+    """Reordering painted cells must preserve their original SGR attributes."""
+    result = clip(text, start, end, overtyping=overtyping, control_codes=control_codes)
+    assert _styled_characters(result) == _styled_characters(expected)
