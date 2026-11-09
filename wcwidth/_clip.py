@@ -193,7 +193,7 @@ def _reconstruct_painter(
 
     def append_sequence(sequence: str,
                         sgr_params: Optional[tuple[int | tuple[int, ...], ...]] = None) -> None:
-        """Emit text, applying pre-parsed SGR parameters or tracking any SGR it carries."""
+        """Emit text, applying pre-parsed SGR parameters or SGR tracking (if any)."""
         nonlocal current_style
         parts.append(sequence)
         if sgr_params is not None:
@@ -555,10 +555,10 @@ def _clip_painter(
     def _queue(seq_col: int, seq_text: str,
                sgr_params: Optional[tuple[int | tuple[int, ...], ...]] = None) -> None:
         """
-        Queue a zero-width sequence, with parsed SGR parameters when it carries any.
+        Queue a zero-width sequence, with parsed SGR parameters (if any).
 
         Storing the parsed parameters lets reconstruction apply the same update without re-parsing
-        the sequence text, in whatever order output places it.
+        the sequence text later.
         """
         nonlocal seq_order
         sequences.append((seq_col, seq_order, seq_text, sgr_params))
