@@ -82,6 +82,29 @@ character, Languages, grapheme clustering, complex or combining scripts, emojis,
 variations, and regional indicator (flags) as a `General Tabulated Summary`_ by terminal emulator
 software and version. The results of the ucs-detect project create our correction tables.
 
+Unlikely Sequences
+~~~~~~~~~~~~~~~~~~
+
+Most any codepoint may be concatenated with any other codepoint and terminal sequence, with
+disastrous and sometimes varying widths across different terminals. These are a kind of randomized
+stream of inputs, often analyzed by fuzzing or automatic AI code analysis.  For text unlikely to
+appear in any text published in any world language, this project is likely to reject these "bug
+fixes". Examples:
+
+- improve word-wrapping of ascii hyphen with combining character `#309`_
+- extra/redundant OSC 8 close `#308`_ in clip()
+- VS15 applying more than once to the same base character `#244`_
+- VS15 on a basic emoji, with even its intended width contested, `#211`_, `#234`_
+- unlikely zero-width joiner sequence, swallowing the following character `#230`_
+- a non-recommended emoji sequence `#134`_, discussion `#203`_.
+
+Support for non-recommended sequences varies between terminals, and the permutations of combining,
+variation, joiner, and attribute sequences are too many to enumerate with correction tables, so the
+displayed width is alike C's undefined behavior: a value is computed, and the rendering belongs to
+the terminal.  Often times "correcting" for behavior of unlikely sequences impacts performance and
+readability, but in cases where their difference is negligible or simplified, they may sometimes be
+accepted anyway.
+
 ========
 Overview
 ========
@@ -515,6 +538,14 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _`wcwidth(3)`:  https://man7.org/linux/man-pages/man3/wcwidth.3.html
 .. _`wcswidth(3)`: https://man7.org/linux/man-pages/man3/wcswidth.3.html
 .. _`jquast/ucs-detect`: https://github.com/jquast/ucs-detect
+.. _#134: https://github.com/jquast/wcwidth/issues/134
+.. _#203: https://github.com/jquast/wcwidth/discussions/203
+.. _#211: https://github.com/jquast/wcwidth/issues/211
+.. _#230: https://github.com/jquast/wcwidth/pull/230
+.. _#234: https://github.com/jquast/wcwidth/discussions/234
+.. _#244: https://github.com/jquast/wcwidth/pull/244
+.. _#308: https://github.com/jquast/wcwidth/pull/308
+.. _#309: https://github.com/jquast/wcwidth/pull/309
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust
