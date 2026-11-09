@@ -54,7 +54,7 @@ if not os.environ.get('WCWIDTH_PYTHON', ''):
     except ImportError:
         pass
     else:
-        # checks every imported name, saftey of a "stale extension", this is rare, like in
+        # checks every imported name, safety of a "stale extension", this is rare, like in
         # development environments or special events like when filesystem library is upgraded while
         # process was running
         HAS_C_EXTENSION = all(hasattr(_wcwidth_c, name) for name in (
