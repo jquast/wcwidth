@@ -664,13 +664,14 @@ lines_push(lines_t *ll, const char *s, size_t n)
     if (ll->count >= ll->cap) {
         size_t nc = ll->cap ? ll->cap * 2 : 16;
         char **nd = realloc(ll->data, nc * sizeof(char *));
-        size_t *nl = (nd != NULL) ? realloc(ll->lens, nc * sizeof(size_t)) : NULL;
-        if (nd == NULL || nl == NULL) {
-            free(nd);
-            free(nl);
+        size_t *nl;
+
+        if (nd == NULL)
             return false;
-        }
         ll->data = nd;
+        nl = realloc(ll->lens, nc * sizeof(size_t));
+        if (nl == NULL)
+            return false;
         ll->lens = nl;
         ll->cap = nc;
     }
@@ -1010,6 +1011,7 @@ _wrap_to_buffer(const char *text, size_t text_len, const wcwidth_wrap_opts_t *op
         *offsets = malloc(lines.count * sizeof(size_t));
         if (*offsets == NULL) {
             free(*out);
+            *out = NULL;
             lines_free(&lines);
             return -1;
         }
