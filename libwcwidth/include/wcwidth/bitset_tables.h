@@ -81,8 +81,8 @@ extern const uint8_t WCWIDTH_INCB_EXTEND_POOL[];
 #define WCWIDTH_INCB_EXTEND_POOL_LEN 2496
 
 static inline bool
-wcwidth_bitset_get(uint32_t ucs, uint32_t min, uint32_t max,
-                   const uint8_t *index, const uint8_t *pool)
+wcwidth_bitset_get(uint32_t ucs, uint32_t min, uint32_t max, const uint8_t *index,
+                   const uint8_t *pool)
 {
     uint32_t offset;
     unsigned page;
@@ -92,8 +92,7 @@ wcwidth_bitset_get(uint32_t ucs, uint32_t min, uint32_t max,
     }
     offset = ucs - min;
     page = index[offset >> WCWIDTH_BITSET_SHIFT];
-    return (pool[(page << 5) + ((offset & 0xFFu) >> 3)]
-            & (uint8_t)(1u << (offset & 7u))) != 0;
+    return (pool[(page << 5) + ((offset & 0xFFu) >> 3)] & (uint8_t) (1u << (offset & 7u))) != 0;
 }
 
 #ifdef __cplusplus
