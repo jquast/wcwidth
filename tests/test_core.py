@@ -2,6 +2,7 @@
 # std imports
 import re
 import sys
+import types
 import importlib
 import importlib.metadata
 from pathlib import Path
@@ -687,6 +688,18 @@ def test_python_env_var(monkeypatch):
 def test_import_error_fallback():
     """A broken extension at import time falls back to the Python implementation."""
     sys.modules['wcwidth._wcwidth_c'] = None
+    try:
+        importlib.reload(wcwidth)
+        assert not wcwidth.HAS_C_EXTENSION
+        assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
+    finally:
+        del sys.modules['wcwidth._wcwidth_c']
+        importlib.reload(wcwidth)
+
+
+def test_partial_extension_fallback():
+    """An extension missing an expected name falls back to the Python implementation."""
+    sys.modules['wcwidth._wcwidth_c'] = types.ModuleType('wcwidth._wcwidth_c')
     try:
         importlib.reload(wcwidth)
         assert not wcwidth.HAS_C_EXTENSION

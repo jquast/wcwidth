@@ -50,7 +50,15 @@ HAS_C_EXTENSION = False
 if not os.environ.get('WCWIDTH_PYTHON', ''):
     try:
         # local
-        import wcwidth._wcwidth_c as _wcwidth_c  # noqa: F401  pylint:disable=unused-import,consider-using-from-import
+        from ._wcwidth_c import ljust, rjust, width, center
+        from ._wcwidth_c import wcwidth as _c_wcwidth
+        from ._wcwidth_c import (wcswidth,
+                                 wcstwidth,
+                                 propagate_sgr,
+                                 iter_graphemes,
+                                 strip_sequences,
+                                 iter_graphemes_reverse,
+                                 grapheme_boundary_before)
     except ImportError:
         pass
     else:
@@ -70,16 +78,6 @@ if not os.environ.get('WCWIDTH_PYTHON', ''):
 from . import wcwidth as _wcwidth_module  # isort:skip pylint: disable=wrong-import-position
 
 if HAS_C_EXTENSION:
-    # local
-    from ._wcwidth_c import ljust, rjust, width, center
-    from ._wcwidth_c import wcwidth as _c_wcwidth
-    from ._wcwidth_c import (wcswidth,
-                             wcstwidth,
-                             propagate_sgr,
-                             iter_graphemes,
-                             strip_sequences,
-                             iter_graphemes_reverse,
-                             grapheme_boundary_before)
     wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
 else:
     # local
