@@ -305,5 +305,5 @@ def test_clip_overtyping_preserves_cell_styles(
      '\x1b[31ma\x1b[32m b\x1b[0m'),
 ])
 def test_clip_fillchar_uses_ambient_style(text, start, end, kwargs, expected):
-    """fillchar cells inherit the SGR state in effect at their position."""
+    """Fillchar cells inherit the SGR state in effect at their position."""
     assert clip(text, start, end, **kwargs) == expected

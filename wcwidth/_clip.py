@@ -554,7 +554,8 @@ def _clip_painter(
 
     def _queue(seq_col: int, seq_text: str,
                sgr_params: Optional[tuple[int | tuple[int, ...], ...]] = None) -> None:
-        """Queue a zero-width sequence, with parsed SGR parameters when it carries any.
+        """
+        Queue a zero-width sequence, with parsed SGR parameters when it carries any.
 
         Storing the parsed parameters lets reconstruction apply the same update without re-parsing
         the sequence text, in whatever order output places it.
