@@ -16,6 +16,11 @@ disable=
     I,
     fixme,
     import-error,  # optional C extension is not built in lint environments
+    # The package __init__ re-exports submodules and pre-imports
+    # wcwidth.wcwidth, which pylint reports as cycles. The check is also
+    # nondeterministic in parallel mode.
+    # https://github.com/pylint-dev/pylint/issues/10140
+    cyclic-import,
     c-extension-no-member,
     ungrouped-imports,
     useless-object-inheritance,
