@@ -11,6 +11,7 @@ from __future__ import annotations
 # std imports
 import re
 from enum import IntEnum
+from functools import lru_cache
 
 from typing import TYPE_CHECKING, Iterator, NamedTuple
 
@@ -137,6 +138,7 @@ def _color_params_to_str(color: tuple[int, ...]) -> str:
     return ';'.join(str(p) for p in color)
 
 
+@lru_cache(maxsize=1024)
 def _sgr_state_to_sequence(state: _SGRState) -> str:
     """
     Generate minimal SGR sequence to restore this state from reset.
@@ -224,17 +226,18 @@ def _parse_extended_color(
     return None
 
 
-def _sgr_state_update(state: _SGRState, sequence: str) -> _SGRState:
+@lru_cache(maxsize=4096)
+def _sgr_state_apply(state: _SGRState,
+                     params_list: tuple[int | tuple[int, ...], ...]) -> _SGRState:
     # pylint: disable=too-many-branches,too-complex,too-many-statements
     # NOTE: When minimum Python version is 3.10+, this can be simplified using match/case.
     """
-    Parse SGR sequence and return new state with updates applied.
+    Return *state* with a parsed SGR parameter list applied.
 
     :param state: Current SGR state.
-    :param sequence: SGR escape sequence string.
+    :param params_list: Parameter values from :func:`_parse_sgr_params`.
     :returns: New SGRState with updates applied.
     """
-    params_list = _parse_sgr_params(sequence)
     params = iter(params_list)
     for p in params:
         # Handle colon-separated extended colors (ITU T.416 format)
@@ -303,6 +306,17 @@ def _sgr_state_update(state: _SGRState, sequence: str) -> _SGRState:
             if color := _parse_extended_color(params, _SGR.BG_EXTENDED):
                 state = state._replace(background=color)
     return state
+
+
+def _sgr_state_update(state: _SGRState, sequence: str) -> _SGRState:
+    """
+    Parse SGR sequence and return new state with updates applied.
+
+    :param state: Current SGR state.
+    :param sequence: SGR escape sequence string.
+    :returns: New SGRState with updates applied.
+    """
+    return _sgr_state_apply(state, tuple(_parse_sgr_params(sequence)))
 
 
 def propagate_sgr(lines: Sequence[str]) -> list[str]:

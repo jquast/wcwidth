@@ -696,6 +696,21 @@ def test_import_error_fallback():
         importlib.reload(wcwidth)
 
 
+@pytest.mark.skipif(not wcwidth.HAS_C_EXTENSION, reason='C extension not loaded')
+def test_partial_extension_fallback():
+    """An extension missing an expected name falls back to the Python implementation."""
+    extension = wcwidth._wcwidth_c
+    missing = extension.iter_graphemes_reverse
+    del extension.iter_graphemes_reverse
+    try:
+        importlib.reload(wcwidth)
+        assert not wcwidth.HAS_C_EXTENSION
+        assert wcwidth.wcwidth.__module__ == 'wcwidth._wcwidth'
+    finally:
+        extension.iter_graphemes_reverse = missing
+        importlib.reload(wcwidth)
+
+
 _C_PARITY_ALPHABET = (
     'ab',
     '中文',
