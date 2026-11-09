@@ -15,6 +15,8 @@ from .hyperlink import Hyperlink, HyperlinkParams
 from .sgr_state import (_SGR_PATTERN,
                         _SGR_STATE_DEFAULT,
                         _SGRState,
+                        _sgr_state_apply,
+                        _parse_sgr_params,
                         _sgr_state_update,
                         _sgr_state_is_active,
                         _sgr_state_to_sequence)
@@ -161,23 +163,25 @@ def _process_hyperlink(
 
 
 def _reconstruct_painter(
-    cells: dict[int, tuple[str, int]],
-    sequences: list[tuple[int, int, str]],
+    cells: dict[int, tuple[str, int, Optional[_SGRState]]],
+    sequences: list[tuple[int, int, str, Optional[tuple[int | tuple[int, ...], ...]]]],
     start: int,
     end: int,
     fillchar: str,
-) -> str:
+    *,
+    current_style: Optional[_SGRState],
+) -> tuple[str, Optional[_SGRState]]:
     """
     Reconstruct the output string from painter's algorithm state.
 
     Walks columns left-to-right, interleaving escape sequences and cell content, filling gaps with
-    *fillchar*.
+    *fillchar*. Restore each cell's style after reordering cells and sequences.
     """
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-complex,too-many-locals,too-many-branches
     # Group and sort sequences by column, preserving insertion order within each.
-    seqs_by_col: dict[int, list[tuple[int, str]]] = {}
-    for col_pos, order, seq_text in sequences:
-        seqs_by_col.setdefault(col_pos, []).append((order, seq_text))
+    seqs_by_col: dict[int, list[tuple[int, str, Optional[tuple[int | tuple[int, ...], ...]]]]] = {}
+    for col_pos, order, seq_text, seq_params in sequences:
+        seqs_by_col.setdefault(col_pos, []).append((order, seq_text, seq_params))
     for entries in seqs_by_col.values():
         entries.sort()
 
@@ -186,20 +190,38 @@ def _reconstruct_painter(
     max_col = max(max_cell_col, max_seq_col)
 
     parts: list[str] = []
+
+    def append_sequence(sequence: str,
+                        sgr_params: Optional[tuple[int | tuple[int, ...], ...]] = None) -> None:
+        """Emit text, applying pre-parsed SGR parameters or SGR tracking (if any)."""
+        nonlocal current_style
+        parts.append(sequence)
+        if sgr_params is not None and current_style is not None:
+            current_style = _sgr_state_apply(current_style, sgr_params)
+        elif current_style is not None and '\x1b' in sequence:
+            for match in _SGR_PATTERN.finditer(sequence):
+                current_style = _sgr_state_update(current_style, match.group())
+
     walk_col = 0
     col_limit = min(max_col, end)
     while walk_col <= col_limit:
         # Emit any sequences anchored at this column.
-        for _, seq_text in seqs_by_col.get(walk_col, ()):
-            parts.append(seq_text)
+        for _, seq_text, seq_params in seqs_by_col.get(walk_col, ()):
+            append_sequence(seq_text, seq_params)
 
         if walk_col >= end:
             walk_col += 1
             continue
 
         if walk_col in cells:
-            cell_text, cell_w = cells[walk_col]
-            parts.append(cell_text)
+            cell_text, cell_w, cell_style = cells[walk_col]
+            if (cell_style is not None and current_style is not None
+                    and current_style != cell_style):
+                if _sgr_state_is_active(current_style):
+                    parts.append('\x1b[0m')
+                parts.append(_sgr_state_to_sequence(cell_style))
+                current_style = cell_style
+            append_sequence(cell_text)
             walk_col += cell_w or 1
         else:
             if start <= walk_col <= max_cell_col:
@@ -209,10 +231,10 @@ def _reconstruct_painter(
     # Emit sequences anchored beyond the visible region.
     for c in sorted(seqs_by_col.keys()):
         if c > col_limit:
-            for _, seq_text in seqs_by_col[c]:
-                parts.append(seq_text)
+            for _, seq_text, seq_params in seqs_by_col[c]:
+                append_sequence(seq_text, seq_params)
 
-    return ''.join(parts)
+    return ''.join(parts), current_style
 
 
 def _clip_simple(
@@ -508,9 +530,11 @@ def _clip_painter(
     # code length and complexity traded for performance, to allow this to be used as a "hot path"
 
     strict = control_codes == 'strict'
-    cells: dict[int, tuple[str, int]] = {}
+    # Each cell carries the immutable SGR style in effect when it was painted: SGR sequences move
+    # with columns during reconstruction, but a surviving cell must keep its own style.
+    cells: dict[int, tuple[str, int, Optional[_SGRState]]] = {}
     hyperlink_cells: set[int] = set()
-    sequences: list[tuple[int, int, str]] = []
+    sequences: list[tuple[int, int, str, Optional[tuple[int | tuple[int, ...], ...]]]] = []
     seq_order = 0
 
     col = 0
@@ -523,37 +547,46 @@ def _clip_painter(
     # When propagate_sgr is False, current_style (and therefore captured_style)
     # remain None, and SGR sequences pass through as literal text.
     captured_style: Optional[_SGRState] = None
-    # end_style is the state after the last SGR sequence emitted *within* the
-    # clip window; it decides the trailing reset.  None until such a sequence
-    # is emitted, meaning captured_style is still in effect at the end.
-    end_style: Optional[_SGRState] = None
     current_style = _SGR_STATE_DEFAULT if propagate_sgr else None
     # Next movement at or after the scan position, -1 when none is left.
     next_movement: Optional[int] = None
 
+    def _queue(seq_col: int, seq_text: str,
+               sgr_params: Optional[tuple[int | tuple[int, ...], ...]] = None) -> None:
+        """
+        Queue a zero-width sequence, with parsed SGR parameters (if any).
+
+        Storing the parsed parameters lets reconstruction apply the same update without re-parsing
+        the sequence text later.
+        """
+        nonlocal seq_order
+        sequences.append((seq_col, seq_order, seq_text, sgr_params))
+        seq_order += 1
+
     def _write_cells(s: str, w: int, write_col: int,
                      is_hyperlink: bool = False) -> None:
         """Write *w* cells of text *s* at *write_col*, handling wide-char splitting."""
-        nonlocal captured_style, seq_order
+        nonlocal captured_style
         if w == 0:
             # Zero-width: a cell here would be overwritten by the next write.
             if s:
-                sequences.append((write_col, seq_order, s))
-                seq_order += 1
+                _queue(write_col, s)
                 if propagate_sgr and captured_style is None:
                     captured_style = current_style
             return
         for offset in range(w):
             src_col = write_col + offset
-            if src_col > 0 and cells.get(src_col - 1, ('', 0))[1] == 2:
-                cells[src_col - 1] = (fillchar, 1)
+            left = cells.get(src_col - 1)
+            if left is not None and left[1] == 2:
+                cells[src_col - 1] = (fillchar, 1, left[2])
                 hyperlink_cells.discard(src_col - 1)
-            if cells.get(src_col, ('', 0))[1] == 2:
-                cells[src_col + 1] = (fillchar, 1)
+            current = cells.get(src_col)
+            if current is not None and current[1] == 2:
+                cells[src_col + 1] = (fillchar, 1, current[2])
                 hyperlink_cells.discard(src_col + 1)
             cells.pop(src_col, None)
             hyperlink_cells.discard(src_col)
-        cells[write_col] = (s, w)
+        cells[write_col] = (s, w, current_style)
         if is_hyperlink:
             for offset in range(w):
                 hyperlink_cells.add(write_col + offset)
@@ -586,8 +619,7 @@ def _clip_painter(
             m = _SEQUENCE_CLASSIFY.match(text, idx)
             if not m:
                 # Record lone ESC as a zero-width sequence at current column.
-                sequences.append((col, seq_order, char))
-                seq_order += 1
+                _queue(col, char)
                 idx += 1
                 continue
 
@@ -596,11 +628,10 @@ def _clip_painter(
             # _apply_sgr_wrap(); those inside the clip window are emitted at
             # their original position; those at or beyond *end* are dropped.
             if m.group('sgr_params') is not None and propagate_sgr and current_style is not None:
-                current_style = _sgr_state_update(current_style, m.group())
+                sgr_params = tuple(_parse_sgr_params(m.group()))
+                current_style = _sgr_state_apply(current_style, sgr_params)
                 if captured_style is not None and col < end:
-                    sequences.append((col, seq_order, m.group()))
-                    seq_order += 1
-                    end_style = current_style
+                    _queue(col, m.group(), sgr_params)
                 idx = m.end()
                 continue
 
@@ -613,8 +644,7 @@ def _clip_painter(
                     params=hl_state, match_end=m.end(), col=col,
                 )
                 if r.action is _HyperlinkAction.NO_CLOSE:
-                    sequences.append((col, seq_order, m.group()))
-                    seq_order += 1
+                    _queue(col, m.group())
                     idx = m.end()
                 elif r.action is _HyperlinkAction.EMPTY:
                     idx = r.close_end
@@ -622,19 +652,17 @@ def _clip_painter(
                     col += r.inner_width
                     idx = r.close_end
                 else:
-                    sequences.append((col, seq_order, r.open_seq))
-                    seq_order += 1
+                    _queue(col, r.open_seq)
                     _write_cells(r.clipped_inner, r.clipped_width, col,
                                  is_hyperlink=True)
                     col += r.clipped_width
-                    sequences.append((col, seq_order, r.close_seq))
-                    seq_order += 1
                     # Inner text is clipped with propagate_sgr=False, so any SGR
-                    # sequences it emits are verbatim: fold them into our state.
+                    # sequences it emits are verbatim: fold them into our state
+                    # before queueing the close, which follows them in output order.
                     if propagate_sgr and current_style is not None:
                         for sgr_m in _SGR_PATTERN.finditer(r.clipped_inner):
                             current_style = _sgr_state_update(current_style, sgr_m.group())
-                            end_style = current_style
+                    _queue(col, r.close_seq)
                     col = r.hl_col_end
                     idx = r.close_end
                 continue
@@ -695,8 +723,7 @@ def _clip_painter(
                 continue
 
             # Any other recognized sequence: preserve as-is.
-            sequences.append((col, seq_order, m.group()))
-            seq_order += 1
+            _queue(col, m.group())
             idx = m.end()
             continue
 
@@ -721,8 +748,7 @@ def _clip_painter(
                     _write_cells(' ', 1, fill_col)
                 col = next_tab
             elif start <= col < end:
-                sequences.append((col, seq_order, '\t'))
-                seq_order += 1
+                _queue(col, '\t')
             idx += 1
             continue
 
@@ -734,8 +760,7 @@ def _clip_painter(
         # Emit grapheme or fillchar depending on visibility within clip window.
         if grapheme_w == 0:
             if start <= col < end:
-                sequences.append((col, seq_order, grapheme))
-                seq_order += 1
+                _queue(col, grapheme)
         elif col >= start and col + grapheme_w <= end:
             _write_cells(grapheme, grapheme_w, col)
         elif col < end and col + grapheme_w > start:
@@ -746,8 +771,10 @@ def _clip_painter(
         col += grapheme_w
         idx += len(grapheme)
 
-    return (_reconstruct_painter(cells, sequences, start, end, fillchar),
-            captured_style, end_style)
+    result, end_style = _reconstruct_painter(
+        cells, sequences, start, end, fillchar,
+        current_style=captured_style)
+    return result, captured_style, end_style
 
 
 def clip(
@@ -842,6 +869,11 @@ def clip(
         '\x1b[1mold\x1b[m norm'
 
     Set ``propagate_sgr=False`` to disable this behavior.
+
+    ``fillchar`` cells are emitted in the SGR state in effect at that point in
+    the output, never reset to the default style.  Gaps left by cursor movement
+    and the replacement cells of a wide character split at a boundary therefore
+    inherit the surrounding style.
 
     .. note::
 
