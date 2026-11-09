@@ -79,6 +79,13 @@ jobs:
           - "3.13"
           - "3.14"
           - "3.15"
+        # setup-python has no 3.9 build for Ubuntu 26.04 (ubuntu-latest).
+        exclude:
+          - os: ubuntu-latest
+            python-version: "3.9"
+        include:
+          - os: ubuntu-24.04
+            python-version: "3.9"
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -145,7 +152,7 @@ jobs:
   # forces the Python implementation, keeping it exercised and covered.
   tests-python:
     name: Python tests (${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

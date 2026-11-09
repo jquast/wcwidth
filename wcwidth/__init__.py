@@ -73,8 +73,13 @@ if HAS_C_EXTENSION:
     # local
     from ._wcwidth_c import ljust, rjust, width, center
     from ._wcwidth_c import wcwidth as _c_wcwidth
-    from ._wcwidth_c import wcswidth, wcstwidth, propagate_sgr, iter_graphemes, strip_sequences
-    from ._wcwidth_c import iter_graphemes_reverse, grapheme_boundary_before
+    from ._wcwidth_c import (wcswidth,
+                             wcstwidth,
+                             propagate_sgr,
+                             iter_graphemes,
+                             strip_sequences,
+                             iter_graphemes_reverse,
+                             grapheme_boundary_before)
     wcwidth = lru_cache(maxsize=1024)(_c_wcwidth)
 else:
     # local

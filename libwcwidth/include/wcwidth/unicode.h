@@ -40,10 +40,9 @@ wcwidth_is_regional_indicator(uint32_t ucs)
 static inline bool
 wcwidth_is_extended_pictographic(uint32_t ucs)
 {
-    return wcwidth_bitset_get(ucs, WCWIDTH_EXTENDED_PICTOGRAPHIC_MIN,
-                              WCWIDTH_EXTENDED_PICTOGRAPHIC_MAX,
-                              WCWIDTH_EXTENDED_PICTOGRAPHIC_INDEX,
-                              WCWIDTH_EXTENDED_PICTOGRAPHIC_POOL);
+    return wcwidth_bitset_get(
+        ucs, WCWIDTH_EXTENDED_PICTOGRAPHIC_MIN, WCWIDTH_EXTENDED_PICTOGRAPHIC_MAX,
+        WCWIDTH_EXTENDED_PICTOGRAPHIC_INDEX, WCWIDTH_EXTENDED_PICTOGRAPHIC_POOL);
 }
 
 /* Base character eligible for ZWJ grapheme overrides: ExtPict or RI. */
