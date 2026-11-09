@@ -33,8 +33,7 @@ wcwidth_u32(uint32_t ucs, int ambiguous_width)
 
     /* Ambiguous East Asian (A category): wide only in CJK context */
     if (ambiguous_width == 2
-        && wcwidth_bitset_get(ucs, WCWIDTH_AMBIGUOUS_EASTASIAN_MIN,
-                              WCWIDTH_AMBIGUOUS_EASTASIAN_MAX,
+        && wcwidth_bitset_get(ucs, WCWIDTH_AMBIGUOUS_EASTASIAN_MIN, WCWIDTH_AMBIGUOUS_EASTASIAN_MAX,
                               WCWIDTH_AMBIGUOUS_EASTASIAN_INDEX,
                               WCWIDTH_AMBIGUOUS_EASTASIAN_POOL)) {
         return 2;
