@@ -298,6 +298,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 del current_line[-1]
                 if sequences and current_line:
                     current_line[-1] = current_line[-1] + sequences
+                elif sequences and chunks:
+                    chunks[-1] = sequences + chunks[-1]
 
             if current_line:
                 # Check whether this is a normal append or max_lines
@@ -315,6 +317,14 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                         no_more_content
                         and current_width <= line_width):
                     line_content = ''.join(current_line)
+                    if (self.drop_whitespace and '\x1b' in line_content
+                            and not self._strip_sequences(current_line[-1]).strip()):
+                        visible_content = self._strip_sequences(line_content)
+                        if visible_content and not visible_content.strip():
+                            # A whitespace-only line is emitted only when a later chunk
+                            # follows it, so chunks is never empty here.
+                            chunks[-1] = self._extract_sequences(line_content) + chunks[-1]
+                            continue
 
                     # Track hyperlink state through this line's content
                     new_state = self._track_hyperlink_state(line_content, hyperlink_state)
