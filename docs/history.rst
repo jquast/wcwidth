@@ -3,10 +3,9 @@ History
 =======
 
 0.9.5 *unreleased*
-  * **Bugfix** `clip()`_ overtyping applied the wrong SGR style to overwritten or untouched cells,
-    `PR #305`_.
-  * **Bugfix** `wrap()`_ with a whitespace-only line should not discard a run-on SGR sequence, `PR
-    #310`_.
+  * **Bugfix** `clip()`_ applying wrong SGR style after processing 'overtyping', `PR #305`_.
+  * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.
+  * **Bugfix** `clip()`_ control character processing after an errant OSC 8 close, `PR #308`_.
   * **Improved** performance of flag emojis by ~5.6x, `PR #304`_.
   * **Improved** performance of `clip()`_, `wrap()`_, and `propagate_sgr()`_ by caching SGR state
     updates, `PR #315`_.
@@ -346,6 +345,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #303`: https://github.com/jquast/wcwidth/pull/303
 .. _`PR #304`: https://github.com/jquast/wcwidth/pull/304
 .. _`PR #305`: https://github.com/jquast/wcwidth/pull/305
+.. _`PR #308`: https://github.com/jquast/wcwidth/pull/308
 .. _`PR #310`: https://github.com/jquast/wcwidth/pull/310
 .. _`PR #315`: https://github.com/jquast/wcwidth/pull/315
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
