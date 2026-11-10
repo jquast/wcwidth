@@ -386,6 +386,7 @@ def test_clip_hyperlink_painter_cases(text, control_codes, start, end, expected)
     ('ab', '\rc', 0, 2, 'c{close}b{close}'),
 ])
 def test_clip_redundant_hyperlink_close(
+        # pylint: disable=too-many-positional-arguments
         terminator, prefix, inner, start, end, expected):
     """A close without an open is kept as given and leaves the cursor alone."""
     close = f'\x1b]8;;{terminator}'
