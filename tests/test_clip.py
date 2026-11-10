@@ -378,19 +378,28 @@ def test_clip_hyperlink_painter_cases(text, control_codes, start, end, expected)
 
 @pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
 @pytest.mark.parametrize('prefix,inner,start,end,expected', [
-    ('a', '\tb', 0, 20, 'a       b'),
-    ('a', '\tb', 1, 9, '       b'),
-    ('a', '\tb', 0, 2, 'a '),
-    ('ab', '\rc', 0, 20, 'cb'),
-    ('ab', '\rc', 1, 9, 'b'),
-    ('ab', '\rc', 0, 2, 'cb'),
+    ('a', '\tb', 0, 20, 'a{close}       b{close}'),
+    ('a', '\tb', 1, 9, '{close}       b{close}'),
+    ('a', '\tb', 0, 2, 'a{close} '),
+    ('ab', '\rc', 0, 20, 'c{close}b{close}'),
+    ('ab', '\rc', 1, 9, '{close}b{close}'),
+    ('ab', '\rc', 0, 2, 'c{close}b{close}'),
 ])
-def test_clip_redundant_hyperlink_close_preserves_cursor(
+def test_clip_redundant_hyperlink_close(
         terminator, prefix, inner, start, end, expected):
-    """A close without an open must not reset the cursor for the following text."""
+    """A close without an open is kept as given and leaves the cursor alone."""
     close = f'\x1b]8;;{terminator}'
     text = prefix + close + inner + close
-    assert strip_sequences(clip(text, start, end)) == expected
+    assert clip(text, start, end) == expected.format(close=close)
+
+
+@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
+def test_clip_redundant_close_before_hyperlink(terminator):
+    """A close ahead of a real link leaves both the link and the text intact."""
+    close = f'\x1b]8;;{terminator}'
+    start = f'\x1b]8;;http://x{terminator}'
+    text = 'a' + close + start + 'bb' + close + 'c'
+    assert clip(text, 0, 10) == text
 
 
 def test_clip_sequences_cjk_with_sequences():

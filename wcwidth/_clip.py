@@ -47,7 +47,7 @@ else:
 class _HyperlinkAction(enum.Enum):
     """Outcome of processing an OSC 8 hyperlink unit."""
 
-    NO_CLOSE = enum.auto()   # process the sequence without a hyperlink unit
+    NO_CLOSE = enum.auto()   # no matching close, or a close followed by text
     EMPTY = enum.auto()       # hyperlink with no visible inner text
     OUTSIDE = enum.auto()     # hyperlink entirely outside the clip window
     VISIBLE = enum.auto()     # hyperlink overlaps the clip window
@@ -117,9 +117,6 @@ def _process_hyperlink(
     if (close_start, close_end) == (-1, -1):
         return _HyperlinkResult(_HyperlinkAction.NO_CLOSE)
     inner_text = text[match_end:close_start]
-    # A close sequence is not an opener for the text before the next close.
-    # Keep dropping adjacent empty units, but otherwise process following text
-    # in the outer cursor state rather than clipping it from column zero.
     if not params.url and inner_text:
         return _HyperlinkResult(_HyperlinkAction.NO_CLOSE)
     inner_width = width(
