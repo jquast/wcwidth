@@ -83,7 +83,7 @@ variations, and regional indicator (flags) as a `General Tabulated Summary`_ by 
 software and version. The results of the ucs-detect project create our correction tables.
 
 Unlikely Sequences
-~~~~~~~~~~~~~~~~~~
+------------------
 
 Most any codepoint may be concatenated with any other codepoint and terminal sequence, with
 disastrous and sometimes varying widths across different terminals. These are a kind of randomized
@@ -92,18 +92,18 @@ appear in any text published in any world language, this project is likely to re
 fixes". Examples:
 
 - improve word-wrapping of ascii hyphen with combining character `#309`_
-- extra/redundant OSC 8 close `#308`_ in clip()
 - VS15 applying more than once to the same base character `#244`_
 - VS15 on a basic emoji, with even its intended width contested, `#211`_, `#234`_
 - unlikely zero-width joiner sequence, swallowing the following character `#230`_
 - a non-recommended emoji sequence `#134`_, discussion `#203`_.
 
-Support for non-recommended sequences varies between terminals, and the permutations of combining,
-variation, joiner, and attribute sequences are too many to enumerate with correction tables, so the
-displayed width is alike C's undefined behavior: a value is computed, and the rendering belongs to
-the terminal.  Often times "correcting" for behavior of unlikely sequences impacts performance and
-readability, but in cases where their difference is negligible or simplified, they may sometimes be
-accepted anyway.
+Support for non-recommended sequences varies between terminals, and the permutations of "possible,
+but unlikely" combining, variation, joiner, and attribute sequences are too many to enumerate with
+correction tables. Checking for the presence of unlikely sequences has a resource cost with arguably
+no benefit. And so, the displayed width of these is considered like C's undefined behavior.  Often
+times "correcting" width measurements of unlikely sequences costs extra resources with arguably no
+value to end users. In some cases where performance cost is negligible or code is simplified, these
+changes may sometimes be accepted anyway.
 
 ========
 Overview
