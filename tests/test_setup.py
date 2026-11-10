@@ -16,11 +16,12 @@ _SETUP_PY = Path(__file__).resolve().parent.parent / 'setup.py'
 _EXTENSION = setuptools.Extension('wcwidth._wcwidth_c', sources=['wcwidth/_wcwidth_c.c'])
 
 
-def _load_setup(monkeypatch, release_build=False, no_extension=False):
+def _load_setup(monkeypatch, release_build=False, no_extension=False, enable_asserts=False):
     """Load setup.py, which reads its environment as it is imported."""
-    # clear both: cibuildwheel runs this suite in a container with CIBUILDWHEEL set
+    # clear all three: cibuildwheel runs this suite in a container with CIBUILDWHEEL set
     for name, enabled in {'CIBUILDWHEEL': release_build,
-                          'WCWIDTH_NO_EXTENSION': no_extension}.items():
+                          'WCWIDTH_NO_EXTENSION': no_extension,
+                          'WCWIDTH_ENABLE_ASSERTS': enable_asserts}.items():
         if enabled:
             monkeypatch.setenv(name, '1')
         else:
@@ -30,6 +31,12 @@ def _load_setup(monkeypatch, release_build=False, no_extension=False):
     with mock.patch.object(setuptools, 'setup'):
         spec.loader.exec_module(module)
     return module
+
+
+def test_release_build_rejects_asserts(monkeypatch):
+    """A release wheel build rejects enabled assertions."""
+    with pytest.raises(SystemExit, match='WCWIDTH_ENABLE_ASSERTS'):
+        _load_setup(monkeypatch, release_build=True, enable_asserts=True)
 
 
 def _run_build_ext(module, monkeypatch, extensions, implementation='CPython'):

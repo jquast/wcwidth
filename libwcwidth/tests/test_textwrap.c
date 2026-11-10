@@ -240,6 +240,45 @@ TEST(wrap_lone_continuation_bytes)
     }
 }
 
+/*
+ * ESC bytes that do not begin a recognised sequence must pass through as text.
+ */
+TEST(wrap_unknown_escape)
+{
+    static const char *const inputs[] = {"\x1b", "\x1bZ", "\x1b[", "a\x1bZb"};
+    size_t i;
+
+    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        char *out = NULL;
+        size_t len = 0;
+        wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+        size_t in_len = strlen(inputs[i]);
+
+        o.width = 2;
+        ASSERT_EQ(0, wcwidth_wrap_u8(inputs[i], in_len, &o, &out, &len));
+        ASSERT_EQ((int64_t) in_len, (int64_t) len);
+        ASSERT_EQ(0, memcmp(out, inputs[i], in_len));
+        free(out);
+    }
+}
+
+/*
+ * A drop_whitespace line whose visible text is empty but which carries escape
+ * sequences still attached to the following whitespace chunk.
+ */
+TEST(wrap_sequence_only_whitespace_line)
+{
+    char *out = NULL;
+    size_t len = 0;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a", "\x1b\x1b"};
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a \x1b  \x1b", 6, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
 TEST(wrap_max_lines_placeholder)
 {
     char *out;
@@ -326,6 +365,156 @@ TEST(wrap_preserves_color_after_dropped_leading_space)
     }
 }
 
+TEST(wrap_sgr_long_word)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\x1b[31mabc", "def\x1b[0m"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31mabcdef\x1b[0m", 16, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_trailing_word_with_escape)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa", "\x1b[31mbb"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa \x1b[31mbb", 10, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_wide_first_grapheme)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\xe4\xb8\xad", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "\xe4\xb8\xad", 3));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31m\xe4\xb8\xad", 8, &o, &out, &len));
+    ASSERT_EQ(0, memcmp(out, "\x1b[31m\xe4\xb8\xad", 8));
+    free(out);
+}
+
+TEST(wrap_unicode_whitespace)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xc2\xa0", 4, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe2\x80\x83", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+}
+
+TEST(wrap_expands_tabs_and_resets_at_newline)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 20;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 9, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a       b", 9));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\nb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a b", 3));
+    free(out);
+}
+
+TEST(wrap_whitespace_only)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("  ", 2, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("   ", 3, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(wrap_text_wraps_segment)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa", "bb", "cc"};
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("aa bb\ncc", 8, &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+}
+
+TEST(wrap_u32_encode_and_errors)
+{
+    uint32_t long_text[200];
+    uint32_t *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    size_t i;
+
+    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
+        long_text[i] = 0x4E2D;
+    o.width = 40;
+    ASSERT_EQ(0, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 1;
+    o.max_lines = 1;
+    o.placeholder = "xxxx";
+    ASSERT_EQ(-1, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+}
+
+TEST(wrap_max_lines_trims_previous_line)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"abc\x1b[0m."};
+
+    o.width = 5;
+    o.max_lines = 2;
+    o.placeholder = ".";
+    ASSERT_EQ(0, wcwidth_wrap_u8("abc  \x1b[0m ddddd eeeee", 21, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -338,7 +527,18 @@ main(void)
     RUN_TEST(wrap_lines_u8);
     RUN_TEST(wrap_tabsize_zero);
     RUN_TEST(wrap_lone_continuation_bytes);
+    RUN_TEST(wrap_unknown_escape);
+    RUN_TEST(wrap_sequence_only_whitespace_line);
     RUN_TEST(wrap_max_lines_placeholder);
     RUN_TEST(wrap_drops_leading_whitespace_only_line);
+    RUN_TEST(wrap_sgr_long_word);
+    RUN_TEST(wrap_trailing_word_with_escape);
+    RUN_TEST(wrap_wide_first_grapheme);
+    RUN_TEST(wrap_unicode_whitespace);
+    RUN_TEST(wrap_expands_tabs_and_resets_at_newline);
+    RUN_TEST(wrap_whitespace_only);
+    RUN_TEST(wrap_text_wraps_segment);
+    RUN_TEST(wrap_u32_encode_and_errors);
+    RUN_TEST(wrap_max_lines_trims_previous_line);
     return test_summary();
 }

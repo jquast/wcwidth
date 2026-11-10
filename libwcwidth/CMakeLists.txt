@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Version is stamped into the generated header by bin/update-tables.py, read it from there
-# rather than duplicating it here, where it silently rots.  A PEP 440 pre-release suffix
-# is dropped: CMake project() versions are numeric only.
+# Version is stamped into the generated header by bin/update-tables.py, read it from
+# there to keep one copy.  A PEP 440 pre-release suffix is dropped: CMake project()
+# versions are numeric only.
 file(STRINGS include/wcwidth/wcwidth_config.h _wcwidth_version_line
      REGEX "^#define WCWIDTH_VERSION \"")
 string(REGEX REPLACE ".*\"([0-9]+\\.[0-9]+\\.[0-9]+)[^\"]*\".*" "\\1"
@@ -13,6 +13,12 @@ project(libwcwidth VERSION ${_wcwidth_version} LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+
+# Assertion checks, off for the distributed library.
+option(WCWIDTH_ENABLE_ASSERTS "Enable assertion checks" OFF)
+if(WCWIDTH_ENABLE_ASSERTS)
+    add_compile_definitions(WCWIDTH_ENABLE_ASSERTS=1)
+endif()
 
 # library
 # Keep this source list in parity with setup.py's _EXT_SOURCES, which builds the
@@ -34,6 +40,7 @@ set(LIBWCWIDTH_SOURCES
     src/text_sizing.c
     src/terminal_override.c
     src/utf8.c
+    src/wcwidth_assert.c
     # Generated tables
     src/tables/table_wide.c
     src/tables/table_zero.c
@@ -77,6 +84,7 @@ if(BUILD_TESTING)
         tests/test_text_sizing.c
         tests/test_utf8.c
         tests/test_gcb_class.c
+        tests/test_terminal_override.c
     )
 
     foreach(test_src ${TEST_SOURCES})
@@ -88,7 +96,7 @@ if(BUILD_TESTING)
     endforeach()
 
     # A second build of the library whose allocator calls resolve to hooks that
-    # test_oom supplies, so allocation-failure branches can be reached.
+    # test_oom supplies, so every allocation-failure branch can be reached.
     add_library(wcwidth_oom STATIC ${LIBWCWIDTH_SOURCES})
     target_include_directories(wcwidth_oom PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

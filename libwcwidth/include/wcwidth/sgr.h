@@ -60,7 +60,7 @@ size_t wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t
  * *line_lens* carries the actual byte length of each line (may include
  * embedded NULs); *out_lens* receives the new byte length after SGR
  * prefix/suffix insertion (may be NULL).
- * Returns 0 on success, -1 if any buffer is too small.
+ * Returns 0 on success.
  */
 int wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens, size_t nlines);
 

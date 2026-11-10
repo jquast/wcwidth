@@ -192,6 +192,105 @@ TEST(u32_null_opts_and_past_end)
     free(u);
 }
 
+TEST(empty_result_after_wide_glyph)
+{
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    char fillchar = ' ';
+    size_t len = 99;
+    int error = WCWIDTH_ERROR_NONE;
+    char *s;
+
+    opts.v_start = 2;
+    opts.v_end = 3;
+    opts.fillchar = &fillchar;
+    s = wcwidth_clip_u8("\xe4\xb8\xad", 3, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(0, len);
+    ASSERT_STREQ("", s);
+    free(s);
+}
+
+TEST(strict_indeterminate_without_error_out)
+{
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+
+    opts.v_start = 0;
+    opts.v_end = 3;
+    ASSERT_NULL(wcwidth_clip_u8("\x1b"
+                                "8x",
+                                3, WCWIDTH_STRICT, &opts, NULL, NULL));
+
+    opts.v_start = 0;
+    opts.v_end = 9;
+    ASSERT_NULL(wcwidth_clip_u8("\x1b"
+                                "8x",
+                                3, WCWIDTH_STRICT, &opts, NULL, NULL));
+}
+
+TEST(large_grapheme_grows_buffer)
+{
+    static char text[1201];
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    char *s;
+    size_t i;
+
+    text[0] = 'a';
+    for (i = 0; i < 600; i++) {
+        text[1 + i * 2] = '\xCC';
+        text[2 + i * 2] = '\x81';
+    }
+    opts.v_start = 0;
+    opts.v_end = 1;
+    s = wcwidth_clip_u8(text, sizeof(text), WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(sizeof(text), len);
+    ASSERT_EQ(0, memcmp(s, text, sizeof(text)));
+    free(s);
+}
+
+TEST(u32_encode_and_errors)
+{
+    uint32_t indeterminate[] = {0x1B, '8'};
+    uint32_t long_text[200];
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    uint32_t *out;
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    size_t i;
+
+    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
+        long_text[i] = 0x4E2D;
+    opts.v_start = 0;
+    opts.v_end = 400;
+    out = wcwidth_clip_u32(long_text, 200, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ(200, len);
+    free(out);
+
+    len = 0;
+    ASSERT_NULL(wcwidth_clip_u32(indeterminate, 2, WCWIDTH_STRICT, &opts, &len, &error));
+}
+
+TEST(empty_fillchar_partial_glyph)
+{
+    wcwidth_clip_opts_t opts = WCWIDTH_CLIP_OPTS_DEFAULT;
+    size_t len = 0;
+    int error = WCWIDTH_ERROR_NONE;
+    char *s;
+
+    opts.v_start = 1;
+    opts.v_end = 2;
+    opts.fillchar = NULL;
+    opts.fillchar_len = 0;
+    s = wcwidth_clip_u8("\xe4\xb8\xad", 3, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(0, len);
+    ASSERT_STREQ("", s);
+    free(s);
+}
+
 int
 main(void)
 {
@@ -205,5 +304,10 @@ main(void)
     RUN_TEST(unsupported_osc);
     RUN_TEST(null_opts_and_tabsize_zero);
     RUN_TEST(u32_null_opts_and_past_end);
+    RUN_TEST(empty_result_after_wide_glyph);
+    RUN_TEST(strict_indeterminate_without_error_out);
+    RUN_TEST(large_grapheme_grows_buffer);
+    RUN_TEST(u32_encode_and_errors);
+    RUN_TEST(empty_fillchar_partial_glyph);
     return test_summary();
 }

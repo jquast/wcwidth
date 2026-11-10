@@ -2,6 +2,7 @@
 #
 #   make          build static library and example programs
 #   make test     build and run all tests
+#   make debug    build and run all tests with assertions enabled
 #   make examples build example programs (textwrap, width, align)
 #   make format   auto-format all C source with clang-format
 #   make format-check  check formatting without modifying files
@@ -31,7 +32,7 @@ FORMAT_DIRS = src include tests examples
 FORMAT_FILES = $(shell find $(FORMAT_DIRS) \( -name '*.c' -o -name '*.h' \) \
                     -not -path 'src/tables/*' | sort)
 
-.PHONY: all clean test examples format format-check asan ubsan valgrind
+.PHONY: all clean test debug examples format format-check asan ubsan valgrind
 
 all: $(LIB) examples
 
@@ -45,6 +46,10 @@ asan: CFLAGS = $(ASAN_CFLAGS)
 # UndefinedBehaviorSanitizer only; the lightest sanitizer configuration.
 ubsan: clean test
 ubsan: CFLAGS = $(UBSAN_CFLAGS)
+
+# Assertion checks enabled, for local development.
+debug: clean test
+debug: CFLAGS += -DWCWIDTH_ENABLE_ASSERTS=1
 
 # Run the test binaries under valgrind with full leak checking.
 valgrind: $(TEST_BINS)

@@ -52,9 +52,15 @@ TEST(encode_roundtrip)
 
 TEST(decode_malformed)
 {
-    static const char *const bad[] = {
-        "\xf8",     "\xff",         "\xe2\x82",     "\xe2\x28\xa1",
-        "\xc0\xaf", "\xe0\x80\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80"};
+    static const char *const bad[] = {"\xf8",
+                                      "\xff",
+                                      "\xe2\x82",
+                                      "\xe2\x28\xa1",
+                                      "\xc0\xaf",
+                                      "\xe0\x80\xaf",
+                                      "\xf0\x80\x80\x80",
+                                      "\xed\xa0\x80",
+                                      "\xf4\x90\x80\x80"};
     size_t i;
     uint32_t cp = 0;
 
@@ -65,6 +71,21 @@ TEST(decode_malformed)
         ASSERT_EQ(0xFFFD, cp);
         ASSERT_TRUE(used >= 1 && used <= strlen(bad[i]));
     }
+}
+
+TEST(encode_u32_small_stack_grows_to_fit)
+{
+    const uint32_t cps[] = {'a', 0x1F600};
+    char stack[8];
+    char *out;
+    size_t len = 0;
+
+    out = wcwidth_encode_u32(cps, 2, stack, 1, &len);
+    ASSERT_NOT_NULL(out);
+    ASSERT_TRUE(out != stack);
+    ASSERT_EQ((int64_t) 5, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a\xf0\x9f\x98\x80", 5));
+    free(out);
 }
 
 TEST(decode_u32_heap_empty)
@@ -165,6 +186,7 @@ main(void)
 {
     RUN_TEST(encode_roundtrip);
     RUN_TEST(decode_malformed);
+    RUN_TEST(encode_u32_small_stack_grows_to_fit);
     RUN_TEST(decode_u32_heap_empty);
     RUN_TEST(decode_single_null_out);
     RUN_TEST(decode_u32_null_stack);

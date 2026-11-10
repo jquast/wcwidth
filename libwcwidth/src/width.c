@@ -12,6 +12,8 @@
 #include "wcwidth/wcwidth.h"
 #include "wcwidth/terminal_override.h"
 
+#include "wcwidth_assert.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -316,23 +318,9 @@ _width_ignore(const char *text, size_t n, int ambiguous_width, const char *term_
     {
         char ctrl_stripped[WCWIDTH_STRIP_SCRATCH];
         size_t ctrl_stripped_len;
-        size_t ctrl_needed = strip_controls(stripped, stripped_len, ctrl_stripped,
-                                            sizeof(ctrl_stripped), &ctrl_stripped_len);
-        if (ctrl_needed >= sizeof(ctrl_stripped)) {
-            char *buf = (char *) malloc(ctrl_needed + 1);
-            if (buf == NULL) {
-                return -1;
-            }
-            strip_controls(stripped, stripped_len, buf, ctrl_needed + 1, &ctrl_stripped_len);
-            if (term_program != NULL && term_program[0] != '\0') {
-                result = wcstwidth_u8(buf, ctrl_stripped_len, ambiguous_width, term_program);
-            }
-            else {
-                result = wcswidth_u8(buf, ctrl_stripped_len, ambiguous_width);
-            }
-            free(buf);
-            return result;
-        }
+
+        strip_controls(stripped, stripped_len, ctrl_stripped, sizeof(ctrl_stripped),
+                       &ctrl_stripped_len);
         if (term_program != NULL && term_program[0] != '\0') {
             return wcstwidth_u8(ctrl_stripped, ctrl_stripped_len, ambiguous_width, term_program);
         }
@@ -445,12 +433,13 @@ escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
                 continue;
             }
         }
-        if (j == 0 || !wcwidth_escape_classify(out, j, 0, &result) || result.length == 0) {
-            span = 1;
-        }
-        else {
-            span = result.length;
-        }
+        WCWIDTH_ASSERT(j > 0);
+        result =
+            (wcwidth_esc_result_t){.type = WCWIDTH_ESC_UNRECOGNIZED, .start = out, .length = 1};
+        bool ok = wcwidth_escape_classify(out, j, 0, &result);
+        WCWIDTH_ASSERT(ok);
+        WCWIDTH_ASSERT(result.length > 0);
+        span = result.length;
         break;
     }
     if (heap != NULL) {
@@ -587,9 +576,6 @@ col_add(int col, int delta)
     if (sum > INT_MAX) {
         return INT_MAX;
     }
-    if (sum < INT_MIN) {
-        return INT_MIN;
-    }
     return (int) sum;
 }
 
@@ -677,13 +663,13 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             flush_cluster(&current_col, &max_extent, &cluster_width);
 
             {
-                wcwidth_esc_result_t result;
-                if (!wcwidth_escape_classify(text, n, idx, &result)) {
-                    /* Should not happen since text[idx] == ESC. */
-                    idx++;
-                }
-                else {
-                    switch (result.type) {
+                wcwidth_esc_result_t result = {
+                    .type = WCWIDTH_ESC_UNRECOGNIZED, .start = text + idx, .length = 1};
+                bool ok = wcwidth_escape_classify(text, n, idx, &result);
+                WCWIDTH_ASSERT(ok);
+                {
+                    /* Every classifier result is one of the cases below. */
+                    switch ((int) result.type) {
                         case WCWIDTH_ESC_SGR:
                         case WCWIDTH_ESC_OTHER:
                         case WCWIDTH_ESC_UNRECOGNIZED:
@@ -729,9 +715,6 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                                                   wcwidth_ts_display_width(&ts, ambiguous_width));
                             break;
                         }
-
-                        case WCWIDTH_ESC_NONE:
-                            break;
                     }
 
                     idx += result.length;
@@ -936,12 +919,7 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
             /* 8. Normal character: measure with wcwidth. */
             {
                 int w = wcwidth_u32(ucs, ambiguous_width);
-                if (w < 0) {
-                    /* Non-printable; unreachable after the C0/C1 checks
-                     * above, skipped defensively. */
-                    idx += consumed;
-                    continue;
-                }
+                WCWIDTH_ASSERT(w >= 0);
                 /* Apply single-codepoint terminal overrides (pre-merged sets). */
                 if (has_cp_overrides) {
                     if (w == 2 && wcwidth_bisearch(ucs, narrower, narrower_len)) {
@@ -990,7 +968,8 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                                     uint32_t cluster_cps[32];
                                     size_t cluster_len = wcwidth_decode_cluster(
                                         text, (size_t) cluster_start, idx, cluster_cps, 32);
-                                    if (cluster_len < 32) {
+                                    WCWIDTH_ASSERT(cluster_len < 32);
+                                    {
                                         int cluster_w = wcwidth_grapheme_override_lookup(
                                             term, cluster_cps, cluster_len);
                                         if (cluster_w >= 0) {
@@ -1002,9 +981,6 @@ _width_parse(const char *text, size_t n, bool strict, int tabsize, int ambiguous
                                         else {
                                             current_col = col_add(current_col, cluster_width);
                                         }
-                                    }
-                                    else {
-                                        current_col = col_add(current_col, cluster_width);
                                     }
                                 }
                             }
@@ -1178,9 +1154,6 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                 last_measured_idx = -2;
                 last_measured_ucs = 0;
                 cluster_start = -1;
-                if (current_col > max_extent) {
-                    max_extent = current_col;
-                }
                 continue;
             }
 
@@ -1308,11 +1281,11 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                 }
                 bool esc_truncated = (j == sizeof(esc_buf) && idx + j < n);
 
-                wcwidth_esc_result_t result;
-                if (!wcwidth_escape_classify(esc_buf, esc_len, 0, &result)) {
-                    idx++;
-                }
-                else {
+                wcwidth_esc_result_t result = {
+                    .type = WCWIDTH_ESC_UNRECOGNIZED, .start = esc_buf, .length = 1};
+                bool ok = wcwidth_escape_classify(esc_buf, esc_len, 0, &result);
+                WCWIDTH_ASSERT(ok);
+                {
                     /* When the stack buffer is full and the sequence was
                      * classified as a generic OTHER (which includes truncated
                      * OSCs and CSIs), the full escape may extend past the
@@ -1344,7 +1317,9 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                         idx++;
                     }
                     else {
-                        switch (result.type) {
+                        /* OSC 66 is consumed by the native OSC scan above;
+                         * every result here is one of the cases below. */
+                        switch ((int) result.type) {
                             case WCWIDTH_ESC_SGR:
                             case WCWIDTH_ESC_OTHER:
                             case WCWIDTH_ESC_UNRECOGNIZED:
@@ -1380,17 +1355,6 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                                     *error = WCWIDTH_ERROR_INDETERMINATE;
                                     return -1;
                                 }
-                                break;
-
-                            case WCWIDTH_ESC_OSC66: {
-                                wcwidth_text_sizing_t ts;
-                                wcwidth_ts_from_esc(&result, &ts);
-                                current_col = col_add(
-                                    current_col, wcwidth_ts_display_width(&ts, ambiguous_width));
-                                break;
-                            }
-
-                            case WCWIDTH_ESC_NONE:
                                 break;
                         }
 
@@ -1578,10 +1542,7 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
         /* 8. Normal character: measure with wcwidth. */
         {
             int w = wcwidth_u32(ucs, ambiguous_width);
-            if (w < 0) {
-                idx++;
-                continue;
-            }
+            WCWIDTH_ASSERT(w >= 0);
             /* Apply single-codepoint terminal overrides (pre-merged sets). */
             if (has_cp_overrides) {
                 if (w == 2 && wcwidth_bisearch(ucs, narrower, narrower_len)) {
@@ -1621,7 +1582,8 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                             }
                             else {
                                 size_t cluster_len = (size_t) idx - (size_t) cluster_start;
-                                if (cluster_len < 32) {
+                                WCWIDTH_ASSERT(cluster_len < 32);
+                                {
                                     uint32_t cluster_cps[32];
                                     memcpy(cluster_cps, cp + cluster_start,
                                            cluster_len * sizeof(uint32_t));
@@ -1636,9 +1598,6 @@ _width_parse_u32(const uint32_t *cp, size_t n, bool strict, int tabsize, int amb
                                     else {
                                         current_col = col_add(current_col, cluster_width);
                                     }
-                                }
-                                else {
-                                    current_col = col_add(current_col, cluster_width);
                                 }
                             }
                         }

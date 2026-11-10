@@ -142,6 +142,46 @@ TEST(osc_unterminated)
     ASSERT_EQ((int64_t) 2, (int64_t) r.length);
 }
 
+TEST(classify_scroll_region_and_bel_terminator)
+{
+    wcwidth_esc_result_t r;
+
+    ASSERT_EQ(WCWIDTH_ESC_INDETERMINATE, classify("\x1b[1;2r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[1;2;3r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[?r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b_apc\x07", &r));
+    ASSERT_EQ((int64_t) 6, (int64_t) r.length);
+}
+
+TEST(strip_u32_heap)
+{
+    uint32_t long_text[300];
+    uint32_t *result;
+    size_t len = 0;
+    size_t i;
+
+    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
+        long_text[i] = 0x4E2D;
+    result = wcwidth_escape_strip_u32(long_text, 300, &len);
+    ASSERT_NOT_NULL(result);
+    ASSERT_EQ(300, len);
+    ASSERT_EQ(0x4E2D, result[0]);
+    free(result);
+}
+
+TEST(iter_leading_and_trailing_visible)
+{
+    iter_capture_t cap;
+    memset(&cap, 0, sizeof(cap));
+    wcwidth_escape_iter("abc\x1b[31m", 8, iter_capture_fn, &cap);
+
+    ASSERT_EQ(2, cap.count);
+    ASSERT_STREQ("abc", cap.segments[0]);
+    ASSERT_FALSE(cap.is_escape[0]);
+    ASSERT_STREQ("\x1b[31m", cap.segments[1]);
+    ASSERT_TRUE(cap.is_escape[1]);
+}
+
 int
 main(void)
 {
@@ -152,5 +192,8 @@ main(void)
     RUN_TEST(iter_basic);
     RUN_TEST(has_cursor_movement_basic);
     RUN_TEST(osc_unterminated);
+    RUN_TEST(classify_scroll_region_and_bel_terminator);
+    RUN_TEST(strip_u32_heap);
+    RUN_TEST(iter_leading_and_trailing_visible);
     return test_summary();
 }

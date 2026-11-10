@@ -84,8 +84,7 @@ def _wcversion_value(ver_string: str) -> tuple[int, ...]:  # pragma: no cover
 
     .. deprecated:: 0.3.0
 
-        This function is no longer used internally by wcwidth but is retained
-        for API compatibility with external tools.
+        This function is retained for API compatibility with external tools.
 
     :param ver_string: Unicode version string, of form ``n.n.n``.
     :returns: tuple of digit tuples, ``tuple(int, [...])``.
@@ -102,8 +101,7 @@ def _wcmatch_version(given_version: str) -> str:  # pylint: disable=unused-argum
     .. deprecated:: 0.3.0
         This function now always returns the latest version.
 
-        This function is no longer used internally by wcwidth but is retained
-        for API compatibility with external tools.
+        This function is retained for API compatibility with external tools.
 
     :param given_version: Ignored. Any value is accepted for compatibility.
     :returns: The latest unicode version string.

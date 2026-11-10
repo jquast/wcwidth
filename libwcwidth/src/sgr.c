@@ -3,6 +3,8 @@
  */
 #include "wcwidth/sgr.h"
 
+#include "wcwidth_assert.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,9 +30,14 @@ sgr_params_reserve(int **params, int *stack_params, size_t *cap, int count)
     if ((size_t) count < *cap) {
         return true;
     }
+#if SIZE_MAX <= UINT32_MAX
+    /* Doubling the capacity can wrap the byte count. */
     if (*cap > SIZE_MAX / (2 * sizeof(int))) {
         return false;
     }
+#else
+    WCWIDTH_ASSERT(*cap <= SIZE_MAX / (2 * sizeof(int)));
+#endif
     new_cap = *cap * 2;
     if (*params == stack_params) {
         grown = (int *) malloc(new_cap * sizeof(int));
@@ -320,7 +327,7 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
 }
 
 /*
- * Append a decimal integer at *offset*, never writing past *out_cap*.
+ * Append a decimal integer at *offset*, within the *out_cap*-byte buffer.
  *
  * snprintf() returns the length it would have produced, so an unclamped
  * offset runs past out_cap, wraps out_cap - offset to a huge size_t, and
@@ -342,16 +349,12 @@ sgr_write_int(char *out, size_t out_cap, size_t offset, int value)
 {
     int written;
 
-    if (out_cap == 0) {
-        return 0;
-    }
+    WCWIDTH_ASSERT(out_cap > 0);
     if (offset >= out_cap) {
         return out_cap - 1;
     }
     written = snprintf(out + offset, out_cap - offset, "%d", value);
-    if (written < 0) {
-        return offset;
-    }
+    WCWIDTH_ASSERT(written >= 0);
     if ((size_t) written >= out_cap - offset) {
         return out_cap - 1;
     }
@@ -381,8 +384,6 @@ wcwidth_sgr_to_escape(const wcwidth_sgr_state_t *state, char *out, size_t out_ca
     }
 
     if (state->bold) {
-        if (need_sep && offset < out_cap)
-            out[offset++] = ';';
         offset = sgr_write_int(out, out_cap, offset, 1);
         need_sep = 1;
     }
@@ -525,6 +526,16 @@ extract_sgr_params(const char *line, size_t line_len, size_t pos, const char **p
     return p - pos;
 }
 
+/*
+ * Longest possible state restore: "\x1b[" + ten boolean attributes (two
+ * digits and a separator each) + foreground and background (six ints of up to
+ * eleven characters, separator included) + 'm'.
+ */
+#define SGR_PREFIX_MAX                                                                             \
+    (2 + 10 * 3 + 2 * (WCWIDTH_SGR_COLOR_MAX * 11 + (WCWIDTH_SGR_COLOR_MAX - 1)) + 1)
+_Static_assert(SGR_PREFIX_MAX + (sizeof("\x1b[0m") - 1) + 1 <= WCWIDTH_SGR_PROPAGATE_SPARE,
+               "SGR restore prefix and reset must fit WCWIDTH_SGR_PROPAGATE_SPARE");
+
 int
 wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens, size_t nlines)
 {
@@ -570,18 +581,13 @@ wcwidth_sgr_propagate(char **lines, const size_t *line_lens, size_t *out_lens, s
             suffix_len = sizeof(reset) - 1;
         }
 
-        /* (4) heuristic capacity check */
-        if (line_len + prefix_len + suffix_len + 1 > line_len + WCWIDTH_SGR_PROPAGATE_SPARE) {
-            return -1;
-        }
-
-        /* (5) insert prefix: shift content right */
+        /* (4) insert prefix: shift content right */
         if (prefix_len > 0) {
             memmove(line + prefix_len, line, line_len + 1);
             memcpy(line, prefix, prefix_len);
         }
 
-        /* (6) append suffix */
+        /* (5) append suffix */
         if (suffix_len > 0) {
             memcpy(line + line_len + prefix_len, reset, suffix_len + 1);
         }

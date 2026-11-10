@@ -200,6 +200,25 @@ TEST(boundary_u32)
     ASSERT_EQ((int64_t) 0, (int64_t) wcwidth_grapheme_boundary_after_u32(NULL, 0, 0));
 }
 
+TEST(malformed_utf8_and_offset_clamp)
+{
+    wcwidth_grapheme_iter_t *iter;
+    const char *g;
+    size_t len = 0;
+    static const uint32_t cps[] = {'a', 'b', 'c', 'd'};
+
+    iter = wcwidth_grapheme_iter_new("\xff", 1);
+    ASSERT_NOT_NULL(iter);
+    g = wcwidth_grapheme_next(iter, &len);
+    ASSERT_NOT_NULL(g);
+    ASSERT_EQ(1, len);
+    ASSERT_NULL(wcwidth_grapheme_next(iter, &len));
+    wcwidth_grapheme_iter_free(iter);
+
+    ASSERT_EQ(2, wcwidth_grapheme_boundary_before("abc", 3, 99));
+    ASSERT_EQ(3, wcwidth_grapheme_boundary_before_u32(cps, 4, 99));
+}
+
 int
 main(void)
 {
@@ -212,5 +231,6 @@ main(void)
     RUN_TEST(iterator_u32);
     RUN_TEST(boundary_u32);
     RUN_TEST(indic_conjunct_unicode18);
+    RUN_TEST(malformed_utf8_and_offset_clamp);
     return test_summary();
 }

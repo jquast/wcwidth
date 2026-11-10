@@ -52,11 +52,38 @@ TEST(parse_invalid_and_clamped)
     ASSERT_TRUE(params.scale >= 1); /* saturated, then clamped high */
 }
 
+TEST(from_esc_meta_and_negative_width)
+{
+    wcwidth_esc_result_t esc;
+    wcwidth_text_sizing_t ts;
+
+    memset(&esc, 0, sizeof(esc));
+    esc.ts_meta = "s=2:w=3";
+    esc.ts_meta_len = 7;
+    esc.ts_text = "";
+    esc.ts_text_len = 0;
+    esc.ts_terminator = '\x07';
+    wcwidth_ts_from_esc(&esc, &ts);
+    ASSERT_EQ(2, ts.params.scale);
+    ASSERT_EQ(3, ts.params.width);
+
+    ts.params.width = 0;
+    ts.params.scale = 1;
+    ts.text = "\x01";
+    ts.text_len = 1;
+    ASSERT_EQ(0, wcwidth_ts_display_width(&ts, 1));
+
+    esc.ts_meta_len = 0;
+    wcwidth_ts_from_esc(&esc, &ts);
+    ASSERT_EQ(1, ts.params.scale);
+}
+
 int
 main(void)
 {
     RUN_TEST(parse_basic);
     RUN_TEST(display_width_basic);
     RUN_TEST(parse_invalid_and_clamped);
+    RUN_TEST(from_esc_meta_and_negative_width);
     return test_summary();
 }
