@@ -332,9 +332,11 @@ def _find_cluster_start(text: str, pos: int) -> int:
     # Fast path: ASCII (except LF) starts its own cluster
     if target_cp < 0x80:
         # GB9b: Check for preceding PREPEND (rare: Arabic/Brahmic)
-        if pos >= 2 and 0x20 <= target_cp < 0x7F:
+        if pos >= 2 and target_cp >= 0x20:
             prev_cp = ord(text[pos - 2])
             if prev_cp >= 0x80 and _grapheme_cluster_break(prev_cp) == GCB.PREPEND:
+                if target_cp == 0x7F:  # GB4: DELETE is a control, not a base
+                    return pos - 1
                 return _find_cluster_start(text, pos - 1)
         return pos - 1
 

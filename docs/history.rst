@@ -7,6 +7,8 @@ History
     `PR #305`_.
   * **Bugfix** `wrap()`_ with a whitespace-only line should not discard a run-on SGR sequence, `PR
     #310`_.
+  * **Bugfix** `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ splitting a Prepend
+    character from its base, `PR #306`_.
   * **Improved** performance of flag emojis by ~5.6x, `PR #304`_.
   * **Improved** performance of `clip()`_, `wrap()`_, and `propagate_sgr()`_ by caching SGR state
     updates, `PR #315`_.
@@ -346,6 +348,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #303`: https://github.com/jquast/wcwidth/pull/303
 .. _`PR #304`: https://github.com/jquast/wcwidth/pull/304
 .. _`PR #305`: https://github.com/jquast/wcwidth/pull/305
+.. _`PR #306`: https://github.com/jquast/wcwidth/pull/306
 .. _`PR #310`: https://github.com/jquast/wcwidth/pull/310
 .. _`PR #315`: https://github.com/jquast/wcwidth/pull/315
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
