@@ -140,6 +140,15 @@ TEST(boundary_prepend_gb9b)
     ASSERT_EQ((int64_t) 4, (int64_t) wcwidth_grapheme_boundary_after(text, 4, 1));
 }
 
+TEST(boundary_prepend_with_extender)
+{
+    static const uint32_t cps[] = {0x78, 0x0600, 0x61, 0x0301};
+    static const uint32_t control[] = {0x0600, 0x7F};
+
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_before_u32(cps, 4, 4));
+    ASSERT_EQ((int64_t) 1, (int64_t) wcwidth_grapheme_boundary_before_u32(control, 2, 2));
+}
+
 TEST(iterator_u32)
 {
     /* "éok": one two-codepoint cluster then two single ones */
@@ -199,6 +208,7 @@ main(void)
     RUN_TEST(boundary_before_basic);
     RUN_TEST(boundary_after_basic);
     RUN_TEST(boundary_prepend_gb9b);
+    RUN_TEST(boundary_prepend_with_extender);
     RUN_TEST(iterator_u32);
     RUN_TEST(boundary_u32);
     RUN_TEST(indic_conjunct_unicode18);
