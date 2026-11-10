@@ -523,9 +523,8 @@ or unset ``TERM`` and ``TERM_PROGRAM`` environment values, such as in ``conftest
         if saved_tprog is not None:
             os.environ['TERM_PROGRAM'] = saved_tprog
 
-==================
 More documentation
-==================
+------------------
 
 Developer documentation, for building and contributing to this project, at
 https://wcwidth.readthedocs.io/en/latest/developing.html
