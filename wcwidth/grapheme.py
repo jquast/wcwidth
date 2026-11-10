@@ -335,6 +335,8 @@ def _find_cluster_start(text: str, pos: int) -> int:
         if pos >= 2 and target_cp >= 0x20:
             prev_cp = ord(text[pos - 2])
             if prev_cp >= 0x80 and _grapheme_cluster_break(prev_cp) == GCB.PREPEND:
+                if target_cp == 0x7F:  # GB4: DELETE is a control, not a base
+                    return pos - 1
                 return _find_cluster_start(text, pos - 1)
         return pos - 1
 
@@ -342,7 +344,11 @@ def _find_cluster_start(text: str, pos: int) -> int:
     safe_start = pos - 1
     while safe_start > 0:
         cp = ord(text[safe_start])
-        if 0x20 <= cp < 0x80:  # ASCII always starts a cluster
+        if 0x20 <= cp < 0x7F:
+            # GB9b: include prepends before an ASCII base with extenders.
+            while (safe_start > 0 and
+                   _grapheme_cluster_break(ord(text[safe_start - 1])) == GCB.PREPEND):
+                safe_start -= 1
             break
         if _grapheme_cluster_break(cp) == GCB.CONTROL:  # GB4
             break

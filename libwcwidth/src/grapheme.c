@@ -517,12 +517,13 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
 
     /* Fast path: ASCII (except LF) starts its own cluster */
     if (target_cp < 0x80) {
-        if (target_cp >= 0x20) {
+        if (0x20 <= target_cp) {
             uint32_t prev_cp_val = cp[cp_pos - 1];
 
             /* GB9b: a PREPEND belongs to this cluster, so the start is the
-             * PREPEND's own cluster start. */
-            if (prev_cp_val >= 0x80 && gcb_of(prev_cp_val) == GCB_PREPEND) {
+             * PREPEND's own cluster start.  GB4: DELETE is a control and
+             * starts its own cluster. */
+            if (prev_cp_val >= 0x80 && gcb_of(prev_cp_val) == GCB_PREPEND && target_cp != 0x7F) {
                 return cluster_start_index(cp, cp_count, cp_pos - 1);
             }
         }
@@ -533,7 +534,11 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
     safe_start = cp_pos;
     while (safe_start > 0) {
         uint32_t scp = cp[safe_start];
-        if (0x20 <= scp && scp < 0x80) { /* ASCII always starts a cluster */
+        if (0x20 <= scp && scp < 0x7F) {
+            /* GB9b: include prepends before an ASCII base with extenders. */
+            while (safe_start > 0 && gcb_of(cp[safe_start - 1]) == GCB_PREPEND) {
+                safe_start--;
+            }
             break;
         }
         if (gcb_of(scp) == GCB_CONTROL) { /* GB4 */

@@ -3,6 +3,7 @@ History
 =======
 
 0.9.5 *unreleased*
+  * **Bugfix** `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ on Prepend, `PR #306`_.
   * **Bugfix** `clip()`_ applying wrong SGR style after processing 'overtyping', `PR #305`_.
   * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.
   * **Bugfix** `clip()`_ control character processing after an errant OSC 8 close, `PR #308`_.
@@ -345,6 +346,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #303`: https://github.com/jquast/wcwidth/pull/303
 .. _`PR #304`: https://github.com/jquast/wcwidth/pull/304
 .. _`PR #305`: https://github.com/jquast/wcwidth/pull/305
+.. _`PR #306`: https://github.com/jquast/wcwidth/pull/306
 .. _`PR #308`: https://github.com/jquast/wcwidth/pull/308
 .. _`PR #310`: https://github.com/jquast/wcwidth/pull/310
 .. _`PR #315`: https://github.com/jquast/wcwidth/pull/315
