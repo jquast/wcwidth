@@ -86,6 +86,23 @@ if(BUILD_TESTING)
         target_include_directories(${test_name} PRIVATE tests)
         add_test(NAME ${test_name} COMMAND ${test_name})
     endforeach()
+
+    # A second build of the library whose allocator calls resolve to hooks that
+    # test_oom supplies, so allocation-failure branches can be reached.
+    add_library(wcwidth_oom STATIC ${LIBWCWIDTH_SOURCES})
+    target_include_directories(wcwidth_oom PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+    target_compile_definitions(wcwidth_oom PRIVATE
+        malloc=wcwidth_test_malloc
+        realloc=wcwidth_test_realloc
+        calloc=wcwidth_test_calloc
+    )
+
+    add_executable(test_oom tests/test_oom.c)
+    target_link_libraries(test_oom PRIVATE wcwidth_oom)
+    target_include_directories(test_oom PRIVATE tests)
+    add_test(NAME test_oom COMMAND test_oom)
 endif()
 
 # install
