@@ -211,6 +211,33 @@ TEST(attribute_and_color_codes)
     }
 }
 
+TEST(mixed_color_parameter_order)
+{
+    static const char *const inputs[] = {
+        "0;38:2::255:0:0",  "0;48:2::0:0:255",  "31;38:5:196", "39;38:5:196",
+        "38;5;196;38:5:46", "38:5:196;38;5;46", "38:5:196;0",
+    };
+    static const char *const expected[] = {
+        "\x1b[38:2:0:255:0:0m",
+        "\x1b[48:2:0:0:0:255m",
+        "\x1b[38;5;196m",
+        "\x1b[38;5;196m",
+        "\x1b[38;5;46m",
+        "\x1b[38;5;46m",
+        "",
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+        wcwidth_sgr_state_t s = WCWIDTH_SGR_STATE_DEFAULT;
+        char buf[64];
+
+        wcwidth_sgr_update(&s, inputs[i], strlen(inputs[i]));
+        wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
+        ASSERT_STREQ(expected[i], buf);
+    }
+}
+
 int
 main(void)
 {
@@ -221,5 +248,6 @@ main(void)
     RUN_TEST(to_escape_colon_form);
     RUN_TEST(propagate_basic);
     RUN_TEST(attribute_and_color_codes);
+    RUN_TEST(mixed_color_parameter_order);
     return test_summary();
 }

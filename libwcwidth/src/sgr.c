@@ -108,78 +108,11 @@ set_color(int *dst, int *dst_len, const int *src, int src_len)
     }
 }
 
-void
-wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sgr_params_len)
+static void
+apply_integer_params(wcwidth_sgr_state_t *state, const int *params, int nparams)
 {
-    int stack_params[WCWIDTH_SGR_MAX_PARAMS];
-    int *params = stack_params;
-    size_t params_cap = WCWIDTH_SGR_MAX_PARAMS;
-    int nparams = 0;
-    const char *p = sgr_params;
-    const char *end = sgr_params + sgr_params_len;
     int i;
 
-    /* Empty params is equivalent to "0" (reset): \x1b[m. */
-    if (sgr_params_len == 0) {
-        *state = WCWIDTH_SGR_STATE_DEFAULT;
-        return;
-    }
-
-    /* Phase 1: parse all semicolon-separated segments.
-     * Colon-separated tuples (ITU T.416 extended colors) are applied
-     * immediately.  Plain integers are collected for phase 2. */
-    while (p < end) {
-        const char *seg_end = p;
-
-        while (seg_end < end && *seg_end != ';') {
-            seg_end++;
-        }
-        {
-            size_t seg_len = (size_t) (seg_end - p);
-
-            if (seg_len == 0) {
-                if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
-                    break;
-                }
-                params[nparams++] = 0;
-            }
-            else {
-                int has_colon = 0;
-                size_t j;
-
-                for (j = 0; j < seg_len; j++) {
-                    if (p[j] == ':') {
-                        has_colon = 1;
-                        break;
-                    }
-                }
-
-                if (has_colon) {
-                    int tuple[WCWIDTH_SGR_COLOR_MAX];
-                    int n = parse_colon_tuple(p, seg_len, tuple, WCWIDTH_SGR_COLOR_MAX);
-                    if (n >= 2 && tuple[0] == 38) {
-                        set_color(state->fg, &state->fg_len, tuple, n);
-                    }
-                    else if (n >= 2 && tuple[0] == 48) {
-                        set_color(state->bg, &state->bg_len, tuple, n);
-                    }
-                }
-                else {
-                    if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
-                        break;
-                    }
-                    params[nparams++] = parse_int(p, seg_len);
-                }
-            }
-        }
-
-        p = seg_end;
-        if (p < end && *p == ';') {
-            p++;
-        }
-    }
-
-    /* Phase 2: apply integer parameters in order. */
     for (i = 0; i < nparams; i++) {
         int val = params[i];
 
@@ -305,6 +238,81 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
             }
         }
     }
+}
+
+void
+wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sgr_params_len)
+{
+    int stack_params[WCWIDTH_SGR_MAX_PARAMS];
+    int *params = stack_params;
+    size_t params_cap = WCWIDTH_SGR_MAX_PARAMS;
+    int nparams = 0;
+    const char *p = sgr_params;
+    const char *end = sgr_params + sgr_params_len;
+
+    /* Empty params is equivalent to "0" (reset): \x1b[m. */
+    if (sgr_params_len == 0) {
+        *state = WCWIDTH_SGR_STATE_DEFAULT;
+        return;
+    }
+
+    /* Collect runs of integer parameters, applying each run before the next
+     * colon-separated color so resets and colors retain their original order. */
+    while (p < end) {
+        const char *seg_end = p;
+
+        while (seg_end < end && *seg_end != ';') {
+            seg_end++;
+        }
+        {
+            size_t seg_len = (size_t) (seg_end - p);
+
+            if (seg_len == 0) {
+                if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
+                    break;
+                }
+                params[nparams++] = 0;
+            }
+            else {
+                int has_colon = 0;
+                size_t j;
+
+                for (j = 0; j < seg_len; j++) {
+                    if (p[j] == ':') {
+                        has_colon = 1;
+                        break;
+                    }
+                }
+
+                if (has_colon) {
+                    int tuple[WCWIDTH_SGR_COLOR_MAX];
+                    int n = parse_colon_tuple(p, seg_len, tuple, WCWIDTH_SGR_COLOR_MAX);
+
+                    apply_integer_params(state, params, nparams);
+                    nparams = 0;
+                    if (n >= 2 && tuple[0] == 38) {
+                        set_color(state->fg, &state->fg_len, tuple, n);
+                    }
+                    else if (n >= 2 && tuple[0] == 48) {
+                        set_color(state->bg, &state->bg_len, tuple, n);
+                    }
+                }
+                else {
+                    if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
+                        break;
+                    }
+                    params[nparams++] = parse_int(p, seg_len);
+                }
+            }
+        }
+
+        p = seg_end;
+        if (p < end && *p == ';') {
+            p++;
+        }
+    }
+
+    apply_integer_params(state, params, nparams);
 
     if (params != stack_params) {
         free(params);
