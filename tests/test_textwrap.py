@@ -695,7 +695,7 @@ def test_wrap_virama_conjunct_known_limitation(text):
 
 @pytest.mark.parametrize('text', [' hello', '  hello', '    hello'])
 def test_wrap_drops_leading_whitespace_only_lines(text):
-    """All-whitespace first lines are discarded."""
+    """Discard all-whitespace first lines rather than emitting empty lines."""
     assert wrap(text, width=1) == list('hello')
     assert wrap(text, width=1, drop_whitespace=False) == list(text)
 

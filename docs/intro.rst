@@ -66,8 +66,9 @@ This library may be considered to presume the terminal is enabled for DEC Privat
 ("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
 is often the default mode for those terminals that support it.
 
-This library provides Corrections_ for terminals using "legacy width" measurements or lacking basic
-emoji or grapheme support, through its existing width APIs.
+This library does not support any specific "legacy width" measurement by API, but it does provide
+Corrections_ for terminals using "legacy width" measurements or are without basic emoji or grapheme
+support.
 
 See also:
 
@@ -98,11 +99,11 @@ fixes". Examples:
 
 Support for non-recommended sequences varies between terminals, and the permutations of "possible,
 but unlikely" combining, variation, joiner, and attribute sequences are too many to enumerate with
-correction tables. Checking for the presence of unlikely sequences consumes resources with arguably
+correction tables. Checking for the presence of unlikely sequences has a resource cost with arguably
 no benefit. And so, the displayed width of these is considered like C's undefined behavior.  Often
-times "correcting" width measurements of unlikely sequences consumes extra resources with arguably
-no value to end users. In some cases where the performance impact is negligible or code is
-simplified, these changes may sometimes be accepted anyway.
+times "correcting" width measurements of unlikely sequences costs extra resources with arguably no
+value to end users. In some cases where performance cost is negligible or code is simplified, these
+changes may sometimes be accepted anyway.
 
 ========
 Overview

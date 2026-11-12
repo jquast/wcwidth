@@ -3,7 +3,7 @@
  *
  * Internal header: static inline predicates used by wcswidth.c, wcstwidth.c,
  * width.c, terminal_override.c, and grapheme.c.  All codepoint data comes
- * from the generated tables alone.
+ * from the generated tables, never hand-maintained copies.
  */
 #ifndef WCWIDTH_UNICODE_H
 #define WCWIDTH_UNICODE_H

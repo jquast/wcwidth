@@ -5,9 +5,10 @@
  * This is a simplified C11 implementation derived from Python's textwrap.
  * Differences from the Python stdlib textwrap are documented in
  * docs/libwcwidth.rst.  In particular:
- *   - Word splitting is on ASCII space only, and wcwidth_wrap_opts_t carries
- *     the options with a C implementation; break_on_hyphens,
- *     fix_sentence_endings, and propagate_sgr are Python-only.
+ *   - Word splitting is on ASCII space only (no wordsep_re rules), and there
+ *     is no break_on_hyphens, fix_sentence_endings, or propagate_sgr: those
+ *     Python options have no counterpart here, so wcwidth_wrap_opts_t
+ *     omits them.
  *   - OSC 8 hyperlinks are not implemented; they are measured as generic
  *     zero-width OSCs and are not continued across wrapped lines.
  */

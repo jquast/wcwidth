@@ -882,7 +882,7 @@ def clip(
        Segmentation follows UAX #29 grapheme clusters. Tamil, Kannada and Sinhala may be clipped
        short of ``end`` and leave a bare virama at the boundary. Correct rendering of these
        languages is not specified by unicode.org standards, and no terminal emulator or editor
-       handles them legibly, so this library function leaves their handling to the terminal.
+       handles them legibly, so this library function makes no attempt at accommodating them.
 
     .. versionadded:: 0.3.0
 

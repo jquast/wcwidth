@@ -105,8 +105,8 @@ def rjust(
 
     Tabs are measured as though ``text`` begins at column 0. The ``fillchar`` placed before a tab by
     right-justified text moves any tabs to a later stop and produces an incorrect alignment result.
-    Expand tabs before aligning, with :func:`str.expandtabs` or :func:`wcwidth.clip` (which also
-    expands tabs) if necessary::
+    It is suggested never to align text containing a tab, calling :func:`str.expandtabs` or
+    :func:`wcwidth.clip` (which also expands tabs) if necessary::
 
         >>> rjust('a\tbc', 12)                # when displayed, becomes width of 10, wrong
         '  a\tbc'
@@ -181,9 +181,9 @@ def center(
     See `the eccentric str.center <https://jazcap53.github.io/pythons-eccentric-strcenter.html>`_.
 
     Tabs are measured as though ``text`` begins at column 0. The ``fillchar`` placed before a tab by
-    centered text moves any tabs to a later stop and produces an incorrect alignment result. Expand
-    tabs before aligning, with :func:`str.expandtabs` or :func:`wcwidth.clip` (which also expands
-    tabs) if necessary::
+    centered text moves any tabs to a later stop and produces an incorrect alignment result. It is
+    suggested never to align text containing a tab, calling :func:`str.expandtabs` or
+    :func:`wcwidth.clip` (which also expands tabs) if necessary::
 
         >>> center('a\tbc', 12)               # when displayed, becomes width of 11, wrong
         ' a\tbc '
