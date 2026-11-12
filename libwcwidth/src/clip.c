@@ -12,6 +12,8 @@
 #include "wcwidth/wcwidth.h"
 #include "wcwidth/utf8.h"
 
+#include "wcwidth_assert.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -100,19 +102,7 @@ strbuf_detach(strbuf_t *sb, size_t *out_len)
 {
     char *result = sb->buf;
 
-    if (result == NULL) {
-        result = (char *) malloc(1);
-        if (result != NULL) {
-            result[0] = '\0';
-        }
-        if (out_len != NULL) {
-            *out_len = 0;
-        }
-        sb->buf = NULL;
-        sb->len = 0;
-        sb->cap = 0;
-        return result;
-    }
+    WCWIDTH_ASSERT(result != NULL);
 
     if (out_len != NULL) {
         *out_len = sb->len;
@@ -260,14 +250,11 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
         }
 
         if (ch == ESC) {
-            wcwidth_esc_result_t result;
+            wcwidth_esc_result_t result = {
+                .type = WCWIDTH_ESC_UNRECOGNIZED, .start = text + idx, .length = 1};
 
-            if (!wcwidth_escape_classify(text, text_len, idx, &result)) {
-                if ((int) v_start <= col && col < (int) v_end)
-                    strbuf_append(sb, text + idx, 1);
-                idx++;
-                continue;
-            }
+            bool ok = wcwidth_escape_classify(text, text_len, idx, &result);
+            WCWIDTH_ASSERT(ok);
 
             if (result.type == WCWIDTH_ESC_SGR && track_sgr) {
                 wcwidth_sgr_update(&current_style, result.sgr_params, result.sgr_params_len);
@@ -344,12 +331,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
                 }
             }
             grapheme = wcwidth_grapheme_next(giter, &g_len);
-            if (grapheme == NULL || g_len == 0) {
-                wcwidth_grapheme_iter_free(giter);
-                giter = NULL;
-                idx++;
-                continue;
-            }
+            WCWIDTH_ASSERT(grapheme != NULL && g_len > 0);
             g_w = grapheme_width(grapheme, g_len, ambiguous_width, term_program);
 
             if (g_w == 0) {

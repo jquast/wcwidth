@@ -14,6 +14,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# Assertion checks, off for the distributed library.
+option(WCWIDTH_ENABLE_ASSERTS "Enable assertion checks" OFF)
+if(WCWIDTH_ENABLE_ASSERTS)
+    add_compile_definitions(WCWIDTH_ENABLE_ASSERTS=1)
+endif()
+
 # library
 # Keep this source list in parity with setup.py's _EXT_SOURCES, which builds the
 # optional CPython extension from the same sources; the Makefile globs src/*.c
@@ -34,6 +40,7 @@ set(LIBWCWIDTH_SOURCES
     src/text_sizing.c
     src/terminal_override.c
     src/utf8.c
+    src/wcwidth_assert.c
     # Generated tables
     src/tables/table_wide.c
     src/tables/table_zero.c

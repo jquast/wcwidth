@@ -11,6 +11,8 @@
 #include "wcwidth/unicode.h"
 #include "wcwidth/utf8.h"
 
+#include "wcwidth_assert.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -183,12 +185,6 @@ should_break(const uint32_t *cp, size_t cp_idx, gcb_t prev_gcb, gcb_t curr_gcb, 
     if (cp[cp_idx] < 0x300 && cp[cp_idx - 1] < 0x300) {
         *ri_count_out = 0;
         return !(cp[cp_idx - 1] == 0x0D && cp[cp_idx] == 0x0A);
-    }
-
-    /* GB3: CR x LF */
-    if (prev_gcb == GCB_CR && curr_gcb == GCB_LF) {
-        *ri_count_out = 0;
-        return false;
     }
 
     /* GB4: (Control|CR|LF) / */
@@ -505,9 +501,7 @@ cluster_start_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
     if (cp_count == 0 || cp_pos == 0) {
         return 0;
     }
-    if (cp_pos >= cp_count) {
-        cp_pos = cp_count - 1;
-    }
+    WCWIDTH_ASSERT(cp_pos < cp_count);
     target_cp = cp[cp_pos];
 
     /* GB3: CR x LF (LF after CR is part of the same cluster) */
@@ -584,12 +578,8 @@ cluster_end_index(const uint32_t *cp, size_t cp_count, size_t cp_pos)
     int ri_count;
     size_t i;
 
-    if (cp_count == 0) {
-        return 0;
-    }
-    if (cp_pos >= cp_count) {
-        return cp_count;
-    }
+    WCWIDTH_ASSERT(cp_count > 0);
+    WCWIDTH_ASSERT(cp_pos < cp_count);
 
     cluster_start = cluster_start_index(cp, cp_count, cp_pos);
     left_gcb = gcb_of(cp[cluster_start]);
@@ -645,11 +635,7 @@ wcwidth_grapheme_boundary_before(const char *utf8, size_t len, size_t pos)
     if (!predecode(utf8, len, &cp, &offsets, &cp_count)) {
         return 0;
     }
-    if (cp_count == 0) {
-        free(cp);
-        free(offsets);
-        return 0;
-    }
+    WCWIDTH_ASSERT(cp_count > 0);
 
     result =
         offsets[cluster_start_index(cp, cp_count, byte_to_cp_index(offsets, cp_count, pos, true))];
@@ -676,11 +662,7 @@ wcwidth_grapheme_boundary_after(const char *utf8, size_t len, size_t pos)
     if (!predecode(utf8, len, &cp, &offsets, &cp_count)) {
         return len;
     }
-    if (cp_count == 0) {
-        free(cp);
-        free(offsets);
-        return len;
-    }
+    WCWIDTH_ASSERT(cp_count > 0);
 
     end_idx = cluster_end_index(cp, cp_count, byte_to_cp_index(offsets, cp_count, pos, false));
     result = (end_idx < cp_count) ? offsets[end_idx] : len;
