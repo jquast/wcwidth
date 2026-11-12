@@ -1598,7 +1598,7 @@ class UnicodeDataFile:
             return True
         # Only draft files are worth re-checking by default: they are revised throughout the alpha
         # and beta review periods, while a published file never changes once released. Checking all
-        # of them costs a silent HEAD request per file, and risks a rate-limit backoff of minutes.
+        # of them makes a silent HEAD request per file, and risks a rate-limit backoff of minutes.
         if CHECK_LAST_MODIFIED or UnicodeDataFile.is_draft_url(url):
             session = UnicodeDataFile.get_http_session()
             # 'requests' does not follow redirects for HEAD by default, unlike GET, and a '/Public/

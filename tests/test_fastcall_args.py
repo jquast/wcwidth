@@ -113,6 +113,6 @@ def test_argument_spellings_agree(func, calls):
 @pytest.mark.parametrize("func, args, kwargs", REJECTED,
                          ids=[f"{i}" for i in range(len(REJECTED))])
 def test_rejected_calls_raise(func, args, kwargs):
-    """A call the fast parser cannot accept raises instead of falling through."""
+    """A call the fast parser rejects raises."""
     with pytest.raises((TypeError, OverflowError)):
         func(*args, **kwargs)

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Version is stamped into the generated header by bin/update-tables.py, read it from there
-# rather than duplicating it here, where it silently rots.  A PEP 440 pre-release suffix
-# is dropped: CMake project() versions are numeric only.
+# Version is stamped into the generated header by bin/update-tables.py, read it from
+# there to keep one copy.  A PEP 440 pre-release suffix is dropped: CMake project()
+# versions are numeric only.
 file(STRINGS include/wcwidth/wcwidth_config.h _wcwidth_version_line
      REGEX "^#define WCWIDTH_VERSION \"")
 string(REGEX REPLACE ".*\"([0-9]+\\.[0-9]+\\.[0-9]+)[^\"]*\".*" "\\1"
