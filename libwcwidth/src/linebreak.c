@@ -25,9 +25,9 @@ typedef struct
     bool ends_zwj;
 } lb_cluster_t;
 
-#define NO_BREAK ((lb_break_t){false, false})
-#define BREAK ((lb_break_t){true, false})
-#define MANDATORY_BREAK ((lb_break_t){true, true})
+#define NO_BREAK ((lb_break_t) {false, false})
+#define BREAK ((lb_break_t) {true, false})
+#define MANDATORY_BREAK ((lb_break_t) {true, true})
 
 static bool
 in_table(uint32_t ucs, const wcwidth_interval_t *table, size_t table_len)
