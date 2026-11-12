@@ -326,6 +326,178 @@ TEST(wrap_preserves_color_after_dropped_leading_space)
     }
 }
 
+TEST(wrap_uax14_break_opportunities)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *zwsp[] = {"foo\xe2\x80\x8b", "bar"};
+    const char *ideographic[] = {"aaa", "bbb"};
+
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("foo\xe2\x80\x8b"
+                                 "bar",
+                                 9, &o, &out, &len));
+    check_lines(out, len, zwsp, 2);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xe3\x80\x80"
+                                 "bbb",
+                                 9, &o, &out, &len));
+    check_lines(out, len, ideographic, 2);
+    free(out);
+}
+
+TEST(wrap_uax14_no_break)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *nbsp[] = {"aaa\xc2\xa0"
+                          "bbb"};
+    const char *word_joiner[] = {"aaa\xe2\x81\xa0"
+                                 "bbb"};
+
+    o.width = 4;
+    o.break_long_words = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xc2\xa0"
+                                 "bbb",
+                                 8, &o, &out, &len));
+    check_lines(out, len, nbsp, 1);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xe2\x81\xa0"
+                                 "bbb",
+                                 9, &o, &out, &len));
+    check_lines(out, len, word_joiner, 1);
+    free(out);
+}
+
+TEST(wrap_soft_hyphen)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aaa\xc2\xad", "bbb"};
+
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xc2\xad"
+                                 "bbb",
+                                 8, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_break_on_hyphens)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *hyphen_break[] = {"a-", "bcdef"};
+    const char *plain_break[] = {"a-bcd", "ef"};
+
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, hyphen_break, 2);
+    free(out);
+
+    o.break_on_hyphens = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, plain_break, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 5;
+    o.line_break = WCWIDTH_LINE_BREAK_ASCII;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, hyphen_break, 2);
+    free(out);
+
+    o.break_on_hyphens = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, plain_break, 2);
+    free(out);
+}
+
+/* An empty line leaves the line buffer NULL; zero-length copies must not touch it. */
+TEST(wrap_empty_line)
+{
+    char *out = NULL;
+    size_t len = 0;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *text = " \n ";
+
+    o.width = 1;
+    o.break_long_words = false;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+
+    o.drop_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, 3, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 1;
+    o.break_long_words = false;
+    o.replace_whitespace = false;
+    o.max_lines = 1;
+    ASSERT_EQ(-2, wcwidth_wrap_u8(text, 3, &o, &out, &len));
+    free(out);
+}
+
+TEST(wrap_mandatory_breaks)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a", "b"};
+
+    o.width = 10;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\nb", 3, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\r\nb", 4, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    const char *collapsed[] = {"a b"};
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xc2\x85"
+                                 "b",
+                                 4, &o, &out, &len));
+    check_lines(out, len, collapsed, 1);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80\xa8"
+                                 "b",
+                                 5, &o, &out, &len));
+    check_lines(out, len, collapsed, 1);
+    free(out);
+}
+
+TEST(wrap_ascii_mode)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"foo\xe2\x80\x8b"
+                         "b",
+                         "ar"};
+
+    o.width = 4;
+    o.line_break = WCWIDTH_LINE_BREAK_ASCII;
+    ASSERT_EQ(0, wcwidth_wrap_u8("foo\xe2\x80\x8b"
+                                 "bar",
+                                 9, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -340,5 +512,12 @@ main(void)
     RUN_TEST(wrap_lone_continuation_bytes);
     RUN_TEST(wrap_max_lines_placeholder);
     RUN_TEST(wrap_drops_leading_whitespace_only_line);
+    RUN_TEST(wrap_uax14_break_opportunities);
+    RUN_TEST(wrap_uax14_no_break);
+    RUN_TEST(wrap_soft_hyphen);
+    RUN_TEST(wrap_break_on_hyphens);
+    RUN_TEST(wrap_empty_line);
+    RUN_TEST(wrap_mandatory_breaks);
+    RUN_TEST(wrap_ascii_mode);
     return test_summary();
 }

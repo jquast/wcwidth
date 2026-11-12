@@ -7,7 +7,10 @@ requires = [ "setuptools>=61" ]
 
 [project]
 name = "wcwidth"
-version = "0.9.5"  # stamped into __init__.py and wcwidth_config.h by bin/update-tables.py
+# Stamped into __init__.py and wcwidth_config.h by bin/update-tables.py or you can
+# duplicate it there manually.
+# STOP! Does this release change C11 ABI? Check SOVERSION in libwcwidth/CMakeLists.txt
+version = "0.9.5"
 description = "Measures the displayed width of unicode strings in a terminal"
 readme = "README.rst"
 keywords = [
