@@ -551,7 +551,8 @@ def test_resolve_terminal_strips_whitespace(value, expected):
     ('\u0c05\u0c02', False, 2),   # TELUGU LETTER A + TELUGU SIGN ANUSVARA
     ('\u0c05\u0c02', 'kitty', 1),
     ('\u0e01\u0e33', False, 2),   # THAI CHARACTER KO KAI + THAI CHARACTER SARA AM
-    ('\u0e01\u0e33', 'kitty', 1),
+    ('\u0d31\u0d46', False, 2),   # MALAYALAM RA + MALAYALAM VOWEL SIGN E
+    ('\u0d31\u0d46', 'kitty', 1),
     ('\u0985\u0982', False, 2),   # BENGALI LETTER A + BENGALI SIGN ANUSVARA
     ('\u0985\u0982', 'kitty', 1),
     ('\u0915\u093e', False, 2),   # DEVANAGARI LETTER KA + DEVANAGARI VOWEL SIGN AA
@@ -640,12 +641,12 @@ def test_width_cluster_text_override_mid_string(text, term_program, expected):
 
 
 @pytest.mark.parametrize('text,term_program,expected', [
-    ('\u0e01\u0e33X', 'kitty', 2),  # Thai C+Lo override pair then ASCII
-    ('X\u0e01\u0e33', 'kitty', 2),  # ASCII then Thai override pair
-    ('\u0e01\u0e33\u0e01\u0e33', 'kitty', 2),  # two Thai override pairs
+    ('\U0001F1E6\U0001F1E8X', 'bobcat', 5),  # RI pair override then ASCII
+    ('X\U0001F1E6\U0001F1E8', 'bobcat', 5),  # ASCII then RI pair override
+    ('\U0001F1E6\U0001F1E8\U0001F1E6\U0001F1E8', 'bobcat', 8),  # two RI pair overrides
 ])
 def test_width_candidate_override_mid_string(text, term_program, expected):
-    """Width() flushes cluster via candidate override when two Lo chars form a pair."""
+    """Width() flushes cluster via candidate override when two RI chars form a pair."""
     assert wcwidth.width(text, term_program=term_program) == expected
 
 
