@@ -141,6 +141,16 @@ GRAPHEME_BREAK_PROPERTIES = (
 )
 INCB_VALUES = ('Linker', 'Consonant', 'Extend')
 
+# Line Breaking classes from UAX #14, in the order used by generated tables.
+LINEBREAK_CLASSES = (
+    'BK', 'CR', 'LF', 'CM', 'NL', 'SG', 'WJ', 'ZW', 'GL', 'SP', 'ZWJ',
+    'B2', 'BA', 'BB', 'HY', 'HH', 'CB', 'CL', 'CP', 'EX', 'IN', 'NS',
+    'OP', 'QU', 'IS', 'NU', 'PO', 'PR', 'SY', 'AI', 'AK', 'AL', 'AP',
+    'AS', 'CJ', 'EB', 'EM', 'H2', 'H3', 'HL', 'ID', 'JL', 'JV', 'JT',
+    'RI', 'SA', 'VF', 'VI', 'XX',
+)
+LINEBREAK_VALUE = {name: value for value, name in enumerate(LINEBREAK_CLASSES)}
+
 # Terminal multiplexers (subterminals) depend on a host terminal for rendering; their
 # cursor-position reports from ucs-detect are not reliable indicators of display width.  Excluded
 # from wcstwidth() or term_program= argument processing.
@@ -356,11 +366,13 @@ LANGUAGES = {
         'dir': 'wcwidth',
         'table': 'python_table.py.j2',
         'grapheme': 'grapheme_table.py.j2',
+        'linebreak': 'linebreak_table.py.j2',
     },
     '.c': {
         'dir': os.path.join('libwcwidth', 'src', 'tables'),
         'table': 'c_table.c.j2',
         'grapheme': 'grapheme_table.c.j2',
+        'linebreak': 'linebreak_table.c.j2',
         'prefix': 'WCWIDTH_',
     },
 }
@@ -549,6 +561,178 @@ class GraphemeTableRenderDef(RenderDefinition):
 
 
 @dataclass(frozen=True)
+class LineBreakClassTable:
+    """UAX #14 classes, one byte per codepoint as a paged table, plus the ASCII tables."""
+
+    C_NAME = 'WCWIDTH_LINEBREAK_CLASS'
+    BUDGET_BYTES = 64 * 1024
+    PAGE_SHIFTS = range(5, 14)
+    ASCII_LEN = 128
+
+    lo: int
+    hi: int
+    shift: int
+    index_rows: tuple[str, ...]
+    pool_rows: tuple[str, ...]
+    ascii_rows: tuple[str, ...]
+    ascii_resolved_rows: tuple[str, ...]
+
+    @property
+    def c_name(self) -> str:
+        return self.C_NAME
+
+    @property
+    def ascii_len(self) -> int:
+        return self.ASCII_LEN
+
+    @property
+    def min_hex(self) -> str:
+        return f'{self.lo:05X}'
+
+    @property
+    def max_hex(self) -> str:
+        return f'{self.hi:05X}'
+
+    @property
+    def index_len(self) -> int:
+        return sum(row.count(',') for row in self.index_rows)
+
+    @property
+    def pool_len(self) -> int:
+        return sum(row.count(',') for row in self.pool_rows)
+
+    @classmethod
+    def build(cls, ranges: Sequence[tuple[int, int, int]],
+              sa_cm: Sequence[tuple[int, int]]) -> Self:
+        """Pack every codepoint's class, then verify the paged lookup against the ranges."""
+        lo, hi = ranges[0][0], ranges[-1][1]
+        if lo != 0 or hi < cls.ASCII_LEN - 1:
+            raise ValueError('line break class ranges must cover ASCII')
+        payload = bytearray(hi - lo + 1)
+        for start, end, value in ranges:
+            payload[start - lo:end - lo + 1] = bytes([value]) * (end - start + 1)
+
+        ascii_raw = bytes(payload[:cls.ASCII_LEN])
+        ascii_resolved = bytes(cls._resolve(cp, value, sa_cm)
+                               for cp, value in enumerate(ascii_raw))
+
+        candidates = []
+        for shift in cls.PAGE_SHIFTS:
+            page_bytes = 1 << shift
+            index, pool = GcbClassTable._paginate(bytes(payload), page_bytes)
+            if len(pool) > 0x100:
+                continue
+            nbytes = len(index) + len(pool) * page_bytes
+            candidates.append((nbytes, shift, index, pool, page_bytes))
+        if not candidates:
+            raise ValueError('no page size keeps the class pool within a uint8_t index')
+        nbytes, shift, index, pool, page_bytes = min(candidates)
+        for ucs in range(lo, hi + 1):
+            offset = ucs - lo
+            got = pool[index[offset >> shift]][offset & (page_bytes - 1)]
+            if got != payload[offset]:
+                raise ValueError(f'class table mismatch at U+{ucs:04X}')
+        print(f'  {cls.C_NAME}: shift={shift} pages={len(pool)}, {nbytes} bytes')
+        if nbytes > cls.BUDGET_BYTES:
+            raise ValueError(f'class table is {nbytes} bytes, over the '
+                             f'{cls.BUDGET_BYTES} byte budget')
+        return cls(
+            lo=lo, hi=hi, shift=shift,
+            index_rows=GcbClassTable._rows(index),
+            pool_rows=GcbClassTable._rows(b''.join(pool)),
+            ascii_rows=GcbClassTable._rows(ascii_raw),
+            ascii_resolved_rows=GcbClassTable._rows(ascii_resolved),
+        )
+
+    @staticmethod
+    def _resolve(ucs: int, value: int, sa_cm: Sequence[tuple[int, int]]) -> int:
+        """Apply the LB1 resolution rules."""
+        if value in (LINEBREAK_VALUE['AI'], LINEBREAK_VALUE['SG'], LINEBREAK_VALUE['XX']):
+            return LINEBREAK_VALUE['AL']
+        if value == LINEBREAK_VALUE['CJ']:
+            return LINEBREAK_VALUE['NS']
+        if value == LINEBREAK_VALUE['SA']:
+            return LINEBREAK_VALUE['CM'] if _bisearch(ucs, sa_cm) else LINEBREAK_VALUE['AL']
+        return value
+
+
+@functools.cache
+def _linebreak_class_table(ranges: tuple[tuple[int, int, int], ...],
+                           sa_cm: tuple[tuple[int, int], ...]) -> LineBreakClassTable:
+    """Build the class table once, shared by the Python and C render definitions."""
+    return LineBreakClassTable.build(ranges, sa_cm)
+
+
+@dataclass(frozen=True)
+class LineBreakTableRenderCtx(RenderContext):
+    """Render context for UAX #14 line breaking tables (latest version only)."""
+
+    unicode_version: str
+    ranges: tuple[tuple[int, int, int], ...]
+    classes: tuple[str, ...]
+    pi_qu: tuple[tuple[int, int], ...]
+    pf_qu: tuple[tuple[int, int], ...]
+    sa_cm: tuple[tuple[int, int], ...]
+    east_asian: tuple[tuple[int, int], ...]
+    ext_pict_cn: tuple[tuple[int, int], ...]
+
+    @property
+    def named_values(self) -> tuple[tuple[str, int], ...]:
+        return tuple((name, value) for value, name in enumerate(self.classes))
+
+    @property
+    def class_table(self) -> LineBreakClassTable:
+        return _linebreak_class_table(self.ranges, self.sa_cm)
+
+
+@dataclass
+class LineBreakTableRenderDef(RenderDefinition):
+    render_context: LineBreakTableRenderCtx
+
+    @classmethod
+    def new(cls, filename: str, context: LineBreakTableRenderCtx) -> Self:
+        ext = os.path.splitext(filename)[1]
+        if ext not in LANGUAGES:
+            raise ValueError(f'no code generation language for {filename!r}')
+        lang = LANGUAGES[ext]
+        auxiliary = (
+            ('PI_QU', context.pi_qu, 'General_Category=Pi, Line_Break=QU'),
+            ('PF_QU', context.pf_qu, 'General_Category=Pf, Line_Break=QU'),
+            ('SA_CM', context.sa_cm, 'Line_Break=SA, General_Category Mn or Mc'),
+            ('EAST_ASIAN', context.east_asian, 'East_Asian_Width F, W or H'),
+            ('EXT_PICT_CN', context.ext_pict_cn, 'Extended_Pictographic, General_Category=Cn'),
+        )
+        return cls(
+            jinja_filename=lang['linebreak'],
+            output_filename=os.path.join(PATH_UP, lang['dir'], filename),
+            render_context=context,
+            _extra_context={'named_values': context.named_values,
+                            'auxiliary': auxiliary,
+                            'linebreak_class': context.class_table},
+        )
+
+    @property
+    def header_context(self) -> Mapping[str, Any]:
+        class_table = self.render_context.class_table
+        return {
+            'linebreak': {
+                'named_values': self.render_context.named_values,
+                'auxiliary': [(name, len(ranges))
+                              for name, ranges, _ in self._extra_context['auxiliary']],
+                'class_table': {
+                    'c_name': class_table.c_name,
+                    'min_hex': class_table.min_hex,
+                    'max_hex': class_table.max_hex,
+                    'shift': class_table.shift,
+                    'index_len': class_table.index_len,
+                    'pool_len': class_table.pool_len,
+                    'ascii_len': class_table.ascii_len,
+                },
+            },
+        }
+
+
+@dataclass(frozen=True)
 class CGcbClassRenderCtx(RenderContext):
     gcb: GcbClassTable
 
@@ -669,7 +853,8 @@ BITSET_GRAPHEME_TABLES = (
 
 def build_bitset_tables(
         table_contexts: Mapping[str, UnicodeTableRenderCtx],
-        grapheme_context: GraphemeTableRenderCtx) -> BitsetTablesRenderCtx:
+        grapheme_context: GraphemeTableRenderCtx,
+        linebreak_context: LineBreakTableRenderCtx) -> BitsetTablesRenderCtx:
     """Build every converted bitset from the fetched table definitions."""
     tables = []
     for variable_name, c_name in BITSET_TABLES:
@@ -679,6 +864,9 @@ def build_bitset_tables(
     for variable_name, c_name in BITSET_GRAPHEME_TABLES:
         tables.append(BitsetTable.build(
             c_name, grapheme_context.tables[variable_name].as_value_ranges()))
+    tables.append(BitsetTable.build('WCWIDTH_LINEBREAK_EAST_ASIAN',
+                                    linebreak_context.east_asian))
+    tables.append(BitsetTable.build('WCWIDTH_LINEBREAK_SA_CM', linebreak_context.sa_cm))
     return BitsetTablesRenderCtx(tuple(tables))
 
 
@@ -1242,6 +1430,124 @@ def parse_grapheme_break_properties(fname: str) -> dict[str, TableDef]:
     }
 
 
+def _parse_range_property_file(fname: str) -> Iterator[tuple[int, int, str]]:
+    """Yield (start, end, value) from a Unicode 'range ; value' property file."""
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            data, _, _ = line.partition('#')
+            data = data.strip()
+            if not data:
+                continue
+            field, value = (part.strip() for part in data.split(';')[:2])
+            if '..' in field:
+                start, end = field.split('..')
+            else:
+                start = end = field
+            yield int(start, 16), int(end, 16), value
+
+
+def _values_to_ranges(values: Iterable[int]) -> tuple[tuple[int, int], ...]:
+    """Convert a set of codepoints to sorted, non-overlapping (start, end) ranges."""
+    ordered = sorted(values)
+    if not ordered:
+        return ()
+    ranges = []
+    start = previous = ordered[0]
+    for value in ordered[1:]:
+        if value == previous + 1:
+            previous = value
+            continue
+        ranges.append((start, previous))
+        start = previous = value
+    ranges.append((start, previous))
+    return tuple(ranges)
+
+
+@functools.cache
+def parse_line_break_properties(fname: str) -> tuple[tuple[int, int, int], ...]:
+    """Parse LineBreak.txt into contiguous (start, end, class) ranges."""
+    print(f'parsing {fname}: ', end='', flush=True)
+    default = LINEBREAK_VALUE['XX']
+    ranges = []
+    with open(fname, encoding='utf-8') as f:
+        for line in f:
+            if line.startswith('# @missing:'):
+                _, value = (part.strip() for part in
+                            line.split(':', 1)[1].split('#')[0].split(';')[:2])
+                default = LINEBREAK_VALUE[value]
+                continue
+            data, _, _ = line.partition('#')
+            data = data.strip()
+            if not data:
+                continue
+            field, value = (part.strip() for part in data.split(';')[:2])
+            if '..' in field:
+                start, end = field.split('..')
+            else:
+                start = end = field
+            ranges.append((int(start, 16), int(end, 16), LINEBREAK_VALUE[value]))
+    ranges.sort()
+    filled = []
+    cursor = 0
+    for start, end, value in ranges:
+        if start > cursor:
+            filled.append((cursor, start - 1, default))
+        filled.append((start, end, value))
+        cursor = end + 1
+    if cursor <= 0x10FFFF:
+        filled.append((cursor, 0x10FFFF, default))
+    merged = []
+    for start, end, value in filled:
+        if merged and merged[-1][2] == value and merged[-1][1] + 1 == start:
+            merged[-1] = (merged[-1][0], end, value)
+        else:
+            merged.append((start, end, value))
+    print('ok')
+    return tuple(merged)
+
+
+def parse_line_break_auxiliary(version: str) -> tuple[
+        tuple[tuple[int, int], ...], tuple[tuple[int, int], ...],
+        tuple[tuple[int, int], ...], tuple[tuple[int, int], ...],
+        tuple[tuple[int, int], ...]]:
+    """Return the auxiliary properties needed by the UAX #14 rules."""
+    lb_ranges = parse_line_break_properties(UnicodeDataFile.LineBreak(version))
+    qu = set()
+    sa = set()
+    for start, end, value in lb_ranges:
+        if value == LINEBREAK_VALUE['QU']:
+            qu.update(range(start, end + 1))
+        elif value == LINEBREAK_VALUE['SA']:
+            sa.update(range(start, end + 1))
+
+    pi = set()
+    pf = set()
+    cm = set()
+    cn = []
+    for start, end, category in _parse_range_property_file(
+            UnicodeDataFile.DerivedGeneralCategory(version)):
+        if category == 'Pi':
+            pi.update(range(start, end + 1))
+        elif category == 'Pf':
+            pf.update(range(start, end + 1))
+        elif category in ('Mn', 'Mc'):
+            cm.update(range(start, end + 1))
+        elif category == 'Cn':
+            cn.append((start, end))
+
+    east_asian = tuple(
+        (start, end)
+        for start, end, value in _parse_range_property_file(
+            UnicodeDataFile.EastAsianWidth(version))
+        if value in ('F', 'W', 'H')
+    )
+    ext_pict = parse_extended_pictographic(UnicodeDataFile.EmojiData(version)).values
+    ext_cn = {cp for cp in ext_pict if _bisearch(cp, cn)}
+
+    return (_values_to_ranges(pi & qu), _values_to_ranges(pf & qu),
+            _values_to_ranges(sa & cm), east_asian, _values_to_ranges(ext_cn))
+
+
 def parse_extended_pictographic(fname: str) -> TableDef:
     """Parse emoji-data.txt for Extended_Pictographic property."""
     print(f'parsing {fname} for Extended_Pictographic: ', end='', flush=True)
@@ -1393,6 +1699,24 @@ def fetch_table_grapheme_data() -> GraphemeTableRenderCtx:
     return GraphemeTableRenderCtx(str(latest_version), tables)
 
 
+def fetch_table_linebreak_data() -> LineBreakTableRenderCtx:
+    """Fetch the UAX #14 line breaking table for the latest Unicode version only."""
+    latest_version = fetch_unicode_versions()[-1]
+    ranges = parse_line_break_properties(UnicodeDataFile.LineBreak(latest_version))
+    pi_qu, pf_qu, sa_cm, east_asian, ext_pict_cn = parse_line_break_auxiliary(
+        str(latest_version))
+    return LineBreakTableRenderCtx(
+        unicode_version=str(latest_version),
+        ranges=ranges,
+        classes=LINEBREAK_CLASSES,
+        pi_qu=pi_qu,
+        pf_qu=pf_qu,
+        sa_cm=sa_cm,
+        east_asian=east_asian,
+        ext_pict_cn=ext_pict_cn,
+    )
+
+
 class UnicodeDataFile:
     """
     Helper class for fetching Unicode Data Files.
@@ -1420,6 +1744,8 @@ class UnicodeDataFile:
     URL_DERIVED_CORE_PROPS = 'https://www.unicode.org/Public/{version}/ucd/DerivedCoreProperties.txt'
     URL_PROP_LIST = 'https://www.unicode.org/Public/{version}/ucd/PropList.txt'
     URL_GRAPHEME_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/GraphemeBreakTest.txt'
+    URL_LINE_BREAK = 'https://www.unicode.org/Public/{version}/ucd/LineBreak.txt'
+    URL_LINE_BREAK_TEST = 'https://www.unicode.org/Public/{version}/ucd/auxiliary/LineBreakTest.txt'
     URL_INDIC_SYLLABIC_CATEGORY = 'https://www.unicode.org/Public/{version}/ucd/IndicSyllabicCategory.txt'
     URL_UDHR_ZIP = 'http://efele.net/udhr/assemblies/udhr_txt.zip'
 
@@ -1494,6 +1820,12 @@ class UnicodeDataFile:
         return fname
 
     @classmethod
+    def LineBreak(cls, version: str) -> str:
+        fname = os.path.join(PATH_DATA, f'LineBreak-{version}.txt')
+        cls.do_retrieve(url=cls.URL_LINE_BREAK.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
     def EmojiData(cls, version: UnicodeVersion) -> str:
         """Fetch emoji-data.txt for Extended_Pictographic property."""
         fname = os.path.join(PATH_DATA, f'emoji-data-{version}.txt')
@@ -1523,6 +1855,13 @@ class UnicodeDataFile:
         version = fetch_unicode_versions()[-1]
         fname = os.path.join(PATH_TESTS, 'GraphemeBreakTest.txt')
         cls.do_retrieve(url=cls.URL_GRAPHEME_BREAK_TEST.format(version=version), fname=fname)
+        return fname
+
+    @classmethod
+    def TestLineBreakTest(cls) -> str:
+        version = fetch_unicode_versions()[-1]
+        fname = os.path.join(PATH_TESTS, 'LineBreakTest.txt')
+        cls.do_retrieve(url=cls.URL_LINE_BREAK_TEST.format(version=version), fname=fname)
         return fname
 
     @classmethod
@@ -1598,7 +1937,7 @@ class UnicodeDataFile:
             return True
         # Only draft files are worth re-checking by default: they are revised throughout the alpha
         # and beta review periods, while a published file never changes once released. Checking all
-        # of them costs a silent HEAD request per file, and risks a rate-limit backoff of minutes.
+        # of them makes a silent HEAD request per file, and risks a rate-limit backoff of minutes.
         if CHECK_LAST_MODIFIED or UnicodeDataFile.is_draft_url(url):
             session = UnicodeDataFile.get_http_session()
             # 'requests' does not follow redirects for HEAD by default, unlike GET, and a '/Public/
@@ -2500,6 +2839,7 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
     UnicodeDataFile.EmojiVariationSequences(version)
     UnicodeDataFile.LegacyEmojiVariationSequences()
     UnicodeDataFile.GraphemeBreakProperty(version)
+    UnicodeDataFile.LineBreak(version)
     UnicodeDataFile.EmojiData(version)
     UnicodeDataFile.DerivedCoreProperties(version)
     UnicodeDataFile.PropList(version)
@@ -2509,6 +2849,7 @@ def fetch_all_data_files(fetch_all_versions: bool = False) -> None:
     UnicodeDataFile.TestEmojiVariationSequences()
     UnicodeDataFile.TestEmojiZWJSequences()
     UnicodeDataFile.TestGraphemeBreakTest()
+    UnicodeDataFile.TestLineBreakTest()
     UnicodeDataFile.UDHRCombined()
 
     # Fetch all legacy emoji files if requested
@@ -2596,6 +2937,7 @@ def python_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
     for name, fetch in TABLE_FETCHES:
         yield UnicodeTableRenderDef.new(f'{name}.py', fetch())
     yield GraphemeTableRenderDef.new('table_grapheme.py', fetch_table_grapheme_data())
+    yield LineBreakTableRenderDef.new('table_linebreak.py', fetch_table_linebreak_data())
     kt = collect_term_programs().known_terminals
     yield MergedOverridesRenderDef.new([
         _make_merged_category('WIDE_OVERRIDES', make_single_override('unicode_wide_results', kt)),
@@ -2618,8 +2960,10 @@ def c_defs(latest_version: UnicodeVersion) -> Iterator[RenderDefinition]:
         yield UnicodeTableRenderDef.new(f'{name}.c', context)
     grapheme_context = fetch_table_grapheme_data()
     yield GraphemeTableRenderDef.new('table_grapheme.c', grapheme_context)
+    linebreak_context = fetch_table_linebreak_data()
+    yield LineBreakTableRenderDef.new('table_linebreak.c', linebreak_context)
     yield CGcbClassRenderDef.new(grapheme_context.tables)
-    bitset_context = build_bitset_tables(table_contexts, grapheme_context)
+    bitset_context = build_bitset_tables(table_contexts, grapheme_context, linebreak_context)
     yield BitsetTablesRenderDef.new(
         'c_bitset_tables.c.j2',
         os.path.join(PATH_UP, LANGUAGES['.c']['dir'], 'bitset_tables.c'),

@@ -51,8 +51,7 @@ TYPEDEF_RE = re.compile(r'typedef\s+(.+?)\s+(\w+)\s*;', re.DOTALL)
 FUNC_RE = re.compile(r'^(.*?)\b(\w+)\s*\(([^()]*)\)\s*;?$', re.DOTALL)
 EXTERN_RE = re.compile(r'extern\s+(const\s+.+?)\s+(\w+)\s*(?:\[\s*\])?\s*;', re.DOTALL)
 PARAM_RE = re.compile(r'^\*?(\w+)\*?:\s*(.*)$')
-# A "Word:" or "Two words:" heading, as opposed to a line that happens to
-# contain a colon.
+# A "Word:" or "Two words:" heading: one or two words followed by a colon.
 SECTION_RE = re.compile(r'^[A-Za-z_][\w ]*:(\s|$)')
 
 # Headers in documentation order; any not listed here are appended alphabetically.

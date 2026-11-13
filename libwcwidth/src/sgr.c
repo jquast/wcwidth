@@ -320,7 +320,7 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
 }
 
 /*
- * Append a decimal integer at *offset*, never writing past *out_cap*.
+ * Append a decimal integer at *offset*, within the *out_cap*-byte buffer.
  *
  * snprintf() returns the length it would have produced, so an unclamped
  * offset runs past out_cap, wraps out_cap - offset to a huge size_t, and

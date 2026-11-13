@@ -73,6 +73,12 @@ SPELLINGS = [
         (('ab', 0, 2), {}),
         (('ab',), {'start': 0, 'end': 2}),
     ]),
+    (_wcwidth_c.line_breaks, [
+        (('a-b',), {}),
+        ((), {'text': 'a-b'}),
+        (('a-b', True), {}),
+        (('a-b',), {'hyphens': True}),
+    ]),
 ]
 
 # Calls the parser must reject.  Only the exception type is asserted: the message text is
@@ -89,6 +95,11 @@ REJECTED = [
     (_wcwidth_c.ljust, ('a',), {'text': 'b'}),                   # given twice
     (_wcwidth_c.ljust, ('a', 'x'), {}),                          # dest_width must be an int
     (_wcwidth_c.ljust, ('a', 5, '.', 'x'), {}),                  # three positional at most
+    (_wcwidth_c.line_breaks, (), {}),                            # text is required
+    (_wcwidth_c.line_breaks, (1,), {}),                          # text must be str
+    (_wcwidth_c.line_breaks, ('a', True, 1), {}),                # two positional at most
+    (_wcwidth_c.line_breaks, ('a',), {'text': 'b'}),             # given twice
+    (_wcwidth_c.line_breaks, ('a',), {'nope': 1}),               # unknown keyword
     (_wcwidth_c.wcswidth, ('a',), {'nope': 1}),
     (_wcwidth_c.wcwidth, ('a',), {'term_program': 'xterm'}),     # not a parameter
     (_wcwidth_c.wcwidth, ('a', 'auto', 1, 2), {}),               # three positional at most
@@ -100,7 +111,7 @@ REJECTED = [
 ]
 
 GROUP_IDS = ["width", "ljust", "wcswidth", "wcstwidth", "wcwidth", "clip",
-             "strip_sequences", "propagate_sgr", "iter_graphemes"]
+             "strip_sequences", "propagate_sgr", "iter_graphemes", "line_breaks"]
 
 
 @pytest.mark.parametrize("func, calls", SPELLINGS, ids=GROUP_IDS)
@@ -113,6 +124,6 @@ def test_argument_spellings_agree(func, calls):
 @pytest.mark.parametrize("func, args, kwargs", REJECTED,
                          ids=[f"{i}" for i in range(len(REJECTED))])
 def test_rejected_calls_raise(func, args, kwargs):
-    """A call the fast parser cannot accept raises instead of falling through."""
+    """A call the fast parser rejects raises."""
     with pytest.raises((TypeError, OverflowError)):
         func(*args, **kwargs)
