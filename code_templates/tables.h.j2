@@ -6,11 +6,10 @@
  * length macro (entry counts are codegen-known).
  *
  * These interval tables remain exported for convenience and ABI compatibility.
- * The tables converted to bitsets (ZERO_WIDTH, WIDE_EASTASIAN,
- * AMBIGUOUS_EASTASIAN, CATEGORY_MC, VS16_NARROW_TO_WIDE,
- * VS15_WIDE_TO_NARROW, EXTENDED_PICTOGRAPHIC, INCB_CONSONANT and
- * INCB_EXTEND) are no longer used internally: libwcwidth uses the generated
- * bitsets in wcwidth/bitset_tables.h.  The Python tables remain the parsable
+ * libwcwidth uses the generated bitsets in wcwidth/bitset_tables.h for
+ * ZERO_WIDTH, WIDE_EASTASIAN, AMBIGUOUS_EASTASIAN, CATEGORY_MC,
+ * VS16_NARROW_TO_WIDE, VS15_WIDE_TO_NARROW, EXTENDED_PICTOGRAPHIC,
+ * INCB_CONSONANT and INCB_EXTEND.  The Python tables remain the parsable
  * interval form.
  *
  * Do not edit; see code_templates/tables.h.j2.

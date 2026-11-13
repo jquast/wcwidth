@@ -525,7 +525,7 @@ wcwidth_escape_strip_u32(const uint32_t *codepoints, size_t n, size_t *out_len)
         return NULL;
     }
     {
-        /* The stripped output is never longer than the input. */
+        /* The stripped output is at most as long as the input. */
         char strip_stack[256];
         size_t byte_len = 0;
         size_t needed =

@@ -128,7 +128,7 @@ fastcall_varargs(const fastcall_stack *st, PyObject **kwargs_out)
 
 /* Index of keyword in a NULL-terminated parameter name list, or -1 when the
  * name is not a parameter of the method.  Names are compared by length first,
- * so the cost does not grow with the keyword's position in the list. */
+ * so the lookup does not slow down with the keyword's position in the list. */
 static Py_ssize_t
 keyword_index(PyObject *keyword, char *const *names)
 {

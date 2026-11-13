@@ -66,9 +66,8 @@ This library may be considered to presume the terminal is enabled for DEC Privat
 ("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
 is often the default mode for those terminals that support it.
 
-This library does not support any specific "legacy width" measurement by API, but it does provide
-Corrections_ for terminals using "legacy width" measurements or are without basic emoji or grapheme
-support.
+This library provides Corrections_ for terminals using "legacy width" measurements or lacking basic
+emoji or grapheme support, through its existing width APIs.
 
 See also:
 

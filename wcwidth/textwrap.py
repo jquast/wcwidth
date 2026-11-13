@@ -406,7 +406,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     # If we end inside a hyperlink, append close sequence
                     if new_state is not None:
                         # Use the active link's params; wrapper state can leak a prior link's id.
-                        if 'id=' in new_state.params:
+                        if has_id := any(param.startswith('id=')
+                                         for param in new_state.params.split(':')):
                             continuation_params = new_state.params
                         elif new_state.params:
                             # Prepend id to existing params. Per OSC 8 spec, params can have
@@ -420,7 +421,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
                         # Also need to inject the id into the opening
                         # sequence if it didn't have one
-                        if 'id=' not in new_state.params:
+                        if not has_id:
                             # Find and replace the original open sequence with one that has id
                             old_open = HyperlinkParams(
                                 url=new_state.url,
@@ -717,7 +718,7 @@ def wrap(text: str, width: int = 70, *,
        Segmentation follows UAX #29 grapheme clusters. Tamil, Kannada and Sinhala may break in the
        middle of a conjunct and fall short of ``width``. Correct rendering of these languages is
        not specified by unicode.org standards, and no terminal emulator or editor handles them
-       legibly, so this library function makes no attempt at accommodating them.
+       legibly, so this library function leaves their handling to the terminal.
 
     .. seealso::
 

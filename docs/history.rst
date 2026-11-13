@@ -15,6 +15,7 @@ History
   * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.
   * **Bugfix** `clip()`_ control character processing after an errant OSC 8 close, `PR #308`_.
   * **Bugfix** libwcwidth `wrap()`_ no longer crashes when a memory allocation fails, `PR #317`_.
+  * **Improved** `wrap()`_ better supports unlikely OSC 8 hyperlink metadata, `PR #325`_.
   * **Improved** performance of flag emojis by ~5.6x, `PR #304`_.
   * **Improved** performance of `clip()`_, `wrap()`_, and `propagate_sgr()`_ by caching SGR state
     updates, `PR #315`_.
@@ -360,6 +361,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #310`: https://github.com/jquast/wcwidth/pull/310
 .. _`PR #315`: https://github.com/jquast/wcwidth/pull/315
 .. _`PR #317`: https://github.com/jquast/wcwidth/pull/317
+.. _`PR #325`: https://github.com/jquast/wcwidth/pull/325
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
