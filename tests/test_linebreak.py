@@ -96,6 +96,75 @@ def test_linebreak_class(char, expected):
     assert linebreak_class(ord(char)) == expected
 
 
+def test_linebreak_class_out_of_range():
+    assert linebreak_class(0x110000) == LineBreak.XX
+    assert linebreak_class(0xFFFFFFFF) == LineBreak.XX
+
+
+def test_break_positions_empty():
+    assert not list(linebreak._break_positions('', True))
+
+
+def test_iter_line_breaks_rule_contexts():
+    pi_qu, pf_qu, ea = '\u00ab', '\u00bb', '\u3009'
+    dot, vi, vf = '\u25cc', '\u1b44', '\u1bf2'
+    preceders = ['\x0b', '\r', '\n', '\x85', ' ', '\u200b']
+    quoted_preceders = ['(', '"', '\xa0']
+    cases = []
+
+    for prior in preceders:
+        cases.append((prior + pi_qu + 'a', [1, 3]))
+        cases.append((prior + pi_qu + ' a', [1, 4]))
+    for prior in quoted_preceders:
+        cases.append((prior + pi_qu + 'a', [3]))
+        cases.append((prior + pi_qu + ' a', [4]))
+    cases.append(('a' + pi_qu + 'a', [3]))
+    cases.append(('a' + pi_qu + ' a', [3, 4]))
+    cases.append((pi_qu + 'a', [2]))
+
+    for suffix in [' ', '\xa0', '\u2060', '}', '"', ')', '!', ',', '/',
+                   '\x0b', '\r', '\n', '\x85', '\u200b']:
+        cases.append(('a' + pf_qu + suffix, [3]))
+    cases.append(('a' + pf_qu, [2]))
+
+    cases.extend([
+        (ea + '"', [2]),
+        ('"' + ea, [2]),
+        (ea + '"' + ea, [3]),
+        (ea + '"' + 'a', [3]),
+        ('"' + ea + ea, [3]),
+        ('"' + ea + 'a', [2, 3]),
+    ])
+
+    for prior in ['\x0b', '\r', '\n', '\x85', ' ', '\u200b', '\ufffc']:
+        cases.append((prior + '-a', [1, 3]))
+    cases.append(('\xa0-a', [3]))
+
+    cases.extend([
+        ('%(' + '0', [3]),
+        ('%(' + ',0', [4]),
+        ('%(' + ',a', [1, 4]),
+        ('%(' + ',', [1, 3]),
+        ('0,}%', [4]),
+        ('0,)%', [4]),
+        ('a,}%', [3, 4]),
+    ])
+
+    cases.extend([
+        ('\U00011003' + dot, [2]),
+        (dot + vf, [2]),
+        (dot + vi, [2]),
+        (vi + dot + dot, [1, 3]),
+        (dot + dot + vf, [3]),
+        (dot + vi + dot, [3]),
+        (dot + vi + 'a', [2, 3]),
+        ('a' + vi + dot, [1, 2, 3]),
+    ])
+
+    for text, expected in cases:
+        assert [item.index for item in iter_line_breaks(text)] == expected
+
+
 @pytest.mark.parametrize('text,expected', [
     ('', []),
     ('abc', [3]),

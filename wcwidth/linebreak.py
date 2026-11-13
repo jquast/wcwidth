@@ -426,8 +426,7 @@ def _break_at(idx: int, cps: list[int], data: _Clusters, ri_run: int) -> tuple[b
         if not _is_ea(after_cp):
             return False, False
     if before == LineBreak.CP and after in (LineBreak.AL, LineBreak.HL, LineBreak.NU):
-        if not _is_ea(before_cp):
-            return False, False
+        return False, False
 
     # LB30a: regional indicator pairs.
     if before == LineBreak.RI and after == LineBreak.RI:

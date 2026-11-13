@@ -342,8 +342,7 @@ break_at(size_t idx, const uint32_t *cps, const lb_cluster_t *cl, size_t count, 
     if ((before == LB(AL) || before == LB(HL) || before == LB(NU)) && after == LB(OP)
         && !is_east_asian(after_cp))
         return NO_BREAK;
-    if (before == LB(CP) && (after == LB(AL) || after == LB(HL) || after == LB(NU))
-        && !is_east_asian(before_cp))
+    if (before == LB(CP) && (after == LB(AL) || after == LB(HL) || after == LB(NU)))
         return NO_BREAK;
 
     if (before == LB(RI) && after == LB(RI))
@@ -368,9 +367,10 @@ wcwidth_linebreak_breaks_u32(const uint32_t *cps, size_t n, size_t *breaks, uint
 
     if (n == 0)
         return 0;
+#if SIZE_MAX <= UINT32_MAX
     if (n > SIZE_MAX / sizeof(*cl))
         return (size_t) -1;
-
+#endif
     cl = malloc(n * sizeof(*cl));
     if (cl == NULL)
         goto fail;

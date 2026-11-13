@@ -192,6 +192,180 @@ TEST(linebreak_small_capacity)
               (int64_t) wcwidth_linebreak_breaks_u32(cps, 3, breaks, mandatory, 1, true));
 }
 
+TEST(linebreak_initial_quote_contexts)
+{
+    static const uint32_t spaced[] = {0x0B, 0x0D, 0x0A, 0x85, 0x20, 0x200B};
+    static const uint32_t unspaced[] = {'(', '"', 0xA0, 'a'};
+    const size_t two[] = {1, 3};
+    const size_t one[] = {3};
+    const uint32_t pi_qu = 0x00AB;
+    const uint32_t at_start[] = {0x00AB, 'a'};
+    const size_t end[] = {2};
+    uint32_t cps[3];
+    size_t i;
+
+    for (i = 0; i < sizeof(spaced) / sizeof(spaced[0]); i++) {
+        cps[0] = spaced[i];
+        cps[1] = pi_qu;
+        cps[2] = 'a';
+        check_breaks(cps, 3, two, 2);
+    }
+    for (i = 0; i < sizeof(unspaced) / sizeof(unspaced[0]); i++) {
+        cps[0] = unspaced[i];
+        cps[1] = pi_qu;
+        cps[2] = 'a';
+        check_breaks(cps, 3, one, 1);
+    }
+    check_breaks(at_start, 2, end, 1);
+
+    {
+        static const uint32_t quote_spaced[] = {0x0B, 0x0D, 0x0A, 0x85, 0x20, 0x200B};
+        static const uint32_t quote_unspaced[] = {'(', '"', 0xA0};
+        const size_t quote_two[] = {1, 4};
+        const size_t quote_one[] = {4};
+        const uint32_t quote_al[] = {'a', 0x00AB, 0x20, 'a'};
+        const size_t quote_al_breaks[] = {3, 4};
+        uint32_t spaced_cps[4];
+
+        for (i = 0; i < sizeof(quote_spaced) / sizeof(quote_spaced[0]); i++) {
+            spaced_cps[0] = quote_spaced[i];
+            spaced_cps[1] = pi_qu;
+            spaced_cps[2] = ' ';
+            spaced_cps[3] = 'a';
+            check_breaks(spaced_cps, 4, quote_two, 2);
+        }
+        for (i = 0; i < sizeof(quote_unspaced) / sizeof(quote_unspaced[0]); i++) {
+            spaced_cps[0] = quote_unspaced[i];
+            spaced_cps[1] = pi_qu;
+            spaced_cps[2] = ' ';
+            spaced_cps[3] = 'a';
+            check_breaks(spaced_cps, 4, quote_one, 1);
+        }
+        check_breaks(quote_al, 4, quote_al_breaks, 2);
+    }
+}
+
+TEST(linebreak_final_quote_contexts)
+{
+    static const uint32_t suffix[] = {0x20, 0xA0, 0x2060, '}',  '"',  ')',  '!',
+                                      ',',  '/',  0x0B,   0x0D, 0x0A, 0x85, 0x200B};
+    const size_t expected[] = {3};
+    const uint32_t pf_qu = 0x00BB;
+    const uint32_t alone[] = {'a', 0x00BB};
+    const size_t end[] = {2};
+    uint32_t cps[3];
+    size_t i;
+
+    for (i = 0; i < sizeof(suffix) / sizeof(suffix[0]); i++) {
+        cps[0] = 'a';
+        cps[1] = pf_qu;
+        cps[2] = suffix[i];
+        check_breaks(cps, 3, expected, 1);
+    }
+    check_breaks(alone, 2, end, 1);
+}
+
+TEST(linebreak_east_asian_quotes)
+{
+    const uint32_t ea_qu[] = {0x3009, '"'};
+    const uint32_t qu_ea[] = {'"', 0x3009};
+    const uint32_t ea_qu_ea[] = {0x3009, '"', 0x3009};
+    const uint32_t ea_qu_al[] = {0x3009, '"', 'a'};
+    const uint32_t qu_ea_ea[] = {'"', 0x3009, 0x3009};
+    const uint32_t qu_ea_al[] = {'"', 0x3009, 'a'};
+    const size_t end[] = {2};
+    const size_t all[] = {3};
+    const size_t ea_al[] = {2, 3};
+
+    check_breaks(ea_qu, 2, end, 1);
+    check_breaks(qu_ea, 2, end, 1);
+    check_breaks(ea_qu_ea, 3, all, 1);
+    check_breaks(ea_qu_al, 3, all, 1);
+    check_breaks(qu_ea_ea, 3, all, 1);
+    check_breaks(qu_ea_al, 3, ea_al, 2);
+}
+
+TEST(linebreak_hyphen_contexts)
+{
+    static const uint32_t before[] = {0x0B, 0x0D, 0x0A, 0x85, 0x20, 0x200B, 0xFFFC};
+    const size_t two[] = {1, 3};
+    const size_t one[] = {3};
+    uint32_t cps[3];
+    size_t i;
+
+    for (i = 0; i < sizeof(before) / sizeof(before[0]); i++) {
+        cps[0] = before[i];
+        cps[1] = '-';
+        cps[2] = 'a';
+        check_breaks(cps, 3, two, 2);
+    }
+    cps[0] = 0xA0;
+    cps[1] = '-';
+    cps[2] = 'a';
+    check_breaks(cps, 3, one, 1);
+}
+
+TEST(linebreak_numeric_contexts)
+{
+    const uint32_t po_op_nu[] = {'%', '(', '0'};
+    const uint32_t po_op_is_nu[] = {'%', '(', ',', '0'};
+    const uint32_t po_op_is_al[] = {'%', '(', ',', 'a'};
+    const uint32_t po_op_is[] = {'%', '(', ','};
+    const uint32_t nu_is_cl_po[] = {'0', ',', '}', '%'};
+    const uint32_t nu_is_cp_po[] = {'0', ',', ')', '%'};
+    const uint32_t al_is_cl_po[] = {'a', ',', '}', '%'};
+    const size_t all3[] = {3};
+    const size_t all4[] = {4};
+    const size_t split3[] = {1, 3};
+    const size_t split4[] = {1, 4};
+    const size_t al_split4[] = {3, 4};
+
+    check_breaks(po_op_nu, 3, all3, 1);
+    check_breaks(po_op_is_nu, 4, all4, 1);
+    check_breaks(po_op_is_al, 4, split4, 2);
+    check_breaks(po_op_is, 3, split3, 2);
+    check_breaks(nu_is_cl_po, 4, all4, 1);
+    check_breaks(nu_is_cp_po, 4, all4, 1);
+    check_breaks(al_is_cl_po, 4, al_split4, 2);
+}
+
+TEST(linebreak_dotted_circle)
+{
+    const uint32_t ap_dot[] = {0x11003, 0x25CC};
+    const uint32_t dot_vf[] = {0x25CC, 0x1BF2};
+    const uint32_t dot_vi[] = {0x25CC, 0x1B44};
+    const uint32_t vi_dot_dot[] = {0x1B44, 0x25CC, 0x25CC};
+    const uint32_t dot_dot_vf[] = {0x25CC, 0x25CC, 0x1BF2};
+    const uint32_t dot_vi_dot[] = {0x25CC, 0x1B44, 0x25CC};
+    const uint32_t dot_vi_al[] = {0x25CC, 0x1B44, 'a'};
+    const uint32_t al_vi_dot[] = {'a', 0x1B44, 0x25CC};
+    const size_t two[] = {2};
+    const size_t all[] = {3};
+    const size_t split[] = {1, 3};
+    const size_t dot_all[] = {2, 3};
+    const size_t al_split[] = {1, 2, 3};
+
+    check_breaks(ap_dot, 2, two, 1);
+    check_breaks(dot_vf, 2, two, 1);
+    check_breaks(dot_vi, 2, two, 1);
+    check_breaks(vi_dot_dot, 3, split, 2);
+    check_breaks(dot_dot_vf, 3, all, 1);
+    check_breaks(dot_vi_dot, 3, all, 1);
+    check_breaks(dot_vi_al, 3, dot_all, 2);
+    check_breaks(al_vi_dot, 3, al_split, 3);
+}
+
+TEST(linebreak_mandatory_optional)
+{
+    const uint32_t cps[] = {'a', ' ', 'b'};
+    size_t breaks[4];
+    size_t got = wcwidth_linebreak_breaks_u32(cps, 3, breaks, NULL, 4, true);
+
+    ASSERT_EQ((int64_t) 2, (int64_t) got);
+    ASSERT_EQ((int64_t) 2, (int64_t) breaks[0]);
+    ASSERT_EQ((int64_t) 3, (int64_t) breaks[1]);
+}
+
 static FILE *
 open_line_break_test(void)
 {
@@ -320,6 +494,13 @@ main(void)
     RUN_TEST(linebreak_class_boundaries);
     RUN_TEST(linebreak_class_out_of_range);
     RUN_TEST(linebreak_small_capacity);
+    RUN_TEST(linebreak_initial_quote_contexts);
+    RUN_TEST(linebreak_final_quote_contexts);
+    RUN_TEST(linebreak_east_asian_quotes);
+    RUN_TEST(linebreak_hyphen_contexts);
+    RUN_TEST(linebreak_numeric_contexts);
+    RUN_TEST(linebreak_dotted_circle);
+    RUN_TEST(linebreak_mandatory_optional);
     RUN_TEST(linebreak_conformance);
     return test_summary();
 }

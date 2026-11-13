@@ -366,6 +366,8 @@ def test_wrap_invalid_line_break():
     ('a\n\nb', ['a', 'b']),
     ('a\u2028b', ['a', 'b']),
     ('a\u2029b', ['a', 'b']),
+    ('\n', []),
+    ('\r\n', []),
 ])
 def test_wrap_mandatory_breaks(text, expected):
     assert wrap(text, 10, replace_whitespace=False) == expected

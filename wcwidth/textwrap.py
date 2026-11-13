@@ -150,20 +150,15 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         result: list[str] = []
         start = 0
         for end, mandatory in _break_positions(text, self.break_on_hyphens):
-            if end <= start:
-                continue
             chunk = text[start:end]
             if mandatory:
                 if chunk.endswith('\r\n'):
                     body, marker = chunk[:-2], '\r\n'
-                elif chunk and chunk[-1] in _MANDATORY_BREAKS:
-                    body, marker = chunk[:-1], chunk[-1]
                 else:
-                    body, marker = chunk, ''
+                    body, marker = chunk[:-1], chunk[-1]
                 if body:
                     result.append(body)
-                if marker:
-                    result.append(marker)
+                result.append(marker)
             else:
                 # Keep a trailing run of breaking spaces as its own chunk, as textwrap does, so
                 # it is not counted against the next word when the line is filled.
@@ -176,8 +171,6 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                 else:
                     result.append(chunk)
             start = end
-        if start < len(text):
-            result.append(text[start:])
         return result
 
     def _split(self, text: str) -> list[str]:  # pylint: disable=too-many-locals

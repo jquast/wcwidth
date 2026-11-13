@@ -387,10 +387,8 @@ cl_prepend_last(chunklist_t *cl, const char *s, size_t n)
     nd = malloc(n + c->len + 1);
     if (nd == NULL)
         return false;
-    if (n > 0)
-        memcpy(nd, s, n);
-    if (c->len > 0)
-        memcpy(nd + n, c->data, c->len);
+    memcpy(nd, s, n);
+    memcpy(nd + n, c->data, c->len);
     nd[n + c->len] = '\0';
     free(c->data);
     c->data = nd;
@@ -409,8 +407,7 @@ cl_append_last(chunklist_t *cl, const char *s, size_t n)
     nd = realloc(c->data, c->len + n + 1);
     if (nd == NULL)
         return false;
-    if (n > 0)
-        memcpy(nd + c->len, s, n);
+    memcpy(nd + c->len, s, n);
     nd[c->len + n] = '\0';
     c->data = nd;
     c->len = c->len + n;
@@ -495,7 +492,9 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
 
     cps = malloc((len + 1) * sizeof(*cps));
     char_end = malloc((len + 1) * sizeof(*char_end));
-    if (cps == NULL || char_end == NULL)
+    if (cps == NULL)
+        goto done;
+    if (char_end == NULL)
         goto done;
 
     while (i < len) {
@@ -503,13 +502,12 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
         uint32_t cp;
         size_t slen;
 
-        if (text[i] == ESC && wcwidth_escape_classify(text, len, i, &r)) {
+        if (text[i] == ESC) {
+            wcwidth_escape_classify(text, len, i, &r);
             i += r.length;
             continue;
         }
         cp = utf8_decode(text + i, len - i, &slen);
-        if (slen == 0)
-            slen = 1;
         i += slen;
         cps[nvis] = cp;
         char_end[nvis] = i;
@@ -518,7 +516,9 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
 
     breaks = malloc((nvis + 1) * sizeof(*breaks));
     mandatory = malloc((nvis + 1) * sizeof(*mandatory));
-    if (breaks == NULL || mandatory == NULL)
+    if (breaks == NULL)
+        goto done;
+    if (mandatory == NULL)
         goto done;
     nbreaks = wcwidth_linebreak_breaks_u32(cps, nvis, breaks, mandatory, nvis + 1,
                                            opts->break_on_hyphens);
@@ -527,14 +527,11 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
 
     {
         size_t start = 0;
-        size_t previous = 0;
         for (b = 0; b < nbreaks; b++) {
             size_t k = breaks[b];
             size_t end;
-            if (k <= previous)
-                continue;
             end = (b + 1 < nbreaks) ? char_end[k - 1] : len;
-            if (mandatory[b] && k > 0) {
+            if (mandatory[b]) {
                 size_t marker = (k >= 2) ? char_end[k - 2] : start;
                 if (cps[k - 1] == '\n' && k >= 2 && cps[k - 2] == '\r')
                     marker = (k >= 3) ? char_end[k - 3] : start;
@@ -542,12 +539,10 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
                     if (!cl_push(out, text + start, marker - start))
                         goto done;
                 }
-                if (end > marker) {
-                    if (!cl_push(out, text + marker, end - marker))
-                        goto done;
-                }
+                if (!cl_push(out, text + marker, end - marker))
+                    goto done;
             }
-            else if (end > start) {
+            else {
                 size_t split = k;
                 while (split > 0 && is_breaking_space(cps[split - 1]))
                     split--;
@@ -563,7 +558,6 @@ _split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_
                 }
             }
             start = end;
-            previous = k;
         }
         if (start < len) {
             if (!cl_push(out, text + start, len - start))
@@ -707,19 +701,16 @@ find_hyphen_break(const char *text, size_t len, size_t limit)
     bool seen_text = false;
     wcwidth_esc_result_t r;
 
-    if (limit > len)
-        limit = len;
     while (idx < limit) {
         uint32_t cp;
         size_t slen;
 
-        if (text[idx] == ESC && wcwidth_escape_classify(text, len, idx, &r)) {
+        if (text[idx] == ESC) {
+            wcwidth_escape_classify(text, len, idx, &r);
             idx += r.length;
             continue;
         }
         cp = utf8_decode(text + idx, len - idx, &slen);
-        if (slen == 0)
-            slen = 1;
         if (cp == '-') {
             if (seen_text)
                 hyphen = idx + slen;
@@ -878,7 +869,7 @@ is_mandatory_break_chunk(const chunk_t *c, const wcwidth_wrap_opts_t *opts)
     if (c->len == 1
         && (c->data[0] == '\n' || c->data[0] == '\r' || c->data[0] == '\v' || c->data[0] == '\f'))
         return true;
-    if (c->len == 2 && c->data[0] == '\r' && c->data[1] == '\n')
+    if (c->len == 2 && c->data[0] == '\r')
         return true;
     if (c->len == 2 && c->data[0] == '\xc2' && c->data[1] == '\x85')
         return true;
@@ -1106,13 +1097,11 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                                 i++;
                             }
                         }
-                        bool fits = prev.len == 0
-                                    || chunk_width(prev.data, prev.len, opts) + pw <= opts->width;
+                        bool fits = chunk_width(prev.data, prev.len, opts) + pw <= opts->width;
                         if (fits) {
                             char *np = malloc(prev.len + strlen(opts->placeholder) + 1);
                             if (np != NULL) {
-                                if (prev.len > 0)
-                                    memcpy(np, prev.data, prev.len);
+                                memcpy(np, prev.data, prev.len);
                                 strcpy(np + prev.len, opts->placeholder);
                                 free(pr);
                                 lines->data[lines->count - 1] = np;
