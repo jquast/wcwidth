@@ -28,6 +28,8 @@ requirements.txt or equivalent. Their signatures will never change.
 
 .. autofunction:: wcwidth.wrap
 
+.. autofunction:: wcwidth.iter_line_breaks
+
 .. autofunction:: wcwidth.clip
 
 .. autofunction:: wcwidth.strip_sequences

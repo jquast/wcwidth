@@ -140,6 +140,91 @@ wcwidth_gcb_class(uint32_t ucs)
                                     WCWIDTH_GCB_CLASS_PAGES);
 }
 
+/* Line breaking classes; see wcwidth_linebreak_class() in linebreak.c. */
+#define WCWIDTH_LB_BK 0
+#define WCWIDTH_LB_CR 1
+#define WCWIDTH_LB_LF 2
+#define WCWIDTH_LB_CM 3
+#define WCWIDTH_LB_NL 4
+#define WCWIDTH_LB_SG 5
+#define WCWIDTH_LB_WJ 6
+#define WCWIDTH_LB_ZW 7
+#define WCWIDTH_LB_GL 8
+#define WCWIDTH_LB_SP 9
+#define WCWIDTH_LB_ZWJ 10
+#define WCWIDTH_LB_B2 11
+#define WCWIDTH_LB_BA 12
+#define WCWIDTH_LB_BB 13
+#define WCWIDTH_LB_HY 14
+#define WCWIDTH_LB_HH 15
+#define WCWIDTH_LB_CB 16
+#define WCWIDTH_LB_CL 17
+#define WCWIDTH_LB_CP 18
+#define WCWIDTH_LB_EX 19
+#define WCWIDTH_LB_IN 20
+#define WCWIDTH_LB_NS 21
+#define WCWIDTH_LB_OP 22
+#define WCWIDTH_LB_QU 23
+#define WCWIDTH_LB_IS 24
+#define WCWIDTH_LB_NU 25
+#define WCWIDTH_LB_PO 26
+#define WCWIDTH_LB_PR 27
+#define WCWIDTH_LB_SY 28
+#define WCWIDTH_LB_AI 29
+#define WCWIDTH_LB_AK 30
+#define WCWIDTH_LB_AL 31
+#define WCWIDTH_LB_AP 32
+#define WCWIDTH_LB_AS 33
+#define WCWIDTH_LB_CJ 34
+#define WCWIDTH_LB_EB 35
+#define WCWIDTH_LB_EM 36
+#define WCWIDTH_LB_H2 37
+#define WCWIDTH_LB_H3 38
+#define WCWIDTH_LB_HL 39
+#define WCWIDTH_LB_ID 40
+#define WCWIDTH_LB_JL 41
+#define WCWIDTH_LB_JV 42
+#define WCWIDTH_LB_JT 43
+#define WCWIDTH_LB_RI 44
+#define WCWIDTH_LB_SA 45
+#define WCWIDTH_LB_VF 46
+#define WCWIDTH_LB_VI 47
+#define WCWIDTH_LB_XX 48
+
+#define WCWIDTH_LINEBREAK_ASCII_LEN 128
+#define WCWIDTH_LINEBREAK_ASCII_RESOLVED_LEN 128
+extern const uint8_t WCWIDTH_LINEBREAK_ASCII[];
+extern const uint8_t WCWIDTH_LINEBREAK_ASCII_RESOLVED[];
+
+#define WCWIDTH_LINEBREAK_CLASS_MIN 0x00000u
+#define WCWIDTH_LINEBREAK_CLASS_MAX 0x10FFFFu
+#define WCWIDTH_LINEBREAK_CLASS_SHIFT 8u
+#define WCWIDTH_LINEBREAK_CLASS_INDEX_LEN 4352
+#define WCWIDTH_LINEBREAK_CLASS_PAGES_LEN 42752
+extern const uint8_t WCWIDTH_LINEBREAK_CLASS_INDEX[];
+extern const uint8_t WCWIDTH_LINEBREAK_CLASS_PAGES[];
+
+static inline unsigned
+wcwidth_linebreak_class_get(uint32_t ucs)
+{
+    if (ucs > WCWIDTH_LINEBREAK_CLASS_MAX)
+        return WCWIDTH_LB_XX;
+    return wcwidth_class_paged8_get8(ucs, WCWIDTH_LINEBREAK_CLASS_MIN, WCWIDTH_LINEBREAK_CLASS_MAX,
+                                     WCWIDTH_LINEBREAK_CLASS_SHIFT, WCWIDTH_LINEBREAK_CLASS_INDEX,
+                                     WCWIDTH_LINEBREAK_CLASS_PAGES);
+}
+
+extern const wcwidth_interval_t WCWIDTH_LINEBREAK_PI_QU[];
+#define WCWIDTH_LINEBREAK_PI_QU_LEN 11
+extern const wcwidth_interval_t WCWIDTH_LINEBREAK_PF_QU[];
+#define WCWIDTH_LINEBREAK_PF_QU_LEN 10
+extern const wcwidth_interval_t WCWIDTH_LINEBREAK_SA_CM[];
+#define WCWIDTH_LINEBREAK_SA_CM_LEN 27
+extern const wcwidth_interval_t WCWIDTH_LINEBREAK_EAST_ASIAN[];
+#define WCWIDTH_LINEBREAK_EAST_ASIAN_LEN 315
+extern const wcwidth_interval_t WCWIDTH_LINEBREAK_EXT_PICT_CN[];
+#define WCWIDTH_LINEBREAK_EXT_PICT_CN_LEN 34
+
 #ifdef __cplusplus
 }
 #endif

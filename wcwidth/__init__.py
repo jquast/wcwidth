@@ -14,8 +14,10 @@ __lazy_modules__ = [
     "wcwidth.escape_sequences",
     "wcwidth.grapheme",
     "wcwidth.hyperlink",
+    "wcwidth.linebreak",
     "wcwidth.sgr_state",
     "wcwidth.table_ambiguous",
+    "wcwidth.table_linebreak",
     "wcwidth.table_vs16",
     "wcwidth.table_wide",
     "wcwidth.table_zero",
@@ -35,6 +37,7 @@ from ._clip import clip
 from .bisearch import bisearch as _bisearch
 from .textwrap import SequenceTextWrapper, wrap
 from .hyperlink import Hyperlink, HyperlinkParams
+from .linebreak import LineBreak, iter_line_breaks
 from ._constants import list_term_programs
 from .table_vs16 import VS16_NARROW_TO_WIDE
 from .table_wide import WIDE_EASTASIAN
@@ -108,7 +111,7 @@ from ._wcwidth import _wcmatch_version, _wcversion_value  # isort:skip  # pylint
 # The __all__ attribute defines the items exported from statement,
 # 'from wcwidth import *', but also to say, "This is the public API".
 __all__ = ('wcwidth', 'wcswidth', 'wcstwidth', 'width', 'iter_sequences', 'iter_graphemes',
-           'iter_graphemes_reverse', 'grapheme_boundary_before',
+           'iter_graphemes_reverse', 'grapheme_boundary_before', 'iter_line_breaks',
            'ljust', 'rjust', 'center', 'wrap', 'clip', 'strip_sequences',
            'list_versions', 'list_term_programs', 'propagate_sgr',
            'Hyperlink', 'HyperlinkParams', 'TextSizing', 'TextSizingParams')

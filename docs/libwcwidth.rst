@@ -53,6 +53,10 @@ For linking with your own project, from the repository root::
 
     gcc -Ilibwcwidth/include myapp.c -Llibwcwidth/build -lwcwidth
 
+Configure CMake with ``-DBUILD_SHARED_LIBS=ON`` for a shared build.  The soname begins with
+``libwcwidth.so.0`` and the number is incremented when a binary built against the previous library
+is expected to misbehave.
+
 Example Programs
 ----------------
 
@@ -456,10 +460,11 @@ The text transforms are simpler:
   own implementation only on ``WCWIDTH_ERROR_UNSUPPORTED``.
 * `wcwidth_wrap_u8()`_ treats an OSC 8 hyperlink as an ordinary zero-width OSC, so the link is not
   re-opened on each line; callers must re-emit the opener and terminator themselves.
-* `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ split words on the ASCII space alone, where
-  Python's `wrap()`_ splits on any whitespace run.  ``wcwidth_wrap_opts_t`` offers no
-  ``break_on_hyphens``, ``fix_sentence_endings`` or ``propagate_sgr``: hyphenated words break
-  mid-word, sentence-ending periods are not widened, and SGR state does not survive a line break.
+* `wcwidth_wrap_u8()`_ and `wcwidth_wrap_u8_text()`_ choose UAX #14 break opportunities by
+  default.  Set ``line_break = WCWIDTH_LINE_BREAK_ASCII`` to split on ASCII space alone, and
+  ``break_on_hyphens = false`` to suppress optional breaks after hyphens.  ``wcwidth_wrap_opts_t``
+  offers no ``fix_sentence_endings`` or ``propagate_sgr``: sentence-ending periods are not widened,
+  and SGR state does not survive a line break.
 
 Supported Terminals
 -------------------

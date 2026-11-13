@@ -318,6 +318,35 @@ def test_wrap_long_text(benchmark):
     benchmark(wcwidth.wrap, text, 40)
 
 
+def test_wrap_long_text_ascii_mode(benchmark):
+    """Benchmark wrap() with long text and ASCII-only break rules."""
+    text = 'The quick brown fox jumps over the lazy dog. ' * 20
+    benchmark(wcwidth.wrap, text, 40, line_break='ascii')
+
+
+def test_iter_line_breaks_ascii(benchmark):
+    """Benchmark iter_line_breaks() with ASCII text."""
+    text = 'The quick brown fox jumps over the lazy dog. ' * 20
+    benchmark(lambda: list(wcwidth.iter_line_breaks(text)))
+
+
+def test_iter_line_breaks_long_text(benchmark):
+    """Benchmark iter_line_breaks() over mixed UAX #14 break classes."""
+    text = (
+        'The quick brown fox jumps over the lazy dog.\n'
+        '日本語のテキストは、単語の間に空白を置かない。'
+        'foo\u200bbar foo\u00a0bar foo\u3000bar foo\u2014bar '
+        '\U0001f1fa\U0001f1f8 cafe\u0301 hyph\u00aden. '
+    ) * 20
+    benchmark(lambda: list(wcwidth.iter_line_breaks(text)))
+
+
+def test_wrap_regional_indicators(benchmark):
+    """Benchmark wrap() with a run of regional indicator pairs."""
+    text = '\U0001f1fa\U0001f1f8' * 50
+    benchmark(wcwidth.wrap, text, 40)
+
+
 def test_wrap_japanese(benchmark):
     """Benchmark wrap() with Japanese text."""
     text = 'コンニチハ、セカイ！これは日本語のテキストです。' * 5
