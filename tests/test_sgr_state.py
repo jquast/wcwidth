@@ -9,7 +9,6 @@ import re
 import pytest
 
 # local
-import wcwidth
 from wcwidth import clip, wrap
 from wcwidth.sgr_state import (_SGR_STATE_DEFAULT,
                                _SGRState,
@@ -196,7 +195,7 @@ def test_sgr_color_parameters(params, expected):
     """Apply resets, colon colors, and xterm hybrids in stream order."""
     opening = f'\x1b[{params}m'
     reset = '\x1b[0m' if expected else ''
-    assert wcwidth.propagate_sgr([opening + 'red', 'text'])[1] == expected + 'text' + reset
+    assert propagate_sgr([opening + 'red', 'text'])[1] == expected + 'text' + reset
     assert clip(opening + 'red text', 4, 8) == expected + 'text' + reset
 
 
