@@ -1167,28 +1167,25 @@ propagate_sgr_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyOb
         c_line_lens[i] = (size_t)utf8_len;
     }
 
-    /* The C library can still fail for an SGR state beyond its reserved
-     * prefix space; fall back to the Python implementation in that case. */
-    if (wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines) < 0) {
-        PyErr_Clear();
-        result = call_python_function("wcwidth.sgr_state", "propagate_sgr", &st);
-    } else {
-        result = PyList_New(nlines);
-        if (result != NULL) {
-            for (i = 0; i < nlines; i++) {
-                PyObject *line = PyUnicode_FromStringAndSize(c_lines[i],
-                                                             (Py_ssize_t)c_out_lens[i]);
-                if (line == NULL) {
-                    Py_DECREF(result);
-                    result = NULL;
-                    break;
-                }
-                if (PyList_SetItem(result, i, line) < 0) {
-                    /* SetItem() steals the reference whether or not it fails */
-                    Py_DECREF(result);
-                    result = NULL;
-                    break;
-                }
+    /* Cannot fail: sgr.c asserts at compile time that the longest restore
+     * prefix fits WCWIDTH_SGR_PROPAGATE_SPARE. */
+    (void)wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines);
+
+    result = PyList_New(nlines);
+    if (result != NULL) {
+        for (i = 0; i < nlines; i++) {
+            PyObject *line =
+                PyUnicode_FromStringAndSize(c_lines[i], (Py_ssize_t)c_out_lens[i]);
+            if (line == NULL) {
+                Py_DECREF(result);
+                result = NULL;
+                break;
+            }
+            if (PyList_SetItem(result, i, line) < 0) {
+                /* SetItem() steals the reference whether or not it fails */
+                Py_DECREF(result);
+                result = NULL;
+                break;
             }
         }
     }
