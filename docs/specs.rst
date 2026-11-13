@@ -214,6 +214,9 @@ Working Group's latest report.
 .. _`L2/23-107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`L2/25-263`: https://www.unicode.org/L2/L2025/25263-ttwg-report-utc185.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`Unicode Standard Annex #14`: https://www.unicode.org/reports/tr14/
+.. _`LineBreak.txt`: https://www.unicode.org/Public/UCD/latest/ucd/LineBreak.txt
+.. _`LineBreakTest.txt`: https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/LineBreakTest.txt
 .. _`Unicode Standard Section 23.4`: https://www.unicode.org/versions/latest/core-spec/chapter-23/#G19053
 .. _`unicodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224

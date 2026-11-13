@@ -13,6 +13,13 @@
 extern "C" {
 #endif
 
+/* How to choose break opportunities. */
+typedef enum
+{
+    WCWIDTH_LINE_BREAK_UNICODE = 0, /* Unicode Standard Annex #14 (default) */
+    WCWIDTH_LINE_BREAK_ASCII = 1    /* ASCII whitespace only, like Python textwrap */
+} wcwidth_line_break_mode_t;
+
 /* Options for wcwidth_wrap_u8() and wcwidth_wrap_u8_text(). */
 typedef struct
 {
@@ -24,11 +31,13 @@ typedef struct
     bool expand_tabs;
     bool replace_whitespace;
     bool break_long_words;
+    bool break_on_hyphens; /* allow optional breaks after hyphens; default true */
     bool drop_whitespace;
     int max_lines; /* 0 = no limit */
     const char *initial_indent;
     const char *subsequent_indent;
-    const char *placeholder; /* for truncation, default " [...]" */
+    const char *placeholder;              /* for truncation, default " [...]" */
+    wcwidth_line_break_mode_t line_break; /* UAX #14 by default */
 } wcwidth_wrap_opts_t;
 
 /* Default options for wrap(). */
@@ -37,14 +46,15 @@ extern const wcwidth_wrap_opts_t WCWIDTH_WRAP_OPTS_DEFAULT;
 /*
  * Wrap UTF-8 text into lines.
  *
- * Treats all whitespace (including '\n') as inter-word spaces and collapses
- * it.  Use wcwidth_wrap_u8_text() to preserve input newlines as paragraph breaks.
+ * Break opportunities follow UAX #14 by default.  With replace_whitespace (the
+ * default), '\n' and other ASCII whitespace are replaced with spaces and
+ * collapsed; with replace_whitespace=false, hard line breaks are honored.
+ * Use wcwidth_wrap_u8_text() to preserve input newlines as paragraph breaks.
  *
  * Returns 0 on success, -1 on allocation error, and -2 when the placeholder
- * does not fit within the given width (max_lines truncation).
- * On success, *out points to a single malloc'd buffer containing all lines,
- * separated by '\n' (no trailing newline).  *out_len is the total byte length.
- * The caller does a single free(*out) to release memory.
+ * does not fit (max_lines truncation).  On success, *out points to a single
+ * malloc'd buffer containing all lines, separated by '\n' (no trailing
+ * newline), with *out_len its total byte length.  The caller frees *out once.
  */
 int wcwidth_wrap_u8(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, char **out,
                     size_t *out_len);

@@ -59,6 +59,24 @@ wcwidth_class_paged8_get(uint32_t ucs, uint32_t min, uint32_t max, unsigned shif
 }
 
 /*
+ * Look up a byte-wide class of *ucs* in a paged table, or 0 when out of range.
+ *
+ * Each page holds ``1 << shift`` entries, so the page number is shifted rather than doubled.
+ */
+static inline unsigned
+wcwidth_class_paged8_get8(uint32_t ucs, uint32_t min, uint32_t max, unsigned shift,
+                          const uint8_t *index, const uint8_t *pool)
+{
+    uint32_t offset;
+
+    if (ucs < min || ucs > max) {
+        return 0;
+    }
+    offset = ucs - min;
+    return pool[((size_t) index[offset >> shift] << shift) + (offset & ((1u << shift) - 1u))];
+}
+
+/*
  * Terminal override record layouts.
  *
  * The six single-codepoint categories are the merged override intervals;

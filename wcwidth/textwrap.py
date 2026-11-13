@@ -9,6 +9,7 @@ from __future__ import annotations
 
 # std imports
 import os
+import re
 import secrets
 import textwrap
 
@@ -17,6 +18,7 @@ from typing import TYPE_CHECKING, Optional
 # local
 from ._width import width as wcwidth_width
 from .hyperlink import HyperlinkParams
+from .linebreak import _break_positions
 from .sgr_state import propagate_sgr as _propagate_sgr
 from .escape_sequences import ZERO_WIDTH_PATTERN, iter_sequences
 
@@ -33,6 +35,16 @@ else:
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Literal
+
+
+# UAX #14 hard line breaks (LB4, LB5).  CR LF is a single break.
+_MANDATORY_BREAKS = frozenset(('\n', '\r', '\r\n', '\x0b', '\x0c', '\x85',
+                               '\u2028', '\u2029'))
+
+# One-pass chunking is valid for printable ASCII when no punctuation touches a non-space and no
+# '(' '[' '{' precedes a space: UAX #14 then breaks only at spaces.
+_PLAIN_ASCII = re.compile(r'[!-/:-@\[-`{-~](?=[^ ])| (?=[!-/:-@\[-`{-~])|[([{] ')
+_PLAIN_CHUNK = re.compile(r'\S+|\s+')
 
 
 class SequenceTextWrapper(textwrap.TextWrapper):
@@ -60,6 +72,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                  tabsize: int = 8,
                  ambiguous_width: int = 1,
                  term_program: bool | str = False,
+                 line_break: Literal['unicode', 'ascii'] = 'unicode',
                  **kwargs: Any) -> None:
         """
         Initialize the wrapper.
@@ -75,13 +88,21 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
             .. versionadded:: 0.8.0
+        :param line_break: How to choose break opportunities.  ``'unicode'`` (default) follows
+            Unicode Standard Annex #14, like U+200B ZERO WIDTH SPACE and U+00A0 NO-BREAK SPACE,
+            while ``'ascii'`` matches :func:`textwrap.wrap`, which splits on ASCII whitespace, only.
+
+            .. versionadded:: 0.9.5
         :param kwargs: Additional arguments passed to :class:`textwrap.TextWrapper`.
         """
         super().__init__(width=width, **kwargs)
+        if line_break not in ('unicode', 'ascii'):
+            raise ValueError(f"invalid line_break {line_break!r} (must be 'unicode' or 'ascii')")
         self.control_codes = control_codes
         self.tabsize = tabsize
         self.ambiguous_width = ambiguous_width
         self.term_program = term_program
+        self.line_break = line_break
 
     @staticmethod
     def _next_hyperlink_id() -> str:
@@ -93,6 +114,15 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         return wcwidth_width(text, control_codes=self.control_codes, tabsize=self.tabsize,
                              ambiguous_width=self.ambiguous_width,
                              term_program=self.term_program)
+
+    _LINEBREAK_WHITESPACE_TRANS = str.maketrans({'\x85': ' ', '\u2028': ' ', '\u2029': ' '})
+
+    def _munge_whitespace(self, text: str) -> str:
+        """Collapse Unicode mandatory breaks when replace_whitespace is set."""
+        text = super()._munge_whitespace(text)
+        if self.replace_whitespace and self.line_break == 'unicode':
+            text = text.translate(self._LINEBREAK_WHITESPACE_TRANS)
+        return text
 
     def _strip_sequences(self, text: str) -> str:
         """Strip all terminal sequences from text."""
@@ -109,6 +139,39 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             if is_seq:
                 result.append(segment)
         return ''.join(result)
+
+    def _split_breaks(self, text: str) -> list[str]:
+        """Split text at UAX #14 break opportunities, keeping the break character."""
+        # pylint: disable=too-many-branches
+        if not text:
+            return []
+        if _PLAIN_ASCII.search(text) is None and text.isprintable() and text.isascii():
+            return _PLAIN_CHUNK.findall(text)
+        result: list[str] = []
+        start = 0
+        for end, mandatory in _break_positions(text, self.break_on_hyphens):
+            chunk = text[start:end]
+            if mandatory:
+                if chunk.endswith('\r\n'):
+                    body, marker = chunk[:-2], '\r\n'
+                else:
+                    body, marker = chunk[:-1], chunk[-1]
+                if body:
+                    result.append(body)
+                result.append(marker)
+            else:
+                # Keep a trailing run of breaking spaces as its own chunk, as textwrap does, so
+                # it is not counted against the next word when the line is filled.
+                split = len(chunk)
+                while split > 0 and chunk[split - 1].isspace():
+                    split -= 1
+                if 0 < split < len(chunk):
+                    result.append(chunk[:split])
+                    result.append(chunk[split:])
+                else:
+                    result.append(chunk)
+            start = end
+        return result
 
     def _split(self, text: str) -> list[str]:  # pylint: disable=too-many-locals
         r"""
@@ -168,9 +231,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         # Add sentinel for final position
         char_end.append(original_pos)
 
-        # Use parent's _split on the stripped text
-        # pylint: disable-next=protected-access
-        stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
+        if self.line_break == 'ascii':
+            # Use parent's _split on the stripped text
+            # pylint: disable-next=protected-access
+            stripped_chunks = textwrap.TextWrapper._split(self, stripped_text)
+        else:
+            stripped_chunks = self._split_breaks(stripped_text)
 
         # Handle text that contains only sequences (no visible characters).
         # Return the sequences as a single chunk to preserve them.
@@ -240,6 +306,12 @@ class SequenceTextWrapper(textwrap.TextWrapper):
         chunks = list(reversed(chunks))
 
         while chunks:
+            # A mandatory break begins a new line; omit empty lines.
+            while (self.line_break == 'unicode'
+                   and chunks and chunks[-1] in _MANDATORY_BREAKS):
+                del chunks[-1]
+            if not chunks:
+                break
             current_line: list[str] = []
             current_width = 0
 
@@ -269,6 +341,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
             # Greedily add chunks that fit
             while chunks:
                 chunk = chunks[-1]
+                if self.line_break == 'unicode' and chunk in _MANDATORY_BREAKS:
+                    break
                 chunk_width = self._width(chunk)
 
                 if current_width + chunk_width <= line_width:
@@ -556,6 +630,7 @@ def wrap(text: str, width: int = 70, *,
          replace_whitespace: bool = True,
          ambiguous_width: int = 1,
          term_program: bool | str = False,
+         line_break: Literal['unicode', 'ascii'] = 'unicode',
          initial_indent: str = '',
          subsequent_indent: str = '',
          fix_sentence_endings: bool = False,
@@ -568,9 +643,10 @@ def wrap(text: str, width: int = 70, *,
     r"""
     Wrap text to fit within given width, returning a list of wrapped lines.
 
-    Like :func:`textwrap.wrap`, but measures width in display cells, correctly
-    handling wide characters, combining marks, and terminal
-    escape sequences.
+    Like :func:`textwrap.wrap`, but measures width in display cells and chooses line breaks
+    using Unicode Standard Annex #14, correctly handling wide characters, combining marks, and
+    terminal escape sequences.  U+200B ZERO WIDTH SPACE is a break opportunity; U+00A0 NO-BREAK
+    SPACE and U+2060 WORD JOINER suppress breaks.
 
     :param text: Text to wrap, may contain terminal sequences.
     :param width: Maximum line width in display cells.
@@ -578,11 +654,12 @@ def wrap(text: str, width: int = 70, *,
     :param tabsize: Tab stop width for tab expansion.
     :param expand_tabs: If True (default), tab characters are expanded
         to spaces using ``tabsize``.
-    :param replace_whitespace: If True (default), each whitespace character
-        is replaced with a single space after tab expansion. When False,
-        control whitespace like ``\n`` has zero display width (unlike
-        :func:`textwrap.wrap` which counts ``len()``), so wrap points
-        may differ from stdlib for non-space whitespace characters.
+    :param replace_whitespace: If True (default), each ASCII whitespace character and
+        U+0085, U+2028 and U+2029 are replaced with a single space after tab expansion,
+        so mandatory breaks collapse. When False, ``\n``, ``\r``, ``\r\n``, ``\u000b``,
+        ``\u000c``, ``\u0085``, ``\u2028`` and ``\u2029`` are mandatory line breaks
+        (UAX #14 classes BK, CR, LF and NL) and are not counted for width, unlike
+        :func:`textwrap.wrap` which counts ``len()``.
     :param ambiguous_width: Width to use for East Asian Ambiguous (A)
         characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.
     :param term_program: Terminal software identifier for table correction.
@@ -592,6 +669,11 @@ def wrap(text: str, width: int = 70, *,
         such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.
 
         .. versionadded:: 0.8.0
+    :param line_break: How to choose break opportunities.  ``'unicode'`` (default) follows
+        Unicode Standard Annex #14.  ``'ascii'`` matches :func:`textwrap.wrap`, which splits
+        on ASCII whitespace only.
+
+        .. versionadded:: 0.9.5
     :param initial_indent: String prepended to first line.
     :param subsequent_indent: String prepended to subsequent lines.
     :param fix_sentence_endings: If True, ensure sentences are always
@@ -671,6 +753,7 @@ def wrap(text: str, width: int = 70, *,
         replace_whitespace=replace_whitespace,
         ambiguous_width=ambiguous_width,
         term_program=term_program,
+        line_break=line_break,
         initial_indent=initial_indent,
         subsequent_indent=subsequent_indent,
         fix_sentence_endings=fix_sentence_endings,
