@@ -240,9 +240,6 @@ TEST(wrap_lone_continuation_bytes)
     }
 }
 
-/*
- * ESC bytes that do not begin a recognised sequence must pass through as text.
- */
 TEST(wrap_unknown_escape)
 {
     static const char *const inputs[] = {"\x1b", "\x1bZ", "\x1b[", "a\x1bZb"};
@@ -262,20 +259,299 @@ TEST(wrap_unknown_escape)
     }
 }
 
-/*
- * A drop_whitespace line whose visible text is empty but which carries escape
- * sequences still attached to the following whitespace chunk.
- */
 TEST(wrap_sequence_only_whitespace_line)
 {
     char *out = NULL;
     size_t len = 0;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"a", "\x1b\x1b"};
+    const char *exp[] = {"a"};
 
     o.width = 1;
     ASSERT_EQ(0, wcwidth_wrap_u8("a \x1b  \x1b", 6, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_trailing_escape_after_dropped_space)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a\x1b[0m"};
+
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a  \x1b[0m", 7, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_escape_appended_to_last_chunk)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a b\x1b[0m"};
+
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a b  \x1b[0m", 9, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_escape_only_tail_dropped)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\x1b[31ma"};
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31ma  \x1b[0m", 12, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_whitespace_only_with_escapes)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("   \x1b[31m   \x1b[0m", 15, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(wrap_escape_moves_to_next_line)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a", "\x1b[0mb"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a  \x1b[0m b", 9, &o, &out, &len));
     check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_sgr_long_word)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\x1b[31mabc", "def\x1b[0m"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31mabcdef\x1b[0m", 16, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_trailing_word_with_escape)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa", "\x1b[31mbb"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa \x1b[31mbb", 10, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_wide_first_grapheme)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\xe4\xb8\xad", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "\xe4\xb8\xad", 3));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31m\xe4\xb8\xad", 8, &o, &out, &len));
+    ASSERT_EQ(0, memcmp(out, "\x1b[31m\xe4\xb8\xad", 8));
+    free(out);
+}
+
+TEST(wrap_unicode_whitespace)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xc2\xa0", 4, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe2\x80\x83", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe1\x9a\x80", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe2\x80\x80", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe2\x80\x8a", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe3\x80\x80", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "ab", 2));
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xc2", 2, &o, &out, &len));
+    ASSERT_EQ((int64_t) 2, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a\xc2", 2));
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a\xe2\x80", 3));
+    free(out);
+}
+
+TEST(wrap_expands_tabs_and_resets_at_newline)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 20;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 9, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a       b", 9));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\nb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a b", 3));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\vb\fc", 5, &o, &out, &len));
+    ASSERT_EQ((int64_t) 5, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a b c", 5));
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\rb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a b", 3));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    o.expand_tabs = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "a b", 3));
+    free(out);
+}
+
+TEST(wrap_multibyte_word_split)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\xc3\xa9", "\xc3\xa9", "\xc3\xa9"};
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\xc3\xa9\xc3\xa9\xc3\xa9", 6, &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\xe2ZZ", 3, &o, &out, &len));
+    ASSERT_EQ((int64_t) 3, (int64_t) len);
+    ASSERT_EQ(0, memcmp(out, "\xe2ZZ", 3));
+    free(out);
+}
+
+TEST(wrap_whitespace_only)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 1;
+    ASSERT_EQ(0, wcwidth_wrap_u8("  ", 2, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("   ", 3, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(wrap_text_wraps_segment)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa", "bb", "cc"};
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8_text("aa bb\ncc", 8, &o, &out, &len));
+    check_lines(out, len, exp, 3);
+    free(out);
+}
+
+TEST(wrap_u32_encode_and_errors)
+{
+    uint32_t long_text[200];
+    uint32_t *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    size_t i;
+
+    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
+        long_text[i] = 0x4E2D;
+    o.width = 40;
+    ASSERT_EQ(0, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 1;
+    o.max_lines = 1;
+    o.placeholder = "xxxx";
+    ASSERT_EQ(-1, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+}
+
+TEST(wrap_max_lines_trims_previous_line)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"abc."};
+
+    o.width = 5;
+    o.max_lines = 2;
+    o.placeholder = ".";
+    ASSERT_EQ(0, wcwidth_wrap_u8("abc  \x1b[0m ddddd eeeee", 21, &o, &out, &len));
+    check_lines(out, len, exp, 1);
     free(out);
 }
 
@@ -365,153 +641,249 @@ TEST(wrap_preserves_color_after_dropped_leading_space)
     }
 }
 
-TEST(wrap_sgr_long_word)
+TEST(wrap_uax14_break_opportunities)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"\x1b[31mabc", "def\x1b[0m"};
+    const char *zwsp[] = {"foo\xe2\x80\x8b", "bar"};
+    const char *ideographic[] = {"aaa", "bbb"};
 
-    o.width = 3;
-    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31mabcdef\x1b[0m", 16, &o, &out, &len));
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("foo\xe2\x80\x8b"
+                                 "bar",
+                                 9, &o, &out, &len));
+    check_lines(out, len, zwsp, 2);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xe3\x80\x80"
+                                 "bbb",
+                                 9, &o, &out, &len));
+    check_lines(out, len, ideographic, 2);
+    free(out);
+}
+
+TEST(wrap_uax14_no_break)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *nbsp[] = {"aaa\xc2\xa0"
+                          "bbb"};
+    const char *word_joiner[] = {"aaa\xe2\x81\xa0"
+                                 "bbb"};
+
+    o.width = 4;
+    o.break_long_words = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xc2\xa0"
+                                 "bbb",
+                                 8, &o, &out, &len));
+    check_lines(out, len, nbsp, 1);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xe2\x81\xa0"
+                                 "bbb",
+                                 9, &o, &out, &len));
+    check_lines(out, len, word_joiner, 1);
+    free(out);
+}
+
+TEST(wrap_soft_hyphen)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aaa\xc2\xad", "bbb"};
+
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aaa\xc2\xad"
+                                 "bbb",
+                                 8, &o, &out, &len));
     check_lines(out, len, exp, 2);
     free(out);
 }
 
-TEST(wrap_trailing_word_with_escape)
+TEST(wrap_break_on_hyphens)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"aa", "\x1b[31mbb"};
+    const char *hyphen_break[] = {"a-", "bcdef"};
+    const char *plain_break[] = {"a-bcd", "ef"};
+    const char *leading_break[] = {"-ab", "cde", "f"};
+    const char *sgr_break[] = {"\x1b[31m-abc", "def\x1b[0m"};
 
-    o.width = 3;
-    ASSERT_EQ(0, wcwidth_wrap_u8("aa \x1b[31mbb", 10, &o, &out, &len));
-    check_lines(out, len, exp, 2);
-    free(out);
-}
-
-TEST(wrap_wide_first_grapheme)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-
-    o.width = 1;
-    ASSERT_EQ(0, wcwidth_wrap_u8("\xe4\xb8\xad", 3, &o, &out, &len));
-    ASSERT_EQ((int64_t) 3, (int64_t) len);
-    ASSERT_EQ(0, memcmp(out, "\xe4\xb8\xad", 3));
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, hyphen_break, 2);
     free(out);
 
-    o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 1;
-    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31m\xe4\xb8\xad", 8, &o, &out, &len));
-    ASSERT_EQ(0, memcmp(out, "\x1b[31m\xe4\xb8\xad", 8));
-    free(out);
-}
-
-TEST(wrap_unicode_whitespace)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-
-    o.width = 2;
-    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xc2\xa0", 4, &o, &out, &len));
-    ASSERT_EQ((int64_t) 2, (int64_t) len);
-    ASSERT_EQ(0, memcmp(out, "ab", 2));
-    free(out);
-
-    o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    o.width = 2;
-    ASSERT_EQ(0, wcwidth_wrap_u8("ab\xe2\x80\x83", 5, &o, &out, &len));
-    ASSERT_EQ((int64_t) 2, (int64_t) len);
-    ASSERT_EQ(0, memcmp(out, "ab", 2));
-    free(out);
-}
-
-TEST(wrap_expands_tabs_and_resets_at_newline)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-
-    o.width = 20;
-    ASSERT_EQ(0, wcwidth_wrap_u8("a\tb", 3, &o, &out, &len));
-    ASSERT_EQ((int64_t) 9, (int64_t) len);
-    ASSERT_EQ(0, memcmp(out, "a       b", 9));
+    o.break_on_hyphens = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, plain_break, 2);
     free(out);
 
     o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 5;
-    ASSERT_EQ(0, wcwidth_wrap_u8("a\nb", 3, &o, &out, &len));
-    ASSERT_EQ((int64_t) 3, (int64_t) len);
-    ASSERT_EQ(0, memcmp(out, "a b", 3));
+    o.line_break = WCWIDTH_LINE_BREAK_ASCII;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, hyphen_break, 2);
     free(out);
+
+    o.break_on_hyphens = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a-bcdef", 7, &o, &out, &len));
+    check_lines(out, len, plain_break, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("-abcdef", 7, &o, &out, &len));
+    check_lines(out, len, leading_break, 3);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31m-abcdef\x1b[0m", 16, &o, &out, &len));
+    check_lines(out, len, sgr_break, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 3;
+    {
+        const char *unknown[] = {"\x1bZ-ab", "cde", "f"};
+
+        ASSERT_EQ(0, wcwidth_wrap_u8("\x1bZ-abcdef", 10, &o, &out, &len));
+        check_lines(out, len, unknown, 3);
+        free(out);
+    }
 }
 
-TEST(wrap_whitespace_only)
+/* An empty line leaves the line buffer NULL; zero-length copies must not touch it. */
+TEST(wrap_empty_line)
 {
-    char *out;
-    size_t len;
+    char *out = NULL;
+    size_t len = 0;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *text = " \n ";
 
     o.width = 1;
-    ASSERT_EQ(0, wcwidth_wrap_u8("  ", 2, &o, &out, &len));
+    o.break_long_words = false;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, 3, &o, &out, &len));
     ASSERT_EQ((int64_t) 0, (int64_t) len);
     free(out);
 
-    ASSERT_EQ(0, wcwidth_wrap_u8_text("   ", 3, &WCWIDTH_WRAP_OPTS_DEFAULT, &out, &len));
-    ASSERT_EQ((int64_t) 0, (int64_t) len);
-    free(out);
-}
-
-TEST(wrap_text_wraps_segment)
-{
-    char *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"aa", "bb", "cc"};
-
-    o.width = 2;
-    ASSERT_EQ(0, wcwidth_wrap_u8_text("aa bb\ncc", 8, &o, &out, &len));
-    check_lines(out, len, exp, 3);
-    free(out);
-}
-
-TEST(wrap_u32_encode_and_errors)
-{
-    uint32_t long_text[200];
-    uint32_t *out;
-    size_t len;
-    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    size_t i;
-
-    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
-        long_text[i] = 0x4E2D;
-    o.width = 40;
-    ASSERT_EQ(0, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+    o.drop_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, 3, &o, &out, &len));
     free(out);
 
     o = WCWIDTH_WRAP_OPTS_DEFAULT;
     o.width = 1;
+    o.break_long_words = false;
+    o.replace_whitespace = false;
     o.max_lines = 1;
-    o.placeholder = "xxxx";
-    ASSERT_EQ(-1, wcwidth_wrap_u32(long_text, 200, &o, &out, &len));
+    ASSERT_EQ(-2, wcwidth_wrap_u8(text, 3, &o, &out, &len));
+    free(out);
 }
 
-TEST(wrap_max_lines_trims_previous_line)
+TEST(wrap_mandatory_breaks)
 {
     char *out;
     size_t len;
     wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
-    const char *exp[] = {"abc\x1b[0m."};
+    const char *exp[] = {"a", "b"};
 
-    o.width = 5;
-    o.max_lines = 2;
-    o.placeholder = ".";
-    ASSERT_EQ(0, wcwidth_wrap_u8("abc  \x1b[0m ddddd eeeee", 21, &o, &out, &len));
-    check_lines(out, len, exp, 1);
+    o.width = 10;
+    o.replace_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\nb", 3, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\r\nb", 4, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    const char *collapsed[] = {"a b"};
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xc2\x85"
+                                 "b",
+                                 4, &o, &out, &len));
+    check_lines(out, len, collapsed, 1);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80\xa8"
+                                 "b",
+                                 5, &o, &out, &len));
+    check_lines(out, len, collapsed, 1);
+    free(out);
+
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80\xa9"
+                                 "b",
+                                 5, &o, &out, &len));
+    check_lines(out, len, collapsed, 1);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 10;
+    o.replace_whitespace = false;
+    {
+        const char *joined[] = {"ab"};
+
+        ASSERT_EQ(0, wcwidth_wrap_u8("\nab", 3, &o, &out, &len));
+        check_lines(out, len, joined, 1);
+        free(out);
+        ASSERT_EQ(0, wcwidth_wrap_u8("\r\nab", 4, &o, &out, &len));
+        check_lines(out, len, joined, 1);
+        free(out);
+    }
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\vb", 3, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\fb", 3, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\rb", 3, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xc2\x85"
+                                 "b",
+                                 4, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80\xa8"
+                                 "b",
+                                 5, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("a\xe2\x80\xa9"
+                                 "b",
+                                 5, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("\n", 1, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+    ASSERT_EQ(0, wcwidth_wrap_u8("\r\n", 2, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(wrap_ascii_mode)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"foo\xe2\x80\x8b"
+                         "b",
+                         "ar"};
+
+    o.width = 4;
+    o.line_break = WCWIDTH_LINE_BREAK_ASCII;
+    ASSERT_EQ(0, wcwidth_wrap_u8("foo\xe2\x80\x8b"
+                                 "bar",
+                                 9, &o, &out, &len));
+    check_lines(out, len, exp, 2);
     free(out);
 }
 
@@ -529,6 +901,11 @@ main(void)
     RUN_TEST(wrap_lone_continuation_bytes);
     RUN_TEST(wrap_unknown_escape);
     RUN_TEST(wrap_sequence_only_whitespace_line);
+    RUN_TEST(wrap_trailing_escape_after_dropped_space);
+    RUN_TEST(wrap_escape_appended_to_last_chunk);
+    RUN_TEST(wrap_escape_only_tail_dropped);
+    RUN_TEST(wrap_whitespace_only_with_escapes);
+    RUN_TEST(wrap_escape_moves_to_next_line);
     RUN_TEST(wrap_max_lines_placeholder);
     RUN_TEST(wrap_drops_leading_whitespace_only_line);
     RUN_TEST(wrap_sgr_long_word);
@@ -536,9 +913,17 @@ main(void)
     RUN_TEST(wrap_wide_first_grapheme);
     RUN_TEST(wrap_unicode_whitespace);
     RUN_TEST(wrap_expands_tabs_and_resets_at_newline);
+    RUN_TEST(wrap_multibyte_word_split);
     RUN_TEST(wrap_whitespace_only);
     RUN_TEST(wrap_text_wraps_segment);
     RUN_TEST(wrap_u32_encode_and_errors);
     RUN_TEST(wrap_max_lines_trims_previous_line);
+    RUN_TEST(wrap_uax14_break_opportunities);
+    RUN_TEST(wrap_uax14_no_break);
+    RUN_TEST(wrap_soft_hyphen);
+    RUN_TEST(wrap_break_on_hyphens);
+    RUN_TEST(wrap_empty_line);
+    RUN_TEST(wrap_mandatory_breaks);
+    RUN_TEST(wrap_ascii_mode);
     return test_summary();
 }

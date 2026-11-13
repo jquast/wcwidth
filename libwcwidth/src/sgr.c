@@ -6,55 +6,23 @@
 #include "wcwidth_assert.h"
 
 #include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
 
-/* Stack capacity for collected SGR parameters; longer runs grow onto the
- * heap. */
-#define WCWIDTH_SGR_MAX_PARAMS 64
-
-/*
- * Ensure *params* has room for one more entry, growing from the caller's
- * stack array onto the heap on first overflow.  Returns false on allocation
- * failure, in which case the caller applies what it has already collected.
- */
-static bool
-sgr_params_reserve(int **params, int *stack_params, size_t *cap, int count)
+/* One semicolon-delimited parameter: an integer or a colon-separated tuple. */
+typedef struct
 {
-    size_t new_cap;
-    int *grown;
+    int values[WCWIDTH_SGR_COLOR_MAX];
+    int count;
+    bool tuple;
+} sgr_token_t;
 
-    if ((size_t) count < *cap) {
-        return true;
-    }
-#if SIZE_MAX <= UINT32_MAX
-    /* Doubling the capacity can wrap the byte count. */
-    if (*cap > SIZE_MAX / (2 * sizeof(int))) {
-        return false;
-    }
-#else
-    WCWIDTH_ASSERT(*cap <= SIZE_MAX / (2 * sizeof(int)));
-#endif
-    new_cap = *cap * 2;
-    if (*params == stack_params) {
-        grown = (int *) malloc(new_cap * sizeof(int));
-        if (grown != NULL) {
-            memcpy(grown, stack_params, *cap * sizeof(int));
-        }
-    }
-    else {
-        grown = (int *) realloc(*params, new_cap * sizeof(int));
-    }
-    if (grown == NULL) {
-        return false;
-    }
-    *params = grown;
-    *cap = new_cap;
-    return true;
-}
+typedef struct
+{
+    const char *p;
+    const char *end;
+} sgr_reader_t;
 
 const wcwidth_sgr_state_t WCWIDTH_SGR_STATE_DEFAULT = {0};
 
@@ -115,16 +83,90 @@ set_color(int *dst, int *dst_len, const int *src, int src_len)
     }
 }
 
+static bool sgr_reader_next(sgr_reader_t *reader, sgr_token_t *token);
+static bool sgr_read_extended_color(sgr_reader_t *reader, int base, int *color, int *color_len);
+
+static void
+apply_integer_param(wcwidth_sgr_state_t *state, int val)
+{
+    if (val == 0) {
+        *state = WCWIDTH_SGR_STATE_DEFAULT;
+    }
+    else if (val == 1) {
+        state->bold = true;
+    }
+    else if (val == 2) {
+        state->dim = true;
+    }
+    else if (val == 3) {
+        state->italic = true;
+    }
+    else if (val == 4) {
+        state->underline = true;
+    }
+    else if (val == 5) {
+        state->blink = true;
+    }
+    else if (val == 6) {
+        state->rapid_blink = true;
+    }
+    else if (val == 7) {
+        state->inverse = true;
+    }
+    else if (val == 8) {
+        state->hidden = true;
+    }
+    else if (val == 9) {
+        state->strikethrough = true;
+    }
+    else if (val == 21) {
+        state->double_underline = true;
+    }
+    else if (val == 22) {
+        state->bold = false;
+        state->dim = false;
+    }
+    else if (val == 23) {
+        state->italic = false;
+    }
+    else if (val == 24) {
+        state->underline = false;
+        state->double_underline = false;
+    }
+    else if (val == 25) {
+        state->blink = false;
+        state->rapid_blink = false;
+    }
+    else if (val == 27) {
+        state->inverse = false;
+    }
+    else if (val == 28) {
+        state->hidden = false;
+    }
+    else if (val == 29) {
+        state->strikethrough = false;
+    }
+    else if ((val >= 30 && val <= 37) || (val >= 90 && val <= 97)) {
+        state->fg[0] = val;
+        state->fg_len = 1;
+    }
+    else if ((val >= 40 && val <= 47) || (val >= 100 && val <= 107)) {
+        state->bg[0] = val;
+        state->bg_len = 1;
+    }
+    else if (val == 39) {
+        state->fg_len = 0;
+    }
+    else if (val == 49) {
+        state->bg_len = 0;
+    }
+}
+
 void
 wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sgr_params_len)
 {
-    int stack_params[WCWIDTH_SGR_MAX_PARAMS];
-    int *params = stack_params;
-    size_t params_cap = WCWIDTH_SGR_MAX_PARAMS;
-    int nparams = 0;
-    const char *p = sgr_params;
-    const char *end = sgr_params + sgr_params_len;
-    int i;
+    sgr_reader_t reader;
+    sgr_token_t token;
 
     /* Empty params is equivalent to "0" (reset): \x1b[m. */
     if (sgr_params_len == 0) {
@@ -132,190 +174,157 @@ wcwidth_sgr_update(wcwidth_sgr_state_t *state, const char *sgr_params, size_t sg
         return;
     }
 
-    /* Phase 1: parse all semicolon-separated segments.
-     * Colon-separated tuples (ITU T.416 extended colors) are applied
-     * immediately.  Plain integers are collected for phase 2. */
-    while (p < end) {
-        const char *seg_end = p;
+    reader.p = sgr_params;
+    reader.end = sgr_params + sgr_params_len;
 
-        while (seg_end < end && *seg_end != ';') {
-            seg_end++;
-        }
-        {
-            size_t seg_len = (size_t) (seg_end - p);
+    /* Apply parameters as they are read */
+    while (sgr_reader_next(&reader, &token)) {
+        if (!token.tuple) {
+            int val = token.values[0];
 
-            if (seg_len == 0) {
-                if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
-                    break;
+            if (val == 38 || val == 48) {
+                int color[WCWIDTH_SGR_COLOR_MAX];
+                int color_len = 0;
+
+                if (sgr_read_extended_color(&reader, val, color, &color_len)) {
+                    if (val == 38) {
+                        set_color(state->fg, &state->fg_len, color, color_len);
+                    }
+                    else {
+                        set_color(state->bg, &state->bg_len, color, color_len);
+                    }
                 }
-                params[nparams++] = 0;
             }
             else {
-                int has_colon = 0;
-                size_t j;
-
-                for (j = 0; j < seg_len; j++) {
-                    if (p[j] == ':') {
-                        has_colon = 1;
-                        break;
-                    }
-                }
-
-                if (has_colon) {
-                    int tuple[WCWIDTH_SGR_COLOR_MAX];
-                    int n = parse_colon_tuple(p, seg_len, tuple, WCWIDTH_SGR_COLOR_MAX);
-                    if (n >= 2 && tuple[0] == 38) {
-                        set_color(state->fg, &state->fg_len, tuple, n);
-                    }
-                    else if (n >= 2 && tuple[0] == 48) {
-                        set_color(state->bg, &state->bg_len, tuple, n);
-                    }
-                }
-                else {
-                    if (!sgr_params_reserve(&params, stack_params, &params_cap, nparams)) {
-                        break;
-                    }
-                    params[nparams++] = parse_int(p, seg_len);
-                }
+                apply_integer_param(state, val);
             }
         }
-
-        p = seg_end;
-        if (p < end && *p == ';') {
-            p++;
-        }
-    }
-
-    /* Phase 2: apply integer parameters in order. */
-    for (i = 0; i < nparams; i++) {
-        int val = params[i];
-
-        if (val == 0) {
-            *state = WCWIDTH_SGR_STATE_DEFAULT;
-            continue;
-        }
-
-        if (val == 1) {
-            state->bold = true;
-        }
-        else if (val == 2) {
-            state->dim = true;
-        }
-        else if (val == 3) {
-            state->italic = true;
-        }
-        else if (val == 4) {
-            state->underline = true;
-        }
-        else if (val == 5) {
-            state->blink = true;
-        }
-        else if (val == 6) {
-            state->rapid_blink = true;
-        }
-        else if (val == 7) {
-            state->inverse = true;
-        }
-        else if (val == 8) {
-            state->hidden = true;
-        }
-        else if (val == 9) {
-            state->strikethrough = true;
-        }
-        else if (val == 21) {
-            state->double_underline = true;
-        }
-        else if (val == 22) {
-            state->bold = false;
-            state->dim = false;
-        }
-        else if (val == 23) {
-            state->italic = false;
-        }
-        else if (val == 24) {
-            state->underline = false;
-            state->double_underline = false;
-        }
-        else if (val == 25) {
-            state->blink = false;
-            state->rapid_blink = false;
-        }
-        else if (val == 27) {
-            state->inverse = false;
-        }
-        else if (val == 28) {
-            state->hidden = false;
-        }
-        else if (val == 29) {
-            state->strikethrough = false;
-        }
-        else if ((val >= 30 && val <= 37) || (val >= 90 && val <= 97)) {
-            state->fg[0] = val;
-            state->fg_len = 1;
-        }
-        else if ((val >= 40 && val <= 47) || (val >= 100 && val <= 107)) {
-            state->bg[0] = val;
-            state->bg_len = 1;
-        }
-        else if (val == 39) {
-            state->fg_len = 0;
-        }
-        else if (val == 49) {
-            state->bg_len = 0;
-        }
-        else if (val == 38 && i + 2 < nparams) {
-            int mode = params[++i];
-
-            if (mode == 5 && i + 1 < nparams) {
-                int n = params[++i];
-
-                state->fg[0] = 38;
-                state->fg[1] = 5;
-                state->fg[2] = n;
-                state->fg_len = 3;
+        else if (token.count >= 2 && (token.values[0] == 38 || token.values[0] == 48)) {
+            if (token.values[0] == 38) {
+                set_color(state->fg, &state->fg_len, token.values, token.count);
             }
-            else if (mode == 2 && i + 3 < nparams) {
-                int r = params[++i];
-                int g = params[++i];
-                int b = params[++i];
-
-                state->fg[0] = 38;
-                state->fg[1] = 2;
-                state->fg[2] = r;
-                state->fg[3] = g;
-                state->fg[4] = b;
-                state->fg_len = 5;
-            }
-        }
-        else if (val == 48 && i + 2 < nparams) {
-            int mode = params[++i];
-
-            if (mode == 5 && i + 1 < nparams) {
-                int n = params[++i];
-
-                state->bg[0] = 48;
-                state->bg[1] = 5;
-                state->bg[2] = n;
-                state->bg_len = 3;
-            }
-            else if (mode == 2 && i + 3 < nparams) {
-                int r = params[++i];
-                int g = params[++i];
-                int b = params[++i];
-
-                state->bg[0] = 48;
-                state->bg[1] = 2;
-                state->bg[2] = r;
-                state->bg[3] = g;
-                state->bg[4] = b;
-                state->bg_len = 5;
+            else {
+                set_color(state->bg, &state->bg_len, token.values, token.count);
             }
         }
     }
+}
 
-    if (params != stack_params) {
-        free(params);
+/*
+ * Read the next semicolon-delimited parameter.  Empty parameters are zero.
+ * Returns false at the end of the string.
+ */
+static bool
+sgr_reader_next(sgr_reader_t *reader, sgr_token_t *token)
+{
+    const char *seg_end;
+    size_t seg_len;
+    size_t i;
+    bool has_colon = false;
+
+    if (reader->p >= reader->end) {
+        return false;
     }
+
+    seg_end = reader->p;
+    while (seg_end < reader->end && *seg_end != ';') {
+        seg_end++;
+    }
+    seg_len = (size_t) (seg_end - reader->p);
+
+    token->count = 1;
+    token->tuple = false;
+    token->values[0] = 0;
+
+    for (i = 0; i < seg_len; i++) {
+        if (reader->p[i] == ':') {
+            has_colon = true;
+            break;
+        }
+    }
+    if (has_colon) {
+        token->tuple = true;
+        token->count = parse_colon_tuple(reader->p, seg_len, token->values, WCWIDTH_SGR_COLOR_MAX);
+    }
+    else if (seg_len > 0) {
+        token->values[0] = parse_int(reader->p, seg_len);
+    }
+
+    reader->p = seg_end;
+    if (reader->p < reader->end && *reader->p == ';') {
+        reader->p++;
+    }
+    return true;
+}
+
+/*
+ * Read the parameters of an extended color after its 38/48 code.
+ *
+ * xterm and kitty both accept the base as a separate parameter with a colon group for the mode and
+ * components, for example 38;5:196 and 38;2:1:2:3.  See parse_extended_colors() in xterm's
+ * charproc.c and _parse_sgr() in kitty's vt-parser.c.
+ *
+ * Returns true when a complete color was read.  On failure the parameters read are consumed.
+ */
+static bool
+sgr_read_extended_color(sgr_reader_t *reader, int base, int *color, int *color_len)
+{
+    sgr_token_t token;
+    int mode;
+
+    if (!sgr_reader_next(reader, &token)) {
+        return false;
+    }
+
+    if (token.tuple) {
+        mode = token.values[0];
+        if (mode == 5 && token.count == 2) {
+            color[0] = base;
+            color[1] = 5;
+            color[2] = token.values[1];
+            *color_len = 3;
+            return true;
+        }
+        if (mode == 2 && (token.count == 4 || token.count == 5)) {
+            int i;
+
+            color[0] = base;
+            color[1] = 2;
+            for (i = 1; i < token.count; i++) {
+                color[i + 1] = token.values[i];
+            }
+            *color_len = token.count + 1;
+            return true;
+        }
+        return false;
+    }
+
+    mode = token.values[0];
+    if (mode == 5) {
+        if (!sgr_reader_next(reader, &token) || token.tuple) {
+            return false;
+        }
+        color[0] = base;
+        color[1] = 5;
+        color[2] = token.values[0];
+        *color_len = 3;
+        return true;
+    }
+    if (mode == 2) {
+        int i;
+
+        color[0] = base;
+        color[1] = 2;
+        for (i = 0; i < 3; i++) {
+            if (!sgr_reader_next(reader, &token) || token.tuple) {
+                return false;
+            }
+            color[2 + i] = token.values[0];
+        }
+        *color_len = 5;
+        return true;
+    }
+    return false;
 }
 
 bool
@@ -327,7 +336,7 @@ wcwidth_sgr_is_active(const wcwidth_sgr_state_t *state)
 }
 
 /*
- * Append a decimal integer at *offset*, never writing past *out_cap*.
+ * Append a decimal integer at *offset*, within the *out_cap*-byte buffer.
  *
  * snprintf() returns the length it would have produced, so an unclamped
  * offset runs past out_cap, wraps out_cap - offset to a huge size_t, and

@@ -29,6 +29,7 @@
 #include "wcwidth/escape.h"
 #include "wcwidth/sgr.h"
 #include "wcwidth/grapheme.h"
+#include "wcwidth/linebreak.h"
 
 /* Return the codepoints of text in a new PyMem_Malloc'd buffer. */
 static uint32_t *
@@ -127,7 +128,7 @@ fastcall_varargs(const fastcall_stack *st, PyObject **kwargs_out)
 
 /* Index of keyword in a NULL-terminated parameter name list, or -1 when the
  * name is not a parameter of the method.  Names are compared by length first,
- * so the cost does not grow with the keyword's position in the list. */
+ * so the lookup does not slow down with the keyword's position in the list. */
 static Py_ssize_t
 keyword_index(PyObject *keyword, char *const *names)
 {
@@ -1166,28 +1167,25 @@ propagate_sgr_impl(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyOb
         c_line_lens[i] = (size_t)utf8_len;
     }
 
-    /* The C library can still fail for an SGR state beyond its reserved
-     * prefix space; fall back to the Python implementation in that case. */
-    if (wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines) < 0) {
-        PyErr_Clear();
-        result = call_python_function("wcwidth.sgr_state", "propagate_sgr", &st);
-    } else {
-        result = PyList_New(nlines);
-        if (result != NULL) {
-            for (i = 0; i < nlines; i++) {
-                PyObject *line = PyUnicode_FromStringAndSize(c_lines[i],
-                                                             (Py_ssize_t)c_out_lens[i]);
-                if (line == NULL) {
-                    Py_DECREF(result);
-                    result = NULL;
-                    break;
-                }
-                if (PyList_SetItem(result, i, line) < 0) {
-                    /* SetItem() steals the reference whether or not it fails */
-                    Py_DECREF(result);
-                    result = NULL;
-                    break;
-                }
+    /* Cannot fail: sgr.c asserts at compile time that the longest restore
+     * prefix fits WCWIDTH_SGR_PROPAGATE_SPARE. */
+    (void)wcwidth_sgr_propagate(c_lines, c_line_lens, c_out_lens, (size_t)nlines);
+
+    result = PyList_New(nlines);
+    if (result != NULL) {
+        for (i = 0; i < nlines; i++) {
+            PyObject *line =
+                PyUnicode_FromStringAndSize(c_lines[i], (Py_ssize_t)c_out_lens[i]);
+            if (line == NULL) {
+                Py_DECREF(result);
+                result = NULL;
+                break;
+            }
+            if (PyList_SetItem(result, i, line) < 0) {
+                /* SetItem() steals the reference whether or not it fails */
+                Py_DECREF(result);
+                result = NULL;
+                break;
             }
         }
     }
@@ -2083,6 +2081,127 @@ reject:
     }
 }
 
+/*
+ * line_breaks() returns the UAX #14 break opportunities as (index, mandatory) pairs.
+ * wcwidth.linebreak.iter_line_breaks() uses it when the extension is available.
+ */
+static PyObject *
+line_breaks_impl(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    static char *keywords[] = {"text", "hyphens", NULL};
+    PyObject *text = NULL;
+    int hyphens = 1;
+    uint32_t *cps = NULL;
+    size_t *breaks = NULL;
+    uint8_t *mandatory = NULL;
+    Py_ssize_t n;
+    size_t written;
+    size_t i;
+    PyObject *result = NULL;
+    fastcall_stack st = {args, nargs, kwnames};
+    Py_ssize_t k, nkw;
+
+    (void)module;
+    if (nargs > 2) {
+        goto reject;
+    }
+    if (nargs > 0) {
+        text = args[0];
+    }
+    if (nargs > 1 && py_object_as_bool(args[1], &hyphens) < 0) {
+        goto reject;
+    }
+    nkw = kwnames == NULL ? 0 : PyTuple_Size(kwnames);
+    for (k = 0; k < nkw; k++) {
+        PyObject *value = args[nargs + k];
+
+        switch (keyword_index(PyTuple_GetItem(kwnames, k), keywords)) {
+        case 0: /* text */
+            if (nargs > 0) {
+                goto reject;
+            }
+            text = value;
+            break;
+        case 1: /* hyphens */
+            if (py_object_as_bool(value, &hyphens) < 0) {
+                goto reject;
+            }
+            break;
+        default:
+            goto reject;
+        }
+    }
+    if (text == NULL || !PyUnicode_Check(text)) {
+        goto reject;
+    }
+    cps = unicode_codepoints(text, &n);
+    if (cps == NULL) {
+        return NULL;
+    }
+    if (n == 0) {
+        PyMem_Free(cps);
+        return PyList_New(0);
+    }
+    /* One break per codepoint at most, including the final position (LB3). */
+    breaks = PyMem_Malloc((size_t)n * sizeof(*breaks));
+    mandatory = PyMem_Malloc((size_t)n);
+    if (breaks == NULL || mandatory == NULL) {
+        goto fail;
+    }
+    written = wcwidth_linebreak_breaks_u32(cps, (size_t)n, breaks, mandatory, (size_t)n,
+                                           hyphens != 0);
+    if (written == (size_t)-1) {
+        goto fail;
+    }
+    result = PyList_New((Py_ssize_t)written);
+    if (result == NULL) {
+        goto fail;
+    }
+    for (i = 0; i < written; i++) {
+        PyObject *index = PyLong_FromSize_t(breaks[i]);
+        PyObject *item;
+
+        if (index == NULL) {
+            goto fail;
+        }
+        item = PyTuple_Pack(2, index, mandatory[i] ? Py_True : Py_False);
+        Py_DECREF(index);
+        if (item == NULL) {
+            goto fail;
+        }
+        /* SetItem() steals the reference whether or not it fails. */
+        if (PyList_SetItem(result, (Py_ssize_t)i, item) < 0) {
+            goto fail;
+        }
+    }
+    PyMem_Free(cps);
+    PyMem_Free(breaks);
+    PyMem_Free(mandatory);
+    return result;
+
+fail:
+    PyMem_Free(cps);
+    PyMem_Free(breaks);
+    PyMem_Free(mandatory);
+    Py_XDECREF(result);
+    return PyErr_NoMemory();
+
+reject:
+    {
+        PyObject *kwargs = NULL;
+        PyObject *callargs = fastcall_varargs(&st, &kwargs);
+
+        if (callargs != NULL) {
+            PyErr_Clear();
+            (void)PyArg_ParseTupleAndKeywords(callargs, kwargs, "U|p:line_breaks", keywords,
+                                              &text, &hyphens);
+            Py_DECREF(callargs);
+            Py_XDECREF(kwargs);
+        }
+        return NULL;
+    }
+}
+
 static PyMethodDef module_methods[] = {
     {"wcwidth", (PyCFunction)wcwidth_impl, METH_FASTCALL | METH_KEYWORDS,
      "wcwidth(wc, unicode_version='auto', ambiguous_width=1) -> int\n\n"
@@ -2125,6 +2244,9 @@ static PyMethodDef module_methods[] = {
      METH_FASTCALL | METH_KEYWORDS,
      "grapheme_boundary_before(unistr, pos) -> int\n\n"
      "Return the start index of the grapheme cluster containing pos - 1."},
+    {"line_breaks", (PyCFunction)line_breaks_impl, METH_FASTCALL | METH_KEYWORDS,
+     "line_breaks(text, hyphens=True) -> list[tuple[int, bool]]\n\n"
+     "Return the UAX #14 line break positions of text and whether each is mandatory."},
     {NULL, NULL, 0, NULL},
 };
 

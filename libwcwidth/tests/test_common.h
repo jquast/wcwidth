@@ -23,7 +23,8 @@ static const char *_current_test = NULL;
 
 #define FAIL(fmt, ...)                                                                             \
     do {                                                                                           \
-        fprintf(stderr, "FAIL: %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);              \
+        fprintf(stderr, "FAIL: %s: %s:%d: " fmt "\n", _current_test, __FILE__, __LINE__,           \
+                ##__VA_ARGS__);                                                                    \
         _tests_failed++;                                                                           \
         return;                                                                                    \
     } while (0)

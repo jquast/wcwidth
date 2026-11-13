@@ -435,7 +435,7 @@ escape_span_u32(const uint32_t *cp, size_t n, size_t idx)
         }
         WCWIDTH_ASSERT(j > 0);
         result =
-            (wcwidth_esc_result_t){.type = WCWIDTH_ESC_UNRECOGNIZED, .start = out, .length = 1};
+            (wcwidth_esc_result_t) {.type = WCWIDTH_ESC_UNRECOGNIZED, .start = out, .length = 1};
         bool ok = wcwidth_escape_classify(out, j, 0, &result);
         WCWIDTH_ASSERT(ok);
         WCWIDTH_ASSERT(result.length > 0);

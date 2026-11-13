@@ -61,6 +61,8 @@ def test_cmake_and_setuptools_source_lists_parity():
     assert py_sources == cm_sources == on_disk
 
 
+@pytest.mark.skipif(not wcwidth.HAS_C_EXTENSION,
+                    reason='C extension not loaded; there is no build mode to report')
 def test_c_extension_assert_mode():
     """The C extension reports whether assertions were compiled in."""
     # given,
@@ -579,9 +581,10 @@ def test_wcswidth_n_exceeds_length():
 
 
 def test_soft_hyphen():
-    # Test SOFT HYPHEN, category 'Cf' usually are zero-width, but most
-    # implementations agree to draw it was '1' cell, visually
-    # indistinguishable from a space, ' ' in Konsole, for example.
+    """U+00AD SOFT HYPHEN measures width 1, as most terminals render it."""
+    # SOFT HYPHEN, category 'Cf' is not well-defined or interpreted for terminals, width varies,
+    # but most are width 1, and so that is the default width chosen by wcwidth. I hope to provide
+    # correction tables for this later.
     assert wcwidth.wcwidth(chr(0x000ad)) == 1
 
 

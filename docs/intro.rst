@@ -66,9 +66,8 @@ This library may be considered to presume the terminal is enabled for DEC Privat
 ("Grapheme Clustering") by default, which may require to be enabled by a TUI application but
 is often the default mode for those terminals that support it.
 
-This library does not support any specific "legacy width" measurement by API, but it does provide
-Corrections_ for terminals using "legacy width" measurements or are without basic emoji or grapheme
-support.
+This library provides Corrections_ for terminals using "legacy width" measurements or lacking basic
+emoji or grapheme support, through its existing width APIs.
 
 See also:
 
@@ -88,22 +87,24 @@ Unlikely Sequences
 Most any codepoint may be concatenated with any other codepoint and terminal sequence, with
 disastrous and sometimes varying widths across different terminals. These are a kind of randomized
 stream of inputs, often analyzed by fuzzing or automatic AI code analysis.  For text unlikely to
-appear in any text published in any world language, this project is likely to reject these "bug
-fixes". Examples:
+appear in any text published in any world language, or sequences emitted or handled by any known
+terminal, this project is likely to reject these as "bug fixes".
+
+Some examples:
 
 - improve word-wrapping of ascii hyphen with combining character `#309`_
 - VS15 applying more than once to the same base character `#244`_
 - VS15 on a basic emoji, with even its intended width contested, `#211`_, `#234`_
 - unlikely zero-width joiner sequence, swallowing the following character `#230`_
 - a non-recommended emoji sequence `#134`_, discussion `#203`_.
+- OSC 8 hyperlink using custom metadata `#325`_.
 
 Support for non-recommended sequences varies between terminals, and the permutations of "possible,
-but unlikely" combining, variation, joiner, and attribute sequences are too many to enumerate with
-correction tables. Checking for the presence of unlikely sequences has a resource cost with arguably
-no benefit. And so, the displayed width of these is considered like C's undefined behavior.  Often
-times "correcting" width measurements of unlikely sequences costs extra resources with arguably no
-value to end users. In some cases where performance cost is negligible or code is simplified, these
-changes may sometimes be accepted anyway.
+but unlikely" combining, variation, joiner, and terminal sequences are too many to enumerate with
+correction tables. Checking for unlikely sequences sometimes has a resource cost with arguably no
+benefit. The displayed width of these is considered like C's undefined behavior, the width is not
+expected to be accurate and we don't necessarily strive to. In cases where performance cost is
+negligible, or the code is simplified, these changes may sometimes be accepted anyway.
 
 ========
 Overview
@@ -545,6 +546,7 @@ https://wcwidth.readthedocs.io/en/latest/related.html
 .. _#244: https://github.com/jquast/wcwidth/pull/244
 .. _#308: https://github.com/jquast/wcwidth/pull/308
 .. _#309: https://github.com/jquast/wcwidth/pull/309
+.. _#325: https://github.com/jquast/wcwidth/pull/325
 .. _`textwrap.wrap()`: https://docs.python.org/3/library/textwrap.html#textwrap.wrap
 .. _`str.ljust()`: https://docs.python.org/3/library/stdtypes.html#str.ljust
 .. _`str.rjust()`: https://docs.python.org/3/library/stdtypes.html#str.rjust

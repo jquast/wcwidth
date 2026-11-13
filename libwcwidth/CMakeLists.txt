@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Version is stamped into the generated header by bin/update-tables.py, read it from there
-# rather than duplicating it here, where it silently rots.  A PEP 440 pre-release suffix
-# is dropped: CMake project() versions are numeric only.
+# Version is stamped into the generated header by bin/update-tables.py, read it from
+# there to keep one copy.  A PEP 440 pre-release suffix is dropped: CMake project()
+# versions are numeric only.
 file(STRINGS include/wcwidth/wcwidth_config.h _wcwidth_version_line
      REGEX "^#define WCWIDTH_VERSION \"")
 string(REGEX REPLACE ".*\"([0-9]+\\.[0-9]+\\.[0-9]+)[^\"]*\".*" "\\1"
@@ -41,11 +41,13 @@ set(LIBWCWIDTH_SOURCES
     src/terminal_override.c
     src/utf8.c
     src/wcwidth_assert.c
+    src/linebreak.c
     # Generated tables
     src/tables/table_wide.c
     src/tables/table_zero.c
     src/tables/table_ambiguous.c
     src/tables/table_grapheme.c
+    src/tables/table_linebreak.c
     src/tables/table_mc.c
     src/tables/table_vs15.c
     src/tables/table_vs16.c
@@ -57,6 +59,13 @@ set(LIBWCWIDTH_SOURCES
 
 add_library(wcwidth ${LIBWCWIDTH_SOURCES})
 add_library(wcwidth::wcwidth ALIAS wcwidth)
+
+# The soname tracks the ABI.  Raise SOVERSION when an existing binary could misbehave
+# when linked with the next release, (libwcwidth0 becomes libwcwidth1) all dependencies
+# must be rebuilt.
+set_target_properties(wcwidth PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 0)
 
 target_include_directories(wcwidth
     PUBLIC
@@ -79,6 +88,7 @@ if(BUILD_TESTING)
         tests/test_clip.c
         tests/test_align.c
         tests/test_grapheme.c
+        tests/test_linebreak.c
         tests/test_escape.c
         tests/test_sgr.c
         tests/test_text_sizing.c
@@ -92,6 +102,8 @@ if(BUILD_TESTING)
         add_executable(${test_name} ${test_src})
         target_link_libraries(${test_name} PRIVATE wcwidth)
         target_include_directories(${test_name} PRIVATE tests)
+        target_compile_definitions(${test_name} PRIVATE
+            WCWIDTH_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tests")
         add_test(NAME ${test_name} COMMAND ${test_name})
     endforeach()
 

@@ -362,6 +362,53 @@ sc_wcswidth(void)
     wcstwidth_u8(text, sizeof(text), 1, "kitty");
 }
 
+static void
+sc_wrap_lines_offsets(void)
+{
+    wcwidth_wrap_opts_t opts = WCWIDTH_WRAP_OPTS_DEFAULT;
+    char *out = NULL;
+    size_t *offsets = NULL;
+    size_t len = 0;
+    size_t count = 0;
+
+    opts.width = 5;
+    wcwidth_wrap_lines_u8("aa bb cc dd ee", 14, &opts, &out, &len, &offsets, &count);
+    free(out);
+    free(offsets);
+}
+
+static void
+sc_wrap_grows_lines(void)
+{
+    wcwidth_wrap_opts_t opts = WCWIDTH_WRAP_OPTS_DEFAULT;
+    char *out = NULL;
+    size_t len = 0;
+
+    opts.width = 1;
+    wcwidth_wrap_u8(long_word, sizeof(long_word) - 1, &opts, &out, &len);
+    free(out);
+}
+
+static void
+sc_wrap_uax14(void)
+{
+    wcwidth_wrap_opts_t opts = WCWIDTH_WRAP_OPTS_DEFAULT;
+    char *out = NULL;
+    size_t len = 0;
+    const char *text = "ab \xe2\x80\xa8"
+                       " cd \x1b[31mef\x1b[0m";
+
+    opts.width = 4;
+    opts.replace_whitespace = false;
+    wcwidth_wrap_u8(text, strlen(text), &opts, &out, &len);
+    free(out);
+
+    out = NULL;
+    len = 0;
+    wcwidth_wrap_u8("\x1bZ", 2, &opts, &out, &len);
+    free(out);
+}
+
 TEST(wrap_lines_offsets_baseline)
 {
     wcwidth_wrap_opts_t opts = WCWIDTH_WRAP_OPTS_DEFAULT;
@@ -416,5 +463,8 @@ main(void)
     sweep(sc_utf8);
     sweep(sc_width);
     sweep(sc_wcswidth);
+    sweep(sc_wrap_lines_offsets);
+    sweep(sc_wrap_grows_lines);
+    sweep(sc_wrap_uax14);
     return test_summary();
 }

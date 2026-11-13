@@ -275,7 +275,7 @@ clip_run(const char *text, size_t text_len, size_t v_start, size_t v_end, const 
                 goto fail;
             }
 
-            /* Unsupported OSC: measured, but never clipped as a unit. */
+            /* Unsupported OSC: measured by width(), rejected by clip(). */
             if (result.type == WCWIDTH_ESC_OSC66
                 || (result.length >= 4 && memcmp(result.start, "\x1b]8;", 4) == 0)) {
                 *error = WCWIDTH_ERROR_UNSUPPORTED;

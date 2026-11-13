@@ -313,6 +313,10 @@ jobs:
       - name: Install tox
         run: python -Im pip install tox
 
+      - name: Fetch test data files
+        continue-on-error: true
+        run: python -Im tox -e fetch
+
       - name: Measure libwcwidth coverage
         run: python -Im tox -e c_coverage
 

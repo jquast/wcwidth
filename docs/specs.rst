@@ -5,19 +5,19 @@ Specification
 =============
 
 This document defines how the Python wcwidth and C11 libwcwidth_ libraries measure the printable
-width of characters of a string. This is not meant to be an official standard, but as a terse
-description of the lowest level API functions :func:`wcwidth.wcwidth` and :func:`wcwidth.wcswidth`
-and their relation to higher level functions :func:`wcwidth.width`, :func:`wcwidth.wcstwidth` and
+width of characters of a string. This describes the project's measurement convention in terms of
+the lowest level API functions :func:`wcwidth.wcwidth` and :func:`wcwidth.wcswidth` and their
+relation to higher level functions :func:`wcwidth.width`, :func:`wcwidth.wcstwidth` and
 :func:`wcwidth.iter_graphemes`.
 
 Scope
 -----
 
 The lowest level functions :func:`wcwidth.wcwidth` and  :func:`wcwidth.wcswidth` return -1 when any
-control codes are present.  The higher level function :func:`wcwidth.width` never returns -1,
-accepting default arguments, ``control_codes='parse'`` and its behavior and options are described by
-its docstring and specifications of related control codes, `XTerm Control Sequences`_ and `Kitty
-Text Sizing Protocol`_.
+control codes are present.  The higher level function :func:`wcwidth.width` always returns a
+non-negative width; it accepts default arguments and ``control_codes='parse'``, and its behavior and
+options are described by its docstring and specifications of related control codes, `XTerm Control
+Sequences`_ and `Kitty Text Sizing Protocol`_.
 
 Each string yielded by :func:`wcwidth.iter_graphemes` may be mapped to :func:`wcwidth.wcswidth` to
 accurately measure the width of a grapheme.  :func:`wcwidth.iter_graphemes` implements the `Unicode
@@ -214,6 +214,9 @@ Working Group's latest report.
 .. _`L2/23-107`: https://www.unicode.org/L2/L2023/23107-terminal-suppt.pdf
 .. _`L2/25-263`: https://www.unicode.org/L2/L2025/25263-ttwg-report-utc185.pdf
 .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/
+.. _`Unicode Standard Annex #14`: https://www.unicode.org/reports/tr14/
+.. _`LineBreak.txt`: https://www.unicode.org/Public/UCD/latest/ucd/LineBreak.txt
+.. _`LineBreakTest.txt`: https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/LineBreakTest.txt
 .. _`Unicode Standard Section 23.4`: https://www.unicode.org/versions/latest/core-spec/chapter-23/#G19053
 .. _`unicodedata.iter_graphemes()`: https://docs.python.org/3.15/library/unicodedata.html#unicodedata.iter_graphemes
 .. _`PR #224`: https://github.com/jquast/wcwidth/pull/224

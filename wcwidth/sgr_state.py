@@ -167,6 +167,30 @@ def _sgr_state_to_sequence(state: _SGRState) -> str:
     return f'\x1b[{";".join(params)}m'
 
 
+def _merge_hybrid_colors(params: list[int | tuple[int, ...]]) -> None:
+    """
+    Merge xterm's base-plus-colon form into a single color tuple.
+
+    xterm and kitty accept ``38;5:196`` and ``38;2:1:2:3``, where the base
+    code is a separate parameter and the mode and components form a colon
+    tuple.  Only that documented shape is merged; all other forms are left
+    for the ordinary parsers.
+
+    :param params: Parsed SGR parameters, modified in place.
+    """
+    for index in range(len(params) - 1):
+        base, mode_item = params[index], params[index + 1]
+        if not isinstance(base, int) or base not in (_SGR.FG_EXTENDED, _SGR.BG_EXTENDED):
+            continue
+        if not isinstance(mode_item, tuple):
+            continue
+        mode, *components = mode_item
+        if mode == 5 and len(components) == 1:
+            params[index:index + 2] = [(base, 5, components[0])]
+        elif mode == 2 and len(components) in (3, 4):
+            params[index:index + 2] = [(base, 2, *components)]
+
+
 def _parse_sgr_params(sequence: str) -> list[int | tuple[int, ...]]:
     r"""
     Parse SGR sequence and return list of parameter values.
@@ -174,7 +198,8 @@ def _parse_sgr_params(sequence: str) -> list[int | tuple[int, ...]]:
     Handles compound sequences like ``\x1b[1;31;4m`` -> [1, 31, 4].
     Empty params (e.g., ``\x1b[m``) are treated as [0] (reset).
     Colon-separated extended colors like ``\x1b[38:2::255:0:0m`` are returned
-    as tuples: [(38, 2, 255, 0, 0)].
+    as tuples: [(38, 2, 0, 255, 0, 0)].  xterm's base-plus-colon forms,
+    ``38;5:196`` and ``38;2:1:2:3``, are merged into the same shape.
 
     :param sequence: SGR escape sequence string.
     :returns: List of integer parameters or tuples for colon-separated colors.
@@ -194,6 +219,7 @@ def _parse_sgr_params(sequence: str) -> list[int | tuple[int, ...]]:
             result.append(tuple(parts))
         else:
             result.append(int(param) if param else 0)
+    _merge_hybrid_colors(result)
     return result
 
 

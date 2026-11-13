@@ -3,11 +3,21 @@ History
 =======
 
 0.9.5 *unreleased*
+  * **New** `iter_line_breaks()`_ in Python and ``wcwidth_linebreak_breaks_u32()`` in libwcwidth,
+    following `UAX #14`_ line breaking.  ``wcwidth_linebreak_breaks_u32()`` takes a ``hyphens``
+    argument, and libwcwidth adds ``line_break`` and ``break_on_hyphens`` fields to
+    ``wcwidth_wrap_opts_t``.
+  * **Changed** Python and C11 `wrap()`_ functions now break lines by `UAX #14`_ by default.  Pass
+    ``line_break='ascii'`` in Python or set ``WCWIDTH_LINE_BREAK_ASCII`` in C for previous
+    `textwrap.wrap()`_ behavior.
   * **Bugfix** `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ on Prepend, `PR #306`_.
   * **Bugfix** `clip()`_ applying wrong SGR style after processing 'overtyping', `PR #305`_.
   * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.
   * **Bugfix** `clip()`_ control character processing after an errant OSC 8 close, `PR #308`_.
   * **Bugfix** libwcwidth `wrap()`_ no longer crashes when a memory allocation fails, `PR #317`_.
+  * **Bugfix** SGR colon colors applied out of order in libwcwidth, so a leading ``0`` wiped the
+    color that followed, and parse xterm/kitty's hybrid colon/semi-colon forms `PR #321`_.
+  * **Improved** `wrap()`_ better supports unlikely OSC 8 hyperlink metadata, `PR #325`_.
   * **Improved** performance of flag emojis by ~5.6x, `PR #304`_.
   * **Improved** performance of `clip()`_, `wrap()`_, and `propagate_sgr()`_ by caching SGR state
     updates, `PR #315`_.
@@ -267,6 +277,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
  * for any purpose and without fee is hereby granted. The author
  * disclaims all warranties with regard to this software.
 
+.. _`UAX #14`: https://www.unicode.org/reports/tr14/
 .. _`Spacing Combining Mark`: https://www.unicode.org/versions/latest/core-spec/chapter-4/#G134153
 .. _`specification`: https://wcwidth.readthedocs.io/en/latest/specs.html
 .. _`prospector`: https://github.com/landscapeio/prospector
@@ -352,6 +363,8 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #310`: https://github.com/jquast/wcwidth/pull/310
 .. _`PR #315`: https://github.com/jquast/wcwidth/pull/315
 .. _`PR #317`: https://github.com/jquast/wcwidth/pull/317
+.. _`PR #321`: https://github.com/jquast/wcwidth/pull/321
+.. _`PR #325`: https://github.com/jquast/wcwidth/pull/325
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
@@ -365,6 +378,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`wcstwidth()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.wcstwidth
 .. _`width()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.width
 .. _`iter_graphemes()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes
+.. _`iter_line_breaks()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_line_breaks
 .. _`iter_graphemes_reverse()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.iter_graphemes_reverse
 .. _`grapheme_boundary_before()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.grapheme_boundary_before
 .. _`ljust()`: https://wcwidth.readthedocs.io/en/latest/api.html#wcwidth.ljust
