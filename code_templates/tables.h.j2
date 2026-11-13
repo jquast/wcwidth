@@ -6,11 +6,10 @@
  * length macro (entry counts are codegen-known).
  *
  * These interval tables remain exported for convenience and ABI compatibility.
- * The tables converted to bitsets (ZERO_WIDTH, WIDE_EASTASIAN,
- * AMBIGUOUS_EASTASIAN, CATEGORY_MC, VS16_NARROW_TO_WIDE,
- * VS15_WIDE_TO_NARROW, EXTENDED_PICTOGRAPHIC, INCB_CONSONANT and
- * INCB_EXTEND) are no longer used internally: libwcwidth uses the generated
- * bitsets in wcwidth/bitset_tables.h.  The Python tables remain the parsable
+ * libwcwidth uses the generated bitsets in wcwidth/bitset_tables.h for
+ * ZERO_WIDTH, WIDE_EASTASIAN, AMBIGUOUS_EASTASIAN, CATEGORY_MC,
+ * VS16_NARROW_TO_WIDE, VS15_WIDE_TO_NARROW, EXTENDED_PICTOGRAPHIC,
+ * INCB_CONSONANT and INCB_EXTEND.  The Python tables remain the parsable
  * interval form.
  *
  * Do not edit; see code_templates/tables.h.j2.
@@ -51,6 +50,38 @@ wcwidth_gcb_class(uint32_t ucs)
                                     {{ gcb.c_name }}_SHIFT, {{ gcb.c_name }}_INDEX,
                                     {{ gcb.c_name }}_PAGES);
 }
+
+/* Line breaking classes; see wcwidth_linebreak_class() in linebreak.c. */
+{% if linebreak %}{% for name, value in linebreak.named_values %}#define WCWIDTH_LB_{{ name }} {{ value }}
+{% endfor %}
+#define WCWIDTH_LINEBREAK_ASCII_LEN {{ linebreak.class_table.ascii_len }}
+#define WCWIDTH_LINEBREAK_ASCII_RESOLVED_LEN {{ linebreak.class_table.ascii_len }}
+extern const uint8_t WCWIDTH_LINEBREAK_ASCII[];
+extern const uint8_t WCWIDTH_LINEBREAK_ASCII_RESOLVED[];
+
+#define {{ linebreak.class_table.c_name }}_MIN 0x{{ linebreak.class_table.min_hex }}u
+#define {{ linebreak.class_table.c_name }}_MAX 0x{{ linebreak.class_table.max_hex }}u
+#define {{ linebreak.class_table.c_name }}_SHIFT {{ linebreak.class_table.shift }}u
+#define {{ linebreak.class_table.c_name }}_INDEX_LEN {{ linebreak.class_table.index_len }}
+#define {{ linebreak.class_table.c_name }}_PAGES_LEN {{ linebreak.class_table.pool_len }}
+extern const uint8_t {{ linebreak.class_table.c_name }}_INDEX[];
+extern const uint8_t {{ linebreak.class_table.c_name }}_PAGES[];
+
+static inline unsigned
+wcwidth_linebreak_class_get(uint32_t ucs)
+{
+    if (ucs > {{ linebreak.class_table.c_name }}_MAX)
+        return WCWIDTH_LB_XX;
+    return wcwidth_class_paged8_get8(
+        ucs, {{ linebreak.class_table.c_name }}_MIN, {{ linebreak.class_table.c_name }}_MAX,
+        {{ linebreak.class_table.c_name }}_SHIFT, {{ linebreak.class_table.c_name }}_INDEX,
+        {{ linebreak.class_table.c_name }}_PAGES);
+}
+
+{% for name, length in linebreak.auxiliary %}extern const wcwidth_interval_t WCWIDTH_LINEBREAK_{{ name }}[];
+#define WCWIDTH_LINEBREAK_{{ name }}_LEN {{ length }}
+{% endfor %}
+{% endif %}
 
 #ifdef __cplusplus
 }

@@ -6,6 +6,8 @@ from typing import Union, Literal, Iterator, Optional, Sequence
 TermProgram = Union[bool, str]
 ControlCodes = Literal['parse', 'strict', 'ignore']
 
+ASSERTS_ENABLED: int
+
 
 def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int: ...
 def wcswidth(
@@ -81,3 +83,4 @@ def iter_graphemes_reverse(
     end: Optional[int] = None,
 ) -> Iterator[str]: ...
 def grapheme_boundary_before(unistr: str, pos: int) -> int: ...
+def line_breaks(text: str, hyphens: bool = True) -> list[tuple[int, bool]]: ...

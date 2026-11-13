@@ -83,10 +83,13 @@ _EXT_SOURCES = [
     "libwcwidth/src/text_sizing.c",
     "libwcwidth/src/terminal_override.c",
     "libwcwidth/src/utf8.c",
+    "libwcwidth/src/wcwidth_assert.c",
+    "libwcwidth/src/linebreak.c",
     "libwcwidth/src/tables/table_wide.c",
     "libwcwidth/src/tables/table_zero.c",
     "libwcwidth/src/tables/table_ambiguous.c",
     "libwcwidth/src/tables/table_grapheme.c",
+    "libwcwidth/src/tables/table_linebreak.c",
     "libwcwidth/src/tables/table_mc.c",
     "libwcwidth/src/tables/table_vs15.c",
     "libwcwidth/src/tables/table_vs16.c",
@@ -107,6 +110,10 @@ ABI3_TAG = "cp310"
 USE_LIMITED_API = (not sysconfig.get_config_var("Py_GIL_DISABLED")
                    and sys.version_info >= (3, 10))
 
+# Asserts are conditionally enabled in CI, not for release/wheels
+_ASSERT_MACROS = ([("WCWIDTH_ENABLE_ASSERTS", "1")]
+                  if os.environ.get("WCWIDTH_ENABLE_ASSERTS") else [])
+
 # setuptools reads purity from ext_modules, and bdist_wheel tags a pure wheel py3-none-any.
 if os.environ.get("WCWIDTH_NO_EXTENSION", ""):
     _EXT_MODULES: list[Extension] = []
@@ -116,7 +123,8 @@ else:
             "wcwidth._wcwidth_c",
             sources=_EXT_SOURCES,
             include_dirs=["libwcwidth/include"],
-            define_macros=[("Py_LIMITED_API", PY_LIMITED_API)] if USE_LIMITED_API else [],
+            define_macros=([("Py_LIMITED_API", PY_LIMITED_API)] if USE_LIMITED_API else [])
+            + _ASSERT_MACROS,
             py_limited_api=USE_LIMITED_API,
         ),
     ]
@@ -128,6 +136,9 @@ WHEEL_OPTIONS = ({"bdist_wheel": {"py_limited_api": ABI3_TAG}}
 # A failed compile would still publish an abi3 wheel with nothing in it: WHEEL_OPTIONS claims
 # that tag from _EXT_MODULES alone.
 _RELEASE_BUILD = bool(os.environ.get("CIBUILDWHEEL"))
+
+if _RELEASE_BUILD and os.environ.get("WCWIDTH_ENABLE_ASSERTS"):
+    raise SystemExit("WCWIDTH_ENABLE_ASSERTS is not permitted for release wheels")
 
 
 class optional_build_ext(_build_ext):
