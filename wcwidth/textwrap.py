@@ -332,7 +332,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                     # If we end inside a hyperlink, append close sequence
                     if new_state is not None:
                         # Use the active link's params; wrapper state can leak a prior link's id.
-                        if 'id=' in new_state.params:
+                        if has_id := any(param.startswith('id=')
+                                         for param in new_state.params.split(':')):
                             continuation_params = new_state.params
                         elif new_state.params:
                             # Prepend id to existing params. Per OSC 8 spec, params can have
@@ -346,7 +347,7 @@ class SequenceTextWrapper(textwrap.TextWrapper):
 
                         # Also need to inject the id into the opening
                         # sequence if it didn't have one
-                        if 'id=' not in new_state.params:
+                        if not has_id:
                             # Find and replace the original open sequence with one that has id
                             old_open = HyperlinkParams(
                                 url=new_state.url,
