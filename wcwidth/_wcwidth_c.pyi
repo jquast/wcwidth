@@ -6,6 +6,8 @@ from typing import Union, Literal, Iterator, Optional, Sequence
 TermProgram = Union[bool, str]
 ControlCodes = Literal['parse', 'strict', 'ignore']
 
+ASSERTS_ENABLED: int
+
 
 def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int: ...
 def wcswidth(

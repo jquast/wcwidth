@@ -2275,9 +2275,18 @@ static int
 module_exec(PyObject *module)
 {
     module_state *state = (module_state *)PyModule_GetState(module);
-    PyObject *iter_type = PyType_FromModuleAndSpec(module, &grapheme_iterator_spec, NULL);
+    PyObject *iter_type;
     PyObject *reverse_type;
 
+#ifdef WCWIDTH_ENABLE_ASSERTS
+    if (PyModule_AddIntConstant(module, "ASSERTS_ENABLED", 1) < 0)
+        return -1;
+#else
+    if (PyModule_AddIntConstant(module, "ASSERTS_ENABLED", 0) < 0)
+        return -1;
+#endif
+
+    iter_type = PyType_FromModuleAndSpec(module, &grapheme_iterator_spec, NULL);
     if (iter_type == NULL) {
         return -1;
     }

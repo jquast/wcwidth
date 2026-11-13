@@ -11,6 +11,8 @@
 #include "wcwidth/utf8.h"
 #include "wcwidth/linebreak.h"
 
+#include "wcwidth_assert.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -173,10 +175,7 @@ utf8_decode(const char *s, size_t len, size_t *seq_len)
     uint32_t ucs;
     size_t sl;
 
-    if (len == 0) {
-        *seq_len = 1;
-        return 0;
-    }
+    WCWIDTH_ASSERT(len > 0);
     c = (unsigned char) s[0];
 
     if (c < 0x80) {
@@ -381,8 +380,7 @@ cl_prepend_last(chunklist_t *cl, const char *s, size_t n)
 {
     chunk_t *c;
     char *nd;
-    if (cl->count == 0)
-        return false;
+    WCWIDTH_ASSERT(cl->count > 0);
     c = &cl->chunks[cl->count - 1];
     nd = malloc(n + c->len + 1);
     if (nd == NULL)
@@ -396,29 +394,10 @@ cl_prepend_last(chunklist_t *cl, const char *s, size_t n)
     return true;
 }
 
-static bool
-cl_append_last(chunklist_t *cl, const char *s, size_t n)
-{
-    chunk_t *c;
-    char *nd;
-    if (cl->count == 0)
-        return false;
-    c = &cl->chunks[cl->count - 1];
-    nd = realloc(c->data, c->len + n + 1);
-    if (nd == NULL)
-        return false;
-    memcpy(nd + c->len, s, n);
-    nd[c->len + n] = '\0';
-    c->data = nd;
-    c->len = c->len + n;
-    return true;
-}
-
 static void
 cl_pop(chunklist_t *cl)
 {
-    if (cl->count == 0)
-        return;
+    WCWIDTH_ASSERT(cl->count > 0);
     cl->count--;
     free(cl->chunks[cl->count].data);
     cl->chunks[cl->count].data = NULL;
@@ -444,8 +423,7 @@ cl_free(chunklist_t *cl)
 static void
 cl_move(chunklist_t *src, chunklist_t *dst)
 {
-    if (src->count == 0)
-        return;
+    WCWIDTH_ASSERT(src->count > 0);
     chunk_t *c = &src->chunks[src->count - 1];
     src->count--;
     cl_push(dst, c->data, c->len);
@@ -633,15 +611,12 @@ _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunk
             }
         }
         else if (proc.data[i] == ESC) {
-            wcwidth_esc_result_t r;
-            if (wcwidth_escape_classify(proc.data, proc.len, i, &r)) {
-                sbuf_append(&word, r.start, r.length);
-                i += r.length;
-            }
-            else {
-                sbuf_append(&word, proc.data + i, 1);
-                i++;
-            }
+            wcwidth_esc_result_t r = {
+                .type = WCWIDTH_ESC_UNRECOGNIZED, .start = proc.data + i, .length = 1};
+            bool ok = wcwidth_escape_classify(proc.data, proc.len, i, &r);
+            WCWIDTH_ASSERT(ok);
+            sbuf_append(&word, r.start, r.length);
+            i += r.length;
         }
         else {
             sbuf_append(&word, proc.data + i, 1);
@@ -677,13 +652,12 @@ find_break_pos(const char *text, size_t len, int max_w, const wcwidth_wrap_opts_
             return idx;
         gc = wcwidth_grapheme_next(gi, &glen);
         wcwidth_grapheme_iter_free(gi);
-        if (gc == NULL)
-            return idx;
+        WCWIDTH_ASSERT(gc != NULL);
 
         {
             int gw = chunk_width(gc, glen, opts);
             if (w + gw > max_w)
-                return idx;
+                break;
             w += gw;
             idx += glen;
         }
@@ -756,8 +730,7 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
     int sp_left;
     size_t bp;
 
-    if (chunks->count == 0)
-        return;
+    WCWIDTH_ASSERT(chunks->count > 0);
     c = cl_last(chunks);
     sp_left = (line_w < 1) ? 1 : line_w - cur_w;
 
@@ -776,8 +749,7 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
     if (cur_line->count == 0 && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
         bp = find_first_vis(c->data, c->len);
     }
-    if (bp > c->len)
-        bp = c->len;
+    WCWIDTH_ASSERT(bp <= c->len);
 
     cl_push(cur_line, c->data, bp);
 
@@ -797,9 +769,6 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
             }
         }
     }
-
-    while (chunks->count > 0 && cl_last(chunks)->len == 0)
-        cl_pop(chunks);
 }
 
 typedef struct
@@ -961,9 +930,7 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                 dropped_whitespace = true;
                 cur_w -= chunk_width(c->data, c->len, opts);
                 cl_pop(&cur);
-                if (sq.len > 0 && cur.count > 0)
-                    cl_append_last(&cur, sq.data, sq.len);
-                else if (sq.len > 0 && chunks->count > 0)
+                if (sq.len > 0 && chunks->count > 0)
                     cl_prepend_last(chunks, sq.data, sq.len);
             }
             sbuf_free(&st);

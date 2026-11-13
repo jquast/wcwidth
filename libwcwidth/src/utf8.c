@@ -3,6 +3,8 @@
  */
 #include "wcwidth/utf8.h"
 
+#include "wcwidth_assert.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -109,16 +111,21 @@ wcwidth_decode_u32(const char *utf8, size_t n, uint32_t *stack, size_t stack_cap
         uint32_t ucs;
         size_t consumed = wcwidth_utf8_decode_single(utf8 + pos, n - pos, &ucs);
 
-        if (consumed == 0) {
-            break;
-        }
+        WCWIDTH_ASSERT(consumed > 0);
         if (used >= cap) {
             size_t new_cap = cap ? cap * 2 : 256;
             uint32_t *nd;
 
-            if (new_cap < used + 1) {
-                new_cap = used + 1;
+#if SIZE_MAX <= UINT32_MAX
+            /* new_cap * sizeof(uint32_t) can wrap. */
+            if (new_cap > SIZE_MAX / sizeof(uint32_t)) {
+                free(heap);
+                *count = 0;
+                return NULL;
             }
+#else
+            WCWIDTH_ASSERT(new_cap >= used + 1);
+#endif
             if (heap == NULL) {
                 nd = (uint32_t *) malloc(new_cap * sizeof(uint32_t));
                 if (nd == NULL) {

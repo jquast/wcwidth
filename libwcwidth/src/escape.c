@@ -4,6 +4,8 @@
 #include "wcwidth/escape.h"
 #include "wcwidth/utf8.h"
 
+#include "wcwidth_assert.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -564,15 +566,11 @@ wcwidth_escape_iter(const char *text, size_t text_len, wcwidth_escape_iter_fn fn
                 fn(text + seg_start, idx - seg_start, false, userdata);
             }
 
-            if (wcwidth_escape_classify(text, text_len, idx, &result)) {
-                fn(result.start, result.length, true, userdata);
-                idx = (size_t) (result.start - text) + result.length;
-            }
-            else {
-                /* shouldn't happen since text[idx] == ESC */
-                fn(text + idx, 1, true, userdata);
-                idx++;
-            }
+            esc_result_init(&result, WCWIDTH_ESC_UNRECOGNIZED, text + idx, 1);
+            bool ok = wcwidth_escape_classify(text, text_len, idx, &result);
+            WCWIDTH_ASSERT(ok);
+            fn(result.start, result.length, true, userdata);
+            idx = (size_t) (result.start - text) + result.length;
             seg_start = idx;
         }
         else {
