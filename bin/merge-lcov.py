@@ -2,8 +2,8 @@
 """
 Merge duplicate LCOV branch records and normalize source paths.
 
-The C test suite and the Python extension build the same sources twice,
-gcovr emits separate branch records for each, this merges them.
+The C test suite and the Python extension build the same sources twice, gcovr emits separate branch
+records for each, this merges them.
 """
 from __future__ import annotations
 
