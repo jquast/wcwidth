@@ -285,6 +285,57 @@ TEST(wrap_trailing_escape_after_dropped_space)
     free(out);
 }
 
+TEST(wrap_escape_appended_to_last_chunk)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a b\x1b[0m"};
+
+    o.width = 5;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a b  \x1b[0m", 9, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_escape_only_tail_dropped)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\x1b[31ma"};
+
+    o.width = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31ma  \x1b[0m", 12, &o, &out, &len));
+    check_lines(out, len, exp, 1);
+    free(out);
+}
+
+TEST(wrap_whitespace_only_with_escapes)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    o.width = 4;
+    ASSERT_EQ(0, wcwidth_wrap_u8("   \x1b[31m   \x1b[0m", 15, &o, &out, &len));
+    ASSERT_EQ((int64_t) 0, (int64_t) len);
+    free(out);
+}
+
+TEST(wrap_escape_moves_to_next_line)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"a", "\x1b[0mb"};
+
+    o.width = 3;
+    ASSERT_EQ(0, wcwidth_wrap_u8("a  \x1b[0m b", 9, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
 TEST(wrap_sgr_long_word)
 {
     char *out;
@@ -851,6 +902,10 @@ main(void)
     RUN_TEST(wrap_unknown_escape);
     RUN_TEST(wrap_sequence_only_whitespace_line);
     RUN_TEST(wrap_trailing_escape_after_dropped_space);
+    RUN_TEST(wrap_escape_appended_to_last_chunk);
+    RUN_TEST(wrap_escape_only_tail_dropped);
+    RUN_TEST(wrap_whitespace_only_with_escapes);
+    RUN_TEST(wrap_escape_moves_to_next_line);
     RUN_TEST(wrap_max_lines_placeholder);
     RUN_TEST(wrap_drops_leading_whitespace_only_line);
     RUN_TEST(wrap_sgr_long_word);
