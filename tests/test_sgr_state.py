@@ -176,21 +176,28 @@ def test_propagate_sgr_colon_format_color_is_restored():
     ('0;38:2::255:0:0', '\x1b[38:2:0:255:0:0m'),
     ('0;48:2::0:0:255', '\x1b[48:2:0:0:0:255m'),
     ('31;38:5:196', '\x1b[38;5;196m'),
-    ('39;38:5:196', '\x1b[38;5;196m'),
-    ('38;5;196;38:5:46', '\x1b[38;5;46m'),
+    ('39;38;5:196', '\x1b[38;5;196m'),
+    ('38;5;196;38:5;46', '\x1b[38;5;46m'),
     ('38:5:196;38;5;46', '\x1b[38;5;46m'),
     ('38:5:196;0', ''),
+    ('0;38;5:196', '\x1b[38;5;196m'),
+    ('0;38;2:1:2:3', '\x1b[38;2;1;2;3m'),
+    ('0;38;2:255:0:0', '\x1b[38;2;255;0;0m'),
+    ('0;38;2:0:255:0:0', '\x1b[38:2:0:255:0:0m'),
+    ('0;48;5:22', '\x1b[48;5;22m'),
+    ('0;48;2:0:0:0:255', '\x1b[48:2:0:0:0:255m'),
+    ('0;38;5:196:197', ''),
+    ('0;38;2:1:2', ''),
+    ('0;38;2;1:2:3', ''),
+    ('0;38;5;196:197', ''),
+    ('0;38;3:1:2:3', ''),
 ])
-@pytest.mark.parametrize('operation', ['propagate_sgr', 'clip'])
-def test_mixed_sgr_parameters_keep_order(params, expected, operation):
-    """Apply resets and colors in order when semicolon and colon forms mix."""
+def test_sgr_color_parameters(params, expected):
+    """Apply resets, colon colors, and xterm hybrids in stream order."""
     opening = f'\x1b[{params}m'
     reset = '\x1b[0m' if expected else ''
-    if operation == 'propagate_sgr':
-        result = wcwidth.propagate_sgr([opening + 'red', 'text'])[1]
-    else:
-        result = clip(opening + 'red text', 4, 8)
-    assert result == expected + 'text' + reset
+    assert wcwidth.propagate_sgr([opening + 'red', 'text'])[1] == expected + 'text' + reset
+    assert clip(opening + 'red text', 4, 8) == expected + 'text' + reset
 
 
 def test_sgr_state_color_override():

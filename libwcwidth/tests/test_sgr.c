@@ -19,6 +19,64 @@ make_state(const char *sgr_esc)
     return s;
 }
 
+/*
+ * Replace ESC with its visible spelling so assertion failures stay readable
+ * instead of being consumed by the terminal.
+ */
+static const char *
+visible_escapes(const char *src, char *dst, size_t cap)
+{
+    size_t out = 0;
+
+    if (cap == 0) {
+        return dst;
+    }
+
+    while (*src != '\0' && out + 1 < cap) {
+        if (*src == '\x1b') {
+            if (out + 4 >= cap) {
+                break;
+            }
+            memcpy(dst + out, "\\x1b", 4);
+            out += 4;
+        }
+        else {
+            dst[out++] = *src;
+        }
+        src++;
+    }
+    dst[out] = '\0';
+    return dst;
+}
+
+typedef struct
+{
+    const char *input;
+    const char *expected;
+} sgr_escape_case_t;
+
+static void
+check_escapes(const sgr_escape_case_t *cases, size_t count)
+{
+    size_t i;
+
+    for (i = 0; i < count; i++) {
+        wcwidth_sgr_state_t s = WCWIDTH_SGR_STATE_DEFAULT;
+        char buf[64];
+
+        wcwidth_sgr_update(&s, cases[i].input, strlen(cases[i].input));
+        wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
+        if (strcmp(cases[i].expected, buf) != 0) {
+            char want[512];
+            char got[512];
+
+            FAIL("input \"%s\": expected \"%s\", got \"%s\"", cases[i].input,
+                 visible_escapes(cases[i].expected, want, sizeof(want)),
+                 visible_escapes(buf, got, sizeof(got)));
+        }
+    }
+}
+
 TEST(update_basic)
 {
     wcwidth_sgr_state_t s = make_state("\x1b[1;31m");
@@ -211,31 +269,37 @@ TEST(attribute_and_color_codes)
     }
 }
 
-TEST(mixed_color_parameter_order)
+TEST(sgr_color_parameters)
 {
-    static const char *const inputs[] = {
-        "0;38:2::255:0:0",  "0;48:2::0:0:255",  "31;38:5:196", "39;38:5:196",
-        "38;5;196;38:5:46", "38:5:196;38;5;46", "38:5:196;0",
+    static const sgr_escape_case_t cases[] = {
+        {"0;38:2::255:0:0", "\x1b[38:2:0:255:0:0m"},
+        {"0;48:2::0:0:255", "\x1b[48:2:0:0:0:255m"},
+        {"31;38;5:196", "\x1b[38;5;196m"},
+        {"39;38;5:196", "\x1b[38;5;196m"},
+        {"38;5;196;38:5;46", "\x1b[38;5;46m"},
+        {"38:5:196;38;5;46", "\x1b[38;5;46m"},
+        {"38:5:196;0", ""},
+        {"0;38;5:196", "\x1b[38;5;196m"},
+        {"0;38;2:1:2:3", "\x1b[38;2;1;2;3m"},
+        {"0;38;2:255:0:0", "\x1b[38;2;255;0;0m"},
+        {"0;38;2:0:255:0:0", "\x1b[38:2:0:255:0:0m"},
+        {"0;48;5:22", "\x1b[48;5;22m"},
+        {"0;48;2:0:0:0:255", "\x1b[48:2:0:0:0:255m"},
+        {"0;38;5:196:197", ""},
+        {"0;38;2:1:2", ""},
+        {"0;38;2;1:2:3", ""},
+        {"0;38;5;196:197", ""},
+        {"0;38;3:1:2:3", ""},
+        {"38", ""},
+        {"38;5", ""},
+        {"38;2", ""},
+        {"38;2;1", ""},
+        {"38;2;1;2", ""},
+        {"", ""},
+        {"0;38;3;1", "\x1b[1m"},
     };
-    static const char *const expected[] = {
-        "\x1b[38:2:0:255:0:0m",
-        "\x1b[48:2:0:0:0:255m",
-        "\x1b[38;5;196m",
-        "\x1b[38;5;196m",
-        "\x1b[38;5;46m",
-        "\x1b[38;5;46m",
-        "",
-    };
-    size_t i;
 
-    for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
-        wcwidth_sgr_state_t s = WCWIDTH_SGR_STATE_DEFAULT;
-        char buf[64];
-
-        wcwidth_sgr_update(&s, inputs[i], strlen(inputs[i]));
-        wcwidth_sgr_to_escape(&s, buf, sizeof(buf));
-        ASSERT_STREQ(expected[i], buf);
-    }
+    check_escapes(cases, sizeof(cases) / sizeof(cases[0]));
 }
 
 int
@@ -248,6 +312,6 @@ main(void)
     RUN_TEST(to_escape_colon_form);
     RUN_TEST(propagate_basic);
     RUN_TEST(attribute_and_color_codes);
-    RUN_TEST(mixed_color_parameter_order);
+    RUN_TEST(sgr_color_parameters);
     return test_summary();
 }
