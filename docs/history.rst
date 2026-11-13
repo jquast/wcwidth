@@ -3,6 +3,8 @@ History
 =======
 
 0.9.5 *unreleased*
+  * **Bugfix** `wrap()`_ recognizes an OSC 8 ``id`` parameter by its complete key,
+    so unrelated metadata containing ``id=`` no longer suppresses a shared hyperlink id.
   * **Bugfix** `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ on Prepend, `PR #306`_.
   * **Bugfix** `clip()`_ applying wrong SGR style after processing 'overtyping', `PR #305`_.
   * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.

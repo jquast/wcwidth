@@ -754,3 +754,25 @@ def test_wrap_drops_styled_blank_line_at_wider_widths(width):
         SGR_RED + text[:width] + SGR_RESET,
         SGR_RED + text[width:] + SGR_RESET,
     ]
+
+
+@pytest.mark.parametrize('terminator', ['\x07', '\x1b\\'])
+@pytest.mark.parametrize('params, expected_params', [
+    ('grid=tile-1', 'id=00000001:grid=tile-1'),
+    ('other_id=label', 'id=00000001:other_id=label'),
+    ('custom=id=value', 'id=00000001:custom=id=value'),
+    ('id=existing', 'id=existing'),
+    ('role=doc:id=existing', 'role=doc:id=existing'),
+    ('id2=label', 'id=00000001:id2=label'),
+    ('id', 'id=00000001:id'),
+])
+def test_wrap_hyperlink_id_matches_complete_parameter(params, expected_params, terminator):
+    """Other metadata keys and values must not suppress a shared hyperlink id."""
+    url = 'https://example.com'
+    close = f'\x1b]8;;{terminator}'
+    text = f'\x1b]8;{params};{url}{terminator}abc def ghi{close}'
+    expected_open = f'\x1b]8;{expected_params};{url}{terminator}'
+
+    assert wrap(text, width=3) == [
+        f'{expected_open}{word}{close}' for word in ('abc', 'def', 'ghi')
+    ]
