@@ -525,6 +525,31 @@ def update_readme_term_programs() -> bool:
     return update_doc(README_DOC, pattern, replacement)
 
 
+def _format_substitution(macro: str, names: Sequence[str]) -> str:
+    """Format a replace:: substitution, wrapping at commas without splitting a name."""
+    prefix = f'.. |{macro}| replace:: '
+    lines: list[str] = []
+    current = ''
+    for name in sorted(names) or ['(none)']:
+        token = name if not current else f', {name}'
+        lead = prefix if not lines else '   '
+        if current and len(lead) + len(current) + len(token) > 79:
+            lines.append(lead + current + ',')
+            current = name
+        else:
+            current += token
+    lines.append((prefix if not lines else '   ') + current)
+    return '\n'.join(lines)
+
+
+def update_readme_undetectable_terminals() -> bool:
+    """Refresh the undetectable terminal name substitution in README.rst."""
+    pattern = r'\.\. \|undetectable_terminals\| replace::[^\n]*(?:\n   [^\n]*)*'
+    return update_doc(README_DOC, pattern,
+                      _format_substitution('undetectable_terminals',
+                                           TERM_TABLE.UNDETECTABLE_TERMINALS))
+
+
 def unicode_source_headers() -> list[tuple[str, str]]:
     """(file name, date) pairs for the Unicode release files page, version-sorted."""
     pattern = re.compile(
@@ -569,6 +594,8 @@ def main(api_only: bool = False, check: bool = False) -> int:
            update_libwcwidth_unicode_version())
     report('README.rst: list_term_programs() example',
            update_readme_term_programs())
+    report('README.rst: undetectable terminals',
+           update_readme_undetectable_terminals())
     return int(check and stale)
 
 

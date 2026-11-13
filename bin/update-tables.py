@@ -2207,9 +2207,14 @@ def load_ucs_detect_yaml() -> list[tuple[str, str, Any]]:
     """
     Return (filename, canonical_name, yaml_document) for each ucs-detect data file.
 
+    Files beginning with ``_`` (syncterm, linux fbdev) are measurements outside the
+    auto-detectable terminal series, and are skipped.
+
     :raises FileNotFoundError: when the ucs-detect submodule is not checked out.
     """
-    yaml_paths = sorted(glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml')))
+    yaml_paths = sorted(
+        path for path in glob.glob(os.path.join(PATH_UCS_DETECT_DATA, '*.yaml'))
+        if not os.path.basename(path).startswith('_'))
     if not yaml_paths:
         raise FileNotFoundError(
             f'no terminal measurements in {PATH_UCS_DETECT_DATA}; fetch them with '
@@ -2410,6 +2415,7 @@ class TermPrograms:
     """Canonical terminal names and aliases collected from ucs-detect data."""
     known_terminals: frozenset[str]
     aliases: dict[str, str]
+    undetectable_terminals: frozenset[str]
 
 
 @functools.lru_cache(maxsize=1)
@@ -2417,6 +2423,7 @@ def collect_term_programs() -> TermPrograms:
     """Collect canonical terminal names and aliases from ucs-detect data."""
     # Only terminals detectable by XTVERSION, ENQ, TERM_PROGRAM, or unique TERM are included.
     known: set[str] = set()
+    undetectable: set[str] = set()
     tprog_aliases: dict[str, str] = {}
     term_aliases: dict[str, str] = {}
 
@@ -2433,6 +2440,7 @@ def collect_term_programs() -> TermPrograms:
         has_dist_term = bool(term and term.lower() not in ('xterm-256color', 'xterm'))
 
         if not (has_xtversion or has_tprog or has_dist_term):
+            undetectable.add(canonical)
             print(f'terminal "{canonical}" ({ver}) is not auto-detectable', file=sys.stderr)
             continue
 
@@ -2469,6 +2477,7 @@ def collect_term_programs() -> TermPrograms:
     return TermPrograms(
         known_terminals=frozenset(known),
         aliases=aliases,
+        undetectable_terminals=frozenset(undetectable - EXCLUDED_MULTIPLEXERS),
     )
 
 
@@ -2485,6 +2494,7 @@ class TermProgramTableRenderCtx(RenderContext):
     """Render context for terminal program data."""
     known_terminals: frozenset[str]
     aliases: dict[str, str]
+    undetectable_terminals: frozenset[str]
 
 
 @dataclass
@@ -2500,6 +2510,7 @@ class TermProgramTableRenderDef(RenderDefinition):
             render_context=TermProgramTableRenderCtx(
                 known_terminals=tp.known_terminals,
                 aliases=tp.aliases,
+                undetectable_terminals=tp.undetectable_terminals,
             ),
         )
 
