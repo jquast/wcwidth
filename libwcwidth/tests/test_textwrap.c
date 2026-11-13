@@ -924,6 +924,24 @@ TEST(wrap_ascii_mode_spaces_and_escapes)
     free(out);
 }
 
+TEST(wrap_drops_every_python_whitespace)
+{
+    /* Tab, information separators, NEL, NBSP, ogham, en quad..hair space,
+     * narrow no-break, medium math, and ideographic space. */
+    const char *ws = "\x09\x1c\xc2\x85\xc2\xa0\xe1\x9a\x80\xe2\x80\x80\xe2\x80\xa8"
+                     "\xe2\x80\xa9\xe2\x80\xaf\xe2\x81\x9f\xe3\x80\x80";
+    char text[128];
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    snprintf(text, sizeof text, "x%s", ws);
+    o.width = 80;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, strlen(text), &o, &out, &len));
+    ASSERT_EQ((int64_t) 'x', (int64_t) out[len - 1]);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -964,5 +982,6 @@ main(void)
     RUN_TEST(wrap_mandatory_breaks);
     RUN_TEST(wrap_ascii_mode);
     RUN_TEST(wrap_ascii_mode_spaces_and_escapes);
+    RUN_TEST(wrap_drops_every_python_whitespace);
     return test_summary();
 }

@@ -1,5 +1,6 @@
 #include "test_common.h"
 #include "wcwidth/escape.h"
+#include <limits.h>
 #include <string.h>
 
 /*
@@ -182,6 +183,64 @@ TEST(iter_leading_and_trailing_visible)
     ASSERT_TRUE(cap.is_escape[1]);
 }
 
+TEST(classify_param_edges)
+{
+    wcwidth_esc_result_t r;
+
+    /* 20 digits saturate rather than overflowing the int accumulator. */
+    ASSERT_EQ(WCWIDTH_ESC_CUF, classify("\x1b[99999999999999999999C", &r));
+    ASSERT_EQ(INT_MAX, (int64_t) r.cursor_n);
+    ASSERT_EQ((size_t) 23, r.length);
+
+    /* absent parameter defaults to 1 */
+    ASSERT_EQ(WCWIDTH_ESC_HPA, classify("\x1b[G", &r));
+    ASSERT_EQ(1, (int64_t) r.cursor_n);
+
+    /* scroll region needs digits on both sides of the semicolon */
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[12r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[;r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[12?r", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[1;2;r", &r));
+
+    /* alternate screen accepts ?47 as well as ?1049 */
+    ASSERT_EQ(WCWIDTH_ESC_INDETERMINATE, classify("\x1b[?47h", &r));
+    ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[?104h", &r));
+}
+
+TEST(classify_osc66_st_terminator)
+{
+    wcwidth_esc_result_t r;
+
+    ASSERT_EQ(WCWIDTH_ESC_OSC66, classify("\x1b]66;s=2;hi\x1b\\", &r));
+    ASSERT_EQ((size_t) 13, r.length);
+    ASSERT_EQ((int64_t) 2, (int64_t) r.ts_text_len);
+    ASSERT_EQ(0, memcmp(r.ts_text, "hi", 2));
+}
+
+TEST(classify_non_escape)
+{
+    wcwidth_esc_result_t r;
+
+    ASSERT_FALSE(wcwidth_escape_classify("a", 1, 0, &r));
+    ASSERT_FALSE(wcwidth_escape_classify("", 0, 0, &r));
+}
+
+TEST(strip_null_out_len)
+{
+    char buf[8];
+
+    ASSERT_EQ((int64_t) 3, (int64_t) wcwidth_escape_strip("abc", 3, buf, sizeof(buf), NULL));
+    ASSERT_STREQ("abc", buf);
+}
+
+TEST(has_cursor_movement_cr_and_cub)
+{
+    ASSERT_TRUE(wcwidth_escape_has_cursor_movement("a\rb", 3));
+    ASSERT_TRUE(wcwidth_escape_has_cursor_movement("\x1b[2C", 4));
+    ASSERT_TRUE(wcwidth_escape_has_cursor_movement("\x1b[2D", 4));
+}
+
 int
 main(void)
 {
@@ -195,5 +254,10 @@ main(void)
     RUN_TEST(classify_scroll_region_and_bel_terminator);
     RUN_TEST(strip_u32_heap);
     RUN_TEST(iter_leading_and_trailing_visible);
+    RUN_TEST(classify_param_edges);
+    RUN_TEST(classify_osc66_st_terminator);
+    RUN_TEST(classify_non_escape);
+    RUN_TEST(strip_null_out_len);
+    RUN_TEST(has_cursor_movement_cr_and_cub);
     return test_summary();
 }

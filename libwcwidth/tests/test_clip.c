@@ -291,6 +291,17 @@ TEST(empty_fillchar_partial_glyph)
     free(s);
 }
 
+TEST(clip_u8_null_out_len)
+{
+    int error = WCWIDTH_ERROR_NONE;
+    char *s = wcwidth_clip_u8("hello", 5, WCWIDTH_PARSE, NULL, NULL, &error);
+
+    ASSERT_NOT_NULL(s);
+    ASSERT_EQ(WCWIDTH_ERROR_NONE, error);
+    ASSERT_STREQ("hello", s);
+    free(s);
+}
+
 int
 main(void)
 {
@@ -309,5 +320,6 @@ main(void)
     RUN_TEST(large_grapheme_grows_buffer);
     RUN_TEST(u32_encode_and_errors);
     RUN_TEST(empty_fillchar_partial_glyph);
+    RUN_TEST(clip_u8_null_out_len);
     return test_summary();
 }

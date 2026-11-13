@@ -8,6 +8,7 @@ TEST(resolve_terminal_names)
 
     ASSERT_NOT_NULL(wcwidth_resolve_terminal("kitty"));
     ASSERT_NOT_NULL(wcwidth_resolve_terminal("  KiTtY  "));
+    ASSERT_NOT_NULL(wcwidth_resolve_terminal("\t\n\r\f\vKiTtY\v\f\r\n\t"));
     ASSERT_NOT_NULL(wcwidth_resolve_terminal("alacritty"));
     ASSERT_NULL(wcwidth_resolve_terminal("not-a-terminal"));
     ASSERT_NULL(wcwidth_resolve_terminal(""));
