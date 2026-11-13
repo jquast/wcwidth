@@ -40,8 +40,8 @@ from .escape_sequences import (_SEQUENCE_CLASSIFY,
 
 # In 'parse' mode, strings longer than this are checked for cursor-movement
 # controls (BS, TAB, CR, cursor sequences); when absent, mode downgrades to
-# 'ignore' to skip character-by-character parsing. The detection scan cost is
-# negligible for long strings but wasted on short ones like labels or headings.
+# 'ignore' to skip character-by-character parsing. The detection scan is quick
+# for long strings but wasted on short ones like labels or headings.
 _WIDTH_FAST_PATH_MIN_LEN = 20
 
 # Translation table to strip C0/C1 control characters for fast 'ignore' mode.
@@ -83,7 +83,7 @@ def width(
     Return printable width of text containing many kinds of control codes and sequences.
 
     Unlike :func:`wcswidth`, this function handles most control characters and many popular terminal
-    output sequences.  Never returns -1.
+    output sequences.  The returned width is always non-negative.
 
     :param text: String to measure.
     :param control_codes: How to handle control characters and sequences:
