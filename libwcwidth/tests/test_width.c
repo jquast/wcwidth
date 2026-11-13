@@ -1,6 +1,7 @@
 #include "test_common.h"
 #include "wcwidth/width.h"
 #include "wcwidth/utf8.h"
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -260,6 +261,149 @@ TEST(u32_illegal_ctrls)
     ASSERT_TRUE(error != 0);
 }
 
+TEST(u8_ignore_heap_with_controls)
+{
+    static char big[2800];
+    static char mixed[1600];
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+    int error = 0;
+
+    memset(big, 'a', 1400);
+    memset(big + 1400, 0x01, 1400);
+    ASSERT_EQ(1400, wcwidth_width_u8(big, sizeof(big), WCWIDTH_IGNORE, &opts, &error));
+    opts.term_program = "kitty";
+    ASSERT_EQ(1400, wcwidth_width_u8(big, sizeof(big), WCWIDTH_IGNORE, &opts, &error));
+
+    opts.term_program = NULL;
+    memset(mixed, 'a', 500);
+    memset(mixed + 500, 0x01, 1100);
+    ASSERT_EQ(500, wcwidth_width_u8(mixed, sizeof(mixed), WCWIDTH_IGNORE, &opts, &error));
+    opts.term_program = "kitty";
+    ASSERT_EQ(500, wcwidth_width_u8(mixed, sizeof(mixed), WCWIDTH_IGNORE, &opts, &error));
+}
+
+TEST(u8_strict_cursor_errors)
+{
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+    int error = 0;
+
+    ASSERT_EQ(-1, wcwidth_width_u8("\x1b[10G", 5, WCWIDTH_STRICT, &opts, &error));
+    ASSERT_EQ(WCWIDTH_ERROR_CURSOR_LEFT_ABSOLUTE, error);
+
+    error = 0;
+    ASSERT_EQ(1, wcwidth_width_u8("\x1b[5Dx", 5, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(0, error);
+}
+
+TEST(u8_saturates_with_visible_char)
+{
+    int error = 0;
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+
+    ASSERT_EQ(INT_MAX, wcwidth_width_u8("\x1b[2147483647Cx", 14, WCWIDTH_PARSE, &opts, &error));
+}
+
+TEST(u8_saturates_negative)
+{
+    static const char text[] = "\x1b[2147483647D\x1b[2147483647D";
+    int error = 0;
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+
+    ASSERT_EQ(0, wcwidth_width_u8(text, sizeof(text) - 1, WCWIDTH_PARSE, &opts, &error));
+}
+
+TEST(terminal_override_cluster_miss)
+{
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+    uint32_t cps[] = {'a', 0x0301, 0x0302};
+    int error = 0;
+
+    opts.term_program = "kitty";
+    ASSERT_EQ(1, wcwidth_width_u8("a\xcc\x81\xcc\x82", 5, WCWIDTH_PARSE, &opts, &error));
+    ASSERT_EQ(1, wcwidth_width_u32(cps, 3, WCWIDTH_PARSE, &opts, &error));
+}
+
+TEST(u32_surrogate_and_charset)
+{
+    uint32_t surrogate[] = {'a', 0xD800, 'b'};
+    uint32_t charset[] = {'a', 0x1B, '(', 'B'};
+    int error = 0;
+
+    ASSERT_EQ(3,
+              wcwidth_width_u32(surrogate, 3, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(1, wcwidth_width_u32(charset, 4, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+}
+
+TEST(u32_strict_hpa)
+{
+    uint32_t cps[] = {0x1B, '[', '1', '0', 'G'};
+    int error = 0;
+
+    ASSERT_EQ(-1, wcwidth_width_u32(cps, 5, WCWIDTH_STRICT, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(WCWIDTH_ERROR_CURSOR_LEFT_ABSOLUTE, error);
+}
+
+TEST(u32_osc66)
+{
+    uint32_t cps[] = {0x1B, ']', '6', '6', ';', 'w', '=', '2', ';', 'X', 0x07};
+    int error = 0;
+
+    ASSERT_EQ(2, wcwidth_width_u32(cps, 11, WCWIDTH_PARSE, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+    ASSERT_EQ(0, error);
+}
+
+TEST(long_combining_cluster)
+{
+    static char text[82];
+    uint32_t cps[42];
+    wcwidth_width_opts_t opts = WCWIDTH_WIDTH_OPTS_DEFAULT;
+    int error = 0;
+    size_t i;
+
+    text[0] = 'a';
+    for (i = 0; i < 40; i++) {
+        text[1 + i * 2] = '\xCC';
+        text[2 + i * 2] = '\x81';
+    }
+    text[81] = 'b';
+    cps[0] = 'a';
+    for (i = 0; i < 40; i++)
+        cps[1 + i] = 0x0301;
+    cps[41] = 'b';
+    opts.term_program = "kitty";
+
+    ASSERT_EQ(2, wcwidth_width_u8(text, sizeof(text), WCWIDTH_STRICT, &opts, &error));
+    ASSERT_EQ(2, wcwidth_width_u32(cps, 42, WCWIDTH_STRICT, &opts, &error));
+}
+
+TEST(csi_truncated_fallback)
+{
+    uint32_t cps[261];
+    int error = 0;
+    size_t i;
+
+    cps[0] = 0x1B;
+    cps[1] = '[';
+    for (i = 2; i < 256; i++)
+        cps[i] = '1';
+    cps[256] = 'm';
+    cps[257] = 0x00E9;
+    cps[258] = 0x4E2D;
+    cps[259] = 0x1F600;
+    cps[260] = 'Z';
+
+    ASSERT_EQ(6, wcwidth_width_u32(cps, 261, WCWIDTH_STRICT, &WCWIDTH_WIDTH_OPTS_DEFAULT, &error));
+}
+
+TEST(null_opts)
+{
+    int error = 0;
+    uint32_t cps[] = {'h', 'i'};
+
+    ASSERT_EQ(2, wcwidth_width_u8("hi", 2, WCWIDTH_PARSE, NULL, &error));
+    ASSERT_EQ(2, wcwidth_width_u32(cps, 2, WCWIDTH_PARSE, NULL, &error));
+}
+
 int
 main(void)
 {
@@ -273,5 +417,16 @@ main(void)
     RUN_TEST(u8_u32_agree);
     RUN_TEST(u32_illegal_ctrls);
     RUN_TEST(csi_huge_param_saturates);
+    RUN_TEST(u8_ignore_heap_with_controls);
+    RUN_TEST(u8_strict_cursor_errors);
+    RUN_TEST(u8_saturates_with_visible_char);
+    RUN_TEST(u8_saturates_negative);
+    RUN_TEST(terminal_override_cluster_miss);
+    RUN_TEST(u32_surrogate_and_charset);
+    RUN_TEST(u32_strict_hpa);
+    RUN_TEST(u32_osc66);
+    RUN_TEST(long_combining_cluster);
+    RUN_TEST(csi_truncated_fallback);
+    RUN_TEST(null_opts);
     return test_summary();
 }

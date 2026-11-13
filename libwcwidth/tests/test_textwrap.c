@@ -604,6 +604,29 @@ TEST(wrap_max_lines_placeholder)
     free(out);
 }
 
+TEST(wrap_max_lines_placeholder_escapes)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"\x1b[31maa bb", "[...]"};
+    const char *exp_escape_tail[] = {"aa bb \x1b[31m ", "[...]"};
+
+    o.width = 5;
+    o.max_lines = 2;
+    ASSERT_EQ(0, wcwidth_wrap_u8("\x1b[31maa bb cc dd ee ff\x1b[0m", 28, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+
+    o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    o.width = 7;
+    o.max_lines = 2;
+    o.drop_whitespace = false;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bb \x1b[31m cc dd ee", 20, &o, &out, &len));
+    check_lines(out, len, exp_escape_tail, 2);
+    free(out);
+}
+
 TEST(wrap_drops_leading_whitespace_only_line)
 {
     char *out;
@@ -887,6 +910,38 @@ TEST(wrap_ascii_mode)
     free(out);
 }
 
+TEST(wrap_ascii_mode_spaces_and_escapes)
+{
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+    const char *exp[] = {"aa bb", "\x1b[31mcc"};
+
+    o.width = 5;
+    o.line_break = WCWIDTH_LINE_BREAK_ASCII;
+    ASSERT_EQ(0, wcwidth_wrap_u8("aa bb \x1b[31mcc", 13, &o, &out, &len));
+    check_lines(out, len, exp, 2);
+    free(out);
+}
+
+TEST(wrap_drops_every_python_whitespace)
+{
+    /* Tab, information separators, NEL, NBSP, ogham, en quad..hair space,
+     * narrow no-break, medium math, and ideographic space. */
+    const char *ws = "\x09\x1c\xc2\x85\xc2\xa0\xe1\x9a\x80\xe2\x80\x80\xe2\x80\xa8"
+                     "\xe2\x80\xa9\xe2\x80\xaf\xe2\x81\x9f\xe3\x80\x80";
+    char text[128];
+    char *out;
+    size_t len;
+    wcwidth_wrap_opts_t o = WCWIDTH_WRAP_OPTS_DEFAULT;
+
+    snprintf(text, sizeof text, "x%s", ws);
+    o.width = 80;
+    ASSERT_EQ(0, wcwidth_wrap_u8(text, strlen(text), &o, &out, &len));
+    ASSERT_EQ((int64_t) 'x', (int64_t) out[len - 1]);
+    free(out);
+}
+
 int
 main(void)
 {
@@ -907,6 +962,7 @@ main(void)
     RUN_TEST(wrap_whitespace_only_with_escapes);
     RUN_TEST(wrap_escape_moves_to_next_line);
     RUN_TEST(wrap_max_lines_placeholder);
+    RUN_TEST(wrap_max_lines_placeholder_escapes);
     RUN_TEST(wrap_drops_leading_whitespace_only_line);
     RUN_TEST(wrap_sgr_long_word);
     RUN_TEST(wrap_trailing_word_with_escape);
@@ -925,5 +981,7 @@ main(void)
     RUN_TEST(wrap_empty_line);
     RUN_TEST(wrap_mandatory_breaks);
     RUN_TEST(wrap_ascii_mode);
+    RUN_TEST(wrap_ascii_mode_spaces_and_escapes);
+    RUN_TEST(wrap_drops_every_python_whitespace);
     return test_summary();
 }

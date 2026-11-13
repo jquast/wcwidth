@@ -269,6 +269,16 @@ TEST(attribute_and_color_codes)
     }
 }
 
+TEST(propagate_intermediate_bytes)
+{
+    char line[64] = "\x1b[1 mhello";
+    char *lines[] = {line};
+    size_t line_lens[] = {strlen(line)};
+
+    ASSERT_EQ(0, wcwidth_sgr_propagate(lines, line_lens, NULL, 1));
+    ASSERT_NOT_NULL(strstr(lines[0], "hello"));
+}
+
 TEST(sgr_color_parameters)
 {
     static const sgr_escape_case_t cases[] = {
@@ -312,6 +322,7 @@ main(void)
     RUN_TEST(to_escape_colon_form);
     RUN_TEST(propagate_basic);
     RUN_TEST(attribute_and_color_codes);
+    RUN_TEST(propagate_intermediate_bytes);
     RUN_TEST(sgr_color_parameters);
     return test_summary();
 }

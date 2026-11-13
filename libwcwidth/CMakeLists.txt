@@ -94,6 +94,7 @@ if(BUILD_TESTING)
         tests/test_text_sizing.c
         tests/test_utf8.c
         tests/test_gcb_class.c
+        tests/test_terminal_override.c
     )
 
     foreach(test_src ${TEST_SOURCES})
@@ -107,7 +108,7 @@ if(BUILD_TESTING)
     endforeach()
 
     # A second build of the library whose allocator calls resolve to hooks that
-    # test_oom supplies, so allocation-failure branches can be reached.
+    # test_oom supplies, so every allocation-failure branch can be reached.
     add_library(wcwidth_oom STATIC ${LIBWCWIDTH_SOURCES})
     target_include_directories(wcwidth_oom PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

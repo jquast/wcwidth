@@ -297,6 +297,48 @@ TEST(align_null_and_empty_input)
     free(s);
 }
 
+TEST(strict_error_reports_zero_length)
+{
+    wcwidth_align_opts_t opts = opts_of(10, " ", 1);
+    size_t len = 99;
+    int error;
+
+    error = WCWIDTH_ERROR_NONE;
+    ASSERT_NULL(wcwidth_ljust_u8("\x01x", 2, WCWIDTH_STRICT, &opts, &len, &error));
+    ASSERT_EQ(0, len);
+
+    len = 99;
+    error = WCWIDTH_ERROR_NONE;
+    ASSERT_NULL(wcwidth_rjust_u8("\x01x", 2, WCWIDTH_STRICT, &opts, &len, &error));
+    ASSERT_EQ(0, len);
+
+    len = 99;
+    error = WCWIDTH_ERROR_NONE;
+    ASSERT_NULL(wcwidth_center_u8("\x01x", 2, WCWIDTH_STRICT, &opts, &len, &error));
+    ASSERT_EQ(0, len);
+}
+
+TEST(u32_encode_and_justify_failure)
+{
+    uint32_t long_text[200];
+    uint32_t *out;
+    wcwidth_align_opts_t opts = opts_of(0, " ", 1);
+    size_t len = 0;
+    int error = 0;
+    size_t i;
+
+    for (i = 0; i < sizeof(long_text) / sizeof(long_text[0]); i++)
+        long_text[i] = 0x4E2D;
+    out = wcwidth_ljust_u32(long_text, 200, WCWIDTH_PARSE, &opts, &len, &error);
+    ASSERT_NOT_NULL(out);
+    ASSERT_EQ(200, len);
+    free(out);
+
+    opts.dest_width = (size_t) -1 - 2;
+    len = 0;
+    ASSERT_NULL(wcwidth_ljust_u32(long_text, 200, WCWIDTH_PARSE, &opts, &len, &error));
+}
+
 int
 main(void)
 {
@@ -312,5 +354,7 @@ main(void)
     RUN_TEST(align_control_codes_strict);
     RUN_TEST(null_opts_defaults);
     RUN_TEST(align_null_and_empty_input);
+    RUN_TEST(strict_error_reports_zero_length);
+    RUN_TEST(u32_encode_and_justify_failure);
     return test_summary();
 }

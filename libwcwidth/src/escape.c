@@ -516,10 +516,6 @@ wcwidth_escape_strip_u32(const uint32_t *codepoints, size_t n, size_t *out_len)
     char *utf8;
     uint32_t *result;
 
-    if (out_len != NULL) {
-        *out_len = 0;
-    }
-
     utf8 = wcwidth_encode_u32(codepoints, n, enc_stack, sizeof(enc_stack), &enc_len);
     if (utf8 == NULL) {
         return NULL;

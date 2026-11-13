@@ -30,7 +30,7 @@ typedef struct
     wcwidth_ts_params_t params;
     const char *text; /* pointer into original buffer */
     size_t text_len;
-    char terminator; /* '\x07' or '\x1b' */
+    char terminator; /* '\x07' (BEL) or '\\' (ST, preceded by ESC) */
 } wcwidth_text_sizing_t;
 
 /* Parse OSC 66 parameters from the colon-separated meta string.
