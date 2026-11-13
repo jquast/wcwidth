@@ -1,21 +1,15 @@
 /*
- * Text wrapping for terminal text, with unicode, CJK, emoji, and terminal
- * sequence support.
- *
- * This is a simplified C11 implementation derived from Python's textwrap.
- * Differences from the Python stdlib textwrap are documented in
- * docs/libwcwidth.rst.  In particular:
- *   - Word splitting is on ASCII space only, and wcwidth_wrap_opts_t carries
- *     the options with a C implementation; break_on_hyphens,
- *     fix_sentence_endings, and propagate_sgr are Python-only.
- *   - OSC 8 hyperlinks are not implemented; they are measured as generic
- *     zero-width OSCs and are not continued across wrapped lines.
+ * Text wrapping for terminal text, derived from Python's textwrap.  Break opportunities follow
+ * UAX #14 by default, with an option to split on ASCII space only.  docs/libwcwidth.rst lists the
+ * differences from the Python stdlib, including the absent fix_sentence_endings and propagate_sgr
+ * options and OSC 8 handling.
  */
 #include "wcwidth/textwrap.h"
 #include "wcwidth/width.h"
 #include "wcwidth/escape.h"
 #include "wcwidth/grapheme.h"
 #include "wcwidth/utf8.h"
+#include "wcwidth/linebreak.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -34,11 +28,13 @@ const wcwidth_wrap_opts_t WCWIDTH_WRAP_OPTS_DEFAULT = {
     .expand_tabs = true,
     .replace_whitespace = true,
     .break_long_words = true,
+    .break_on_hyphens = true,
     .drop_whitespace = true,
     .max_lines = 0,
     .initial_indent = "",
     .subsequent_indent = "",
     .placeholder = " [...]",
+    .line_break = WCWIDTH_LINE_BREAK_UNICODE,
 };
 
 typedef struct
@@ -309,14 +305,26 @@ expand_tabs_to(const char *text, size_t len, int ts, sbuf_t *out)
 }
 
 static bool
-replace_ws_to(const char *text, size_t len, sbuf_t *out)
+replace_ws_to(const char *text, size_t len, bool unicode_breaks, sbuf_t *out)
 {
     size_t i;
     sbuf_init(out);
     for (i = 0; i < len; i++) {
         unsigned char ch = (unsigned char) text[i];
-        char c =
-            (ch == '\n' || ch == '\r' || ch == '\v' || ch == '\f' || ch == '\t') ? ' ' : (char) ch;
+        char c;
+        if (unicode_breaks && ch == 0xC2 && i + 1 < len && (unsigned char) text[i + 1] == 0x85) {
+            c = ' ';
+            i++;
+        }
+        else if (unicode_breaks && ch == 0xE2 && i + 2 < len && (unsigned char) text[i + 1] == 0x80
+                 && ((unsigned char) text[i + 2] == 0xA8 || (unsigned char) text[i + 2] == 0xA9)) {
+            c = ' ';
+            i += 2;
+        }
+        else {
+            c = (ch == '\n' || ch == '\r' || ch == '\v' || ch == '\f' || ch == '\t') ? ' '
+                                                                                     : (char) ch;
+        }
         if (!sbuf_append(out, &c, 1)) {
             sbuf_free(out);
             return false;
@@ -360,7 +368,8 @@ cl_push(chunklist_t *cl, const char *data, size_t len)
     cl->chunks[cl->count].data = malloc(len + 1);
     if (cl->chunks[cl->count].data == NULL)
         return false;
-    memcpy(cl->chunks[cl->count].data, data, len);
+    if (len > 0)
+        memcpy(cl->chunks[cl->count].data, data, len);
     cl->chunks[cl->count].data[len] = '\0';
     cl->chunks[cl->count].len = len;
     cl->count++;
@@ -454,13 +463,122 @@ cl_reverse(chunklist_t *cl)
     }
 }
 
+/* Space characters split into their own chunk, as the Python splitter and textwrap do. */
+static bool
+is_breaking_space(uint32_t cp)
+{
+    return cp == ' ' || cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200A) || cp == 0x3000;
+}
+
 /*
- * Split processed text into word and whitespace chunks.
+ * Split processed text at UAX #14 break opportunities.
  *
- * The processed text has already been tab-expanded and whitespace-replaced
- * (newlines etc. -> space).  Splitting is on ASCII space only; escape
- * sequences are kept attached to adjacent words.  Consecutive spaces
- * produce a single whitespace chunk.
+ * Escape sequences are outside the break analysis and stay attached to the following character,
+ * as in the ASCII splitter.  Mandatory breaks (LB4, LB5) become their own chunk so
+ * _wrap_chunks() can flush the line.
+ */
+static bool
+_split_uax14(const char *text, size_t len, chunklist_t *out, const wcwidth_wrap_opts_t *opts)
+{
+    uint32_t *cps = NULL;
+    size_t *char_end = NULL;
+    size_t *breaks = NULL;
+    uint8_t *mandatory = NULL;
+    size_t nvis = 0;
+    size_t nbreaks;
+    size_t i = 0;
+    size_t b;
+    bool ok = false;
+
+    cps = malloc((len + 1) * sizeof(*cps));
+    char_end = malloc((len + 1) * sizeof(*char_end));
+    if (cps == NULL)
+        goto done;
+    if (char_end == NULL)
+        goto done;
+
+    while (i < len) {
+        wcwidth_esc_result_t r;
+        uint32_t cp;
+        size_t slen;
+
+        if (text[i] == ESC) {
+            wcwidth_escape_classify(text, len, i, &r);
+            i += r.length;
+            continue;
+        }
+        cp = utf8_decode(text + i, len - i, &slen);
+        i += slen;
+        cps[nvis] = cp;
+        char_end[nvis] = i;
+        nvis++;
+    }
+
+    breaks = malloc((nvis + 1) * sizeof(*breaks));
+    mandatory = malloc((nvis + 1) * sizeof(*mandatory));
+    if (breaks == NULL)
+        goto done;
+    if (mandatory == NULL)
+        goto done;
+    nbreaks = wcwidth_linebreak_breaks_u32(cps, nvis, breaks, mandatory, nvis + 1,
+                                           opts->break_on_hyphens);
+    if (nbreaks == (size_t) -1)
+        goto done;
+
+    {
+        size_t start = 0;
+        for (b = 0; b < nbreaks; b++) {
+            size_t k = breaks[b];
+            size_t end;
+            end = (b + 1 < nbreaks) ? char_end[k - 1] : len;
+            if (mandatory[b]) {
+                size_t marker = (k >= 2) ? char_end[k - 2] : start;
+                if (cps[k - 1] == '\n' && k >= 2 && cps[k - 2] == '\r')
+                    marker = (k >= 3) ? char_end[k - 3] : start;
+                if (marker > start) {
+                    if (!cl_push(out, text + start, marker - start))
+                        goto done;
+                }
+                if (!cl_push(out, text + marker, end - marker))
+                    goto done;
+            }
+            else {
+                size_t split = k;
+                while (split > 0 && is_breaking_space(cps[split - 1]))
+                    split--;
+                if (split > 0 && split < k) {
+                    size_t split_byte = char_end[split - 1];
+                    if (!cl_push(out, text + start, split_byte - start))
+                        goto done;
+                    if (!cl_push(out, text + split_byte, end - split_byte))
+                        goto done;
+                }
+                else if (!cl_push(out, text + start, end - start)) {
+                    goto done;
+                }
+            }
+            start = end;
+        }
+        if (start < len) {
+            if (!cl_push(out, text + start, len - start))
+                goto done;
+        }
+    }
+    ok = true;
+
+done:
+    free(cps);
+    free(char_end);
+    free(breaks);
+    free(mandatory);
+    return ok;
+}
+
+/*
+ * Split processed text into word and whitespace chunks.  By this point the text is tab expanded
+ * and whitespace replaced when those options are set.  WCWIDTH_LINE_BREAK_ASCII splits on ASCII
+ * space; the default WCWIDTH_LINE_BREAK_UNICODE uses UAX #14 opportunities.  Escape sequences
+ * stay attached to adjacent words, and consecutive spaces form one chunk.
  */
 static bool
 _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunklist_t *out)
@@ -483,12 +601,19 @@ _split(const char *text, size_t text_len, const wcwidth_wrap_opts_t *opts, chunk
 
     if (opts->replace_whitespace) {
         sbuf_t tmp;
-        if (!replace_ws_to(proc.data, proc.len, &tmp)) {
+        if (!replace_ws_to(proc.data, proc.len, opts->line_break == WCWIDTH_LINE_BREAK_UNICODE,
+                           &tmp)) {
             sbuf_free(&proc);
             return false;
         }
         sbuf_free(&proc);
         proc = tmp;
+    }
+
+    if (opts->line_break == WCWIDTH_LINE_BREAK_UNICODE) {
+        bool split_ok = _split_uax14(proc.data, proc.len, out, opts);
+        sbuf_free(&proc);
+        return split_ok;
     }
 
     sbuf_init(&word);
@@ -566,6 +691,38 @@ find_break_pos(const char *text, size_t len, int max_w, const wcwidth_wrap_opts_
     return idx;
 }
 
+/* Byte offset just after the last hyphen in text[:limit] that has text before it, or 0.  Escape
+ * sequences are skipped, matching Python's _handle_long_word(). */
+static size_t
+find_hyphen_break(const char *text, size_t len, size_t limit)
+{
+    size_t idx = 0;
+    size_t hyphen = 0;
+    bool seen_text = false;
+    wcwidth_esc_result_t r;
+
+    while (idx < limit) {
+        uint32_t cp;
+        size_t slen;
+
+        if (text[idx] == ESC) {
+            wcwidth_escape_classify(text, len, idx, &r);
+            idx += r.length;
+            continue;
+        }
+        cp = utf8_decode(text + idx, len - idx, &slen);
+        if (cp == '-') {
+            if (seen_text)
+                hyphen = idx + slen;
+        }
+        else {
+            seen_text = true;
+        }
+        idx += slen;
+    }
+    return hyphen;
+}
+
 static size_t
 find_first_vis(const char *text, size_t len)
 {
@@ -611,6 +768,11 @@ handle_long(chunklist_t *chunks, chunklist_t *cur_line, int cur_w, int line_w,
     }
 
     bp = find_break_pos(c->data, c->len, sp_left, opts);
+    if (opts->break_on_hyphens) {
+        size_t hyphen = find_hyphen_break(c->data, c->len, bp);
+        if (hyphen > 0)
+            bp = hyphen;
+    }
     if (cur_line->count == 0 && (bp == 0 || (bp < c->len && chunk_width(c->data, bp, opts) == 0))) {
         bp = find_first_vis(c->data, c->len);
     }
@@ -677,7 +839,8 @@ lines_push(lines_t *ll, const char *s, size_t n)
     ll->data[ll->count] = malloc(n + 1);
     if (ll->data[ll->count] == NULL)
         return false;
-    memcpy(ll->data[ll->count], s, n);
+    if (n > 0)
+        memcpy(ll->data[ll->count], s, n);
     ll->data[ll->count][n] = '\0';
     ll->lens[ll->count] = n;
     ll->count++;
@@ -696,6 +859,24 @@ lines_free(lines_t *ll)
     ll->lens = NULL;
     ll->count = 0;
     ll->cap = 0;
+}
+
+static bool
+is_mandatory_break_chunk(const chunk_t *c, const wcwidth_wrap_opts_t *opts)
+{
+    if (opts->line_break != WCWIDTH_LINE_BREAK_UNICODE)
+        return false;
+    if (c->len == 1
+        && (c->data[0] == '\n' || c->data[0] == '\r' || c->data[0] == '\v' || c->data[0] == '\f'))
+        return true;
+    if (c->len == 2 && c->data[0] == '\r')
+        return true;
+    if (c->len == 2 && c->data[0] == '\xc2' && c->data[1] == '\x85')
+        return true;
+    if (c->len == 3 && c->data[0] == '\xe2' && c->data[1] == '\x80'
+        && (c->data[2] == '\xa8' || c->data[2] == '\xa9'))
+        return true;
+    return false;
 }
 
 static int
@@ -722,6 +903,11 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
         int indent_w = str_width(indent, opts);
         int line_w = opts->width - indent_w;
 
+        while (chunks->count > 0 && is_mandatory_break_chunk(cl_last(chunks), opts))
+            cl_pop(chunks);
+        if (chunks->count == 0)
+            break;
+
         cl_init(&cur);
 
         if (opts->drop_whitespace && lines->count > 0 && chunks->count > 0) {
@@ -740,7 +926,10 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
 
         while (chunks->count > 0) {
             chunk_t *c = cl_last(chunks);
-            int cw = chunk_width(c->data, c->len, opts);
+            int cw;
+            if (is_mandatory_break_chunk(c, opts))
+                break;
+            cw = chunk_width(c->data, c->len, opts);
             if (cur_w + cw <= line_w) {
                 cl_move(chunks, &cur);
                 cur_w += cw;
@@ -807,7 +996,7 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
             if (opts->max_lines <= 0 || lines->count + 1 < (size_t) opts->max_lines
                 || (no_more && cur_w <= line_w)) {
                 if (opts->drop_whitespace) {
-                    if (memchr(lc.data, ESC, lc.len) != NULL) {
+                    if (lc.len > 0 && memchr(lc.data, ESC, lc.len) != NULL) {
                         sbuf_t st, sq;
                         split_seqs(lc.data, lc.len, &st, &sq);
                         bool ws = (st.len > 0 && is_all_ws(st.data, st.len))
@@ -908,7 +1097,8 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                                 i++;
                             }
                         }
-                        if (chunk_width(prev.data, prev.len, opts) + pw <= opts->width) {
+                        bool fits = chunk_width(prev.data, prev.len, opts) + pw <= opts->width;
+                        if (fits) {
                             char *np = malloc(prev.len + strlen(opts->placeholder) + 1);
                             if (np != NULL) {
                                 memcpy(np, prev.data, prev.len);
