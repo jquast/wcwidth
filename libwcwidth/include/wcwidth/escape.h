@@ -45,7 +45,7 @@ typedef struct
     size_t ts_meta_len;
     const char *ts_text;
     size_t ts_text_len;
-    char ts_terminator; /* '\x07' or '\x1b' (ST) */
+    char ts_terminator; /* last byte: '\x07' (BEL) or '\\' (ST, preceded by ESC) */
 } wcwidth_esc_result_t;
 
 /* Classify the escape sequence starting at *text[offset]*.

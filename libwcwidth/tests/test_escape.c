@@ -208,14 +208,36 @@ TEST(classify_param_edges)
     ASSERT_EQ(WCWIDTH_ESC_OTHER, classify("\x1b[?104h", &r));
 }
 
-TEST(classify_osc66_st_terminator)
+TEST(classify_osc66_terminators)
 {
-    wcwidth_esc_result_t r;
+    static const char *const bel[] = {"\x1b]66;s=2:w=3;hello\x07", "\x1b]66;w=2;\x07",
+                                      "\x1b]66;w=2\x07", "\x1b]66;\x07"};
+    static const char *const st[] = {"\x1b]66;s=2:w=3;hello\x1b\\", "\x1b]66;w=2;\x1b\\",
+                                     "\x1b]66;w=2\x1b\\", "\x1b]66;\x1b\\"};
+    char buf[32];
+    size_t i;
 
-    ASSERT_EQ(WCWIDTH_ESC_OSC66, classify("\x1b]66;s=2;hi\x1b\\", &r));
-    ASSERT_EQ((size_t) 13, r.length);
-    ASSERT_EQ((int64_t) 2, (int64_t) r.ts_text_len);
-    ASSERT_EQ(0, memcmp(r.ts_text, "hi", 2));
+    for (i = 0; i < sizeof(bel) / sizeof(bel[0]); i++) {
+        wcwidth_esc_result_t r_bel;
+        wcwidth_esc_result_t r_st;
+
+        ASSERT_EQ(WCWIDTH_ESC_OSC66, classify(bel[i], &r_bel));
+        ASSERT_EQ(WCWIDTH_ESC_OSC66, classify(st[i], &r_st));
+
+        /* ST is one byte longer than BEL; meta and text must agree. */
+        ASSERT_EQ((int64_t) (r_bel.length + 1), (int64_t) r_st.length);
+        ASSERT_EQ((int64_t) r_bel.ts_meta_len, (int64_t) r_st.ts_meta_len);
+        ASSERT_EQ((int64_t) r_bel.ts_text_len, (int64_t) r_st.ts_text_len);
+        ASSERT_EQ(0, memcmp(r_bel.ts_meta, r_st.ts_meta, r_bel.ts_meta_len));
+        ASSERT_EQ(0, memcmp(r_bel.ts_text, r_st.ts_text, r_bel.ts_text_len));
+        ASSERT_EQ((int64_t) '\x07', (int64_t) r_bel.ts_terminator);
+        ASSERT_EQ((int64_t) '\\', (int64_t) r_st.ts_terminator);
+
+        ASSERT_EQ((int64_t) r_bel.ts_text_len,
+                  (int64_t) wcwidth_escape_strip(bel[i], r_bel.length, buf, sizeof(buf), NULL));
+        ASSERT_EQ((int64_t) r_bel.ts_text_len,
+                  (int64_t) wcwidth_escape_strip(st[i], r_st.length, buf, sizeof(buf), NULL));
+    }
 }
 
 TEST(classify_non_escape)
@@ -255,7 +277,7 @@ main(void)
     RUN_TEST(strip_u32_heap);
     RUN_TEST(iter_leading_and_trailing_visible);
     RUN_TEST(classify_param_edges);
-    RUN_TEST(classify_osc66_st_terminator);
+    RUN_TEST(classify_osc66_terminators);
     RUN_TEST(classify_non_escape);
     RUN_TEST(strip_null_out_len);
     RUN_TEST(has_cursor_movement_cr_and_cub);
