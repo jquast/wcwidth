@@ -179,6 +179,13 @@ def test_wrap_hyphenated_words(text, w, expected):
     assert wrap(text, w) == expected
 
 
+def test_wrap_hyphen_break_maps_past_sequences():
+    """A hyphen break after a leading sequence maps back to the original position."""
+    text = f'succinyl-{SGR_RED}6-hydroxy-2,4-cyclohexadiene-1-carboxylate'
+    assert wrap(text, 10, propagate_sgr=False) == [
+        f'succinyl-{SGR_RED}', '6-hydroxy-', '2,4-cycloh', 'exadiene-', '1-carboxyl', 'ate']
+
+
 LONG_WORD_TEXT = (
     'We used enyzme 2-succinyl-6-hydroxy-2,4-cyclohexadiene-1-carboxylate'
     ' synthase.\n')
@@ -720,6 +727,11 @@ def test_wrap_bare_esc():
 def test_wrap_bare_esc_before_wide_char():
     """A bare ESC and the zero-width NUL that follows it precede the wide character."""
     assert wrap('\x1b\x00あ', 1) == ['\x1b\x00', 'あ']
+
+
+def test_wrap_bare_esc_starts_no_sequence():
+    """A bare ESC that starts no sequence is the unit kept when the wide character cannot fit."""
+    assert wrap('\x1bあ', 1) == ['\x1b', 'あ']
 
 
 def test_wrap_embedded_nul():
