@@ -1170,10 +1170,9 @@ _wrap_to_buffer(const char *text, size_t text_len, const wcwidth_wrap_opts_t *op
     if (!_split(text, text_len, opts, &chunks))
         return -1;
 
-    if (chunks.count == 0) {
-        cl_free(&chunks);
-        return _emit_empty(out, out_len, offsets, offset_count);
-    }
+    /* Non-empty text always yields at least one chunk: words and escapes are
+     * appended to a word chunk, and spaces form their own chunk. */
+    WCWIDTH_ASSERT(chunks.count > 0);
 
     rc = _wrap_chunks(&chunks, opts, &lines);
     cl_free(&chunks);
