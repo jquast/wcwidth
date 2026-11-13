@@ -61,6 +61,8 @@ def test_cmake_and_setuptools_source_lists_parity():
     assert py_sources == cm_sources == on_disk
 
 
+@pytest.mark.skipif(not wcwidth.HAS_C_EXTENSION,
+                    reason='C extension not loaded; there is no build mode to report')
 def test_c_extension_assert_mode():
     """The C extension reports whether assertions were compiled in."""
     # given,
