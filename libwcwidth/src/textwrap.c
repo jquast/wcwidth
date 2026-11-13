@@ -394,6 +394,29 @@ cl_prepend_last(chunklist_t *cl, const char *s, size_t n)
     return true;
 }
 
+/*
+ * Append *s* to the last chunk of *cl*.  Used when the chunk that held these sequences is dropped
+ * and no following chunk exists to carry them.
+ */
+static bool
+cl_append_last(chunklist_t *cl, const char *s, size_t n)
+{
+    chunk_t *c;
+    char *nd;
+    WCWIDTH_ASSERT(cl->count > 0);
+    c = &cl->chunks[cl->count - 1];
+    nd = malloc(c->len + n + 1);
+    if (nd == NULL)
+        return false;
+    memcpy(nd, c->data, c->len);
+    memcpy(nd + c->len, s, n);
+    nd[c->len + n] = '\0';
+    free(c->data);
+    c->data = nd;
+    c->len += n;
+    return true;
+}
+
 static void
 cl_pop(chunklist_t *cl)
 {
@@ -930,8 +953,12 @@ _wrap_chunks(chunklist_t *chunks, const wcwidth_wrap_opts_t *opts, lines_t *line
                 dropped_whitespace = true;
                 cur_w -= chunk_width(c->data, c->len, opts);
                 cl_pop(&cur);
-                if (sq.len > 0 && chunks->count > 0)
-                    cl_prepend_last(chunks, sq.data, sq.len);
+                if (sq.len > 0) {
+                    if (cur.count > 0)
+                        cl_append_last(&cur, sq.data, sq.len);
+                    else if (chunks->count > 0)
+                        cl_prepend_last(chunks, sq.data, sq.len);
+                }
             }
             sbuf_free(&st);
             sbuf_free(&sq);
