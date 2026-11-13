@@ -586,6 +586,22 @@ OSC_END_BEL = '\x1b]8;;\x07'
             '\x1b]8;foo=bar:id=mylink;http://example.com\x1b\\here\x1b]8;;\x1b\\',
         ],
     ),
+    (
+        '\x1b]8;other_id=label;http://example.com\x1b\\Click here\x1b]8;;\x1b\\',
+        6,
+        [
+            '\x1b]8;id=00000001:other_id=label;http://example.com\x1b\\Click\x1b]8;;\x1b\\',
+            '\x1b]8;id=00000001:other_id=label;http://example.com\x1b\\here\x1b]8;;\x1b\\',
+        ],
+    ),
+    (
+        '\x1b]8;custom=id=value;http://example.com\x07Click here\x1b]8;;\x07',
+        6,
+        [
+            '\x1b]8;id=00000001:custom=id=value;http://example.com\x07Click\x1b]8;;\x07',
+            '\x1b]8;id=00000001:custom=id=value;http://example.com\x07here\x1b]8;;\x07',
+        ],
+    ),
     (   # wide grapheme after OSC 8 open at width 1 (must not hang)
         '\x1b]8;;u\x07😀',
         1,
