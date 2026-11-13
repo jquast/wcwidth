@@ -499,11 +499,20 @@ recognized names:
     ('absolutetelnet/ssh', 'alacritty', 'apple_terminal', 'bobcat', 'contour',
      'extraterm', 'foot', 'ghostty', 'hyper', 'iterm.app', 'iterm2', 'kitty',
      'konsole', 'mintty', 'mlterm', 'pterm', 'putty', 'rio', 'rxvt',
-     'rxvt-unicode-256color', 'st', 'st-256color', 'tabby', 'terminology',
-     'urxvt', 'vscode', 'vte', 'warp', 'warpterminal', 'wezterm', 'xterm',
-     'xterm-ghostty', 'xterm-kitty', 'xterm.js')
+     'rxvt-unicode-256color', 'st', 'st-256color', 'tabby', 'tecolot',
+     'terminology', 'termy', 'urxvt', 'vscode', 'vte', 'warp', 'warpterminal',
+     'wezterm', 'xterm', 'xterm-ghostty', 'xterm-kitty', 'xterm.js',
+     'xterm.net')
 
 .. END_LIST_TERM_PROGRAMS
+
+Some terminals are *intentionally not included*. Multiplexers (tmux, screen, zellij) are excluded
+because their results vary by host terminal. Terminals that do not identify themselves by XTVERSION,
+ENQ, ``TERM_PROGRAM``, or a unique ``TERM`` value are also excluded:
+|undetectable_terminals|
+
+.. |undetectable_terminals| replace:: conemu, otty, qtermwidget, securecrt,
+   teraterm, weston-terminal, windowsterminal, zutty
 
 ``term_program=False`` (the default for `width()`_, `ljust()`_, `rjust()`_, `center()`_,
 `wrap()`_, and `clip()`_) disables terminal corrections.

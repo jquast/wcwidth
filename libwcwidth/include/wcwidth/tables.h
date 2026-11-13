@@ -102,7 +102,7 @@ extern const wcwidth_interval_t WCWIDTH_ISC_INVISIBLE_STACKER[];
 #define WCWIDTH_ISC_INVISIBLE_STACKER_LEN 14
 
 extern const wcwidth_terminal_override_t WCWIDTH_TERMINAL_OVERRIDES[];
-#define WCWIDTH_TERMINAL_OVERRIDES_LEN 23
+#define WCWIDTH_TERMINAL_OVERRIDES_LEN 26
 
 extern const wcwidth_terminal_alias_t WCWIDTH_TERMINAL_ALIASES[];
 #define WCWIDTH_TERMINAL_ALIASES_LEN 11

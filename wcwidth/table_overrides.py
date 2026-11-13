@@ -90,7 +90,33 @@ _SET_WIDE_OVERRIDES_3CBB3895: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: mlterm, warp
+# For terminals: alacritty
+_SET_WIDE_OVERRIDES_4381BAA0: dict[str, tuple[tuple[int, int], ...]] = {
+    'narrower': (
+        (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
+        (0x191a0, 0x191d2,),  # Jurchen Radical-01      ..Jurchen Radical-51
+        (0x1f1ae, 0x1f1ae,),  # Tomobiki Symbol
+        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
+        (0x1f6d9, 0x1f6d9,),  # Lighthouse
+        (0x1f7da, 0x1f7da,),  # Black Circle With White Vertical Bar
+        (0x1fa8b, 0x1fa8d,),  # Meteor                  ..Net With Handle
+        (0x1facc, 0x1facc,),  # Monarch Butterfly
+        (0x1fadd, 0x1fadd,),  # Pickle
+        (0x1faeb, 0x1faeb,),  # Cracking Face
+    ),
+}
+
+# For terminals: foot
+_SET_WIDE_OVERRIDES_46612890: dict[str, tuple[tuple[int, int], ...]] = {
+    'narrower': (
+        (0x0fa6e, 0x0fa6f,),  # (nil)
+        (0x0fada, 0x0faff,),  # (nil)
+        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
+        (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
+    ),
+}
+
+# For terminals: mlterm, termy, warp
 _SET_WIDE_OVERRIDES_64DD0D04: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x02630, 0x02637,),  # Trigram For Heaven      ..Trigram For Earth
@@ -115,13 +141,6 @@ _SET_WIDE_OVERRIDES_64DD0D04: dict[str, tuple[tuple[int, int], ...]] = {
         (0x1fae9, 0x1faeb,),  # Face With Bags Under Eye..Cracking Face
         (0x1faef, 0x1faef,),  # Fight Cloud
         (0x1faf9, 0x1fafa,),  # Leftwards Thumb Sign    ..Rightwards Thumb Sign
-    ),
-}
-
-# For terminals: alacritty, pterm, st, urxvt, wezterm, xterm
-_SET_WIDE_OVERRIDES_6E5EF6CC: dict[str, tuple[tuple[int, int], ...]] = {
-    'narrower': (
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
     ),
 }
 
@@ -188,7 +207,7 @@ _SET_WIDE_OVERRIDES_78B553AB: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: contour
+# For terminals: contour, tecolot, xterm.net
 _SET_WIDE_OVERRIDES_7D53D5DB: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
@@ -201,14 +220,6 @@ _SET_WIDE_OVERRIDES_7D53D5DB: dict[str, tuple[tuple[int, int], ...]] = {
         (0x1fadd, 0x1fadd,),  # Pickle
         (0x1faeb, 0x1faeb,),  # Cracking Face
         (0x1faf9, 0x1fafa,),  # Leftwards Thumb Sign    ..Rightwards Thumb Sign
-    ),
-}
-
-# For terminals: foot
-_SET_WIDE_OVERRIDES_98684D9B: dict[str, tuple[tuple[int, int], ...]] = {
-    'narrower': (
-        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
-        (0x1f3fb, 0x1f3ff,),  # Emoji Modifier Fitzpatri..Emoji Modifier Fitzpatri
     ),
 }
 
@@ -253,6 +264,25 @@ _SET_WIDE_OVERRIDES_A912FF1E: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
+# For terminals: st, urxvt, xterm
+_SET_WIDE_OVERRIDES_AA063934: dict[str, tuple[tuple[int, int], ...]] = {
+    'narrower': (
+        (0x0fa6e, 0x0fa6f,),  # (nil)
+        (0x0fada, 0x0faff,),  # (nil)
+        (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
+        (0x191a0, 0x191d2,),  # Jurchen Radical-01      ..Jurchen Radical-51
+        (0x1f1ae, 0x1f1ae,),  # Tomobiki Symbol
+        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
+        (0x1f6d9, 0x1f6d9,),  # Lighthouse
+        (0x1f7da, 0x1f7da,),  # Black Circle With White Vertical Bar
+        (0x1fa8b, 0x1fa8d,),  # Meteor                  ..Net With Handle
+        (0x1facc, 0x1facc,),  # Monarch Butterfly
+        (0x1fadd, 0x1fadd,),  # Pickle
+        (0x1faeb, 0x1faeb,),  # Cracking Face
+        (0x1faf9, 0x1fafa,),  # Leftwards Thumb Sign    ..Rightwards Thumb Sign
+    ),
+}
+
 # For terminals: terminology
 _SET_WIDE_OVERRIDES_BC68C805: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
@@ -271,6 +301,25 @@ _SET_WIDE_OVERRIDES_BC68C805: dict[str, tuple[tuple[int, int], ...]] = {
         (0x1fad7, 0x1fadd,),  # Pouring Liquid          ..Pickle
         (0x1fadf, 0x1faeb,),  # Splatter                ..Cracking Face
         (0x1faef, 0x1fafa,),  # Fight Cloud             ..Rightwards Thumb Sign
+    ),
+}
+
+# For terminals: pterm, wezterm
+_SET_WIDE_OVERRIDES_CD433FE0: dict[str, tuple[tuple[int, int], ...]] = {
+    'narrower': (
+        (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
+        (0x191a0, 0x191d2,),  # Jurchen Radical-01      ..Jurchen Radical-51
+        (0x1f1ae, 0x1f1ae,),  # Tomobiki Symbol
+        (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
+        (0x1f6d8, 0x1f6d9,),  # Landslide               ..Lighthouse
+        (0x1f7da, 0x1f7da,),  # Black Circle With White Vertical Bar
+        (0x1fa8a, 0x1fa8e,),  # Trombone                ..Treasure Chest
+        (0x1fac8, 0x1fac8,),  # Hairy Creature
+        (0x1facc, 0x1facd,),  # Monarch Butterfly       ..Orca
+        (0x1fadd, 0x1fadd,),  # Pickle
+        (0x1faea, 0x1faeb,),  # Distorted Face          ..Cracking Face
+        (0x1faef, 0x1faef,),  # Fight Cloud
+        (0x1faf9, 0x1fafa,),  # Leftwards Thumb Sign    ..Rightwards Thumb Sign
     ),
 }
 
@@ -338,31 +387,34 @@ _SET_WIDE_OVERRIDES_EE7A1B97: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 WIDE_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
-    'alacritty': _SET_WIDE_OVERRIDES_6E5EF6CC,
+    'alacritty': _SET_WIDE_OVERRIDES_4381BAA0,
     'apple_terminal': _SET_WIDE_OVERRIDES_23A62FFD,
     'bobcat': _SET_WIDE_OVERRIDES_ECBD3770,
     'contour': _SET_WIDE_OVERRIDES_7D53D5DB,
     'extraterm': _SET_WIDE_OVERRIDES_766614D8,
-    'foot': _SET_WIDE_OVERRIDES_98684D9B,
+    'foot': _SET_WIDE_OVERRIDES_46612890,
     'ghostty': _SET_WIDE_OVERRIDES_CF30CE25,
     'iterm2': _SET_WIDE_OVERRIDES_1C271C46,
     'kitty': _SET_WIDE_OVERRIDES_383629C7,
     'konsole': _SET_WIDE_OVERRIDES_3CBB3895,
     'mintty': _SET_WIDE_OVERRIDES_DB01D1AB,
     'mlterm': _SET_WIDE_OVERRIDES_64DD0D04,
-    'pterm': _SET_WIDE_OVERRIDES_6E5EF6CC,
+    'pterm': _SET_WIDE_OVERRIDES_CD433FE0,
     'rio': _SET_WIDE_OVERRIDES_EE7A1B97,
-    'st': _SET_WIDE_OVERRIDES_6E5EF6CC,
+    'st': _SET_WIDE_OVERRIDES_AA063934,
+    'tecolot': _SET_WIDE_OVERRIDES_7D53D5DB,
     'terminology': _SET_WIDE_OVERRIDES_BC68C805,
-    'urxvt': _SET_WIDE_OVERRIDES_6E5EF6CC,
+    'termy': _SET_WIDE_OVERRIDES_64DD0D04,
+    'urxvt': _SET_WIDE_OVERRIDES_AA063934,
     'vte': _SET_WIDE_OVERRIDES_78B553AB,
     'warp': _SET_WIDE_OVERRIDES_64DD0D04,
-    'wezterm': _SET_WIDE_OVERRIDES_6E5EF6CC,
-    'xterm': _SET_WIDE_OVERRIDES_6E5EF6CC,
+    'wezterm': _SET_WIDE_OVERRIDES_CD433FE0,
+    'xterm': _SET_WIDE_OVERRIDES_AA063934,
     'xterm.js': _SET_WIDE_OVERRIDES_A912FF1E,
+    'xterm.net': _SET_WIDE_OVERRIDES_7D53D5DB,
 }
 
-# For terminals: alacritty, apple_terminal, extraterm, foot, mintty, mlterm, pterm, rio, st, terminology, urxvt, vte, warp, wezterm, xterm, xterm.js
+# For terminals: alacritty, apple_terminal, extraterm, foot, mintty, mlterm, pterm, rio, st, terminology, termy, urxvt, vte, warp, wezterm, xterm, xterm.js
 _SET_SRI_OVERRIDES_6E5EF6CC: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
@@ -380,6 +432,7 @@ SRI_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'rio': _SET_SRI_OVERRIDES_6E5EF6CC,
     'st': _SET_SRI_OVERRIDES_6E5EF6CC,
     'terminology': _SET_SRI_OVERRIDES_6E5EF6CC,
+    'termy': _SET_SRI_OVERRIDES_6E5EF6CC,
     'urxvt': _SET_SRI_OVERRIDES_6E5EF6CC,
     'vte': _SET_SRI_OVERRIDES_6E5EF6CC,
     'warp': _SET_SRI_OVERRIDES_6E5EF6CC,
@@ -408,15 +461,6 @@ SFZ_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'kitty': _SET_SFZ_OVERRIDES_73E5B60D,
     'mintty': _SET_SFZ_OVERRIDES_8DDFF0C4,
     'rio': _SET_SFZ_OVERRIDES_8DDFF0C4,
-}
-
-# For terminals: iterm2
-_SET_VS16_OVERRIDES_82FD018F: dict[str, tuple[tuple[int, int], ...]] = {
-    'narrower': (
-        (0x00023, 0x00023,),  # Number Sign
-        (0x0002a, 0x0002a,),  # Asterisk
-        (0x00030, 0x00039,),  # Digit Zero              ..Digit Nine
-    ),
 }
 
 # For terminals: alacritty, apple_terminal, mlterm, pterm, st, terminology, urxvt, vte, wezterm, xterm, xterm.js
@@ -541,7 +585,6 @@ _SET_VS16_OVERRIDES_F48531B2: dict[str, tuple[tuple[int, int], ...]] = {
 VS16_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'alacritty': _SET_VS16_OVERRIDES_F48531B2,
     'apple_terminal': _SET_VS16_OVERRIDES_F48531B2,
-    'iterm2': _SET_VS16_OVERRIDES_82FD018F,
     'mlterm': _SET_VS16_OVERRIDES_F48531B2,
     'pterm': _SET_VS16_OVERRIDES_F48531B2,
     'st': _SET_VS16_OVERRIDES_F48531B2,
@@ -583,96 +626,21 @@ _SET_VS15_OVERRIDES_72B9888B: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: warp
-_SET_VS15_OVERRIDES_D32653C3: dict[str, tuple[tuple[int, int], ...]] = {
+# For terminals: termy
+_SET_VS15_OVERRIDES_C90DACFE: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
-        (0x0231a, 0x0231b,),  # Watch                   ..Hourglass
-        (0x023e9, 0x023ec,),  # Black Right-pointing Dou..Black Down-pointing Doub
-        (0x023f0, 0x023f0,),  # Alarm Clock
-        (0x023f3, 0x023f3,),  # Hourglass With Flowing Sand
-        (0x025fd, 0x025fe,),  # White Medium Small Squar..Black Medium Small Squar
-        (0x02614, 0x02615,),  # Umbrella With Rain Drops..Hot Beverage
-        (0x02648, 0x02653,),  # Aries                   ..Pisces
-        (0x0267f, 0x0267f,),  # Wheelchair Symbol
-        (0x02693, 0x02693,),  # Anchor
-        (0x026a1, 0x026a1,),  # High Voltage Sign
-        (0x026aa, 0x026ab,),  # Medium White Circle     ..Medium Black Circle
-        (0x026bd, 0x026be,),  # Soccer Ball             ..Baseball
-        (0x026c4, 0x026c5,),  # Snowman Without Snow    ..Sun Behind Cloud
-        (0x026ce, 0x026ce,),  # Ophiuchus
-        (0x026d4, 0x026d4,),  # No Entry
-        (0x026ea, 0x026ea,),  # Church
-        (0x026f2, 0x026f3,),  # Fountain                ..Flag In Hole
-        (0x026f5, 0x026f5,),  # Sailboat
-        (0x026fa, 0x026fa,),  # Tent
-        (0x026fd, 0x026fd,),  # Fuel Pump
-        (0x02705, 0x02705,),  # White Heavy Check Mark
-        (0x0270a, 0x0270b,),  # Raised Fist             ..Raised Hand
-        (0x02728, 0x02728,),  # Sparkles
-        (0x0274c, 0x0274c,),  # Cross Mark
-        (0x0274e, 0x0274e,),  # Negative Squared Cross Mark
-        (0x02753, 0x02755,),  # Black Question Mark Orna..White Exclamation Mark O
-        (0x02757, 0x02757,),  # Heavy Exclamation Mark Symbol
-        (0x02795, 0x02797,),  # Heavy Plus Sign         ..Heavy Division Sign
-        (0x027b0, 0x027b0,),  # Curly Loop
-        (0x027bf, 0x027bf,),  # Double Curly Loop
-        (0x02b1b, 0x02b1c,),  # Black Large Square      ..White Large Square
-        (0x02b50, 0x02b50,),  # White Medium Star
-        (0x02b55, 0x02b55,),  # Heavy Large Circle
-        (0x1f004, 0x1f004,),  # Mahjong Tile Red Dragon
-        (0x1f30d, 0x1f30f,),  # Earth Globe Europe-afric..Earth Globe Asia-austral
-        (0x1f315, 0x1f315,),  # Full Moon Symbol
-        (0x1f31c, 0x1f31c,),  # Last Quarter Moon With Face
-        (0x1f378, 0x1f378,),  # Cocktail Glass
-        (0x1f393, 0x1f393,),  # Graduation Cap
-        (0x1f3a7, 0x1f3a7,),  # Headphone
-        (0x1f3ac, 0x1f3ae,),  # Clapper Board           ..Video Game
-        (0x1f3c2, 0x1f3c2,),  # Snowboarder
-        (0x1f3c4, 0x1f3c4,),  # Surfer
-        (0x1f3c6, 0x1f3c6,),  # Trophy
-        (0x1f3ca, 0x1f3ca,),  # Swimmer
-        (0x1f3e0, 0x1f3e0,),  # House Building
-        (0x1f3ed, 0x1f3ed,),  # Factory
-        (0x1f408, 0x1f408,),  # Cat
-        (0x1f415, 0x1f415,),  # Dog
-        (0x1f41f, 0x1f41f,),  # Fish
-        (0x1f426, 0x1f426,),  # Bird
-        (0x1f442, 0x1f442,),  # Ear
-        (0x1f446, 0x1f449,),  # White Up Pointing Backha..White Right Pointing Bac
-        (0x1f44d, 0x1f44e,),  # Thumbs Up Sign          ..Thumbs Down Sign
-        (0x1f453, 0x1f453,),  # Eyeglasses
-        (0x1f46a, 0x1f46a,),  # Family
-        (0x1f47d, 0x1f47d,),  # Extraterrestrial Alien
-        (0x1f4a3, 0x1f4a3,),  # Bomb
-        (0x1f4b0, 0x1f4b0,),  # Money Bag
-        (0x1f4b3, 0x1f4b3,),  # Credit Card
-        (0x1f4bb, 0x1f4bb,),  # Personal Computer
-        (0x1f4bf, 0x1f4bf,),  # Optical Disc
-        (0x1f4cb, 0x1f4cb,),  # Clipboard
-        (0x1f4da, 0x1f4da,),  # Books
-        (0x1f4df, 0x1f4df,),  # Pager
-        (0x1f4e4, 0x1f4e6,),  # Outbox Tray             ..Package
-        (0x1f4ea, 0x1f4ed,),  # Closed Mailbox With Lowe..Open Mailbox With Lowere
-        (0x1f4f7, 0x1f4f7,),  # Camera
-        (0x1f4f9, 0x1f4fb,),  # Video Camera            ..Radio
-        (0x1f508, 0x1f508,),  # Speaker
-        (0x1f50d, 0x1f50d,),  # Left-pointing Magnifying Glass
-        (0x1f512, 0x1f513,),  # Lock                    ..Open Lock
-        (0x1f550, 0x1f567,),  # Clock Face One Oclock   ..Clock Face Twelve-thirty
-        (0x1f610, 0x1f610,),  # Neutral Face
-        (0x1f687, 0x1f687,),  # Metro
-        (0x1f68d, 0x1f68d,),  # Oncoming Bus
-        (0x1f691, 0x1f691,),  # Ambulance
-        (0x1f694, 0x1f694,),  # Oncoming Police Car
-        (0x1f698, 0x1f698,),  # Oncoming Automobile
-        (0x1f6ad, 0x1f6ad,),  # No Smoking Symbol
-        (0x1f6b2, 0x1f6b2,),  # Bicycle
-        (0x1f6b9, 0x1f6ba,),  # Mens Symbol             ..Womens Symbol
-        (0x1f6bc, 0x1f6bc,),  # Baby Symbol
+        (0x03030, 0x03030,),  # Wavy Dash
+        (0x0303d, 0x0303d,),  # Part Alternation Mark
+        (0x03297, 0x03297,),  # Circled Ideograph Congratulation
+        (0x03299, 0x03299,),  # Circled Ideograph Secret
+        (0x1f202, 0x1f202,),  # Squared Katakana Sa
+        (0x1f21a, 0x1f21a,),  # Squared Cjk Unified Ideograph-7121
+        (0x1f22f, 0x1f22f,),  # Squared Cjk Unified Ideograph-6307
+        (0x1f237, 0x1f237,),  # Squared Cjk Unified Ideograph-6708
     ),
 }
 
-# For terminals: alacritty, apple_terminal, contour, extraterm, iterm2, konsole, mlterm, pterm, st, terminology, urxvt, vte, wezterm, xterm, xterm.js
+# For terminals: alacritty, apple_terminal, contour, extraterm, iterm2, konsole, mlterm, pterm, st, terminology, urxvt, vte, warp, wezterm, xterm, xterm.js
 _SET_VS15_OVERRIDES_EC2D40AC: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
         (0x0231a, 0x0231b,),  # Watch                   ..Hourglass
@@ -782,9 +750,10 @@ VS15_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'rio': _SET_VS15_OVERRIDES_0F19A03D,
     'st': _SET_VS15_OVERRIDES_EC2D40AC,
     'terminology': _SET_VS15_OVERRIDES_EC2D40AC,
+    'termy': _SET_VS15_OVERRIDES_C90DACFE,
     'urxvt': _SET_VS15_OVERRIDES_EC2D40AC,
     'vte': _SET_VS15_OVERRIDES_EC2D40AC,
-    'warp': _SET_VS15_OVERRIDES_D32653C3,
+    'warp': _SET_VS15_OVERRIDES_EC2D40AC,
     'wezterm': _SET_VS15_OVERRIDES_EC2D40AC,
     'xterm': _SET_VS15_OVERRIDES_EC2D40AC,
     'xterm.js': _SET_VS15_OVERRIDES_EC2D40AC,
@@ -799,6 +768,29 @@ _SET_NARROW_OVERRIDES_3E5607A0: dict[str, tuple[tuple[int, int], ...]] = {
         (0x0070f, 0x0070f,),  # Syriac Abbreviation Mark
         (0x00890, 0x00891,),  # Arabic Pound Mark Above ..Arabic Piastre Mark Abov
         (0x008e2, 0x008e2,),  # Arabic Disputed End Of Ayah
+        (0x110bd, 0x110bd,),  # Kaithi Number Sign
+        (0x110cd, 0x110cd,),  # Kaithi Number Sign Above
+    ),
+}
+
+# For terminals: kitty
+_SET_NARROW_OVERRIDES_4F7FBF42: dict[str, tuple[tuple[int, int], ...]] = {
+    'wider': (
+        (0x0261d, 0x0261d,),  # White Up Pointing Index
+        (0x026f9, 0x026f9,),  # Person With Ball
+        (0x0270c, 0x0270d,),  # Victory Hand            ..Writing Hand
+        (0x1f3cb, 0x1f3cc,),  # Weight Lifter           ..Golfer
+        (0x1f574, 0x1f575,),  # Man In Business Suit Lev..Sleuth Or Spy
+        (0x1f590, 0x1f590,),  # Raised Hand With Fingers Splayed
+    ),
+    'narrow_zeroer': (
+        (0x000ad, 0x000ad,),  # Soft Hyphen
+        (0x00600, 0x00605,),  # Arabic Number Sign      ..Arabic Number Mark Above
+        (0x006dd, 0x006dd,),  # Arabic End Of Ayah
+        (0x0070f, 0x0070f,),  # Syriac Abbreviation Mark
+        (0x00890, 0x00891,),  # Arabic Pound Mark Above ..Arabic Piastre Mark Abov
+        (0x008e2, 0x008e2,),  # Arabic Disputed End Of Ayah
+        (0x0ff9e, 0x0ff9f,),  # Halfwidth Katakana Voice..Halfwidth Katakana Semi-
         (0x110bd, 0x110bd,),  # Kaithi Number Sign
         (0x110cd, 0x110cd,),  # Kaithi Number Sign Above
     ),
@@ -888,31 +880,6 @@ _SET_NARROW_OVERRIDES_B19CC1BB: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: kitty
-_SET_NARROW_OVERRIDES_DCEE894C: dict[str, tuple[tuple[int, int], ...]] = {
-    'wider': (
-        (0x0261d, 0x0261d,),  # White Up Pointing Index
-        (0x026f9, 0x026f9,),  # Person With Ball
-        (0x0270c, 0x0270d,),  # Victory Hand            ..Writing Hand
-        (0x1f3cb, 0x1f3cc,),  # Weight Lifter           ..Golfer
-        (0x1f574, 0x1f575,),  # Man In Business Suit Lev..Sleuth Or Spy
-        (0x1f590, 0x1f590,),  # Raised Hand With Fingers Splayed
-    ),
-    'narrow_zeroer': (
-        (0x000ad, 0x000ad,),  # Soft Hyphen
-        (0x00600, 0x00605,),  # Arabic Number Sign      ..Arabic Number Mark Above
-        (0x006dd, 0x006dd,),  # Arabic End Of Ayah
-        (0x0070f, 0x0070f,),  # Syriac Abbreviation Mark
-        (0x00890, 0x00891,),  # Arabic Pound Mark Above ..Arabic Piastre Mark Abov
-        (0x008e2, 0x008e2,),  # Arabic Disputed End Of Ayah
-        (0x00e33, 0x00e33,),  # Thai Character Sara Am
-        (0x00eb3, 0x00eb3,),  # Lao Vowel Sign Am
-        (0x0ff9e, 0x0ff9f,),  # Halfwidth Katakana Voice..Halfwidth Katakana Semi-
-        (0x110bd, 0x110bd,),  # Kaithi Number Sign
-        (0x110cd, 0x110cd,),  # Kaithi Number Sign Above
-    ),
-}
-
 # For terminals: xterm.js
 _SET_NARROW_OVERRIDES_DEEE7699: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
@@ -930,7 +897,46 @@ _SET_NARROW_OVERRIDES_DEEE7699: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: warp
+# For terminals: mlterm
+_SET_NARROW_OVERRIDES_E91A1DB7: dict[str, tuple[tuple[int, int], ...]] = {
+    'wider': (
+        (0x0090c, 0x0090c,),  # Devanagari Letter Vocalic L
+        (0x0093d, 0x0093d,),  # Devanagari Sign Avagraha
+        (0x00950, 0x00950,),  # Devanagari Om
+        (0x00958, 0x0095b,),  # Devanagari Letter Qa    ..Devanagari Letter Za
+        (0x0095d, 0x0095e,),  # Devanagari Letter Rha   ..Devanagari Letter Fa
+        (0x00960, 0x00960,),  # Devanagari Letter Vocalic Rr
+        (0x0098c, 0x0098c,),  # Bengali Letter Vocalic L
+        (0x009bd, 0x009bd,),  # Bengali Sign Avagraha
+        (0x009dc, 0x009dd,),  # Bengali Letter Rra      ..Bengali Letter Rha
+        (0x009e1, 0x009e1,),  # Bengali Letter Vocalic Ll
+        (0x00a5a, 0x00a5c,),  # Gurmukhi Letter Ghha    ..Gurmukhi Letter Rra
+        (0x00a8c, 0x00a8c,),  # Gujarati Letter Vocalic L
+        (0x00abd, 0x00abd,),  # Gujarati Sign Avagraha
+        (0x00ad0, 0x00ad0,),  # Gujarati Om
+        (0x00ae0, 0x00ae0,),  # Gujarati Letter Vocalic Rr
+        (0x00b0c, 0x00b0c,),  # Oriya Letter Vocalic L
+        (0x00b3d, 0x00b3d,),  # Oriya Sign Avagraha
+        (0x00b5c, 0x00b5d,),  # Oriya Letter Rra        ..Oriya Letter Rha
+        (0x00b60, 0x00b61,),  # Oriya Letter Vocalic Rr ..Oriya Letter Vocalic Ll
+        (0x00bd0, 0x00bd0,),  # Tamil Om
+        (0x00c0c, 0x00c0c,),  # Telugu Letter Vocalic L
+        (0x00c3d, 0x00c3d,),  # Telugu Sign Avagraha
+        (0x00c58, 0x00c58,),  # Telugu Letter Tsa
+        (0x00c5a, 0x00c5a,),  # Telugu Letter Rrra
+        (0x00c5c, 0x00c5d,),  # Telugu Archaic Shrii    ..Telugu Letter Nakaara Po
+        (0x00c60, 0x00c61,),  # Telugu Letter Vocalic Rr..Telugu Letter Vocalic Ll
+        (0x00cbd, 0x00cbd,),  # Kannada Sign Avagraha
+        (0x00cdc, 0x00cdd,),  # Kannada Archaic Shrii   ..Kannada Letter Nakaara P
+        (0x00ce0, 0x00ce1,),  # Kannada Letter Vocalic R..Kannada Letter Vocalic L
+        (0x00d3d, 0x00d3d,),  # Malayalam Sign Avagraha
+        (0x00d58, 0x00d58,),  # Malayalam Fraction One One-hundred-and-sixtieth
+        (0x00d5a, 0x00d5e,),  # Malayalam Fraction Three..Malayalam Fraction One F
+        (0x00d60, 0x00d61,),  # Malayalam Letter Vocalic..Malayalam Letter Vocalic
+    ),
+}
+
+# For terminals: termy, warp
 _SET_NARROW_OVERRIDES_FDEEB1C7: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
         (0x017a4, 0x017a4,),  # Khmer Independent Vowel Qaa
@@ -962,12 +968,14 @@ NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'foot': _SET_NARROW_OVERRIDES_8B501630,
     'ghostty': _SET_NARROW_OVERRIDES_AD0BF614,
     'iterm2': _SET_NARROW_OVERRIDES_70997F54,
-    'kitty': _SET_NARROW_OVERRIDES_DCEE894C,
+    'kitty': _SET_NARROW_OVERRIDES_4F7FBF42,
     'konsole': _SET_NARROW_OVERRIDES_3E5607A0,
     'mintty': _SET_NARROW_OVERRIDES_8B501630,
+    'mlterm': _SET_NARROW_OVERRIDES_E91A1DB7,
     'pterm': _SET_NARROW_OVERRIDES_8B501630,
     'rio': _SET_NARROW_OVERRIDES_8B501630,
     'st': _SET_NARROW_OVERRIDES_9BC01E8D,
+    'termy': _SET_NARROW_OVERRIDES_FDEEB1C7,
     'urxvt': _SET_NARROW_OVERRIDES_9BC01E8D,
     'vte': _SET_NARROW_OVERRIDES_8B501630,
     'warp': _SET_NARROW_OVERRIDES_FDEEB1C7,
