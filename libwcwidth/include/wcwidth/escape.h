@@ -79,6 +79,9 @@ size_t wcwidth_escape_strip(const char *text, size_t text_len, char *out, size_t
  * to UTF-8, strips, and decodes the result back to a codepoint array.  The
  * returned array is *out_len* codepoints and the caller does a single free()
  * of it; returns NULL on allocation failure.
+ *
+ * *codepoints* and *out_len* must not be NULL; *out_len* receives the
+ * codepoint count.
  */
 uint32_t *wcwidth_escape_strip_u32(const uint32_t *codepoints, size_t n, size_t *out_len);
 
