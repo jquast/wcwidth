@@ -124,17 +124,20 @@ def test_wait_for_run_waits_for_in_progress(monkeypatch):
     assert not check_release.FAILURES
 
 
-def test_wait_for_run_fails_fast_on_completed_failure(monkeypatch):
-    """A completed run with a failure conclusion is not polled to the timeout."""
-    responses = [[{'databaseId': 7, 'conclusion': 'failure', 'status': 'completed'}]]
+def test_wait_for_run_picks_up_a_failed_run_retry(monkeypatch):
+    """A completed failure is polled until its failed jobs are re-run successfully."""
+    responses = [
+        [{'databaseId': 7, 'conclusion': 'failure', 'status': 'completed'}],
+        [{'databaseId': 7, 'conclusion': 'success', 'status': 'completed'}],
+    ]
     monkeypatch.setattr(check_release, 'run', _fake_run(responses))
     clock = _Clock()
     monkeypatch.setattr(check_release, 'time', clock)
     check_release.FAILURES.clear()
 
-    assert check_release.wait_for_run('0.9.0') is None
-    assert not clock.sleeps
-    assert any("concluded 'failure'" in message for message in check_release.FAILURES)
+    assert check_release.wait_for_run('0.9.0') == '7'
+    assert clock.sleeps == [check_release.POLL_INTERVAL]
+    assert not check_release.FAILURES
 
 
 def test_wait_for_run_times_out(monkeypatch):

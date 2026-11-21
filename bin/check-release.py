@@ -134,6 +134,9 @@ def wait_for_run(tag: str) -> typing.Optional[str]:
 
     A release may be created before GitHub registers the tag-push run, and the wheel matrix takes
     minutes, so a missing or unfinished run is polled until POLL_TIMEOUT.
+
+    A run that completes with a failure is polled as well: re-running its failed jobs updates the
+    same run, so the retry is picked up rather than requiring the release to be started again.
     """
     proc = run('git', 'rev-parse', 'HEAD')
     if proc.returncode != 0:
@@ -155,9 +158,9 @@ def wait_for_run(tag: str) -> typing.Optional[str]:
                 ok(f'{WORKFLOW} run {run_id} succeeded')
                 return run_id
             if status == 'completed':
-                fail(f'{WORKFLOW} run {run_id} concluded {conclusion!r}')
-                return None
-            note(f'{WORKFLOW} run {run_id} is {status}')
+                note(f'{WORKFLOW} run {run_id} concluded {conclusion!r}, awaiting a re-run')
+            else:
+                note(f'{WORKFLOW} run {run_id} is {status}')
         else:
             note(f'no {WORKFLOW} run found for {tag} yet')
         if time.monotonic() >= deadline:
