@@ -2462,9 +2462,9 @@ def collect_term_programs() -> TermPrograms:
         'vscode': 'xterm.js',
     })
 
-    # hardcoded aliases for well-known TERM values not in ucs-detect data.
+    # hardcoded aliases for well-known terminal names not in ucs-detect data.
     term_aliases.update({
-        'putty': 'pterm',
+        'pterm': 'putty',
     })
 
     known -= EXCLUDED_MULTIPLEXERS

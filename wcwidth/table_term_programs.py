@@ -23,7 +23,7 @@ KNOWN_TERMINALS = frozenset({
     'konsole',
     'mintty',
     'mlterm',
-    'pterm',
+    'putty',
     'rio',
     'st',
     'tecolot',
@@ -41,7 +41,7 @@ KNOWN_TERMINALS = frozenset({
 ALIASES = {
     'hyper': 'xterm.js',
     'iterm.app': 'iterm2',
-    'putty': 'pterm',
+    'pterm': 'putty',
     'rxvt': 'urxvt',
     'rxvt-unicode-256color': 'urxvt',
     'st-256color': 'st',

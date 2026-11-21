@@ -207,7 +207,7 @@ _SET_WIDE_OVERRIDES_78B553AB: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: contour, tecolot, xterm.net
+# For terminals: contour, xterm.net
 _SET_WIDE_OVERRIDES_7D53D5DB: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
@@ -304,7 +304,7 @@ _SET_WIDE_OVERRIDES_BC68C805: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: pterm, wezterm
+# For terminals: putty, wezterm
 _SET_WIDE_OVERRIDES_CD433FE0: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x18e00, 0x19191,),  # Jurchen Character-18e00 ..Jurchen Character-19191
@@ -399,10 +399,9 @@ WIDE_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'konsole': _SET_WIDE_OVERRIDES_3CBB3895,
     'mintty': _SET_WIDE_OVERRIDES_DB01D1AB,
     'mlterm': _SET_WIDE_OVERRIDES_64DD0D04,
-    'pterm': _SET_WIDE_OVERRIDES_CD433FE0,
+    'putty': _SET_WIDE_OVERRIDES_CD433FE0,
     'rio': _SET_WIDE_OVERRIDES_EE7A1B97,
     'st': _SET_WIDE_OVERRIDES_AA063934,
-    'tecolot': _SET_WIDE_OVERRIDES_7D53D5DB,
     'terminology': _SET_WIDE_OVERRIDES_BC68C805,
     'termy': _SET_WIDE_OVERRIDES_64DD0D04,
     'urxvt': _SET_WIDE_OVERRIDES_AA063934,
@@ -414,7 +413,7 @@ WIDE_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'xterm.net': _SET_WIDE_OVERRIDES_7D53D5DB,
 }
 
-# For terminals: alacritty, apple_terminal, extraterm, foot, mintty, mlterm, pterm, rio, st, terminology, termy, urxvt, vte, warp, wezterm, xterm, xterm.js
+# For terminals: alacritty, apple_terminal, extraterm, foot, mintty, mlterm, putty, rio, st, terminology, termy, urxvt, vte, warp, wezterm, xterm, xterm.js
 _SET_SRI_OVERRIDES_6E5EF6CC: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x1f1e6, 0x1f1ff,),  # Regional Indicator Symbo..Regional Indicator Symbo
@@ -428,7 +427,7 @@ SRI_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'foot': _SET_SRI_OVERRIDES_6E5EF6CC,
     'mintty': _SET_SRI_OVERRIDES_6E5EF6CC,
     'mlterm': _SET_SRI_OVERRIDES_6E5EF6CC,
-    'pterm': _SET_SRI_OVERRIDES_6E5EF6CC,
+    'putty': _SET_SRI_OVERRIDES_6E5EF6CC,
     'rio': _SET_SRI_OVERRIDES_6E5EF6CC,
     'st': _SET_SRI_OVERRIDES_6E5EF6CC,
     'terminology': _SET_SRI_OVERRIDES_6E5EF6CC,
@@ -463,7 +462,7 @@ SFZ_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'rio': _SET_SFZ_OVERRIDES_8DDFF0C4,
 }
 
-# For terminals: alacritty, apple_terminal, mlterm, pterm, st, terminology, urxvt, vte, wezterm, xterm, xterm.js
+# For terminals: alacritty, apple_terminal, mlterm, putty, st, terminology, urxvt, vte, wezterm, xterm, xterm.js
 _SET_VS16_OVERRIDES_F48531B2: dict[str, tuple[tuple[int, int], ...]] = {
     'narrower': (
         (0x00023, 0x00023,),  # Number Sign
@@ -586,7 +585,7 @@ VS16_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'alacritty': _SET_VS16_OVERRIDES_F48531B2,
     'apple_terminal': _SET_VS16_OVERRIDES_F48531B2,
     'mlterm': _SET_VS16_OVERRIDES_F48531B2,
-    'pterm': _SET_VS16_OVERRIDES_F48531B2,
+    'putty': _SET_VS16_OVERRIDES_F48531B2,
     'st': _SET_VS16_OVERRIDES_F48531B2,
     'terminology': _SET_VS16_OVERRIDES_F48531B2,
     'urxvt': _SET_VS16_OVERRIDES_F48531B2,
@@ -640,7 +639,7 @@ _SET_VS15_OVERRIDES_C90DACFE: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: alacritty, apple_terminal, contour, extraterm, iterm2, konsole, mlterm, pterm, st, terminology, urxvt, vte, warp, wezterm, xterm, xterm.js
+# For terminals: alacritty, apple_terminal, contour, extraterm, iterm2, konsole, mlterm, putty, st, terminology, urxvt, vte, warp, wezterm, xterm, xterm.js
 _SET_VS15_OVERRIDES_EC2D40AC: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
         (0x0231a, 0x0231b,),  # Watch                   ..Hourglass
@@ -746,7 +745,7 @@ VS15_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'iterm2': _SET_VS15_OVERRIDES_EC2D40AC,
     'konsole': _SET_VS15_OVERRIDES_EC2D40AC,
     'mlterm': _SET_VS15_OVERRIDES_EC2D40AC,
-    'pterm': _SET_VS15_OVERRIDES_EC2D40AC,
+    'putty': _SET_VS15_OVERRIDES_EC2D40AC,
     'rio': _SET_VS15_OVERRIDES_0F19A03D,
     'st': _SET_VS15_OVERRIDES_EC2D40AC,
     'terminology': _SET_VS15_OVERRIDES_EC2D40AC,
@@ -829,7 +828,7 @@ _SET_NARROW_OVERRIDES_898E5B73: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: foot, mintty, pterm, rio, vte
+# For terminals: foot, mintty, putty, rio, vte
 _SET_NARROW_OVERRIDES_8B501630: dict[str, tuple[tuple[int, int], ...]] = {
     'narrow_zeroer': (
         (0x00600, 0x00605,),  # Arabic Number Sign      ..Arabic Number Mark Above
@@ -897,45 +896,6 @@ _SET_NARROW_OVERRIDES_DEEE7699: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
-# For terminals: mlterm
-_SET_NARROW_OVERRIDES_E91A1DB7: dict[str, tuple[tuple[int, int], ...]] = {
-    'wider': (
-        (0x0090c, 0x0090c,),  # Devanagari Letter Vocalic L
-        (0x0093d, 0x0093d,),  # Devanagari Sign Avagraha
-        (0x00950, 0x00950,),  # Devanagari Om
-        (0x00958, 0x0095b,),  # Devanagari Letter Qa    ..Devanagari Letter Za
-        (0x0095d, 0x0095e,),  # Devanagari Letter Rha   ..Devanagari Letter Fa
-        (0x00960, 0x00960,),  # Devanagari Letter Vocalic Rr
-        (0x0098c, 0x0098c,),  # Bengali Letter Vocalic L
-        (0x009bd, 0x009bd,),  # Bengali Sign Avagraha
-        (0x009dc, 0x009dd,),  # Bengali Letter Rra      ..Bengali Letter Rha
-        (0x009e1, 0x009e1,),  # Bengali Letter Vocalic Ll
-        (0x00a5a, 0x00a5c,),  # Gurmukhi Letter Ghha    ..Gurmukhi Letter Rra
-        (0x00a8c, 0x00a8c,),  # Gujarati Letter Vocalic L
-        (0x00abd, 0x00abd,),  # Gujarati Sign Avagraha
-        (0x00ad0, 0x00ad0,),  # Gujarati Om
-        (0x00ae0, 0x00ae0,),  # Gujarati Letter Vocalic Rr
-        (0x00b0c, 0x00b0c,),  # Oriya Letter Vocalic L
-        (0x00b3d, 0x00b3d,),  # Oriya Sign Avagraha
-        (0x00b5c, 0x00b5d,),  # Oriya Letter Rra        ..Oriya Letter Rha
-        (0x00b60, 0x00b61,),  # Oriya Letter Vocalic Rr ..Oriya Letter Vocalic Ll
-        (0x00bd0, 0x00bd0,),  # Tamil Om
-        (0x00c0c, 0x00c0c,),  # Telugu Letter Vocalic L
-        (0x00c3d, 0x00c3d,),  # Telugu Sign Avagraha
-        (0x00c58, 0x00c58,),  # Telugu Letter Tsa
-        (0x00c5a, 0x00c5a,),  # Telugu Letter Rrra
-        (0x00c5c, 0x00c5d,),  # Telugu Archaic Shrii    ..Telugu Letter Nakaara Po
-        (0x00c60, 0x00c61,),  # Telugu Letter Vocalic Rr..Telugu Letter Vocalic Ll
-        (0x00cbd, 0x00cbd,),  # Kannada Sign Avagraha
-        (0x00cdc, 0x00cdd,),  # Kannada Archaic Shrii   ..Kannada Letter Nakaara P
-        (0x00ce0, 0x00ce1,),  # Kannada Letter Vocalic R..Kannada Letter Vocalic L
-        (0x00d3d, 0x00d3d,),  # Malayalam Sign Avagraha
-        (0x00d58, 0x00d58,),  # Malayalam Fraction One One-hundred-and-sixtieth
-        (0x00d5a, 0x00d5e,),  # Malayalam Fraction Three..Malayalam Fraction One F
-        (0x00d60, 0x00d61,),  # Malayalam Letter Vocalic..Malayalam Letter Vocalic
-    ),
-}
-
 # For terminals: termy, warp
 _SET_NARROW_OVERRIDES_FDEEB1C7: dict[str, tuple[tuple[int, int], ...]] = {
     'wider': (
@@ -961,6 +921,44 @@ _SET_NARROW_OVERRIDES_FDEEB1C7: dict[str, tuple[tuple[int, int], ...]] = {
     ),
 }
 
+# For terminals: mlterm
+_SET_NARROW_OVERRIDES_FECD729B: dict[str, tuple[tuple[int, int], ...]] = {
+    'wider': (
+        (0x0090c, 0x0090c,),  # Devanagari Letter Vocalic L
+        (0x0093d, 0x0093d,),  # Devanagari Sign Avagraha
+        (0x00950, 0x00950,),  # Devanagari Om
+        (0x00958, 0x0095e,),  # Devanagari Letter Qa    ..Devanagari Letter Fa
+        (0x00960, 0x00960,),  # Devanagari Letter Vocalic Rr
+        (0x0098c, 0x0098c,),  # Bengali Letter Vocalic L
+        (0x009bd, 0x009bd,),  # Bengali Sign Avagraha
+        (0x009dc, 0x009dc,),  # Bengali Letter Rra
+        (0x009e0, 0x009e1,),  # Bengali Letter Vocalic R..Bengali Letter Vocalic L
+        (0x00a59, 0x00a5c,),  # Gurmukhi Letter Khha    ..Gurmukhi Letter Rra
+        (0x00a5e, 0x00a5e,),  # Gurmukhi Letter Fa
+        (0x00a8c, 0x00a8c,),  # Gujarati Letter Vocalic L
+        (0x00abd, 0x00abd,),  # Gujarati Sign Avagraha
+        (0x00ad0, 0x00ad0,),  # Gujarati Om
+        (0x00ae0, 0x00ae0,),  # Gujarati Letter Vocalic Rr
+        (0x00b0c, 0x00b0c,),  # Oriya Letter Vocalic L
+        (0x00b3d, 0x00b3d,),  # Oriya Sign Avagraha
+        (0x00b5c, 0x00b5d,),  # Oriya Letter Rra        ..Oriya Letter Rha
+        (0x00b60, 0x00b61,),  # Oriya Letter Vocalic Rr ..Oriya Letter Vocalic Ll
+        (0x00bd0, 0x00bd0,),  # Tamil Om
+        (0x00c0c, 0x00c0c,),  # Telugu Letter Vocalic L
+        (0x00c3d, 0x00c3d,),  # Telugu Sign Avagraha
+        (0x00c58, 0x00c5a,),  # Telugu Letter Tsa       ..Telugu Letter Rrra
+        (0x00c5c, 0x00c5d,),  # Telugu Archaic Shrii    ..Telugu Letter Nakaara Po
+        (0x00c60, 0x00c61,),  # Telugu Letter Vocalic Rr..Telugu Letter Vocalic Ll
+        (0x00c8c, 0x00c8c,),  # Kannada Letter Vocalic L
+        (0x00cbd, 0x00cbd,),  # Kannada Sign Avagraha
+        (0x00cdc, 0x00cde,),  # Kannada Archaic Shrii   ..Kannada Letter Fa
+        (0x00ce1, 0x00ce1,),  # Kannada Letter Vocalic Ll
+        (0x00d3d, 0x00d3d,),  # Malayalam Sign Avagraha
+        (0x00d59, 0x00d5e,),  # Malayalam Fraction One F..Malayalam Fraction One F
+        (0x00d60, 0x00d61,),  # Malayalam Letter Vocalic..Malayalam Letter Vocalic
+    ),
+}
+
 NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'alacritty': _SET_NARROW_OVERRIDES_898E5B73,
     'apple_terminal': _SET_NARROW_OVERRIDES_B173F820,
@@ -971,8 +969,8 @@ NARROW_OVERRIDES: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     'kitty': _SET_NARROW_OVERRIDES_4F7FBF42,
     'konsole': _SET_NARROW_OVERRIDES_3E5607A0,
     'mintty': _SET_NARROW_OVERRIDES_8B501630,
-    'mlterm': _SET_NARROW_OVERRIDES_E91A1DB7,
-    'pterm': _SET_NARROW_OVERRIDES_8B501630,
+    'mlterm': _SET_NARROW_OVERRIDES_FECD729B,
+    'putty': _SET_NARROW_OVERRIDES_8B501630,
     'rio': _SET_NARROW_OVERRIDES_8B501630,
     'st': _SET_NARROW_OVERRIDES_9BC01E8D,
     'termy': _SET_NARROW_OVERRIDES_FDEEB1C7,

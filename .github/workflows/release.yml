@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/wcwidth
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # the tag itself, origin/master for bin/check-release.py's tip check
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: pip
+
+      - name: Download and check release artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # bin/check-release.py compares HEAD against a local master branch, which a
+          # detached tag checkout does not have.
+          git branch --force master origin/master
+          python -Im pip install cibuildwheel twine
+          python bin/check-release.py
+          # gh leaves one directory per artifact; the publish action only uploads dist/*.
+          find dist -mindepth 2 -type f -exec mv -t dist {} +
+          find dist -mindepth 1 -type d -empty -delete
+          python -m twine check --strict dist/*
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
