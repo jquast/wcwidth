@@ -60,8 +60,6 @@ The checks can also be run locally, and wait for the same run; they exit 0 only 
 
    tox -e check_release
 
-A failed wheels run fails the workflow immediately instead of waiting for the timeout.
-
 Building Documentation
 ----------------------
 
