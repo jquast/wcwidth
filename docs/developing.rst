@@ -49,18 +49,18 @@ using code generation::
 
     tox -e update,format
 
-Create a ``git tag`` of the same version on master. The wheels.yml_ workflow reacts to a new tag and
-builds all wheels using cibuildwheel_. Once that run succeeds, publish a GitHub Release for the tag.
-release.yml_ then downloads that run's artifacts, runs the checks below, and uploads them with `PyPI
-trusted publishing`_ from the ``pypi`` environment.
+Create a ``git tag`` of the same version on master, then publish a GitHub Release for the tag.
+wheels.yml_ builds all wheels using cibuildwheel_ on the tag push, and release.yml_ waits up to 45
+minutes for that run, downloads its artifacts, runs the checks below, and uploads them with
+`PyPI trusted publishing`_ from the ``pypi`` environment. Create the release right after the tag:
+the tip-of-master check runs when the workflow starts, so a merge landing before that fails it.
 
-The checks can also be run locally before creating the release, and exit 0 only when every wheel
-has been successfully published::
+The checks can also be run locally, and wait for the same run; they exit 0 only when every wheel
+``[tool.cibuildwheel]`` expects is present::
 
    tox -e check_release
 
-Creating the release before the wheels run succeeds fails the workflow, re-run it from the Actions
-tab.
+A failed wheels run fails the workflow immediately instead of waiting for the timeout.
 
 Building Documentation
 ----------------------

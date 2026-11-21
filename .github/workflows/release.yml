@@ -11,6 +11,8 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
+    # above bin/check-release.py's 45 minute wait for the wheels.yml run
+    timeout-minutes: 60
     environment:
       name: pypi
       url: https://pypi.org/p/wcwidth
@@ -29,7 +31,7 @@ jobs:
           python-version: '3.14'
           cache: pip
 
-      - name: Download and check release artifacts
+      - name: Wait for, download, and check release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
