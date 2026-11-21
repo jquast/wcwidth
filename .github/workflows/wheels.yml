@@ -24,7 +24,9 @@ jobs:
         # the hardware each wheel targets.  Emulation would build them fine but
         # skip or fake the tests.
         include:
-          - os: ubuntu-latest
+          # Docker 29.4.2 on ubuntu-26.04, which is what ubuntu-latest runs, blocks
+          # socketcall, so 32-bit containers cannot resolve DNS (actions/runner-images#14790).
+          - os: ubuntu-24.04
             archs: x86_64 i686
           - os: ubuntu-24.04-arm
             archs: aarch64
