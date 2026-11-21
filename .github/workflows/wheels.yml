@@ -24,8 +24,14 @@ jobs:
         # the hardware each wheel targets.  Emulation would build them fine but
         # skip or fake the tests.
         include:
-          # Docker 29.4.2 on ubuntu-26.04, which is what ubuntu-latest runs, blocks
-          # socketcall, so 32-bit containers cannot resolve DNS (actions/runner-images#14790).
+          # Docker 29.4.2 on ubuntu-26.04, which is what ubuntu-latest runs, blocks socketcall, so
+          # 32-bit containers cannot resolve DNS, open issues/pr's as of Nov 2026:
+          # https://github.com/actions/runner-images/issues/14790
+          # https://github.com/actions/runner-images/pull/15205
+          # https://github.com/actions/runner-images/issues/15330
+          # https://github.com/actions/runner-images/pull/15332
+          # https://github.com/pypa/cibuildwheel/issues/2950
+          # https://github.com/pypa/cibuildwheel/pull/3031
           - os: ubuntu-24.04
             archs: x86_64 i686
           - os: ubuntu-24.04-arm

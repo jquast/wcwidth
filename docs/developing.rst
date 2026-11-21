@@ -60,9 +60,6 @@ The checks can also be run locally, and wait for the same run; they exit 0 only 
 
    tox -e check_release
 
-A wheels run that fails can be retried with "Re-run failed jobs" while the release waits, and the
-successful re-run is picked up without publishing the release again.
-
 Building Documentation
 ----------------------
 
