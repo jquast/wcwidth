@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import json
+import time
 import argparse
 import subprocess
 
@@ -15,6 +16,8 @@ PATH_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = 'wheels.yml'
 VERSION_FILES = (('wcwidth/__init__.py', r"^__version__ = '([^']+)'"),
                  ('pyproject.toml', r'^version = "([^"]+)"'))
+POLL_INTERVAL = 30
+POLL_TIMEOUT = 45 * 60
 FAILURES: list[str] = []
 
 
@@ -125,6 +128,44 @@ def collect(dest: str) -> tuple[list[str], list[str]]:
     return wheels, sdists
 
 
+def wait_for_run(tag: str) -> typing.Optional[str]:
+    """
+    Return the id of the wheels run for *tag* once it succeeds, or None.
+
+    A release may be created before GitHub registers the tag-push run, and the wheel matrix takes
+    minutes, so a missing or unfinished run is polled until POLL_TIMEOUT.
+    """
+    proc = run('git', 'rev-parse', 'HEAD')
+    if proc.returncode != 0:
+        fail(f'git rev-parse HEAD failed: {proc.stderr.strip()}')
+        return None
+    sha = proc.stdout.strip()
+    deadline = time.monotonic() + POLL_TIMEOUT
+    while True:
+        proc = run('gh', 'run', 'list', '--workflow', WORKFLOW, '--commit', sha,
+                   '--limit', '1', '--json', 'databaseId,conclusion,status')
+        if proc.returncode != 0:
+            fail(f'gh run list failed: {proc.stderr.strip()}')
+            return None
+        runs = json.loads(proc.stdout or '[]')
+        if runs:
+            run_id = str(runs[0]['databaseId'])
+            conclusion, status = runs[0]['conclusion'], runs[0]['status']
+            if conclusion == 'success':
+                ok(f'{WORKFLOW} run {run_id} succeeded')
+                return run_id
+            if status == 'completed':
+                fail(f'{WORKFLOW} run {run_id} concluded {conclusion!r}')
+                return None
+            note(f'{WORKFLOW} run {run_id} is {status}')
+        else:
+            note(f'no {WORKFLOW} run found for {tag} yet')
+        if time.monotonic() >= deadline:
+            fail(f'{WORKFLOW} run for {tag} did not succeed within {POLL_TIMEOUT // 60} minutes')
+            return None
+        time.sleep(POLL_INTERVAL)
+
+
 def obtain_artifacts(tag: typing.Optional[str], dest: str) -> None:
     wheels, sdists = collect(dest)
     if wheels or sdists:
@@ -134,21 +175,9 @@ def obtain_artifacts(tag: typing.Optional[str], dest: str) -> None:
         note(f'no tag, so nothing fetched into {dest}')
         return
 
-    proc = run('gh', 'run', 'list', '--workflow', WORKFLOW, '--branch', tag,
-               '--limit', '1', '--json', 'databaseId,conclusion')
-    if proc.returncode != 0:
-        fail(f'gh run list failed: {proc.stderr.strip()}')
+    run_id = wait_for_run(tag)
+    if run_id is None:
         return
-    runs = json.loads(proc.stdout or '[]')
-    if not runs:
-        fail(f'no {WORKFLOW} run found for {tag}')
-        return
-
-    run_id, conclusion = str(runs[0]['databaseId']), runs[0]['conclusion']
-    if conclusion != 'success':
-        fail(f'{WORKFLOW} run {run_id} concluded {conclusion!r}')
-    else:
-        ok(f'{WORKFLOW} run {run_id} succeeded')
 
     os.makedirs(dest, exist_ok=True)
     proc = run('gh', 'run', 'download', run_id, '--dir', dest)
@@ -232,9 +261,12 @@ def main() -> int:
     if tag and version:
         check_tag_matches_version(tag, version)
     expected = expected_wheels()
-    obtain_artifacts(tag, args.dir)
-    if version:
-        check_artifacts(args.dir, version, expected)
+    if FAILURES:
+        note(f'skipping artifact download, {len(FAILURES)} check(s) failed above')
+    else:
+        obtain_artifacts(tag, args.dir)
+        if version:
+            check_artifacts(args.dir, version, expected)
 
     print()
     print(f'{len(FAILURES)} check(s) failed; do not upload' if FAILURES else 'all checks passed')

@@ -477,7 +477,7 @@ The following terminal names are recognized; common ``TERM``/``TERM_PROGRAM`` al
 .. code-block:: text
 
     absolutetelnet/ssh alacritty apple_terminal bobcat contour extraterm foot
-    ghostty iterm2 kitty konsole mintty mlterm pterm rio st tecolot terminology
+    ghostty iterm2 kitty konsole mintty mlterm putty rio st tecolot terminology
     termy urxvt vte warp wezterm xterm xterm.js xterm.net
 
 .. END_LIST_TERM_PROGRAMS
