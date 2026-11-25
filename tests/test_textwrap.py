@@ -785,6 +785,36 @@ def test_wrap_drops_leading_whitespace_only_lines(text):
     assert wrap(text, width=1, drop_whitespace=False) == list(text)
 
 
+@pytest.mark.parametrize('line_break', ['unicode', 'ascii'])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_wrap_drops_trailing_space_before_style(line_break, propagate_sgr):
+    """A zero-width style prefix must not hide the preceding trailing space."""
+    text = f'a {SGR_RED}longword{SGR_RESET}'
+    if propagate_sgr:
+        expected = [f'a{SGR_RED}{SGR_RESET}'] + [
+            f'{SGR_RED}{part}{SGR_RESET}' for part in ['lo', 'ng', 'wo', 'rd']]
+    else:
+        expected = [f'a{SGR_RED}', 'lo', 'ng', 'wo', f'rd{SGR_RESET}']
+    assert wrap(text, width=2, line_break=line_break, propagate_sgr=propagate_sgr) == expected
+
+
+@pytest.mark.parametrize('line_break', ['unicode', 'ascii'])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_wrap_keeps_trailing_space_when_requested(line_break, propagate_sgr):
+    """Disabling whitespace dropping preserves the space before a style prefix."""
+    text = f'a {SGR_RED}longword{SGR_RESET}'
+    result = wrap(text, width=2, line_break=line_break, propagate_sgr=propagate_sgr,
+                  drop_whitespace=False)
+    assert [_strip(line) for line in result] == ['a ', 'lo', 'ng', 'wo', 'rd']
+
+
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_wrap_keeps_sequence_only_input(propagate_sgr):
+    """Trimming visible spaces must not discard input containing only sequences."""
+    expected = f'{SGR_RED}{SGR_RESET}' if propagate_sgr else SGR_RED
+    assert wrap(SGR_RED, width=2, propagate_sgr=propagate_sgr) == [expected]
+
+
 def test_iter_graphemes_import_error_fallback():
     """A missing extension at import time leaves textwrap on the Python iterator."""
     module = importlib.import_module('wcwidth.textwrap')
