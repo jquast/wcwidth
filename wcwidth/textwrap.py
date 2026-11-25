@@ -399,6 +399,8 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                             # follows it, so chunks is never empty here.
                             chunks[-1] = self._extract_sequences(line_content) + chunks[-1]
                             continue
+                        if visible_content and visible_content[-1].isspace():
+                            line_content = self._rstrip_visible(line_content)
 
                     # Track hyperlink state through this line's content
                     new_state = self._track_hyperlink_state(line_content, hyperlink_state)
@@ -683,7 +685,8 @@ def wrap(text: str, width: int = 70, *,
     :param break_on_hyphens: If True, allow breaking at hyphens.
     :param drop_whitespace: If True (default), whitespace at the beginning
         and end of each line (after wrapping but before indenting) is dropped.
-        Set to False to preserve whitespace.
+        Trailing terminal sequences are preserved and do not prevent whitespace
+        before them from being dropped. Set to False to preserve whitespace.
     :param max_lines: If set, output contains at most this many lines, with
         ``placeholder`` appended to the last line if the text was truncated.
     :param placeholder: String appended to the last line when text is
