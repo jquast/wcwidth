@@ -442,11 +442,20 @@ class SequenceTextWrapper(textwrap.TextWrapper):
                         hyperlink_state = None
 
                     # Strip trailing whitespace when drop_whitespace is enabled
-                    # (matches CPython #140627 fix behavior)
+                    # (matches CPython #140627 fix behavior). Use the
+                    # sequence-aware strip: a plain rstrip() misses a space
+                    # hidden before a trailing escape sequence, e.g. when a
+                    # long word's leading SGR sequence is assigned to the
+                    # preceding full line. Fall back to rstrip() so that
+                    # sequence-only lines are retained as before.
                     if self.drop_whitespace:
-                        line_content = line_content.rstrip()
-                        if not line_content:
-                            continue
+                        rstripped = self._rstrip_visible(line_content)
+                        if rstripped:
+                            line_content = rstripped
+                        else:
+                            line_content = line_content.rstrip()
+                            if not line_content:
+                                continue
                     lines.append(indent + line_content)
                     is_first_line = False
                 else:
