@@ -13,6 +13,8 @@ History
   * **Bugfix** `iter_graphemes_reverse()`_ and `grapheme_boundary_before()`_ on Prepend, `PR #306`_.
   * **Bugfix** `clip()`_ applying wrong SGR style after processing 'overtyping', `PR #305`_.
   * **Bugfix** `wrap()`_ of whitespace-only line should not discard run-on SGR attrs, `PR #310`_.
+  * **Bugfix** `wrap()`_ should drop a trailing space hidden before a long
+    word's leading SGR sequence, `PR #334`_.
   * **Bugfix** `clip()`_ control character processing after an errant OSC 8 close, `PR #308`_.
   * **Bugfix** libwcwidth `wrap()`_ no longer crashes when a memory allocation fails, `PR #317`_.
   * **Bugfix** SGR colon colors applied out of order in libwcwidth, so a leading ``0`` wiped the
@@ -367,6 +369,7 @@ https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c::
 .. _`PR #321`: https://github.com/jquast/wcwidth/pull/321
 .. _`PR #325`: https://github.com/jquast/wcwidth/pull/325
 .. _`PR #329`: https://github.com/jquast/wcwidth/pull/329
+.. _`PR #334`: https://github.com/jquast/wcwidth/pull/334
 .. _`Issue #101`: https://github.com/jquast/wcwidth/issues/101
 .. _`Issue #155`: https://github.com/jquast/wcwidth/issues/155
 .. _`Issue #211`: https://github.com/jquast/wcwidth/issues/211
