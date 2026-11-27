@@ -778,6 +778,26 @@ def test_wrap_virama_conjunct_known_limitation(text):
     assert [wcwidth.width(line) for line in wrap(text * 4, width=4)] == [3, 4, 3]
 
 
+@pytest.mark.parametrize('line_break', ['unicode', 'ascii'])
+@pytest.mark.parametrize('propagate_sgr', [True, False])
+def test_wrap_drops_trailing_space_before_sgr_sequence(line_break, propagate_sgr):
+    """A trailing space before a long word's leading SGR sequence is dropped."""
+    text = f'a {SGR_RED}longword{SGR_RESET}'
+    assert [_strip(line) for line in wrap(
+        text, width=2, line_break=line_break, propagate_sgr=propagate_sgr)] == [
+        'a', 'lo', 'ng', 'wo', 'rd']
+    # Plain text trims the same way, and drop_whitespace=False keeps it.
+    assert [_strip(line) for line in wrap('a longword', width=2)] == [
+        'a', 'lo', 'ng', 'wo', 'rd']
+    assert [_strip(line) for line in wrap(
+        text, width=2, drop_whitespace=False)] == ['a ', 'lo', 'ng', 'wo', 'rd']
+
+
+def test_wrap_retains_sequence_only_input():
+    """Input with only escape sequences is retained, not dropped."""
+    assert wrap(f'{SGR_RED}{SGR_RESET}', width=2) == [f'{SGR_RED}{SGR_RESET}']
+
+
 @pytest.mark.parametrize('text', [' hello', '  hello', '    hello'])
 def test_wrap_drops_leading_whitespace_only_lines(text):
     """All-whitespace first lines are discarded."""
